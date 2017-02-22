@@ -152,7 +152,7 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src/main</sourceDirectory>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
         <testResources>
             <testResource>
