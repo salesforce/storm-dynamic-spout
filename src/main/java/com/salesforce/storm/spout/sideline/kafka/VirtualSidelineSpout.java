@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -11,6 +12,8 @@ import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerStateMana
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ZookeeperConsumerStateManager;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -63,6 +66,12 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     // @TODO - Random cosumerId until we pass it in via configuration
     private String consumerId = "RandomConsumerId-" + DateTime.now().getMillis();
+
+    /**
+     * For tracking failed messages, and knowing when to replay them.
+     */
+    private FailedMsgRetryManager failedMsgRetryManager;
+    private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
     public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer) {
         this(topologyConfig, topologyContext, deserializer, null, null);
@@ -183,6 +192,12 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Connect the consumer
         sidelineConsumer.connect();
+
+        // initialize our failed tuple retry handler
+        if (failedMsgRetryManager == null) {
+            failedMsgRetryManager = new DefaultFailedMsgRetryManager();
+        }
+        failedMsgRetryManager.prepare(topologyConfig);
     }
 
     @Override
@@ -220,6 +235,20 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Maybe they get replayed a maximum number of times?  Maybe they get replayed forever but have
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
         // If so, emit that and return.
+        final TupleMessageId nextFailedMessageId = failedMsgRetryManager.nextFailedMessageToRetry();
+        if (nextFailedMessageId != null) {
+            if (trackedMessages.containsKey(nextFailedMessageId)) {
+                // Mark this as having a retry started
+                failedMsgRetryManager.retryStarted(nextFailedMessageId);
+
+                // Emit the tuple.
+                logger.info("Emitting previously failed tuple with msgId {}", nextFailedMessageId);
+                return trackedMessages.get(nextFailedMessageId);
+            } else {
+                logger.warn("Unable to find tuple that should be replayed due to a fail {}", nextFailedMessageId);
+                failedMsgRetryManager.acked(nextFailedMessageId);
+            }
+        }
 
         // Grab the next message from kafka
         ConsumerRecord<byte[], byte[]> record = sidelineConsumer.nextRecord();
@@ -270,6 +299,10 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             return null;
         }
 
+        // Track it message for potential retries.
+        trackedMessages.put(tupleMessageId, message);
+
+        // Return it.
         return message;
     }
 
@@ -322,15 +355,44 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Talk to sidelineConsumer and mark the offset completed.
         sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
 
-        // TODO: Remove this tuple from the spout where we track things incase the tuple fails.
+        // Remove this tuple from the spout where we track things incase the tuple fails.
+        trackedMessages.remove(tupleMessageId);
+
+        // Mark it as completed in the failed message handler if it exists.
+        failedMsgRetryManager.acked(tupleMessageId);
     }
 
     @Override
     public void fail(Object msgId) {
-        // Convert to TupleMessageId
-        TupleMessageId tupleMessageId = (TupleMessageId) msgId;
+        if (msgId == null) {
+            logger.warn("Null msg id passed, ignoring");
+            return;
+        }
 
-        // TODO: Add this tuple to a "failed tuple manager interface" object
+        // Convert to TupleMessageId
+        final TupleMessageId tupleMessageId;
+        try {
+            tupleMessageId = (TupleMessageId) msgId;
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
+        }
+
+        // Add this tuple to a "failed tuple manager interface" object
+        if (!failedMsgRetryManager.shouldReEmitMsg(tupleMessageId)) {
+            logger.info("Not retrying failed msgId any further {}", tupleMessageId);
+
+            // Mark it as acked in failedMsgRetryManager
+            failedMsgRetryManager.acked(tupleMessageId);
+
+            // Ack it in the consumer
+            sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
+
+            // Done.
+            return;
+        }
+
+        // Otherwise mark it as failed.
+        failedMsgRetryManager.failed(tupleMessageId);
     }
 
     @Override
