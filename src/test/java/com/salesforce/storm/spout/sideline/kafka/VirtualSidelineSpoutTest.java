@@ -560,7 +560,8 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
-     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is before it.
+     * Test calling this method with a defined endingState, and then send in a TupleMessageId
+     * associated with a partition that doesn't exist in the ending state.
      */
     @Test
     public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
@@ -575,20 +576,18 @@ public class VirtualSidelineSpoutTest {
         final String consumerId = "MyConsumerId";
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
-        // Define our endingState with a position greater than than our TupleMessageId
+        // Define our endingState with a position greater than than our TupleMessageId, but on a different partition
         ConsumerState endingState = new ConsumerState();
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
 
         // Create spout passing in ending state.
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
 
-        // Call our method & validate.
+        // Call our method & validate exception is thrown
+        expectedException.expect(IllegalStateException.class);
         final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-        assertFalse("Should be false", result);
     }
-
-
-
+    
     // Things left to test
     public void testFail() {
     }
