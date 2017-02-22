@@ -277,7 +277,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         final Long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
         if (endingOffset == null) {
             // None defined?  Probably an error
-            throw new RuntimeException("Consuming from a topic/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
+            throw new IllegalStateException("Consuming from a topic/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
         }
 
         // If its >= the ending offset
