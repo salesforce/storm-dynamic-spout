@@ -6,11 +6,13 @@ import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
@@ -23,6 +25,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -121,7 +124,7 @@ public class VirtualSidelineSpoutTest {
     /**
      * Test setter and getter.
      */
-    @Test
+    //@Test
     public void testSetAndGetIsFinished() {
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer());
@@ -306,9 +309,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
-            topologyConfig,
-            new MockTopologyContext(),
-            stringDeserializer, mockSidelineConsumer
+                topologyConfig,
+                new MockTopologyContext(),
+                stringDeserializer, mockSidelineConsumer
         );
         virtualSidelineSpout.getFilterChain().addStep(new SidelineIdentifier(), new StaticMessageFilter(true));
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
@@ -373,9 +376,220 @@ public class VirtualSidelineSpoutTest {
         assertEquals("Got expected KafkaMessage", expectedKafkaMessage, result);
     }
 
-    // Things left to test
-    public void testAck() {
+    /**
+     * Test calling ack with null, it should just silently drop it.
+     */
+    @Test
+    public void testAckWithNull() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+
+        // Call ack with null, nothing should explode.
+        virtualSidelineSpout.ack(null);
+
+        // No iteractions w/ our mock sideline consumer for committing offsets
+        verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
+        verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
     }
+
+    /**
+     * Call ack() with invalid msg type should throw an exception.
+     */
+    @Test
+    public void testAckWithInvalidMsgIdObject() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+
+        // Call ack with a string object, it should throw an exception.
+        expectedException.expect(IllegalArgumentException.class);
+        virtualSidelineSpout.ack("Poop");
+    }
+
+    /**
+     * Test calling ack, ensure it passes the commit command to its internal consumer
+     */
+    @Test
+    public void testAck() {
+        // Define our msgId
+        final String expectedTopicName = "MyTopic";
+        final int expectedPartitionId = 33;
+        final long expectedOffset = 313376L;
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
+
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+
+        // Call ack with a string object, it should throw an exception.
+        virtualSidelineSpout.ack(tupleMessageId);
+
+        // Verify mock gets called with appropriate arguments
+        verify(mockSidelineConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
+    }
+
+    /**
+     * Test calling this method when no defined endingState.  It should default to always
+     * return false in that case.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWithNoEndingStateDefined() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertFalse("Should always be false", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is equal to it.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position equal to our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertTrue("Should be true", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is beyond it.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position less than our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100));
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertTrue("Should be true", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is before it.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position greater than than our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100));
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertFalse("Should be false", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is before it.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position greater than than our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertFalse("Should be false", result);
+    }
+
+
+
+    // Things left to test
     public void testFail() {
     }
     public void testActivate() {
@@ -384,5 +598,4 @@ public class VirtualSidelineSpoutTest {
     }
     public void testClose() {
     }
-
 }

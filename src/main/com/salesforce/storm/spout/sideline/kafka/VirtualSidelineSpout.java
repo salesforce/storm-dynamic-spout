@@ -206,7 +206,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // meaning you can implement your own behavior here.  Maybe failed tuples never get replayed,
         // Maybe they get replayed a maximum number of times?  Maybe they get replayed forever but have
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
-            // If so, emit that and return.
+        // If so, emit that and return.
 
         // Grab the next message from kafka
         ConsumerRecord<byte[], byte[]> record = sidelineConsumer.nextRecord();
@@ -263,7 +263,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param tupleMessageId - The TupleMessageId to check.
      * @return - Boolean - True if it does, false if it does not.
      */
-    private boolean doesMessageExceedEndingOffset(final TupleMessageId tupleMessageId) {
+    protected boolean doesMessageExceedEndingOffset(final TupleMessageId tupleMessageId) {
         // If no end offsets defined
         if (endingState == null) {
             // Then this check is a no-op, return false
@@ -281,6 +281,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If its >= the ending offset
+        logger.info("Current OFfset: {} EndingOFfset: {}", currentOffset, endingOffset);
         if (currentOffset >= endingOffset) {
             // Then
             return true;
@@ -290,8 +291,18 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public void ack(Object msgId) {
+        if (msgId == null) {
+            logger.warn("Null msg id passed, ignoring");
+            return;
+        }
+
         // Convert to TupleMessageId
-        TupleMessageId tupleMessageId = (TupleMessageId) msgId;
+        final TupleMessageId tupleMessageId;
+        try {
+            tupleMessageId = (TupleMessageId) msgId;
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
+        }
 
         // Talk to sidelineConsumer and mark the offset completed.
         sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
@@ -309,27 +320,28 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public boolean isFinished() {
-        // If our flag is true
-        if (finished) {
-            // Then we must be finished
-            return true;
-        }
-
-        // Otherwise check our partitions
-        // ?? Is this the right spot for this?
-        checkForFinishedPartitions();
-
-        // Check our consumer for which topic/partitions it is subscribed to.
-        if (!sidelineConsumer.getAssignedPartitions().isEmpty()) {
-            // If any are still subscribed, then we cannot be finished
-            return false;
-        }
-
-        // TODO: Check for any outstanding tuples that are unacked.
-        // TODO: Check failed tuples for any outstanding that are unacked.
-
-        // If we made it this far, then we are finished
-        return true;
+        return finished;
+//        // If our flag is true
+//        if (finished) {
+//            // Then we must be finished
+//            return true;
+//        }
+//
+//        // Otherwise check our partitions
+//        // ?? Is this the right spot for this?
+//        checkForFinishedPartitions();
+//
+//        // Check our consumer for which topic/partitions it is subscribed to.
+//        if (!sidelineConsumer.getAssignedPartitions().isEmpty()) {
+//            // If any are still subscribed, then we cannot be finished
+//            return false;
+//        }
+//
+//        // TODO: Check for any outstanding tuples that are unacked.
+//        // TODO: Check failed tuples for any outstanding that are unacked.
+//
+//        // If we made it this far, then we are finished
+//        return true;
     }
 
     @Override

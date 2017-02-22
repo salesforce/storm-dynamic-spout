@@ -861,6 +861,130 @@ public class SidelineConsumerTest {
     }
 
     /**
+     * 1. Setup a consumer to consume from a topic with 2 partitions.
+     * 2. Produce several messages into both partitions
+     * 3. Consume all of the msgs from the topic.
+     * 4. Ack in various orders for the msgs
+     * 5. Validate that the state is correct.
+     */
+    @Test
+    public void testConsumeFromTopicWithMultipePartitionsWithAcking() {
+        this.topicName = "MyMultiPartitionTopic";
+        final int expectedNumberOfPartitions = 2;
+
+        // Create our multi-partition topic.
+        kafkaTestServer.createTopic(topicName, expectedNumberOfPartitions);
+
+        // Define our expected topic/partitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+
+        // Setup our config
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
+        sidelineConsumer.connect();
+
+        // Ask the underlying consumer for our assigned partitions.
+        Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
+        logger.info("ASsigned partitions: {}", assignedPartitions);
+
+        // Validate setup
+        assertNotNull("Should be non-null", assignedPartitions);
+        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+        assertEquals("Should contain 2 entries", expectedNumberOfPartitions, assignedPartitions.size());
+        assertTrue("Should contain our expected topic/partition 0", assignedPartitions.contains(partition0));
+        assertTrue("Should contain our expected topic/partition 1", assignedPartitions.contains(partition1));
+
+        // Now produce 5 msgs to each topic (10 msgs total)
+        final int expectedNumberOfMsgsPerPartition = 5;
+        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
+        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
+
+        // Attempt to consume them
+        // Read from topic, verify we get what we expect
+        int partition0Index = 0;
+        int partition1Index = 0;
+        for (int x=0; x<(expectedNumberOfMsgsPerPartition * 2); x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Determine which partition its from
+            final int partitionSource = foundRecord.partition();
+            assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
+
+            ProducerRecord<byte[], byte[]> expectedRecord;
+            if (partitionSource == 0) {
+                expectedRecord = producedRecordsPartition0.get(partition0Index);
+                partition0Index++;
+            } else {
+                expectedRecord = producedRecordsPartition1.get(partition1Index);
+                partition1Index++;
+            }
+
+            // Compare to what we expected
+            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+        }
+        // Next one should return null
+        ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+        assertNull("Should have nothing new to consume and be null", foundRecord);
+
+        logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
+
+        // Verify state is still 0 for partition 0
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+
+        // Verify state is still 0 for partition 1
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 1 on partition 0, state should be: [partition0: 0, partition1: 0]
+        sidelineConsumer.commitOffset(partition0, 1L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 0 on partition 0, state should be: [partition0: 1, partition1: 0]
+        sidelineConsumer.commitOffset(partition0, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 1L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 2 on partition 0, state should be: [partition0: 2, partition1: 0]
+        sidelineConsumer.commitOffset(partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 0 on partition 1, state should be: [partition0: 2, partition1: 0]
+        sidelineConsumer.commitOffset(partition1, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 2 on partition 1, state should be: [partition0: 2, partition1: 0]
+        sidelineConsumer.commitOffset(partition1, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 0 on partition 1, state should be: [partition0: 2, partition1: 0]
+        sidelineConsumer.commitOffset(partition1, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+
+        // Ack offset 1 on partition 1, state should be: [partition0: 2, partition1: 2]
+        sidelineConsumer.commitOffset(partition1, 1L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 2L);
+
+        // Ack offset 3 on partition 1, state should be: [partition0: 2, partition1: 3]
+        sidelineConsumer.commitOffset(partition1, 3L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 3L);
+
+        // Close out consumer
+        sidelineConsumer.close();
+    }
+
+    /**
      * 1. Setup a consumer to consume from a topic with 1 partition.
      * 2. Produce several messages into that partition.
      * 3. Consume all of the msgs from the topic.
@@ -929,6 +1053,112 @@ public class SidelineConsumerTest {
     }
 
     /**
+     * 1. Setup a consumer to consume from a topic with 2 partitions.
+     * 2. Produce several messages into both partitions
+     * 3. Consume all of the msgs from the topic.
+     * 4. Produce more msgs into both partitions.
+     * 5. Unsubscribe from partition 0.
+     * 6. Attempt to consume more msgs, verify only those from partition 1 come thru.
+     */
+    @Test
+    public void testConsumeFromTopicAfterUnsubscribingFromMultipePartitions() {
+        this.topicName = "MyMultiPartitionTopic";
+        final int expectedNumberOfPartitions = 2;
+
+        // Create our multi-partition topic.
+        kafkaTestServer.createTopic(topicName, expectedNumberOfPartitions);
+
+        // Define our expected topic/partitions
+        final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition expectedTopicPartition1 = new TopicPartition(topicName, 1);
+
+        // Setup our config
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
+        sidelineConsumer.connect();
+
+        // Ask the underlying consumer for our assigned partitions.
+        Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
+        logger.info("ASsigned partitions: {}", assignedPartitions);
+
+        // Validate setup
+        assertNotNull("Should be non-null", assignedPartitions);
+        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+        assertEquals("Should contain 2 entries", expectedNumberOfPartitions, assignedPartitions.size());
+        assertTrue("Should contain our expected topic/partition 0", assignedPartitions.contains(expectedTopicPartition0));
+        assertTrue("Should contain our expected topic/partition 1", assignedPartitions.contains(expectedTopicPartition1));
+
+        // Now produce 5 msgs to each topic (10 msgs total)
+        final int expectedNumberOfMsgsPerPartition = 5;
+        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
+        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
+
+        // Attempt to consume them
+        // Read from topic, verify we get what we expect
+        int partition0Index = 0;
+        int partition1Index = 0;
+        for (int x=0; x<(expectedNumberOfMsgsPerPartition * 2); x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Determine which partition its from
+            final int partitionSource = foundRecord.partition();
+            assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
+
+            ProducerRecord<byte[], byte[]> expectedRecord;
+            if (partitionSource == 0) {
+                expectedRecord = producedRecordsPartition0.get(partition0Index);
+                partition0Index++;
+            } else {
+                expectedRecord = producedRecordsPartition1.get(partition1Index);
+                partition1Index++;
+            }
+
+            // Compare to what we expected
+            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+        }
+        // Next one should return null
+        ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+        assertNull("Should have nothing new to consume and be null", foundRecord);
+
+        // Now produce 5 more msgs into each partition
+        producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
+        producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
+
+        // Now unsub from the partition 0
+        final boolean result = sidelineConsumer.unsubscribeTopicPartition(expectedTopicPartition0);
+        assertTrue("Should be true", result);
+
+        // Attempt to consume, but nothing should be returned from partition 0, only partition 1
+        for (int x=0; x<expectedNumberOfMsgsPerPartition; x++) {
+            foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Determine which partition its from, should be only 1
+            assertEquals("Should be partition 1", 1, foundRecord.partition());
+
+            // Validate it
+            ProducerRecord<byte[], byte[]> expectedRecord = producedRecordsPartition1.get(x);
+
+            // Compare to what we expected
+            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+        }
+
+        // Next one should return null
+        foundRecord = sidelineConsumer.nextRecord();
+        assertNull("Should have nothing new to consume and be null", foundRecord);
+
+        // Close out consumer
+        sidelineConsumer.close();
+    }
+
+    /**
      * Helper method
      * @param consumerState - the consumer state we want to validate
      * @param topicPartition - the topic/partition we want to validate
@@ -939,7 +1169,11 @@ public class SidelineConsumerTest {
         assertEquals("Expected offset", expectedOffset, actualOffset);
     }
 
-    private List<ProducerRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
+    private List<ProducerRecord<byte[], byte[]>> produceRecords(final int numberOfRecords) {
+        return produceRecords(numberOfRecords, 0);
+    }
+
+    private List<ProducerRecord<byte[], byte[]>> produceRecords(final int numberOfRecords, final int partitionId) {
         List<ProducerRecord<byte[], byte[]>> producedRecords = Lists.newArrayList();
 
         KafkaProducer producer = kafkaTestServer.getKafkaProducer("org.apache.kafka.common.serialization.ByteArraySerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
@@ -950,7 +1184,7 @@ public class SidelineConsumerTest {
             String value = "value" + timeStamp;
 
             // Construct filter
-            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicName, key.getBytes(Charsets.UTF_8), value.getBytes(Charsets.UTF_8));
+            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicName, partitionId, key.getBytes(Charsets.UTF_8), value.getBytes(Charsets.UTF_8));
             producedRecords.add(record);
 
             // Send it.
@@ -974,5 +1208,4 @@ public class SidelineConsumerTest {
         config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
         return config;
     }
-
 }
