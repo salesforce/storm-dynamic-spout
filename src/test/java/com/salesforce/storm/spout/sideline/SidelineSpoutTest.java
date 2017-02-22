@@ -100,6 +100,9 @@ public class SidelineSpoutTest {
 
         final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
 
+        // TODO: This needs to be looked at closer, it's a thread timing issue in the coordinator
+        Thread.sleep(100);
+
         // Begin sidelining account 1
         staticTrigger.sendStartRequest(
             new StartRequest(
