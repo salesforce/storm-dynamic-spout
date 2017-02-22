@@ -228,15 +228,17 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             return null;
         }
 
+        // Create a Tuple Message Id
+        final TupleMessageId tupleMessageId = new TupleMessageId(record.topic(), record.partition(), record.offset(), getConsumerId());
+
         // Attempt to deserialize.
         final Values deserializedValues = deserializer.deserialize(record.topic(), record.partition(), record.offset(), record.key(), record.value());
         if (deserializedValues == null) {
-            // TODO: Ack ConsumerRecord as deserialization failed
+            // Failed to deserialize, just ack and return null?
             logger.error("Deserialization returned null");
+            ack(tupleMessageId);
             return null;
         }
-        // Create a Tuple Message Id
-        final TupleMessageId tupleMessageId = new TupleMessageId(record.topic(), record.partition(), record.offset(), getConsumerId());
 
         // Create KafkaMessage
         final KafkaMessage message = new KafkaMessage(tupleMessageId, deserializedValues);

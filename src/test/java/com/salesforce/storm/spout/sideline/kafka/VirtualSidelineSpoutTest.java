@@ -193,8 +193,6 @@ public class VirtualSidelineSpoutTest {
     /**
      * Tests when you call nextTuple() and the underlying consumer.nextRecord() returns null,
      * then nextTuple() should also return null.
-     *
-     * @TODO - validate that ack is not called underlying consumer
      */
     @Test
     public void testNextTupleWhenConsumerReturnsNull() {
@@ -221,7 +219,7 @@ public class VirtualSidelineSpoutTest {
         // Verify its null
         assertNull("Should be null",  result);
 
-        // TODO: Modify this.
+        // Verify ack is never called on underlying mock sideline consumer
         verify(mockSidelineConsumer, never()).commitOffset(any(), anyLong());
         verify(mockSidelineConsumer, never()).commitOffset(any());
     }
@@ -229,8 +227,6 @@ public class VirtualSidelineSpoutTest {
     /**
      * Tests what happens when you call nextTuple(), and the underyling deserializer fails to
      * deserialize (returns null), then nextTuple() should return null.
-     *
-     * @TODO - validate that the ConsumerRecord is acked in this scenario.
      */
     @Test
     public void testNextTupleWhenSerializerFailsToDeserialize() {
@@ -271,6 +267,9 @@ public class VirtualSidelineSpoutTest {
 
         // Verify its null
         assertNull("Should be null",  result);
+
+        // Verify ack was called on the tuple
+        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
     }
 
     /**
@@ -322,6 +321,9 @@ public class VirtualSidelineSpoutTest {
 
         // Check result
         assertNull("Should be null", result);
+
+        // Verify ack was called on the tuple
+        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
     }
 
     /**
@@ -454,6 +456,10 @@ public class VirtualSidelineSpoutTest {
         // Validate unsubscribed was called on our mock sidelineConsumer
         // Right now this is called twice... unsure if thats an issue. I don't think it is.
         verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
+
+        // Validate that we called ack on the tuples that were filtered because they exceeded the max offset
+        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), endingOffset);
+        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), afterOffset);
     }
 
     /**
