@@ -377,6 +377,86 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
+     * 1. publish a bunch of messages to a topic with a single partition.
+     * 2. create a VirtualSideLineSpout where we explicitly define an ending offset less than the total msgs published
+     * 3. Consume from the Spout (call nextTuple())
+     * 4. Ensure that we stop getting tuples back after we hit the ending state offset.
+     */
+    @Test
+    public void testNextTupleIgnoresMessagesThatHaveExceededEndingStatePositionSinglePartition() {
+        // Use UTF8 String Deserializer
+        // Define a deserializer that always returns null
+        final Deserializer stringDeserializer = new Utf8StringDeserializer();
+
+        // Define some variables
+        final long endingOffset = 4444L;
+        final int partition = 4;
+        final String topic = "MyTopic";
+
+        // Define before offset
+        final long beforeOffset = (endingOffset - 100);
+        final long afterOffset = (endingOffset + 100);
+
+        // Create a ConsumerRecord who's offset is BEFORE the ending offset, this should pass
+        final ConsumerRecord<byte[], byte[]> consumerRecordBeforeEnd = new ConsumerRecord<>(topic, partition, beforeOffset, "before-key".getBytes(Charsets.UTF_8), "before-value".getBytes(Charsets.UTF_8));
+
+        // These two should exceed the limit (since its >=) and nothing should be returned.
+        final ConsumerRecord<byte[], byte[]> consumerRecordEqualEnd = new ConsumerRecord<>(topic, partition, endingOffset, "equal-key".getBytes(Charsets.UTF_8), "equal-value".getBytes(Charsets.UTF_8));
+        final ConsumerRecord<byte[], byte[]> consumerRecordAfterEnd = new ConsumerRecord<>(topic, partition, afterOffset, "after-key".getBytes(Charsets.UTF_8), "after-value".getBytes(Charsets.UTF_8));
+
+        // Define expected results returned
+        final KafkaMessage expectedKafkaMessageBeforeEndingOffset = new KafkaMessage(new TupleMessageId(topic, partition, beforeOffset, "ConsumerId"), new Values("before-key", "before-value"));
+
+        // Defining our Ending State
+        final ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(topic, partition), endingOffset);
+
+        // Create test config
+        Map topologyConfig = Maps.newHashMap();
+        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
+        when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd);
+
+        // Create spout & open
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer, null, endingState);
+        virtualSidelineSpout.setConsumerId("ConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call nextTuple()
+        KafkaMessage result = virtualSidelineSpout.nextTuple();
+
+        // Check result
+        assertNotNull("Should not be null because the offset is under the limit.", result);
+
+        // Validate it
+        assertEquals("Found expected topic", topic, result.getTopic());
+        assertEquals("Found expected partition", partition, result.getPartition());
+        assertEquals("Found expected offset", beforeOffset, result.getOffset());
+        assertEquals("Found expected values", new Values("before-key", "before-value"), result.getValues());
+        assertEquals("Got expected KafkaMessage", expectedKafkaMessageBeforeEndingOffset, result);
+
+        // Call nextTuple()
+        result = virtualSidelineSpout.nextTuple();
+
+        // Check result
+        assertNull("Should be null because the offset is equal to the limit.", result);
+
+        // Call nextTuple()
+        result = virtualSidelineSpout.nextTuple();
+
+        // Check result
+        assertNull("Should be null because the offset is greater than the limit.", result);
+
+        // Validate unsubscribed was called on our mock sidelineConsumer
+        // Right now this is called twice... unsure if thats an issue. I don't think it is.
+        verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
+    }
+
+    /**
      * Test calling ack with null, it should just silently drop it.
      */
     @Test
@@ -587,7 +667,39 @@ public class VirtualSidelineSpoutTest {
         expectedException.expect(IllegalStateException.class);
         final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
     }
-    
+
+    /**
+     * This test uses a mock to validate when you call unsubsubscribeTopicPartition() that it passes the argument
+     * to its underlying consumer, and passes back the right result value from that call.
+     */
+    @Test
+    public void testUnsubscribeTopicPartition() {
+        final boolean expectedResult = true;
+
+        // Create inputs
+        final Map expectedTopologyConfig = Maps.newHashMap();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final TopicPartition topicPartition = new TopicPartition(expectedTopic, expectedPartition);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.unsubscribeTopicPartition(topicPartition);
+        assertEquals("Got expected result from our method", expectedResult, result);
+
+        // Validate mock call
+        verify(mockSidelineConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
+    }
+
     // Things left to test
     public void testFail() {
     }

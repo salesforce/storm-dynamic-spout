@@ -278,7 +278,6 @@ public class SidelineConsumer {
         if (!assignedTopicPartitions.contains(topicPartition)) {
             // For now return false, but maybe we should throw exception?
             return false;
-            //throw new RuntimeException("Cannot remove TopicPartition " + topicPartition + " from current assignment of " + assignedTopicPartitions);
         }
         // Remove it
         assignedTopicPartitions.remove(topicPartition);

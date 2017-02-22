@@ -113,6 +113,19 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     /**
+     * For testing only! Constructor used in testing to inject SidelineConsumer instance.
+     *
+     * @param config
+     * @param topologyContext
+     * @param deserializer - Injected deserializer instance, typically used for testing.
+     * @param sidelineConsumer
+     */
+    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
+        this(config, topologyContext, deserializer, startingState, endingState);
+        this.sidelineConsumer = sidelineConsumer;
+    }
+
+    /**
      * Initializes the "Virtual Spout."
      */
     @Override
@@ -281,7 +294,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If its >= the ending offset
-        logger.info("Current OFfset: {} EndingOFfset: {}", currentOffset, endingOffset);
+        logger.info("Current Offset: {} EndingOffset: {}", currentOffset, endingOffset);
         if (currentOffset >= endingOffset) {
             // Then
             return true;
