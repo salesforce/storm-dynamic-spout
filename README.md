@@ -1,4 +1,4 @@
-# Sideling Spout for Apache Storm
+# Sidelining Spout for Apache Storm
 
 Coming soon...
 
