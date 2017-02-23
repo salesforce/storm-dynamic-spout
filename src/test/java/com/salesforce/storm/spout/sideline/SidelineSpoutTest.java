@@ -21,10 +21,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Int;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 /**
@@ -118,19 +123,26 @@ public class SidelineSpoutTest {
         // Lets produce some data into the topic
         produceRecords(emitTupleCount);
 
-        // Wait a bit
-        Thread.sleep(3000);
-
         // Now loop and get our tuples
         for (int x=0; x<emitTupleCount; x++) {
-            // Now ask for next tuple
-            spout.nextTuple();
+            // Async call spout.nextTuple() because it can take a bit to fill the buffer.
+            await()
+                    .atMost(5, TimeUnit.SECONDS)
+                    .until(new Callable<Integer>() {
+
+                        @Override
+                        public Integer call() throws Exception {
+                            // Ask for next tuple
+                            spout.nextTuple();
+
+                            // Return how many tuples have been emitted so far
+                            // It should be equal to our loop count + 1
+                            return spoutOutputCollector.getEmissions().size();
+                        }
+                    }, equalTo(x+1));
 
             // Should have some emissions
             assertEquals("SpoutOutputCollector should have emissions", (x + 1), spoutOutputCollector.getEmissions().size());
-
-            // TODO: this sleep should be able to be removed.
-            Thread.sleep(500);
         }
         logger.info("Emissions: {}", spoutOutputCollector.getEmissions());
 
