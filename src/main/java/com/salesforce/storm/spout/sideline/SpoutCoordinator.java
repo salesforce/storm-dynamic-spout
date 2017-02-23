@@ -5,12 +5,19 @@ import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 public class SpoutCoordinator {
@@ -19,6 +26,7 @@ public class SpoutCoordinator {
 
     private static final int MONITOR_THREAD_SLEEP = 10;
     private static final int SPOUT_THREAD_SLEEP = 10;
+    private static final int MAX_SPOUT_STOP_TIME = 5000;
 
     private final Queue<DelegateSidelineSpout> sidelineSpouts = new ConcurrentLinkedQueue<>();
     private final ConcurrentMap<String,Thread> sidelineSpoutThreads = new ConcurrentHashMap<>();
@@ -175,10 +183,29 @@ public class SpoutCoordinator {
      *
      */
     public void stop() {
+        // Tell every spout to finish what they're doing
         for (DelegateSidelineSpout spout : sidelineSpouts) {
             // Marking it as finished will cause the thread to end, remove it from the thread map
             // and ultimately remove it from the list of spouts
             spout.finish();
         }
+
+        final Duration timeout = Duration.ofMillis(MAX_SPOUT_STOP_TIME);
+
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        final Future handler = executor.submit(() -> {
+            while (!sidelineSpoutThreads.isEmpty()) {}
+        });
+
+        try {
+            handler.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            handler.cancel(true);
+        } catch (InterruptedException e) {
+        } catch (ExecutionException e) {
+        }
+
+        executor.shutdownNow();
     }
 }

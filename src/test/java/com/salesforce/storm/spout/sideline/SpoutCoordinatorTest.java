@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import org.apache.storm.tuple.Values;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +9,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 public class SpoutCoordinatorTest {
@@ -49,11 +50,9 @@ public class SpoutCoordinatorTest {
         fireHoseSpout.addMessage(message3);
         expected.add(message3);
 
-        Thread.sleep(100);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> actual.size(), equalTo(3));
 
         coordinator.stop();
-
-        Thread.sleep(100);
 
         assertEquals(expected, actual);
         assertEquals(0, coordinator.getTotalSpouts());
