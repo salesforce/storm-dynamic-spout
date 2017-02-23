@@ -730,12 +730,36 @@ public class VirtualSidelineSpoutTest {
         return defaultConfig;
     }
 
+    /**
+     * Test calling close, calls close on underlying consumer.
+     */
+    @Test
+    public void testClose() {
+        // Create inputs
+        final Map expectedTopologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Verify close hasn't been called yet.
+        verify(mockSidelineConsumer, never()).close();
+
+        // Call close
+        virtualSidelineSpout.close();
+
+        // Verify close was called
+        verify(mockSidelineConsumer, times(1)).close();
+    }
+
+
     // Things left to test
     public void testFail() {
     }
-
-    public void testClose() {
-    }
-
     // test nextTuple() where it hits fail manager
 }
