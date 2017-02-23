@@ -14,6 +14,7 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -159,6 +160,12 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             // For now just pass everything.
             filterChain = new FilterChain();
             filterChain.addStep(new SidelineIdentifier(), new StaticMessageFilter());
+        }
+
+        // If no failed msg retry manager was injected, then we should load it from the config
+        if (failedMsgRetryManager == null) {
+            // TODO: use appropriate manager, for now use no retry manager.
+            failedMsgRetryManager = new NoRetryFailedMsgRetryManager();
         }
 
         // Construct SidelineConsumerConfig from incoming config
