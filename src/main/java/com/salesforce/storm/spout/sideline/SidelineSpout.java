@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Skeleton implementation for now.
@@ -151,10 +152,19 @@ public class SidelineSpout extends BaseRichSpout {
 
         // TODO: Look for any existing sideline requests that haven't finished and add them to the
         //  coordinator
+        final int totalSpouts = 1; // Will be updated based upon ^^
 
-        coordinator.start((KafkaMessage message) -> {
+        final CountDownLatch openSignal = new CountDownLatch(totalSpouts);
+
+        coordinator.start(openSignal, (KafkaMessage message) -> {
             queue.add(message);
         });
+
+        try {
+            openSignal.await();
+        } catch (InterruptedException ex) {
+            logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
+        }
     }
 
     @Override

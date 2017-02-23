@@ -10,6 +10,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 public class SpoutCoordinator {
@@ -31,13 +32,15 @@ public class SpoutCoordinator {
         sidelineSpouts.add(spout);
     }
 
-    public void start(Consumer<KafkaMessage> consumer) {
+    public void start(CountDownLatch openSignal, Consumer<KafkaMessage> consumer) {
         final Thread spoutMonitorThread = new Thread(() -> {
 
             for (DelegateSidelineSpout spout : Iterables.cycle(sidelineSpouts)) {
                 if (!sidelineSpoutThreads.containsKey(spout.getConsumerId())) {
                     Thread spoutThread = new Thread(() -> {
                         spout.open();
+
+                        openSignal.countDown();
 
                         acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
                         failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
