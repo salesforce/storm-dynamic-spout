@@ -25,9 +25,9 @@ public class SpoutCoordinatorTest {
         final MockDelegateSidelineSpout sidelineSpout1 = new MockDelegateSidelineSpout();
         final MockDelegateSidelineSpout sidelineSpout2 = new MockDelegateSidelineSpout();
 
-        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("foo", "bar"));
-        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("foo", "bar"));
-        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("foo", "bar"));
+        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message1"));
+        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message2"));
+        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
 
         final List<KafkaMessage> actual = new ArrayList<>();
 
@@ -38,6 +38,8 @@ public class SpoutCoordinatorTest {
 
         coordinator.addSidelineSpout(sidelineSpout1);
         coordinator.addSidelineSpout(sidelineSpout2);
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> coordinator.getTotalSpouts(), equalTo(3));
 
         assertEquals(3, coordinator.getTotalSpouts());
 
@@ -50,13 +52,29 @@ public class SpoutCoordinatorTest {
         fireHoseSpout.addMessage(message3);
         expected.add(message3);
 
-        await().atMost(10, TimeUnit.SECONDS).until(() -> actual.size(), equalTo(3));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> actual.size(), equalTo(3));
 
         coordinator.stop();
 
-        assertEquals(expected, actual);
+        System.out.println("Expected = " + expected);
+        System.out.println("Actual = " + actual);
+
+        for (KafkaMessage a : expected) {
+            boolean found = false;
+
+            for (KafkaMessage b : actual) {
+                if (a.equals(b)) {
+                    found = true;
+                }
+            }
+
+            assertTrue("Did not find " + a, found);
+        }
+
         assertEquals(0, coordinator.getTotalSpouts());
     }
+
+
 
 
     private static class MockDelegateSidelineSpout implements DelegateSidelineSpout {
