@@ -34,19 +34,12 @@ public class NoRetryFailedMsgRetryManager implements FailedMsgRetryManager {
         return null;
     }
 
+    /**
+     * @param messageId
+     * @return Always return false.
+     */
     @Override
-    public boolean shouldReEmitMsg(TupleMessageId messageId) {
-        // Never re-emit
+    public boolean retryFurther(TupleMessageId messageId) {
         return false;
-    }
-
-    @Override
-    public boolean retryFurther(Long offset) {
-        return false;
-    }
-
-    @Override
-    public Set<TupleMessageId> clearOffsetsBefore(TupleMessageId messageId) {
-        return null;
     }
 }

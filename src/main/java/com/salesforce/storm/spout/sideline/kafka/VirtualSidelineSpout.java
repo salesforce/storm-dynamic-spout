@@ -148,6 +148,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             // TODO: use appropriate manager, for now use no retry manager.
             failedMsgRetryManager = new NoRetryFailedMsgRetryManager();
         }
+        failedMsgRetryManager.prepare(topologyConfig);
 
         // Construct SidelineConsumerConfig from incoming config
         // TODO: use values from incoming config
@@ -174,12 +175,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Connect the consumer
         sidelineConsumer.connect(startingState);
-
-        // initialize our failed tuple retry handler
-        if (failedMsgRetryManager == null) {
-            failedMsgRetryManager = new DefaultFailedMsgRetryManager();
-        }
-        failedMsgRetryManager.prepare(topologyConfig);
     }
 
     @Override
@@ -347,7 +342,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // Add this tuple to a "failed tuple manager interface" object
-        if (!failedMsgRetryManager.shouldReEmitMsg(tupleMessageId)) {
+        if (!failedMsgRetryManager.retryFurther(tupleMessageId)) {
             logger.info("Not retrying failed msgId any further {}", tupleMessageId);
 
             // Mark it as acked in failedMsgRetryManager

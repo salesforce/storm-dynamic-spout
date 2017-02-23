@@ -42,22 +42,9 @@ public interface FailedMsgRetryManager extends Serializable {
     TupleMessageId nextFailedMessageToRetry();
 
     /**
-     * @param messageId
-     * @return True if the message corresponding to the offset should be emitted NOW. False otherwise.
-     */
-    boolean shouldReEmitMsg(TupleMessageId messageId);
-
-    /**
      * Spout will clean up the state for this offset if false is returned.
-     * @param offset
+     * @param messageId
      * @return True if the message will be retried again. False otherwise.
      */
-    boolean retryFurther(Long offset);
-
-    /**
-     * Clear any offsets before kafkaOffset. These offsets are no longer available in kafka.
-     * @param messageId
-     * @return Set of offsets removed.
-     */
-    Set<TupleMessageId> clearOffsetsBefore(TupleMessageId messageId);
+    boolean retryFurther(TupleMessageId messageId);
 }

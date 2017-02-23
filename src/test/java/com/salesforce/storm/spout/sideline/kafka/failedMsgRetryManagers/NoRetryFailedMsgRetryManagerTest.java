@@ -20,9 +20,9 @@ public class NoRetryFailedMsgRetryManagerTest {
         FailedMsgRetryManager retryManager = new NoRetryFailedMsgRetryManager();
         retryManager.prepare(Maps.newHashMap());
 
-        assertFalse(retryManager.shouldReEmitMsg(new TupleMessageId("MyTopic1", 1, 1L, "ConsumerId1")));
-        assertFalse(retryManager.shouldReEmitMsg(new TupleMessageId("MyTopic2", 2, 2L, "ConsumerId2")));
-        assertFalse(retryManager.shouldReEmitMsg(new TupleMessageId("MyTopic3", 3, 3L, "ConsumerId3")));
-        assertFalse(retryManager.shouldReEmitMsg(new TupleMessageId("MyTopic4", 4, 4L, "ConsumerId4å")));
+        assertFalse(retryManager.retryFurther(new TupleMessageId("MyTopic1", 1, 1L, "ConsumerId1")));
+        assertFalse(retryManager.retryFurther(new TupleMessageId("MyTopic2", 2, 2L, "ConsumerId2")));
+        assertFalse(retryManager.retryFurther(new TupleMessageId("MyTopic3", 3, 3L, "ConsumerId3")));
+        assertFalse(retryManager.retryFurther(new TupleMessageId("MyTopic4", 4, 4L, "ConsumerId4å")));
     }
 }
