@@ -128,17 +128,13 @@ public class SidelineSpoutTest {
             // Async call spout.nextTuple() because it can take a bit to fill the buffer.
             await()
                     .atMost(5, TimeUnit.SECONDS)
-                    .until(new Callable<Integer>() {
+                    .until(() -> {
+                        // Ask for next tuple
+                        spout.nextTuple();
 
-                        @Override
-                        public Integer call() throws Exception {
-                            // Ask for next tuple
-                            spout.nextTuple();
-
-                            // Return how many tuples have been emitted so far
-                            // It should be equal to our loop count + 1
-                            return spoutOutputCollector.getEmissions().size();
-                        }
+                        // Return how many tuples have been emitted so far
+                        // It should be equal to our loop count + 1
+                        return spoutOutputCollector.getEmissions().size();
                     }, equalTo(x+1));
 
             // Should have some emissions
