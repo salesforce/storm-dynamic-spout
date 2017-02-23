@@ -187,7 +187,7 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * @TODO - this is how KafkaStorm does it:
      * https://github.com/apache/storm/blob/master/external/storm-kafka/src/jvm/org/apache/storm/kafka/KafkaSpout.java#L183
-     * 
+     *
      * @param declarer
      */
     @Override
