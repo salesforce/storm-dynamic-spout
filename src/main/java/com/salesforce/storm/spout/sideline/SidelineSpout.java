@@ -197,21 +197,18 @@ public class SidelineSpout extends BaseRichSpout {
 
     @Override
     public void close() {
-        // Shutdown shit
-        logger.info("Calling close on FireHoseSpout");
+        logger.info("Stopping the coordinator and closing all spouts");
         coordinator.stop();
     }
 
     @Override
     public void activate() {
-        // Unpause stuff
-        logger.info("Calling activate on FireHoseSpout");
+        logger.info("Activating spout");
     }
 
     @Override
     public void deactivate() {
-        // Pause stuff
-        logger.info("Calling deactivate on FireHoseSpout");
+        logger.info("Deactivate spout");
     }
 
     @Override

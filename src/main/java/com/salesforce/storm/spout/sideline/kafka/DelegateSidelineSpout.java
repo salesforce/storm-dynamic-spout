@@ -8,10 +8,6 @@ public interface DelegateSidelineSpout {
 
     void close();
 
-    void activate();
-
-    void deactivate();
-
     KafkaMessage nextTuple();
 
     void ack(Object msgId);
@@ -20,7 +16,7 @@ public interface DelegateSidelineSpout {
 
     boolean isFinished();
 
-    void setFinished(boolean finished);
+    void finish();
 
     String getConsumerId();
 }

@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Iterables;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
-import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,14 +64,14 @@ public class SpoutCoordinator {
                             // Fail anything that needs to be failed
                             while (!acked.get(spout.getConsumerId()).isEmpty()) {
                                 TupleMessageId id = acked.get(spout.getConsumerId()).poll();
-                                spout.ack(id);
+                                spout.fail(id);
                             }
 
                             try {
                                 Thread.sleep(SPOUT_THREAD_SLEEP);
                             } catch (InterruptedException ex) {
                                 logger.warn("Thread interrupted, shutting down...");
-                                spout.setFinished(true);
+                                spout.finish();
                             }
                         }
 
@@ -125,7 +124,7 @@ public class SpoutCoordinator {
         for (DelegateSidelineSpout spout : sidelineSpouts) {
             // Marking it as finished will cause the thread to end, remove it from the thread map
             // and ultimately remove it from the list of spouts
-            spout.setFinished(true);
+            spout.finish();
         }
     }
 }

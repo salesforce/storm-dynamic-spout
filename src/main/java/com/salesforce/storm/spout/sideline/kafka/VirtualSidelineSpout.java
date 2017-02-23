@@ -53,7 +53,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private SidelineConsumer sidelineConsumer;
     private Deserializer deserializer;
     private FilterChain filterChain = new FilterChain();
-    private boolean isActive = true;
     private boolean finished = false;
 
     // Define starting and ending offsets.
@@ -147,21 +146,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Set state to true.
         isOpened = true;
 
-        // If a deserializer was not injected, then we should load it from the config.
-        if (deserializer == null) {
-            // TODO: use appropriate deserializer from config
-            // For now just decode as strings.
-            deserializer = new Utf8StringDeserializer();
-        }
-
-        // If filterchain was not injected, then we should load it from the config.
-        if (filterChain == null) {
-            // TODO: use appropriate filter chain from config
-            // For now just pass everything.
-            filterChain = new FilterChain();
-            filterChain.addStep(new SidelineIdentifier(), new StaticMessageFilter());
-        }
-
         // If no failed msg retry manager was injected, then we should load it from the config
         if (failedMsgRetryManager == null) {
             // TODO: use appropriate manager, for now use no retry manager.
@@ -203,24 +187,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public void close() {
-        // Deactivate?
-        deactivate();
-
         // TODO: Do we need to clean up state and remove it?
 
         // Close out the consumer
         sidelineConsumer.close();
         sidelineConsumer = null;
-    }
-
-    @Override
-    public void activate() {
-        isActive = true;
-    }
-
-    @Override
-    public void deactivate() {
-        isActive = false;
     }
 
     /**
@@ -399,32 +370,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     @Override
     public boolean isFinished() {
         return finished;
-//        // If our flag is true
-//        if (finished) {
-//            // Then we must be finished
-//            return true;
-//        }
-//
-//        // Otherwise check our partitions
-//        // ?? Is this the right spot for this?
-//        checkForFinishedPartitions();
-//
-//        // Check our consumer for which topic/partitions it is subscribed to.
-//        if (!sidelineConsumer.getAssignedPartitions().isEmpty()) {
-//            // If any are still subscribed, then we cannot be finished
-//            return false;
-//        }
-//
-//        // TODO: Check for any outstanding tuples that are unacked.
-//        // TODO: Check failed tuples for any outstanding that are unacked.
-//
-//        // If we made it this far, then we are finished
-//        return true;
     }
 
     @Override
-    public void setFinished(boolean finished) {
-        this.finished = finished;
+    public void finish() {
+        finished = true;
     }
 
     @Override

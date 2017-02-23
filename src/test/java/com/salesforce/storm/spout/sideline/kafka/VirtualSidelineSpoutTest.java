@@ -133,11 +133,11 @@ public class VirtualSidelineSpoutTest {
         assertFalse("Should default to false", virtualSidelineSpout.isFinished());
 
         // Set to true
-        virtualSidelineSpout.setFinished(true);
+        virtualSidelineSpout.finish();
         assertTrue("Should be true", virtualSidelineSpout.isFinished());
 
         // Set back to false
-        virtualSidelineSpout.setFinished(false);
+        virtualSidelineSpout.finish();
         assertFalse("Should not be true", virtualSidelineSpout.isFinished());
     }
 
