@@ -518,6 +518,8 @@ public class VirtualSidelineSpoutTest {
 
         // Create inputs
         final Map expectedTopologyConfig = Maps.newHashMap();
+        expectedTopologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -525,6 +527,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.open();
 
         // Call ack with a string object, it should throw an exception.
         virtualSidelineSpout.ack(tupleMessageId);
