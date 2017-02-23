@@ -399,46 +399,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     /**
-     * This method checks all partitions to see if they've exceeded the ending offsets
-     */
-    private void checkForFinishedPartitions() {
-        // If no end offsets defined
-        if (endingState == null) {
-            // Then this check is a no-op.
-            return;
-        }
-
-        // Grab current state from ConsumerStateManager
-        final ConsumerState currentConsumerState = sidelineConsumer.getConsumerStateManager().getState();
-
-        // Loop thru each topic/partition
-        for (TopicPartition topicPartition: currentConsumerState.getTopicPartitions()) {
-            // Grab the end state
-            final Long endOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
-            if (endOffset == null) {
-                // None defined?  Probably an error
-                throw new RuntimeException("Consuming from a topic/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
-            }
-
-            // Grab the current state
-            final Long currentOffset = currentConsumerState.getOffsetForTopicAndPartition(topicPartition);
-            if (currentOffset == null) {
-                // No offset yet. so skip it?
-                logger.warn("Skipping null current offset on partition {}", topicPartition);
-                continue;
-            }
-
-            // If the currentOffset is greater than our offset
-            logger.info("Partition: {}, Current offset: {}, Ending Offset: {}", topicPartition, currentOffset, endOffset);
-            if (currentOffset.compareTo(endOffset) >= 0) {
-                // Then this partition needs to be removed from the consumer
-                // Stop subscribing to TopicPartition.
-                unsubscribeTopicPartition(topicPartition);
-            }
-        }
-    }
-
-    /**
      * Unsubscribes the underlying consumer from the specified topic/partition.
      *
      * @param topicPartition - the topic/partition to unsubscribe from.

@@ -123,9 +123,8 @@ public class VirtualSidelineSpoutTest {
 
     /**
      * Test setter and getter.
-     * @TODO: fix this test
      */
-    //@Test
+    @Test
     public void testSetAndGetIsFinished() {
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer());
@@ -136,10 +135,6 @@ public class VirtualSidelineSpoutTest {
         // Set to true
         virtualSidelineSpout.finish();
         assertTrue("Should be true", virtualSidelineSpout.isFinished());
-
-        // Set back to false
-        virtualSidelineSpout.finish();
-        assertFalse("Should not be true", virtualSidelineSpout.isFinished());
     }
 
     /**
@@ -738,10 +733,9 @@ public class VirtualSidelineSpoutTest {
     // Things left to test
     public void testFail() {
     }
-    public void testActivate() {
-    }
-    public void testDeactivate() {
-    }
+
     public void testClose() {
     }
+
+    // test nextTuple() where it hits fail manager
 }
