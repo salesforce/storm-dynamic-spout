@@ -598,6 +598,7 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -605,6 +606,7 @@ public class VirtualSidelineSpoutTest {
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
         virtualSidelineSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -613,6 +615,7 @@ public class VirtualSidelineSpoutTest {
         // No iteractions w/ our mock sideline consumer for committing offsets
         verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
         verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
+        verify(mockRetryManager, never()).acked(anyObject());
     }
 
     /**
@@ -901,8 +904,66 @@ public class VirtualSidelineSpoutTest {
         verify(mockSidelineConsumer, times(1)).close();
     }
 
-    // @TODO test calling fail where not gonna retry calls ack on failmanager
-    public void testFail() {
+    /**
+     * This test does the following:
+     *
+     * 1. Call nextTuple() -
+     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
+     *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
+     * 2. Call fail() with the message previously returned from nextTuple().
+     * 2. Call nextTuple()
+     *  a. This time FailedMsgRetryManager should return the failed tuple
+     * 3. Call nextTuple()
+     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
+     *  b. sideline consumer should return a new consumer record.
+     */
+    @Test
+    public void testCallingFailCallsAckOnWhenItShouldNotBeRetried() {
+        // Use UTF8 String Deserializer
+        // Define a deserializer that always returns null
+        final Deserializer stringDeserializer = new Utf8StringDeserializer();
+
+        // This is the record coming from the consumer.
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 3;
+        final long expectedOffset = 434323L;
+        final String expectedConsumerId = "MyConsumerId";
+        final String expectedKey = "MyKey";
+        final String expectedValue = "MyValue";
+        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
+        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
+        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
+
+        // Define expected result
+        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+
+        // Create test config
+        Map topologyConfig = getDefaultConfig();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create a mock RetryManager
+        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create spout & open
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
+        virtualSidelineSpout.open();
+
+        // Now call fail on this
+        final TupleMessageId failedMessageId = expectedKafkaMessage.getTupleMessageId();
+
+        // Retry manager should retry this tuple.
+        when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
+
+        // call fail on our message id
+        virtualSidelineSpout.fail(failedMessageId);
+
+        // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
+        verify(mockRetryManager, times(1)).acked(failedMessageId);
+        verify(mockSidelineConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
     }
 
 }
