@@ -66,73 +66,18 @@ public class SpoutCoordinator {
         CompletableFuture.runAsync(() -> {
             while (running) {
                 for (DelegateSidelineSpout spout : sidelineSpouts) {
-                    if (!runningSpouts.containsKey(spout.getConsumerId())) {
-                        sidelineSpouts.remove(spout);
+                    sidelineSpouts.remove(spout);
 
-                        runningSpouts.put(spout.getConsumerId(), spout);
-
-                        CompletableFuture.runAsync(() -> {
-                            logger.info("Opening {} spout", spout.getConsumerId());
-
-                            spout.open();
-
-                            acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-                            failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-
-                            startSignal.countDown();
-
-                            while (!spout.isFinished()) {
-                                logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
-
-                                final KafkaMessage message = spout.nextTuple();
-
-                                if (message != null) {
-                                    // Lambda that passes the tuple back to the main spout
-                                    consumer.accept(message);
-                                }
-
-                                // Lemon's note: Should we ack and then remove from the queue? What happens in the event
-                                //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
-
-                                // Ack anything that needs to be acked
-                                while (!acked.get(spout.getConsumerId()).isEmpty()) {
-                                    TupleMessageId id = acked.get(spout.getConsumerId()).poll();
-                                    spout.ack(id);
-                                }
-
-                                // Fail anything that needs to be failed
-                                while (!acked.get(spout.getConsumerId()).isEmpty()) {
-                                    TupleMessageId id = acked.get(spout.getConsumerId()).poll();
-                                    spout.fail(id);
-                                }
-
-                                try {
-                                    Thread.sleep(SPOUT_THREAD_SLEEP);
-                                } catch (InterruptedException ex) {
-                                    logger.warn("Thread interrupted, shutting down...");
-                                    spout.finish();
-                                }
-                            }
-
-                            logger.info("Finishing {} spout", spout.getConsumerId());
-
-                            spout.close();
-
-                            acked.remove(spout.getConsumerId());
-                            failed.remove(spout.getConsumerId());
-                        }).thenRun(() -> {
-                            runningSpouts.remove(spout.getConsumerId());
-                        });
-
-                    }
+                    startSpout(spout, consumer, startSignal);
                 }
+            }
 
-                try {
-                    Thread.sleep(MONITOR_THREAD_SLEEP);
-                } catch (InterruptedException ex) {
-                    logger.warn("Thread interrupted, shutting down...");
-                    //this.stop();
-                }
+            // Pause for a minute before checking for more spouts
+            try {
+                Thread.sleep(MONITOR_THREAD_SLEEP);
+            } catch (InterruptedException ex) {
+                logger.warn("Thread interrupted, shutting down...");
+                return;
             }
         });
 
@@ -141,6 +86,67 @@ public class SpoutCoordinator {
         } catch (InterruptedException ex) {
             logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
         }
+    }
+
+    protected void startSpout(
+        final DelegateSidelineSpout spout,
+        final Consumer<KafkaMessage> consumer,
+        final CountDownLatch startSignal
+    ) {
+        runningSpouts.put(spout.getConsumerId(), spout);
+
+        CompletableFuture.runAsync(() -> {
+            logger.info("Opening {} spout", spout.getConsumerId());
+
+            spout.open();
+
+            acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+            failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+
+            startSignal.countDown();
+
+            while (!spout.isFinished()) {
+                logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
+
+                final KafkaMessage message = spout.nextTuple();
+
+                if (message != null) {
+                    // Lambda that passes the tuple back to the main spout
+                    consumer.accept(message);
+                }
+
+                // Lemon's note: Should we ack and then remove from the queue? What happens in the event
+                //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
+
+                // Ack anything that needs to be acked
+                while (!acked.get(spout.getConsumerId()).isEmpty()) {
+                    TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                    spout.ack(id);
+                }
+
+                // Fail anything that needs to be failed
+                while (!acked.get(spout.getConsumerId()).isEmpty()) {
+                    TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                    spout.fail(id);
+                }
+
+                try {
+                    Thread.sleep(SPOUT_THREAD_SLEEP);
+                } catch (InterruptedException ex) {
+                    logger.warn("Thread interrupted, shutting down...");
+                    spout.finish();
+                }
+            }
+
+            logger.info("Finishing {} spout", spout.getConsumerId());
+
+            spout.close();
+
+            acked.remove(spout.getConsumerId());
+            failed.remove(spout.getConsumerId());
+        }).thenRun(() -> {
+            runningSpouts.remove(spout.getConsumerId());
+        });
     }
 
     /**
