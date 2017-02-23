@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import java.util.HashMap;
 import java.util.Map;
 
+// TODO: Need an implementation that uses a persistence state manager
 public class InMemoryManager implements RequestManager {
 
     private Map<SidelineIdentifier, ConsumerState> state = new HashMap<>();
