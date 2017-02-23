@@ -21,7 +21,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.*;
 
 /**
@@ -108,7 +112,9 @@ public class ZookeeperConsumerStateManagerTest {
         // Persist it
         stateManager.persistState(consumerState);
         logger.info("Persisting {}", consumerState);
-        Thread.sleep(3000);
+
+        // TODO: Remove this if tests pass consistently (Feb 23rd 2017)
+        //Thread.sleep(3000);
 
         // Attempt to read it?
         ConsumerState result = stateManager.getState();
@@ -187,8 +193,12 @@ public class ZookeeperConsumerStateManagerTest {
         stateManager.persistState(consumerState);
         logger.info("Persisting {}", consumerState);
 
-        // TODO: remove this sleep.
-        Thread.sleep(6000);
+        // Since this is an async operation, use await() to watch for the change
+        await()
+                .atMost(6, TimeUnit.SECONDS)
+                .until(() -> {
+                    return zookeeperClient.exists(zkRootNodePath, false);
+                }, notNullValue());
 
         // 4. Go into zookeeper and see where data got written
         doesNodeExist = zookeeperClient.exists(zkRootNodePath, false);

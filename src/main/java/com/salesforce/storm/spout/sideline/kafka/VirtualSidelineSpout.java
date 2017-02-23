@@ -132,6 +132,14 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     /**
+     * Used to inject a mock RetryManager during test.
+     * @param failedMsgRetryManager
+     */
+    protected void setFailedMsgRetryManager(FailedMsgRetryManager failedMsgRetryManager) {
+        this.failedMsgRetryManager = failedMsgRetryManager;
+    }
+
+    /**
      * Initializes the "Virtual Spout."
      */
     @Override
