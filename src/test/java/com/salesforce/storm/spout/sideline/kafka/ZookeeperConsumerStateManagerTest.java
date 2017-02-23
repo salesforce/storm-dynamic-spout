@@ -186,6 +186,8 @@ public class ZookeeperConsumerStateManagerTest {
         // Persist it
         stateManager.persistState(consumerState);
         logger.info("Persisting {}", consumerState);
+
+        // TODO: remove this sleep.
         Thread.sleep(6000);
 
         // 4. Go into zookeeper and see where data got written
