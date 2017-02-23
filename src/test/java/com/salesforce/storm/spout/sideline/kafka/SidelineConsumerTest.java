@@ -708,7 +708,8 @@ public class SidelineConsumerTest {
         }
         logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
 
-        // TODO Verify state is still 0
+        // Verify state is still 0
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
 
         // Now ack them one by one
         for (ConsumerRecord foundRecord : foundRecords) {
