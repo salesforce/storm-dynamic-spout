@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
@@ -8,7 +9,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -29,7 +32,7 @@ public class SpoutCoordinatorTest {
         final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message2"));
         final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
 
-        final List<KafkaMessage> actual = new ArrayList<>();
+        final Set<KafkaMessage> actual = Sets.newConcurrentHashSet();
 
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout);
         coordinator.start(actual::add);
