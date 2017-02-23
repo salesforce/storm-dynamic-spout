@@ -639,7 +639,6 @@ public class VirtualSidelineSpoutTest {
 
     /**
      * Test calling ack, ensure it passes the commit command to its internal consumer
-     * @TODO: test it calls ack on failedmsgretrymanager
      */
     @Test
     public void testAck() {
@@ -652,6 +651,7 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -659,13 +659,21 @@ public class VirtualSidelineSpoutTest {
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
         virtualSidelineSpout.open();
+
+        // Never called yet
+        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockRetryManager, never()).acked(anyObject());
 
         // Call ack with a string object, it should throw an exception.
         virtualSidelineSpout.ack(tupleMessageId);
 
         // Verify mock gets called with appropriate arguments
         verify(mockSidelineConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
+
+        // Gets acked on the failed retry manager
+        verify(mockRetryManager, times(1)).acked(tupleMessageId);
     }
 
     /**
