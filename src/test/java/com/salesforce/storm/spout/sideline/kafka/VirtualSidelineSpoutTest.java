@@ -123,6 +123,7 @@ public class VirtualSidelineSpoutTest {
 
     /**
      * Test setter and getter.
+     * @TODO: fix this test
      */
     //@Test
     public void testSetAndGetIsFinished() {
@@ -147,14 +148,14 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testCallingOpenTwiceThrowsException() {
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
 
         // Call it once.
         virtualSidelineSpout.open();
@@ -174,14 +175,14 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testOpen() {
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
 
         // Call open
         virtualSidelineSpout.open();
@@ -200,8 +201,7 @@ public class VirtualSidelineSpoutTest {
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = null;
 
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -211,6 +211,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -249,8 +250,7 @@ public class VirtualSidelineSpoutTest {
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
 
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        final Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -260,6 +260,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), nullDeserializer, mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -297,8 +298,7 @@ public class VirtualSidelineSpoutTest {
         final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
 
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -350,8 +350,7 @@ public class VirtualSidelineSpoutTest {
         final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
 
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -414,8 +413,7 @@ public class VirtualSidelineSpoutTest {
         endingState.setOffset(new TopicPartition(topic, partition), endingOffset);
 
         // Create test config
-        Map topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        Map topologyConfig = getDefaultConfig();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -468,7 +466,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testAckWithNull() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -476,6 +474,8 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Call ack with null, nothing should explode.
         virtualSidelineSpout.ack(null);
@@ -491,7 +491,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testAckWithInvalidMsgIdObject() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -499,6 +499,8 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
@@ -517,9 +519,7 @@ public class VirtualSidelineSpoutTest {
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
 
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
-        expectedTopologyConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
-
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -527,6 +527,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -543,7 +544,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWithNoEndingStateDefined() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -551,6 +552,8 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -570,8 +573,9 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -585,7 +589,9 @@ public class VirtualSidelineSpoutTest {
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Call our method & validate.
         final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
@@ -598,8 +604,9 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -613,7 +620,9 @@ public class VirtualSidelineSpoutTest {
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100));
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Call our method & validate.
         final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
@@ -626,8 +635,9 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -641,7 +651,9 @@ public class VirtualSidelineSpoutTest {
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100));
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Call our method & validate.
         final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
@@ -655,8 +667,9 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -670,11 +683,13 @@ public class VirtualSidelineSpoutTest {
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Call our method & validate exception is thrown
         expectedException.expect(IllegalStateException.class);
-        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
     }
 
     /**
@@ -686,7 +701,7 @@ public class VirtualSidelineSpoutTest {
         final boolean expectedResult = true;
 
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -695,6 +710,8 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -707,6 +724,15 @@ public class VirtualSidelineSpoutTest {
 
         // Validate mock call
         verify(mockSidelineConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
+    }
+
+    private Map getDefaultConfig() {
+        final Map defaultConfig = Maps.newHashMap();
+        defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, "MyTopic");
+        defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+
+        return defaultConfig;
     }
 
     // Things left to test
