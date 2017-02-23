@@ -126,14 +126,9 @@ public class SidelineSpout extends BaseRichSpout {
         // @TODO - Parse config, for now use these values
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
 
-        // Construct an instance of VirtualSidelineSpout that reads from the topic
-        // This is the main firehose instance.
-        // @TODO this probably needs to be started within some container and run async from the main
-        // spout thread.
-        logger.info("Starting FireHoseSpout...");
+        // Create the main spout for the topic
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), new Utf8StringDeserializer());
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
-        logger.info("Finished Starting FireHoseSpout...");
 
         // Setting up thread to call nextTuple
 

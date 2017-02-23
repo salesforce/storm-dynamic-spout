@@ -37,6 +37,8 @@ public class SpoutCoordinator {
             for (DelegateSidelineSpout spout : Iterables.cycle(sidelineSpouts)) {
                 if (!sidelineSpoutThreads.containsKey(spout.getConsumerId())) {
                     Thread spoutThread = new Thread(() -> {
+                        logger.info("Opening {} spout", spout.getConsumerId());
+
                         spout.open();
 
                         openSignal.countDown();

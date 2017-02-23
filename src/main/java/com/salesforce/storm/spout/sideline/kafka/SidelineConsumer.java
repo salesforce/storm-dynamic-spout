@@ -152,9 +152,6 @@ public class SidelineConsumer {
      * @return KafkaMessage - the next message read from kafka, or null if no such msg is available.
      */
     public ConsumerRecord<byte[], byte[]> nextRecord() {
-        // TODO: Check for failed messages to replay?
-        // or is that handled a layer above?
-
         // Fill our buffer if its empty
         fillBuffer();
 

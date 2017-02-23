@@ -33,8 +33,6 @@ import java.util.Map;
  * This doesn't implement the Storm IRichSpout interface because its not a 'real' spout,
  * but sits within the larger "SideLineSpout"  Many instances of these can get created and destroyed
  * during the life time of the "real" "SideLineSpout"
- *
- * @TODO - This probably needs to spawn the consumer off a separate thread and communicate over concurrent datastructures.
  */
 public class VirtualSidelineSpout implements DelegateSidelineSpout {
     // Logging
@@ -64,8 +62,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      */
     private boolean isOpened = false;
 
-    // @TODO - Random cosumerId until we pass it in via configuration
-    private String consumerId = "RandomConsumerId-" + DateTime.now().getMillis();
+    private String consumerId;
 
     /**
      * For tracking failed messages, and knowing when to replay them.
@@ -379,8 +376,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public String getConsumerId() {
-        // @TODO: work this out.
-        //return (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX) + "Some POstFixHere";
         return consumerId;
     }
 

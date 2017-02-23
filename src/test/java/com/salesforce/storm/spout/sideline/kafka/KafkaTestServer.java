@@ -77,10 +77,6 @@ public class KafkaTestServer implements AutoCloseable {
         // Create config
         Config config = new Config();
 
-        // @TODO Remove this deprecated entry, we no longer should reference this.
-        // and instead should use the EnvironmentConfig.KAFKA_ZOOKEEPER entry.
-        config.put("event_model.zk_host_port", getZkServer().getConnectString());
-
         // New ZK Host list uses a list
         final List<String> zkHostsAndPorts = Lists.newArrayList(getZkServer().getConnectString().split(","));
 
