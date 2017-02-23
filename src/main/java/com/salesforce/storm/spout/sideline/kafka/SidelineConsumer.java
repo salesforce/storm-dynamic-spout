@@ -85,7 +85,7 @@ public class SidelineConsumer {
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
      */
-    public void connect() {
+    public void connect(ConsumerState startingState) {
         // Simple state enforcement.
         if (hasCalledConnect) {
             throw new RuntimeException("Cannot call connect more than once...");
@@ -94,6 +94,13 @@ public class SidelineConsumer {
 
         // Connect our consumer state manager
         consumerStateManager.init();
+
+        // If we have a starting offset, lets persist it
+        if (startingState != null) {
+            // If we persist it here, when sideline consumer starts up, it should start from this position.
+            // Maybe this is a bit dirty and we should interact w/ SidelineConsumer instead?
+            consumerStateManager.persistState(startingState);
+        }
 
         // Load initial positions
         final ConsumerState initialState = consumerStateManager.getState();

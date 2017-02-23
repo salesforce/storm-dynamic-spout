@@ -138,7 +138,7 @@ public class SidelineConsumerTest {
         verify(mockStateManager, never()).init();
 
         // Now call connect
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Make sure init was called in the connect
         verify(mockStateManager, times(1)).init();
@@ -190,7 +190,7 @@ public class SidelineConsumerTest {
         verify(mockStateManager, never()).init();
 
         // Now call connect
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Make sure init was called in the connect
         verify(mockStateManager, times(1)).init();
@@ -247,7 +247,7 @@ public class SidelineConsumerTest {
         verify(mockStateManager, never()).init();
 
         // Now call connect
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Make sure init was called in the connect
         verify(mockStateManager, times(1)).init();
@@ -315,7 +315,7 @@ public class SidelineConsumerTest {
         verify(mockStateManager, never()).init();
 
         // Now call connect
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Make sure init was called in the connect
         verify(mockStateManager, times(1)).init();
@@ -389,7 +389,7 @@ public class SidelineConsumerTest {
         verify(mockStateManager, never()).init();
 
         // Now call connect
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Make sure init was called in the connect
         verify(mockStateManager, times(1)).init();
@@ -425,7 +425,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -454,7 +454,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -483,7 +483,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -527,7 +527,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -600,7 +600,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -644,7 +644,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -691,7 +691,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -748,7 +748,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -838,7 +838,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, consumerStateManager);
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
         for (int x=numberOfExpectedRecordsToConsume; x<numberOfRecordsToProduce; x++) {
@@ -884,7 +884,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1002,7 +1002,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1077,7 +1077,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new MemoryConsumerStateManager());
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();

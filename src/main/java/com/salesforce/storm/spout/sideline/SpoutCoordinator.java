@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Iterables;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,9 @@ public class SpoutCoordinator {
     private final Queue<DelegateSidelineSpout> sidelineSpouts = new ConcurrentLinkedQueue<>();
     private final ConcurrentMap<String,Thread> sidelineSpoutThreads = new ConcurrentHashMap<>();
 
+    private final ConcurrentMap<String,Queue<TupleMessageId>> acked = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String,Queue<TupleMessageId>> failed = new ConcurrentHashMap<>();
+
     public SpoutCoordinator(DelegateSidelineSpout fireHoseSpout) {
         addSidelineSpout(fireHoseSpout);
     }
@@ -35,11 +39,30 @@ public class SpoutCoordinator {
                     Thread spoutThread = new Thread(() -> {
                         spout.open();
 
+                        acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+                        failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+
                         while (!spout.isFinished()) {
                             KafkaMessage message = spout.nextTuple();
 
                             if (message != null) {
+                                // Lambda that passes the tuple back to the main spout
                                 consumer.accept(message);
+                            }
+
+                            // Lemon's note: Should we ack and then remove from the queue? What happens in the event
+                            //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
+
+                            // Ack anything that needs to be acked
+                            while (!acked.get(spout.getConsumerId()).isEmpty()) {
+                                TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                                spout.ack(id);
+                            }
+
+                            // Fail anything that needs to be failed
+                            while (!acked.get(spout.getConsumerId()).isEmpty()) {
+                                TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                                spout.ack(id);
                             }
 
                             try {
@@ -51,6 +74,9 @@ public class SpoutCoordinator {
                         }
 
                         spout.close();
+
+                        acked.remove(spout.getConsumerId());
+                        failed.remove(spout.getConsumerId());
 
                         // When the thread returns it's shutting down, so we remove it from our map
                         sidelineSpoutThreads.remove(spout.getConsumerId());
@@ -72,6 +98,24 @@ public class SpoutCoordinator {
             }
         });
         spoutMonitorThread.start();
+    }
+
+    public void ack(TupleMessageId id) {
+        if (!acked.containsKey(id.getSrcConsumerId())) {
+            logger.warn("Acking tuple for unknown consumer");
+            return;
+        }
+
+        acked.get(id.getSrcConsumerId()).add(id);
+    }
+
+    public void fail(TupleMessageId id) {
+        if (!failed.containsKey(id.getSrcConsumerId())) {
+            logger.warn("Failing tuple for unknown consumer");
+            return;
+        }
+
+        failed.get(id.getSrcConsumerId()).add(id);
     }
 
     public void stop() {

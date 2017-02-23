@@ -174,12 +174,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         final String zkRoot = "/storm-sideline-spouts";
         final ConsumerStateManager stateManager = new ZookeeperConsumerStateManager(zkHosts, zkRoot, consumerId);
 
-        // If we have a starting offset, lets persist it
-        if (startingState != null) {
-            // If we persist it here, when sideline consumer starts up, it should start from this position.
-            // Maybe this is a bit dirty and we should interact w/ SidelineConsumer instead?
-            stateManager.persistState(startingState);
-        }
         // Do we need to set starting offset here somewhere?  Probably.
         // Either we need to set the offsets from the incoming config,
         // Or we need to tell it to start from somewhere
@@ -191,7 +185,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // Connect the consumer
-        sidelineConsumer.connect();
+        sidelineConsumer.connect(startingState);
 
         // initialize our failed tuple retry handler
         if (failedMsgRetryManager == null) {

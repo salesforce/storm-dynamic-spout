@@ -203,9 +203,7 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
-        // Inspect the tuple's msgId to determine which spout instance it came from
-
-        // Contact that virtual spout instance and call ack() on it.
+        coordinator.ack(tupleMessageId);
     }
 
     @Override
@@ -213,8 +211,7 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
-        // Inspect the tuple's msgId to determine which spout instance it came from
-        // Contact that virtual spout instance and call fail on it.
+        coordinator.fail(tupleMessageId);
     }
 
     public Map getTopologyConfig() {
