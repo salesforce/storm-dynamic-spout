@@ -17,11 +17,7 @@ public class TupleMessageId {
         this.offset = offset;
         this.srcConsumerId = srcConsumerId;
     }
-
-    public TupleMessageId(final KafkaMessage kafkaMessage) {
-        this(kafkaMessage.getTopic(), kafkaMessage.getPartition(), kafkaMessage.getOffset(), "DummyForNow");
-    }
-
+    
     public String getTopic() {
         return topic;
     }
