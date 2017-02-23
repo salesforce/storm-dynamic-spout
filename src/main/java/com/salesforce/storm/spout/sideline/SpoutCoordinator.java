@@ -47,10 +47,11 @@ public class SpoutCoordinator {
 
     /**
      *
-     * @param startSignal
      * @param consumer
      */
-    public void start(final CountDownLatch startSignal, final Consumer<KafkaMessage> consumer) {
+    public void start(final Consumer<KafkaMessage> consumer) {
+        final CountDownLatch startSignal = new CountDownLatch(sidelineSpouts.size());
+
         final Thread spoutMonitorThread = new Thread(() -> {
 
             Iterator<DelegateSidelineSpout> iterator = Iterables.cycle(sidelineSpouts).iterator();
@@ -136,6 +137,12 @@ public class SpoutCoordinator {
             }
         });
         spoutMonitorThread.start();
+
+        try {
+            startSignal.await();
+        } catch (InterruptedException ex) {
+            logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
+        }
     }
 
     /**

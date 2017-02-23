@@ -28,16 +28,12 @@ public class SpoutCoordinatorTest {
         final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("foo", "bar"));
         final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("foo", "bar"));
 
-        final CountDownLatch startSignal = new CountDownLatch(1);
-
         final List<KafkaMessage> actual = new ArrayList<>();
 
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout);
-        coordinator.start(startSignal, actual::add);
+        coordinator.start(actual::add);
 
         assertEquals(1, coordinator.getTotalSpouts());
-
-        startSignal.await();
 
         coordinator.addSidelineSpout(sidelineSpout1);
         coordinator.addSidelineSpout(sidelineSpout2);
