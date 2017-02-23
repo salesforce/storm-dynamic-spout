@@ -5,6 +5,7 @@ import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -15,39 +16,63 @@ import java.util.function.Consumer;
 public class SpoutCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
+
     private static final int MONITOR_THREAD_SLEEP = 10;
     private static final int SPOUT_THREAD_SLEEP = 10;
+
     private final Queue<DelegateSidelineSpout> sidelineSpouts = new ConcurrentLinkedQueue<>();
     private final ConcurrentMap<String,Thread> sidelineSpoutThreads = new ConcurrentHashMap<>();
-
     private final ConcurrentMap<String,Queue<TupleMessageId>> acked = new ConcurrentHashMap<>();
     private final ConcurrentMap<String,Queue<TupleMessageId>> failed = new ConcurrentHashMap<>();
 
-    public SpoutCoordinator(DelegateSidelineSpout fireHoseSpout) {
-        addSidelineSpout(fireHoseSpout);
+    /**
+     *
+     * @param spout
+     */
+    public SpoutCoordinator(final DelegateSidelineSpout spout) {
+        addSidelineSpout(spout);
     }
 
-    public void addSidelineSpout(DelegateSidelineSpout spout) {
+    /**
+     *
+     * @param spout
+     */
+    public void addSidelineSpout(final DelegateSidelineSpout spout) {
         sidelineSpouts.add(spout);
     }
 
-    public void start(CountDownLatch openSignal, Consumer<KafkaMessage> consumer) {
+    public int getTotalSpouts() {
+        return sidelineSpouts.size();
+    }
+
+    /**
+     *
+     * @param startSignal
+     * @param consumer
+     */
+    public void start(final CountDownLatch startSignal, final Consumer<KafkaMessage> consumer) {
         final Thread spoutMonitorThread = new Thread(() -> {
 
-            for (DelegateSidelineSpout spout : Iterables.cycle(sidelineSpouts)) {
+            Iterator<DelegateSidelineSpout> iterator = Iterables.cycle(sidelineSpouts).iterator();
+
+            while (iterator.hasNext()) {
+                final DelegateSidelineSpout spout = iterator.next();
+
                 if (!sidelineSpoutThreads.containsKey(spout.getConsumerId())) {
-                    Thread spoutThread = new Thread(() -> {
+                    final Thread spoutThread = new Thread(() -> {
                         logger.info("Opening {} spout", spout.getConsumerId());
 
                         spout.open();
 
-                        openSignal.countDown();
-
                         acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
                         failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
 
+                        startSignal.countDown();
+
                         while (!spout.isFinished()) {
-                            KafkaMessage message = spout.nextTuple();
+                            logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
+
+                            final KafkaMessage message = spout.nextTuple();
 
                             if (message != null) {
                                 // Lambda that passes the tuple back to the main spout
@@ -77,20 +102,29 @@ public class SpoutCoordinator {
                             }
                         }
 
+                        logger.info("Finishing {} spout", spout.getConsumerId());
+
                         spout.close();
 
                         acked.remove(spout.getConsumerId());
                         failed.remove(spout.getConsumerId());
 
-                        // When the thread returns it's shutting down, so we remove it from our map
-                        sidelineSpoutThreads.remove(spout.getConsumerId());
-                        // No more thread, no more spout
+                        // Remove the spout first, so that on the next iteration it's not there
                         sidelineSpouts.remove(spout);
+                        // Next, remove the thread which should have shut down, the order here is very important!
+                        sidelineSpoutThreads.remove(spout.getConsumerId());
                     });
 
                     sidelineSpoutThreads.put(spout.getConsumerId(), spoutThread);
 
                     spoutThread.start();
+
+                    try {
+                        Thread.sleep(SPOUT_THREAD_SLEEP);
+                    } catch (InterruptedException ex) {
+                        logger.warn("Thread interrupted, shutting down...");
+                        spout.finish();
+                    }
                 }
             }
 
@@ -104,7 +138,11 @@ public class SpoutCoordinator {
         spoutMonitorThread.start();
     }
 
-    public void ack(TupleMessageId id) {
+    /**
+     *
+     * @param id
+     */
+    public void ack(final TupleMessageId id) {
         if (!acked.containsKey(id.getSrcConsumerId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
@@ -113,7 +151,11 @@ public class SpoutCoordinator {
         acked.get(id.getSrcConsumerId()).add(id);
     }
 
-    public void fail(TupleMessageId id) {
+    /**
+     *
+     * @param id
+     */
+    public void fail(final TupleMessageId id) {
         if (!failed.containsKey(id.getSrcConsumerId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
@@ -122,6 +164,9 @@ public class SpoutCoordinator {
         failed.get(id.getSrcConsumerId()).add(id);
     }
 
+    /**
+     *
+     */
     public void stop() {
         for (DelegateSidelineSpout spout : sidelineSpouts) {
             // Marking it as finished will cause the thread to end, remove it from the thread map
