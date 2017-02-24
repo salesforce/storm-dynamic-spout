@@ -67,6 +67,8 @@ public class SidelineSpout extends BaseRichSpout {
      * @param startRequest A representation of the request that is being started
      */
     public void startSidelining(StartRequest startRequest) {
+        logger.info("Received START sideline request");
+
         final SidelineIdentifier id = new SidelineIdentifier();
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
@@ -87,6 +89,8 @@ public class SidelineSpout extends BaseRichSpout {
             logger.error("Received STOP sideline request, but I don't actually have any filter chain steps for it!");
             return;
         }
+
+        logger.info("Received STOP sideline request");
 
         List<FilterChainStep> negatedSteps = new ArrayList<>();
 

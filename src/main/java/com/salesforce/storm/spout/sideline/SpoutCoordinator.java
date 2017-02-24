@@ -67,19 +67,21 @@ public class SpoutCoordinator {
 
         CompletableFuture.runAsync(() -> {
             while (running) {
-                for (DelegateSidelineSpout spout : sidelineSpouts) {
-                    sidelineSpouts.remove(spout);
+                if (!sidelineSpouts.isEmpty()) {
+                    for (DelegateSidelineSpout spout : sidelineSpouts) {
+                        sidelineSpouts.remove(spout);
 
-                    startSpout(spout, consumer, startSignal);
+                        startSpout(spout, consumer, startSignal);
+                    }
                 }
-            }
 
-            // Pause for a minute before checking for more spouts
-            try {
-                Thread.sleep(MONITOR_THREAD_SLEEP);
-            } catch (InterruptedException ex) {
-                logger.warn("Thread interrupted, shutting down...");
-                return;
+                // Pause for a minute before checking for more spouts
+                try {
+                    Thread.sleep(MONITOR_THREAD_SLEEP);
+                } catch (InterruptedException ex) {
+                    logger.warn("Thread interrupted, shutting down...");
+                    return;
+                }
             }
         });
 

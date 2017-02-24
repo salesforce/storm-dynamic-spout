@@ -100,26 +100,9 @@ public class SidelineSpoutTest {
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
-        final StaticTrigger staticTrigger = new StaticTrigger();
-
         // Create spout and call open
         final SidelineSpout spout = new SidelineSpout();
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
-
-        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
-
-        // Begin sidelining account 1
-        staticTrigger.sendStartRequest(
-            new StartRequest(
-                Lists.newArrayList(
-                    staticMessageFilter
-                )
-            )
-        );
-
-        // Account 1 should not be sidelined
 
         // Call next tuple, topic is empty, so should get nothing.
         spout.nextTuple();
@@ -156,17 +139,74 @@ public class SidelineSpoutTest {
             assertEquals("SpoutOutputCollector should have same number of emissions", emitTupleCount, spoutOutputCollector.getEmissions().size());
         }
 
-        // Stop sidelining account 1
+        // Cleanup.
+        spout.close();
+    }
+
+    /**
+     * Simple end-2-end test.  Likely to change drastically as we make further progress.
+     */
+    @Test
+    public void doTestWithSidelining() throws InterruptedException {
+        final Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
+        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "SidelineSpout-");
+        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        final StaticTrigger staticTrigger = new StaticTrigger();
+        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
+
+        final SidelineSpout spout = new SidelineSpout();
+        spout.setStartingTrigger(staticTrigger);
+        spout.setStoppingTrigger(staticTrigger);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        produceRecords(1);
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+            spout.nextTuple();
+            return spoutOutputCollector.getEmissions().size();
+        }, equalTo(1));
+
+        // Start sidelining
+        staticMessageFilter.setShouldFilter(true);
+        staticTrigger.sendStartRequest(
+            new StartRequest(
+                Lists.newArrayList(
+                    staticMessageFilter
+                )
+            )
+        );
+
+        produceRecords(1);
+
+        // TODO: It would be nice to await here, we basically want the time that would normally pass before we check that there are no new tuples
+        Thread.sleep(1000);
+
+        spout.nextTuple();
+
+        // Still the same number of emissions as before
+        assertEquals(1, spoutOutputCollector.getEmissions().size());
+
+        // Stop sidelining
+        staticMessageFilter.setShouldFilter(false);
         staticTrigger.sendStopRequest(
             new StopRequest(
                 staticTrigger.getCurrentSidelineIdentifier()
             )
         );
-        // Everything should be flowing again, no sidelines
 
-        // TODO: Validate account 1 tuples are not processed, and that new ones go through
+        Thread.sleep(1000);
 
-        // Cleanup.
+        spout.nextTuple();
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+            spout.nextTuple();
+            return spoutOutputCollector.getEmissions().size();
+        }, equalTo(2));
+
         spout.close();
     }
 
