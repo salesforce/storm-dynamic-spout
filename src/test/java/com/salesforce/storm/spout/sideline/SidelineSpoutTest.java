@@ -13,8 +13,12 @@ import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StopRequest;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.OutputFieldsGetter;
+import org.apache.storm.utils.Utils;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -23,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Int;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -162,6 +167,62 @@ public class SidelineSpoutTest {
         // TODO: Validate account 1 tuples are not processed, and that new ones go through
 
         // Cleanup.
+        spout.close();
+    }
+
+    @Test
+    public void testDelcareOutputFields_without_stream() {
+        final MockSpoutOutputCollector outputCollector = new MockSpoutOutputCollector();
+        final TopologyContext context = new MockTopologyContext();
+        final Map<String,Object> config = new HashMap<>();
+        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
+        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "SidelineSpout-");
+        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+
+        final SidelineSpout spout = new SidelineSpout();
+        spout.open(config, context, outputCollector);
+
+        final OutputFieldsGetter declarer = new OutputFieldsGetter();
+
+        spout.declareOutputFields(declarer);
+
+        final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
+
+        assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
+        assertEquals(
+            fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
+            Lists.newArrayList("key", "value")
+        );
+
+        spout.close();
+    }
+
+    @Test
+    public void testDelcareOutputFields_with_stream() {
+        final String streamId = "foobar";
+        final MockSpoutOutputCollector outputCollector = new MockSpoutOutputCollector();
+        final TopologyContext context = new MockTopologyContext();
+        final Map<String,Object> config = new HashMap<>();
+        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
+        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "SidelineSpout-");
+        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, streamId);
+
+        final SidelineSpout spout = new SidelineSpout();
+        spout.open(config, context, outputCollector);
+
+        final OutputFieldsGetter declarer = new OutputFieldsGetter();
+
+        spout.declareOutputFields(declarer);
+
+        final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
+
+        assertTrue(fieldsDeclaration.containsKey(streamId));
+        assertEquals(
+            fieldsDeclaration.get(streamId).get_output_fields(),
+            Lists.newArrayList("key", "value")
+        );
+
         spout.close();
     }
 
