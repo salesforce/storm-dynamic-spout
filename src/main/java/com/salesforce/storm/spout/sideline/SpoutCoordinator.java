@@ -19,6 +19,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+/**
+ * Spout Coordinator
+ *
+ * Manages X number of spouts and coordinates their nextTuple(), ack() and fail() calls across threads
+ */
 public class SpoutCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
@@ -35,28 +40,25 @@ public class SpoutCoordinator {
     private final Map<String,Queue<TupleMessageId>> failed = new ConcurrentHashMap<>();
 
     /**
-     *
-     * @param spout
+     * Create a new coordinator, supplying the 'fire hose' or the starting spouts
+     * @param spout Fire hose spout
      */
     public SpoutCoordinator(final DelegateSidelineSpout spout) {
         addSidelineSpout(spout);
     }
 
     /**
-     *
-     * @param spout
+     * Add a new spout to the coordinator, this will get picked up by the coordinator's monitor, opened and
+     * managed with teh other currently running spouts
+     * @param spout New delegate spout
      */
     public void addSidelineSpout(final DelegateSidelineSpout spout) {
         sidelineSpouts.add(spout);
     }
 
-    public int getTotalSpouts() {
-        return runningSpouts.size();
-    }
-
     /**
-     *
-     * @param consumer
+     * Start coordinating delegate spouts
+     * @param consumer A lambda to receive messages as they are coming off of various spouts
      */
     public void start(final Consumer<KafkaMessage> consumer) {
         running = true;
@@ -125,8 +127,8 @@ public class SpoutCoordinator {
                 }
 
                 // Fail anything that needs to be failed
-                while (!acked.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                while (!failed.get(spout.getConsumerId()).isEmpty()) {
+                    TupleMessageId id = failed.get(spout.getConsumerId()).poll();
                     spout.fail(id);
                 }
 
@@ -150,8 +152,8 @@ public class SpoutCoordinator {
     }
 
     /**
-     *
-     * @param id
+     *Acks a tuple on the spout that it belongs to
+     * @param id Tuple message id to ack
      */
     public void ack(final TupleMessageId id) {
         if (!acked.containsKey(id.getSrcConsumerId())) {
@@ -163,8 +165,8 @@ public class SpoutCoordinator {
     }
 
     /**
-     *
-     * @param id
+     * Fails a tuple on the spout that it belongs to
+     * @param id Tuple message id to fail
      */
     public void fail(final TupleMessageId id) {
         if (!failed.containsKey(id.getSrcConsumerId())) {
@@ -176,7 +178,7 @@ public class SpoutCoordinator {
     }
 
     /**
-     *
+     * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts
      */
     public void stop() {
         // Tell every spout to finish what they're doing
@@ -206,5 +208,13 @@ public class SpoutCoordinator {
 
         // Will trigger the monitor thread to stop running, which should be the end of it
         running = false;
+    }
+
+    /**
+     * For testing, returns the total number of running spouts
+     * @return The total number of spouts the coordinator is running
+     */
+    int getTotalSpouts() {
+        return runningSpouts.size();
     }
 }

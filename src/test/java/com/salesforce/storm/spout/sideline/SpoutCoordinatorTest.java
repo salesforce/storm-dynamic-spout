@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -21,16 +22,17 @@ import static org.junit.Assert.*;
 public class SpoutCoordinatorTest {
 
     @Test
-    public void start() throws Exception {
+    public void testCoordinator() throws Exception {
         final List<KafkaMessage> expected = new ArrayList<>();
 
         final MockDelegateSidelineSpout fireHoseSpout = new MockDelegateSidelineSpout();
         final MockDelegateSidelineSpout sidelineSpout1 = new MockDelegateSidelineSpout();
         final MockDelegateSidelineSpout sidelineSpout2 = new MockDelegateSidelineSpout();
 
-        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message1"));
-        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message2"));
-        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("topic", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
+        // Note: I set the topic here to different things largely to aide debugging the message ids later on
+        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("message1", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message1"));
+        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("message2", 1, 1L, sidelineSpout1.getConsumerId()), new Values("message2"));
+        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("message3", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
 
         final Set<KafkaMessage> actual = Sets.newConcurrentHashSet();
 
@@ -57,6 +59,26 @@ public class SpoutCoordinatorTest {
 
         await().atMost(5, TimeUnit.SECONDS).until(() -> actual.size(), equalTo(3));
 
+        coordinator.ack(message1.getTupleMessageId());
+        coordinator.ack(message2.getTupleMessageId());
+        coordinator.fail(message3.getTupleMessageId());
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> fireHoseSpout.acks.size(), equalTo(1));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> fireHoseSpout.fails.size(), equalTo(1));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> sidelineSpout1.acks.size(), equalTo(1));
+
+        assertTrue(
+            message1.getTupleMessageId().equals(fireHoseSpout.acks.poll())
+        );
+
+        assertTrue(
+            message3.getTupleMessageId().equals(fireHoseSpout.fails.poll())
+        );
+
+        assertTrue(
+            message2.getTupleMessageId().equals(sidelineSpout1.acks.poll())
+        );
+
         coordinator.stop();
 
         System.out.println("Expected = " + expected);
@@ -78,17 +100,15 @@ public class SpoutCoordinatorTest {
     }
 
 
-
-
     private static class MockDelegateSidelineSpout implements DelegateSidelineSpout {
 
         private static final Logger logger = LoggerFactory.getLogger(MockDelegateSidelineSpout.class);
 
         private String consumerId;
         private boolean finished = false;
-        private List<TupleMessageId> acks = new ArrayList<>();
-        private List<TupleMessageId> fails = new ArrayList<>();
-        private List<KafkaMessage> messages = new ArrayList<>();
+        private Queue<TupleMessageId> acks = new ConcurrentLinkedQueue<>();
+        private Queue<TupleMessageId> fails = new ConcurrentLinkedQueue<>();
+        private Queue<KafkaMessage> messages = new ConcurrentLinkedQueue<>();
 
         public MockDelegateSidelineSpout() {
             this.consumerId = this.getClass().getSimpleName() + UUID.randomUUID().toString();
@@ -112,7 +132,7 @@ public class SpoutCoordinatorTest {
         @Override
         public KafkaMessage nextTuple() {
             if (!this.messages.isEmpty()) {
-                return this.messages.remove(this.messages.size() - 1);
+                return this.messages.poll();
             }
             return null;
         }
