@@ -1,9 +1,11 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.request.InMemoryManager;
 import com.salesforce.storm.spout.sideline.request.RequestManager;
@@ -33,6 +35,7 @@ public class SidelineSpout extends BaseRichSpout {
     private Map topologyConfig;
     private SpoutOutputCollector outputCollector;
     private TopologyContext topologyContext;
+    private Deserializer deserializer = new Utf8StringDeserializer();
     private transient ConcurrentLinkedDeque<KafkaMessage> queue;
     private VirtualSidelineSpout fireHoseSpout;
     private SpoutCoordinator coordinator;
@@ -96,7 +99,7 @@ public class SidelineSpout extends BaseRichSpout {
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
-            new Utf8StringDeserializer(),
+            deserializer,
             // Starting offset of the sideline request
             requestManager.get(stopRequest.id),
             // When the sideline request ends
@@ -126,7 +129,7 @@ public class SidelineSpout extends BaseRichSpout {
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
 
         // Create the main spout for the topic
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), new Utf8StringDeserializer());
+        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), deserializer);
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
         // Setting up thread to call nextTuple
@@ -170,14 +173,19 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * @TODO - this is how KafkaStorm does it:
-     * https://github.com/apache/storm/blob/master/external/storm-kafka/src/jvm/org/apache/storm/kafka/KafkaSpout.java#L183
-     *
-     * @param declarer
+     * Declare the output fields
+
+     * @param declarer The output field declarer
      */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // Need to declare output fields somehow.
+        final String outputStreamId = (String) topologyConfig.get(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+
+        if (!Strings.isNullOrEmpty(outputStreamId)) {
+            declarer.declareStream(outputStreamId, deserializer.getOutputFields());
+        } else {
+            declarer.declare(deserializer.getOutputFields());
+        }
     }
 
     @Override
@@ -218,10 +226,6 @@ public class SidelineSpout extends BaseRichSpout {
 
     public Object getTopologyConfigItem(final String key) {
         return getTopologyConfig().get(key);
-    }
-
-    public SpoutOutputCollector getOutputCollector() {
-        return outputCollector;
     }
 
     public TopologyContext getTopologyContext() {

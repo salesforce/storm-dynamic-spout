@@ -19,4 +19,9 @@ public class SidelineSpoutConfig {
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
      */
     public static final String CONSUMER_ID_PREFIX = "sideline_spout.consumer_id_prefix";
+
+    /**
+     * (String) Defines the output stream id to use on the spout
+     */
+    public static final String OUTPUT_STREAM_ID = "sideline_spout.output_stream_id";
 }

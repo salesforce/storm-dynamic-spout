@@ -165,6 +165,24 @@ public class SidelineSpoutTest {
         spout.close();
     }
 
+    /**
+     * Noop, just doing coverage!
+     */
+    @Test
+    public void testActivate() {
+        final SidelineSpout spout = new SidelineSpout();
+        spout.activate();
+    }
+
+    /**
+     * Noop, just doing coverage!
+     */
+    @Test
+    public void testDeactivate() {
+        final SidelineSpout spout = new SidelineSpout();
+        spout.deactivate();
+    }
+
     private List<ProducerRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
         List<ProducerRecord<byte[], byte[]>> producedRecords = Lists.newArrayList();
 

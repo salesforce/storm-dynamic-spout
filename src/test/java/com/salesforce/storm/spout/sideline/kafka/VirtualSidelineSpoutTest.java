@@ -16,6 +16,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.junit.Rule;
 import org.junit.Test;
@@ -233,6 +234,11 @@ public class VirtualSidelineSpoutTest {
             @Override
             public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
                 return null;
+            }
+
+            @Override
+            public Fields getOutputFields() {
+                return new Fields();
             }
         };
 
