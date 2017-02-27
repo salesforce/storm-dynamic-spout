@@ -51,6 +51,11 @@ public class FilterChain {
      * @return The resulting filter after being processed
      */
     public boolean filter(KafkaMessage message) {
+        // No steps = nothing to filter by
+        if (steps.values().isEmpty()) {
+            return false;
+        }
+
         for (List<FilterChainStep> listOfSteps : steps.values()) {
             for (FilterChainStep step : listOfSteps) {
                 if (!step.filter(message)) {
