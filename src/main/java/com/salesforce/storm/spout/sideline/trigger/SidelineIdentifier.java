@@ -13,4 +13,12 @@ public class SidelineIdentifier {
     public SidelineIdentifier() {
         this(UUID.randomUUID());
     }
+
+    /**
+     * Override toString to return the id.
+     */
+    @Override
+    public String toString() {
+        return id.toString();
+    }
 }

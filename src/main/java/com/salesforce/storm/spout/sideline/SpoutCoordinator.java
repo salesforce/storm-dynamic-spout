@@ -100,7 +100,9 @@ public class SpoutCoordinator {
         runningSpouts.put(spout.getConsumerId(), spout);
 
         CompletableFuture.runAsync(() -> {
-            logger.info("Opening {} spout", spout.getConsumerId());
+            // Rename thread
+            Thread.currentThread().setName(spout.getConsumerId());
+            logger.info("Opening {} spout [{}]", spout.getConsumerId(), Thread.currentThread().getName());
 
             spout.open();
 
