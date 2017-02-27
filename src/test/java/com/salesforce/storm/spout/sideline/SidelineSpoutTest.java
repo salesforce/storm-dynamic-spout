@@ -225,9 +225,6 @@ public class SidelineSpoutTest {
         // We should NOT have gotten any tuples emitted, because they were filtered
         assertEquals(0, spoutOutputCollector.getEmissions().size());
 
-        // Now update our filter to no longer sideline.
-        staticMessageFilter.setShouldFilter(false);
-
         // Send a stop sideline request
         staticTrigger.sendStopRequest(
             new StopRequest(
@@ -241,6 +238,11 @@ public class SidelineSpoutTest {
             spout.nextTuple();
             return spoutOutputCollector.getEmissions().size();
         }, equalTo(1));
+
+        // Sideline request is over, the main fire hose should not be filtering now
+        staticMessageFilter.setShouldFilter(false);
+
+        // Produce some more records
 
         // Close out
         spout.close();
