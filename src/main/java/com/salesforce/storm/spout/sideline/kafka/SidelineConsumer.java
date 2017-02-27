@@ -142,7 +142,7 @@ public class SidelineConsumer {
             partitionStateManagers.put(availableTopicPartition, new PartitionOffsetManager(availableTopicPartition.topic(), availableTopicPartition.partition(), offset));
         }
         if (!noStatePartitions.isEmpty()) {
-            logger.info("Starting from head on {} (<Topic>-<Partition>)", noStatePartitions);
+            logger.info("Starting from head on TopicPartitions(s): {}", noStatePartitions);
             kafkaConsumer.seekToBeginning(noStatePartitions);
         }
     }
@@ -223,6 +223,9 @@ public class SidelineConsumer {
 
             // Create new iterator
             bufferIterator = buffer.iterator();
+
+            // TODO: Count is potentially expensive, remove the call from the info line.
+            logger.info("Done filling buffer with {} entries", buffer.count());
         }
     }
 
@@ -291,5 +294,13 @@ public class SidelineConsumer {
 
         // return boolean
         return true;
+    }
+
+    public ConsumerState getCurrentState() {
+        ConsumerState consumerState = new ConsumerState();
+        for (TopicPartition topicPartition : partitionStateManagers.keySet()) {
+            consumerState.setOffset(topicPartition, partitionStateManagers.get(topicPartition).lastFinishedOffset());
+        }
+        return consumerState;
     }
 }

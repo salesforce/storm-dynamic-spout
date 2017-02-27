@@ -153,6 +153,7 @@ public class SpoutCoordinator {
         }).thenRun(() -> {
             runningSpouts.remove(spout.getConsumerId());
         }).exceptionally(throwable -> {
+            // TODO: need to handle exceptions
             logger.info("Got exception for spout {}", spout.getConsumerId(), throwable);
             return null;
         });

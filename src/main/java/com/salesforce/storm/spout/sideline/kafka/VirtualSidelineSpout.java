@@ -151,6 +151,10 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Set state to true.
         isOpened = true;
 
+        // TODO Remove
+        logger.info("Defined Starting State: {}", startingState);
+        logger.info("Defined Ending State: {}", endingState);
+
         // If no failed msg retry manager was injected, then we should load it from the config
         if (failedMsgRetryManager == null) {
             // TODO: use appropriate manager, for now use no retry manager.
@@ -391,7 +395,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     public ConsumerState getCurrentState() {
-        return this.sidelineConsumer.getConsumerStateManager().getState();
+        return sidelineConsumer.getCurrentState();
     }
 
     public Map<String, Object> getTopologyConfig() {

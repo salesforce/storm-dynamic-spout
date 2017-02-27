@@ -7,7 +7,9 @@ import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
+import com.salesforce.storm.spout.sideline.mocks.output.Emission;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
+import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.sideline.trigger.StartRequest;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StopRequest;
@@ -184,6 +186,11 @@ public class SidelineSpoutTest {
 
         // Just a sanity check, this should be 1
         assertEquals(1, spoutOutputCollector.getEmissions().size());
+
+        // Lets ack our tuple
+        for (SpoutEmission emission: spoutOutputCollector.getEmissions()) {
+            spout.ack(emission.getMessageId());
+        }
 
         // Now reset the output collector
         spoutOutputCollector.reset();
