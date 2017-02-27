@@ -2,9 +2,18 @@ package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 
+/**
+ * We use this filter in tests because it allows us an easy way to adjust
+ * how a filter behaves.
+ */
 public class StaticMessageFilter implements FilterChainStep {
 
-    private boolean shouldFilter;
+    /**
+     * We mark this variable as volatile because in testing scenarios we may
+     * adjust its stored value in the main/test thread, and another thread running
+     * a consumer reads it.
+     */
+    private volatile boolean shouldFilter;
 
     public StaticMessageFilter() {
         this(false);

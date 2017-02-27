@@ -145,33 +145,58 @@ public class SidelineSpoutTest {
 
     /**
      * Simple end-2-end test.  Likely to change drastically as we make further progress.
+     * Tests that you produce some records.
+     * Start sidelining, produce more records which get skipped, stop sidelining, virtual spout spins up and processes the sidelined.
      */
     @Test
     public void doTestWithSidelining() throws InterruptedException {
+        // Create our Config
         final Map<String, Object> config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "SidelineSpout-");
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+
+        // Create some stand-in mocks.
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
+        // Create a static trigger for being able to easily make start and stop requests.
         final StaticTrigger staticTrigger = new StaticTrigger();
-        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
 
+        // Create our side line spout, add references to our static trigger.
         final SidelineSpout spout = new SidelineSpout();
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
 
+        // Produce a single record into Kafka.
         produceRecords(1);
 
+        // Wait up to 5 seconds, our 'firehose' spout instance should pull this record in when we call nextTuple().
+        // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
+        // take several calls to nextTuple() before the messages are pulled in from kafka behind the scenes and available
+        // to be emitted.
         await().atMost(5, TimeUnit.SECONDS).until(() -> {
             spout.nextTuple();
             return spoutOutputCollector.getEmissions().size();
         }, equalTo(1));
 
-        // Start sidelining
+
+        // Just a sanity check, this should be 1
+        assertEquals(1, spoutOutputCollector.getEmissions().size());
+
+        // Now reset the output collector
+        spoutOutputCollector.reset();
+
+        // Sanity test, should be 0 again
+        assertEquals(0, spoutOutputCollector.getEmissions().size());
+
+        // Create a static message filter, this allows us to easily start filtering messages.
+        // It should filter ALL messages
+        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
         staticMessageFilter.setShouldFilter(true);
+
+        // Send a new start request with our filter.
         staticTrigger.sendStartRequest(
             new StartRequest(
                 Lists.newArrayList(
@@ -180,33 +205,37 @@ public class SidelineSpoutTest {
             )
         );
 
+        // Produce another record into kafka.
         produceRecords(1);
 
         // TODO: It would be nice to await here, we basically want the time that would normally pass before we check that there are no new tuples
-        Thread.sleep(1000);
+        Thread.sleep(5000);
 
+        // Call next tuple, it should NOT receive any tuples because
+        // all tuples are filtered.
         spout.nextTuple();
 
-        // Still the same number of emissions as before
-        assertEquals(1, spoutOutputCollector.getEmissions().size());
+        // We should NOT have gotten any tuples emitted, because they were filtered
+        assertEquals(0, spoutOutputCollector.getEmissions().size());
 
-        // Stop sidelining
+        // Now update our filter to no longer sideline.
         staticMessageFilter.setShouldFilter(false);
+
+        // Send a stop sideline request
         staticTrigger.sendStopRequest(
             new StopRequest(
                 staticTrigger.getCurrentSidelineIdentifier()
             )
         );
 
-        Thread.sleep(1000);
-
-        spout.nextTuple();
-
-        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+        // We need to wait a bit for the sideline spout instance to spin up and start consuming
+        // Call next tuple, it should get a tuple from our sidelined spout instance.
+        await().atMost(15, TimeUnit.SECONDS).until(() -> {
             spout.nextTuple();
             return spoutOutputCollector.getEmissions().size();
-        }, equalTo(2));
+        }, equalTo(1));
 
+        // Close out
         spout.close();
     }
 
