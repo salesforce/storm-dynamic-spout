@@ -268,6 +268,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (!isFiltered) {
+            logger.info("Tuple {} is filtered, acking", message.getTupleMessageId());
             // Ack
             ack(tupleMessageId);
 
