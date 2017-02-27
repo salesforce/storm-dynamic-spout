@@ -152,6 +152,9 @@ public class SpoutCoordinator {
             failed.remove(spout.getConsumerId());
         }).thenRun(() -> {
             runningSpouts.remove(spout.getConsumerId());
+        }).exceptionally(throwable -> {
+            logger.info("Got exception for spout {}", spout.getConsumerId(), throwable);
+            return null;
         });
     }
 
