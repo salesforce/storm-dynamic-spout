@@ -309,15 +309,19 @@ public class VirtualSidelineSpoutTest {
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
+        final StaticMessageFilter filterStep = new StaticMessageFilter();
+
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
                 topologyConfig,
                 new MockTopologyContext(),
                 stringDeserializer, mockSidelineConsumer
         );
-        virtualSidelineSpout.getFilterChain().addStep(new SidelineIdentifier(), new StaticMessageFilter(true));
+        virtualSidelineSpout.getFilterChain().addStep(new SidelineIdentifier(), filterStep);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
         virtualSidelineSpout.open();
+
+        filterStep.setShouldFilter(true);
 
         // Call nextTuple()
         KafkaMessage result = virtualSidelineSpout.nextTuple();

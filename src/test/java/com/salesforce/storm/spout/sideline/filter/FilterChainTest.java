@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.filter;
+package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;

@@ -13,7 +13,7 @@ public class StaticMessageFilter implements FilterChainStep {
      * adjust its stored value in the main/test thread, and another thread running
      * a consumer reads it.
      */
-    private volatile boolean shouldFilter;
+    private volatile boolean shouldFilter = false;
 
     public StaticMessageFilter() {
         this(false);
@@ -32,6 +32,6 @@ public class StaticMessageFilter implements FilterChainStep {
     }
 
     public boolean filter(KafkaMessage message) {
-        return !shouldFilter;
+        return shouldFilter;
     }
 }
