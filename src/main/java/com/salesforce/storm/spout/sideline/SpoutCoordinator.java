@@ -102,7 +102,7 @@ public class SpoutCoordinator {
         CompletableFuture.runAsync(() -> {
             // Rename thread
             Thread.currentThread().setName(spout.getConsumerId());
-            logger.info("Opening {} spout [{}]", spout.getConsumerId(), Thread.currentThread().getName());
+            logger.info("Opening {} spout", spout.getConsumerId());
 
             spout.open();
 
