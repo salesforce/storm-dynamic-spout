@@ -118,12 +118,14 @@ public class ZookeeperPersistenceManager implements PersistenceManager {
     @Override
     public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
         // TODO
+        throw new RuntimeException("Not yet implemented.");
     }
 
     @Override
     public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
         // TODO
-        return null;
+        //return null;
+        throw new RuntimeException("Not yet implemented.");
     }
 
     private CuratorFramework newCurator() throws Exception {
