@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.sideline.kafka.ZookeeperConsumerStateManagerTest;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
@@ -13,7 +12,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestDataStoreTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperConsumerStateManagerTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(RequestDataStoreTest.class);
     private TestingServer zkServer;
 
     @Before

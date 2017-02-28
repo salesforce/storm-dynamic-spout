@@ -1,9 +1,8 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ZookeeperConsumerStateManager;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.TopicPartition;
@@ -24,24 +23,31 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.*;
 
 /**
- * Tests the zookeeper based ConsumerStateManager implementation.
+ * Tests our Zookeeper Persistence layer.
  */
-public class ZookeeperConsumerStateManagerTest {
+public class ZookeeperPersistenceManagerTest {
+    // For logging within test.
+    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManagerTest.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperConsumerStateManagerTest.class);
+    // An internal zookeeper server used for testing.
     private TestingServer zkServer;
 
+    /**
+     * Before running any tests, we stand up an internal zookeeper server we test against.
+     */
     @Before
     public void setup() throws Exception {
         InstanceSpec zkInstanceSpec = new InstanceSpec(null, -1, -1, -1, true, -1, -1, 1000);
         zkServer = new TestingServer(zkInstanceSpec, true);
     }
 
+    /**
+     * After running any tests, we shut down the internal zookeeper server instance.
+     */
     @After
     public void shutdown() throws Exception {
         zkServer.stop();
@@ -55,15 +61,14 @@ public class ZookeeperConsumerStateManagerTest {
     public void testConstructor() {
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final String expectedZkRoot = "/myRoot";
-        final String expectedConsumerId = "PoopyId";
+        final String expectedConsumerId = "MyConsumerId";
 
-        ZookeeperConsumerStateManager stateManager = new ZookeeperConsumerStateManager(expectedZkConnectionString, expectedZkRoot, expectedConsumerId);
-        assertEquals("Unexpected zk connection string", expectedZkConnectionString, stateManager.getZkConnectionString());
-        assertEquals("Unexpected zk root string", expectedZkRoot, stateManager.getZkRoot());
-        assertEquals("Unexpected consumerId string", expectedConsumerId, stateManager.getConsumerId());
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(expectedZkConnectionString, expectedZkRoot);
+        assertEquals("Unexpected zk connection string", expectedZkConnectionString, persistenceManager.getZkConnectionString());
+        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
 
         // Validate that getZkStatePath returns the expected value
-        assertEquals("Unexpected zkStatePath returned", expectedZkRoot + "/" + expectedConsumerId, stateManager.getZkStatePath());
+        assertEquals("Unexpected zkStatePath returned", expectedZkRoot + "/" + expectedConsumerId, persistenceManager.getZkStatePath(expectedConsumerId));
     }
 
     /**
@@ -76,32 +81,30 @@ public class ZookeeperConsumerStateManagerTest {
         final String expectedZkRoot = "/myRoot";
         final String expectedConsumerId = "PoopyId";
 
-        ZookeeperConsumerStateManager stateManager = new ZookeeperConsumerStateManager(inputHosts, expectedZkRoot, expectedConsumerId);
-        assertEquals("Unexpected zk connection string", expectedZkConnectionString, stateManager.getZkConnectionString());
-        assertEquals("Unexpected zk root string", expectedZkRoot, stateManager.getZkRoot());
-        assertEquals("Unexpected consumerId string", expectedConsumerId, stateManager.getConsumerId());
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(inputHosts, expectedZkRoot);
+        assertEquals("Unexpected zk connection string", expectedZkConnectionString, persistenceManager.getZkConnectionString());
+        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
 
         // Validate that getZkStatePath returns the expected value
-        assertEquals("Unexpected zkStatePath returned", expectedZkRoot + "/" + expectedConsumerId, stateManager.getZkStatePath());
+        assertEquals("Unexpected zkStatePath returned", expectedZkRoot + "/" + expectedConsumerId, persistenceManager.getZkStatePath(expectedConsumerId));
     }
 
     /**
      * Does an end to end test of this persistence layer.
      * 1 - Sets up an internal Zk server
      * 2 - Connects to it
-     * 3 - writes data to it
-     * 4 - reads data from it
+     * 3 - writes state data to it
+     * 4 - reads state data from it
      * 5 - compares that its valid.
-     * @throws InterruptedException
      */
     @Test
-    public void testEndToEnd() throws InterruptedException {
+    public void testEndToEndStatePersistence() throws InterruptedException {
         final String zkRootPath = "/poop";
         final String consumerId = "myConsumer" + DateTime.now().getMillis();
 
         // Create our instance
-        ZookeeperConsumerStateManager stateManager = new ZookeeperConsumerStateManager(zkServer.getConnectString(), zkRootPath, consumerId);
-        stateManager.init();
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootPath);
+        persistenceManager.init();
 
         // Create state
         final ConsumerState consumerState = new ConsumerState();
@@ -110,14 +113,11 @@ public class ZookeeperConsumerStateManagerTest {
         consumerState.setOffset(new TopicPartition("MyTopic", 3), 300L);
 
         // Persist it
-        stateManager.persistState(consumerState);
         logger.info("Persisting {}", consumerState);
-
-        // TODO: Remove this if tests pass consistently (Feb 23rd 2017)
-        //Thread.sleep(3000);
+        persistenceManager.persistConsumerState(consumerId, consumerState);
 
         // Attempt to read it?
-        ConsumerState result = stateManager.getState();
+        final ConsumerState result = persistenceManager.retrieveConsumerState(consumerId);
         logger.info("Result {}", result);
 
         // Validate result
@@ -133,7 +133,7 @@ public class ZookeeperConsumerStateManagerTest {
         assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getState().get(new TopicPartition("MyTopic", 3)));
 
         // Close outs
-        stateManager.close();
+        persistenceManager.close();
     }
 
     /**
@@ -147,7 +147,7 @@ public class ZookeeperConsumerStateManagerTest {
      * 5 - Read the stored value directly out of zookeeper and verify the right thing got written.
      */
     @Test
-    public void testZkRootNode() throws IOException, KeeperException, InterruptedException {
+    public void testEndToEndStatePersistenceWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
         // Define our ZK Root Node
         final String zkRootNodePath = "/TestRootPath";
         final String consumerId = "MyConsumer" + DateTime.now().getMillis();
@@ -175,8 +175,8 @@ public class ZookeeperConsumerStateManagerTest {
         }
 
         // 2. Create our instance
-        ZookeeperConsumerStateManager stateManager = new ZookeeperConsumerStateManager(zkServer.getConnectString(), zkRootNodePath, consumerId);
-        stateManager.init();
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootNodePath);
+        persistenceManager.init();
 
         // 3. Attempt to persist some state.
         final String topicName = "MyTopic";
@@ -190,8 +190,8 @@ public class ZookeeperConsumerStateManagerTest {
         consumerState.setOffset(new TopicPartition(topicName, 3), 300L);
 
         // Persist it
-        stateManager.persistState(consumerState);
         logger.info("Persisting {}", consumerState);
+        persistenceManager.persistConsumerState(consumerId, consumerState);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -206,7 +206,6 @@ public class ZookeeperConsumerStateManagerTest {
         assertNotNull("Our root node should now exist", doesNodeExist);
 
         // Now attempt to read our state
-        //final String zkStatePath = stateManager.getZkStatePath();
         List<String> childrenNodes = zookeeperClient.getChildren(zkRootNodePath, false);
         logger.debug("Children Node Names {}", childrenNodes);
 

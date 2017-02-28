@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerStateManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -45,7 +45,7 @@ public class SidelineConsumer {
      * ConsumerStateManager - Used to manage persisting consumer state, and when the consumer is restarted,
      * loading the last known consumer state back in.
      */
-    private final ConsumerStateManager consumerStateManager;
+    private final PersistenceManager persistenceManager;
 
     /**
      * Since offsets are managed on a per partition basis, each topic/partition has its own ConsumerPartitionStateManagers
@@ -62,21 +62,21 @@ public class SidelineConsumer {
     /**
      * Constructor.
      * @param consumerConfig - Configuration for our consumer
-     * @param consumerStateManager - Implementation of ConsumerStateManager to use.
+     * @param persistenceManager - Implementation of PersistenceManager to use for storing consumer state.
      */
-    public SidelineConsumer(SidelineConsumerConfig consumerConfig, ConsumerStateManager consumerStateManager) {
+    public SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceManager persistenceManager) {
         this.consumerConfig = consumerConfig;
-        this.consumerStateManager = consumerStateManager;
+        this.persistenceManager = persistenceManager;
     }
 
     /**
      * This constructor is used to inject a mock KafkaConsumer for tests.
      * @param consumerConfig - Configuration for our consumer
-     * @param consumerStateManager - Implementation of ConsumerStateManager to use.
+     * @param persistenceManager - Implementation of PersistenceManager to use for storing consumer state.
      * @param kafkaConsumer - Inject a mock KafkaConsumer for tests.
      */
-    protected SidelineConsumer(SidelineConsumerConfig consumerConfig, ConsumerStateManager consumerStateManager, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
-        this(consumerConfig, consumerStateManager);
+    protected SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceManager persistenceManager, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+        this(consumerConfig, persistenceManager);
         this.kafkaConsumer = kafkaConsumer;
     }
 
@@ -92,18 +92,22 @@ public class SidelineConsumer {
         }
         hasCalledConnect = true;
 
-        // Connect our consumer state manager
-        consumerStateManager.init();
+        // Initialize our persistence manager.
+        persistenceManager.init();
 
         // If we have a starting offset, lets persist it
         if (startingState != null) {
             // If we persist it here, when sideline consumer starts up, it should start from this position.
             // Maybe this is a bit dirty and we should interact w/ SidelineConsumer instead?
-            consumerStateManager.persistState(startingState);
+            // TODO - If resuming a topology, will this overwrite existing state?
+            persistenceManager.persistConsumerState(getConsumerId(), startingState);
         }
 
-        // Load initial positions
-        final ConsumerState initialState = consumerStateManager.getState();
+        // Load initial positions, if null returned, use an empty ConsumerState instance.
+        ConsumerState initialState = persistenceManager.retrieveConsumerState(getConsumerId());
+        if (initialState == null) {
+            initialState = new ConsumerState();
+        }
 
         // If kafkaConsumer is not null, we'll create one.
         // If it is NOT null, we'll re-use the instance we got passed in from the constructor.
@@ -205,10 +209,10 @@ public class SidelineConsumer {
         }
 
         // Persist this state.
-        consumerStateManager.persistState(consumerState);
+        persistenceManager.persistConsumerState(getConsumerId(), consumerState);
 
-        // Return the state.
-        return consumerStateManager.getState();
+        // Return the state that was persisted.
+        return consumerState;
     }
 
     /**
@@ -241,8 +245,8 @@ public class SidelineConsumer {
         flushConsumerState();
 
         // Close out consumer state manager.
-        if (consumerStateManager != null) {
-            consumerStateManager.close();
+        if (persistenceManager != null) {
+            persistenceManager.close();
         }
 
         // Call close on underlying consumer
@@ -258,10 +262,10 @@ public class SidelineConsumer {
     }
 
     /**
-     * @return ConsumerStateManager instance.
+     * @return PersistenceManager instance.
      */
-    public ConsumerStateManager getConsumerStateManager() {
-        return consumerStateManager;
+    public PersistenceManager getPersistenceManager() {
+        return persistenceManager;
     }
 
     /**
@@ -302,5 +306,12 @@ public class SidelineConsumer {
             consumerState.setOffset(topicPartition, partitionStateManagers.get(topicPartition).lastFinishedOffset());
         }
         return consumerState;
+    }
+
+    /**
+     * @return - returns our unique consumer identifier.
+     */
+    public String getConsumerId() {
+        return getConsumerConfig().getConsumerId();
     }
 }

@@ -1,5 +1,7 @@
-package com.salesforce.storm.spout.sideline.kafka.consumerState;
+package com.salesforce.storm.spout.sideline.persistence;
 
+import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -14,16 +16,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * Persistence layer implemented using Zookeeper.
+ * Why Zookeeper?  Because its easy, and you most likely have it around.
  */
-public class ZookeeperConsumerStateManager implements ConsumerStateManager {
+public class ZookeeperPersistenceManager implements PersistenceManager {
     // Logger
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperConsumerStateManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 
     // Config
     private final String zkConnectionString;
     private final String zkRoot;
-    private final String consumerId;
 
     // Additional Config
     // TODO - Move into some kind of config/properties class/map/thing.
@@ -41,7 +43,7 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
      * @param zkServers - List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..]
      * @param zkRoot - Root node / prefix to write entries under.
      */
-    public ZookeeperConsumerStateManager(List<String> zkServers, String zkRoot, String consumerId) {
+    public ZookeeperPersistenceManager(List<String> zkServers, String zkRoot) {
         String serverPorts = "";
         for (String server : zkServers) {
             serverPorts = serverPorts + server + ",";
@@ -49,7 +51,6 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
         serverPorts = serverPorts.substring(0, serverPorts.length() - 1);
         this.zkConnectionString = serverPorts;
         this.zkRoot = zkRoot;
-        this.consumerId = consumerId;
     }
 
     /**
@@ -58,10 +59,9 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
      * @param zkConnectionStr - Comma deliminated list of zookeeper hosts in the format of: "host1:2181,host2:2181,.."
      * @param zkRoot - Root node / prefix to write entries under.
      */
-    public ZookeeperConsumerStateManager(String zkConnectionStr, String zkRoot, String consumerId) {
+    public ZookeeperPersistenceManager(String zkConnectionStr, String zkRoot) {
         this.zkConnectionString = zkConnectionStr;
         this.zkRoot = zkRoot;
-        this.consumerId = consumerId;
     }
 
     /**
@@ -77,27 +77,23 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
         }
     }
 
-    private CuratorFramework newCurator() throws Exception {
-        return CuratorFrameworkFactory.newClient(zkConnectionString, zkSessionTimeout, zkConnectionTimeout, new RetryNTimes(zkRetryAttempts, zkRetryInterval));
+    @Override
+    public void close() {
+        if (curator == null) {
+            return;
+        }
+        curator.close();
+        curator = null;
     }
 
-    /**
-     * Pass in the consumer state that you'd like persisted.
-     * In this implementation it will write the state in JSON format into zookeeper.
-     * @param consumerState - ConsumerState to be persisted.
-     */
     @Override
-    public void persistState(ConsumerState consumerState) {
-        writeJSON(getZkStatePath(), consumerState.getState());
+    public void persistConsumerState(final String consumerId, final ConsumerState consumerState) {
+        writeJSON(getZkStatePath(consumerId), consumerState.getState());
     }
 
-    /**
-     * Retrieves the consumer state from the persistence layer.
-     * @return
-     */
     @Override
-    public ConsumerState getState() {
-        Map<Object, Object> json = readJSON(getZkStatePath());
+    public ConsumerState retrieveConsumerState(final String consumerId) {
+        Map<Object, Object> json = readJSON(getZkStatePath(consumerId));
         logger.info("Read state from Zookeeper: {}", json);
 
         // Create new ConsumerState instance.
@@ -119,13 +115,34 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
         return consumerState;
     }
 
+    @Override
+    public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
+        // TODO
+    }
 
-    public void writeJSON(String path, Map data) {
+    @Override
+    public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
+        // TODO
+        return null;
+    }
+
+    private CuratorFramework newCurator() throws Exception {
+        return CuratorFrameworkFactory.newClient(zkConnectionString, zkSessionTimeout, zkConnectionTimeout, new RetryNTimes(zkRetryAttempts, zkRetryInterval));
+    }
+
+    /**
+     * @return - The full zookeeper path to where our consumer state is stored.
+     */
+    protected String getZkStatePath(final String consumerId) {
+        return new StringBuilder(getZkRoot()).append("/").append(consumerId).toString();
+    }
+
+    private void writeJSON(String path, Map data) {
         logger.info("Zookeeper Writing {} the data {}", path, data.toString());
         writeBytes(path, JSONValue.toJSONString(data).getBytes(Charset.forName("UTF-8")));
     }
 
-    public void writeBytes(String path, byte[] bytes) {
+    private void writeBytes(String path, byte[] bytes) {
         try {
             if (curator.checkExists().forPath(path) == null) {
                 curator.create()
@@ -140,7 +157,7 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
         }
     }
 
-    public Map<Object, Object> readJSON(String path) {
+    private Map<Object, Object> readJSON(String path) {
         try {
             byte[] bytes = readBytes(path);
             if (bytes == null) {
@@ -152,7 +169,7 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
         }
     }
 
-    public byte[] readBytes(String path) {
+    private byte[] readBytes(String path) {
         try {
             if (curator.checkExists().forPath(path) != null) {
                 return curator.getData().forPath(path);
@@ -164,30 +181,14 @@ public class ZookeeperConsumerStateManager implements ConsumerStateManager {
         }
     }
 
-    public void close() {
-        if (curator == null) {
-            return;
-        }
-        curator.close();
-        curator = null;
-    }
-
-    public String getZkConnectionString() {
-        return zkConnectionString;
-    }
-
+    /**
+     * @return - our configured zookeeper root path.
+     */
     public String getZkRoot() {
         return zkRoot;
     }
 
-    public String getConsumerId() {
-        return consumerId;
-    }
-
-    /**
-     * @return - The full zookeeper path to where our consumer state is stored.
-     */
-    public String getZkStatePath() {
-        return new StringBuilder(getZkRoot()).append("/").append(getConsumerId()).toString();
+    protected String getZkConnectionString() {
+        return zkConnectionString;
     }
 }

@@ -6,19 +6,16 @@ import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
-import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerStateManager;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ZookeeperConsumerStateManager;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.storm.shade.org.joda.time.DateTime;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
@@ -162,15 +159,14 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Construct SidelineConsumerConfig from incoming config
         // TODO: use values from incoming config
         final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-        final String consumerId = getConsumerId();
         final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-        final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, consumerId, topic);
+        final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
 
-        // Build our implementation of ConsumerStateManager
+        // Build our implementation of PersistenceManager
         // TODO: use values from incoming config
         final List<String> zkHosts = Lists.newArrayList("localhost:21811");
         final String zkRoot = "/storm-sideline-spouts";
-        final ConsumerStateManager stateManager = new ZookeeperConsumerStateManager(zkHosts, zkRoot, consumerId);
+        final PersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkHosts, zkRoot);
 
         // Do we need to set starting offset here somewhere?  Probably.
         // Either we need to set the offsets from the incoming config,
@@ -179,7 +175,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Create a consumer, but..
         // if one was injected via the constructor, just use it.
         if (sidelineConsumer == null) {
-            sidelineConsumer = new SidelineConsumer(consumerConfig, stateManager);
+            sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
         }
 
         // Connect the consumer
