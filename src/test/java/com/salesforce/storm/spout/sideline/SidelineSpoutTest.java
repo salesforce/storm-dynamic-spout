@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import scala.Int;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -40,12 +41,17 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 /**
- *
+ * End to End testing of Sideline Spout as a whole under various scenarios.
  */
 public class SidelineSpoutTest {
 
+    // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutTest.class);
+
+    // Our internal Kafka and Zookeeper Server, used to test against.
     private KafkaTestServer kafkaTestServer;
+
+    // Gets set to our randomly generated topic created for the test.
     private String topicName;
 
     /**
@@ -85,10 +91,16 @@ public class SidelineSpoutTest {
     }
 
     /**
-     * Simple end-2-end test.  Likely to change drastically as we make further progress.
+     * Our most simple end-2-end test.
+     * This test stands up our spout and ask it to consume from our kafka topic.
+     * We publish some data into kafka, and validate that when we call nextTuple() on
+     * our spout that we get out our messages that were published into kafka.
+     *
+     * This does not make use of any side lining logic, just simple consuming from the
+     * 'fire hose' topic.
      */
     @Test
-    public void doTest() throws InterruptedException {
+    public void doBasicConsumingTest() throws InterruptedException {
         // Define how many tuples we should push into the topic, and then consume back out.
         final int emitTupleCount = 10;
 
@@ -111,7 +123,7 @@ public class SidelineSpoutTest {
         assertTrue("SpoutOutputCollector should have no emissions", spoutOutputCollector.getEmissions().isEmpty());
 
         // Lets produce some data into the topic
-        produceRecords(emitTupleCount);
+        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
 
         // Now loop and get our tuples
         for (int x=0; x<emitTupleCount; x++) {
@@ -130,9 +142,56 @@ public class SidelineSpoutTest {
             // Should have some emissions
             assertEquals("SpoutOutputCollector should have emissions", (x + 1), spoutOutputCollector.getEmissions().size());
         }
-        logger.info("Emissions: {}", spoutOutputCollector.getEmissions());
+        // Now lets validate that what we got out of the spout is what we actually expected.
+        final List<SpoutEmission> spoutEmissions = spoutOutputCollector.getEmissions();
+        logger.info("Emissions: {}", spoutEmissions);
 
-        // Call next tuple a few more times
+        // These values may change
+        final String expectedStreamId = "default";
+        final Integer expectedTaskId = null;
+        final int expectedPartitionId = 0;
+        final String expectedConsumerId = "SidelineSpout-firehose";
+        int expectedMessageOffset = 0;
+
+        // Loop over what we produced into kafka
+        Iterator<SpoutEmission> emissionIterator = spoutEmissions.iterator();
+
+        for (ProducerRecord<byte[], byte[]> producedRecord: producedRecords) {
+            // Sanity check
+            assertTrue("Should have more emissions", emissionIterator.hasNext());
+
+            // Now find its corresponding tuple
+            final SpoutEmission spoutEmission = emissionIterator.next();
+            assertNotNull("Not null sanity check", spoutEmission);
+
+            // Validate Message Id
+            assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
+            assertTrue("Should be instance of TupleMessageId", spoutEmission.getMessageId() instanceof TupleMessageId);
+            final TupleMessageId messageId = (TupleMessageId) spoutEmission.getMessageId();
+            assertEquals("Expected Topic Name in MessageId", topicName, messageId.getTopic());
+            assertEquals("Expected PartitionId found", expectedPartitionId, messageId.getPartition());
+            assertEquals("Expected MessageOffset found", expectedMessageOffset, messageId.getOffset());
+            assertEquals("Expected Source Consumer Id", expectedConsumerId, messageId.getSrcConsumerId());
+
+            // Validate Tuple Contents
+            List<Object> tupleValues = spoutEmission.getTuple();
+            assertNotNull("Tuple Values should not be null", tupleValues);
+            assertFalse("Tuple Values should not be empty", tupleValues.isEmpty());
+
+            // For now the values in the tuple should be 'key' and 'value', this may change.
+            assertEquals("Should have 2 values in the tuple", 2, tupleValues.size());
+            assertEquals("Found expected 'key' value", new String(producedRecord.key(), Charsets.UTF_8), tupleValues.get(0));
+            assertEquals("Found expected 'value' value", new String(producedRecord.value(), Charsets.UTF_8), tupleValues.get(1));
+
+            // Validate Emit Parameters
+            assertEquals("Got expected streamId", expectedStreamId, spoutEmission.getStreamId());
+            assertEquals("Got expected taskId", expectedTaskId, spoutEmission.getTaskId());
+
+            // Increment expected messageoffset
+            expectedMessageOffset++;
+        }
+
+        // Call next tuple a few more times to make sure nothing unexpected shows up.
         for (int x=0; x<3; x++) {
             // This shouldn't get any more tuples
             spout.nextTuple();
