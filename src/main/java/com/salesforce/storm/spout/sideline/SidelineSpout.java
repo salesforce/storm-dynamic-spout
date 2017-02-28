@@ -8,6 +8,8 @@ import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.request.InMemoryManager;
 import com.salesforce.storm.spout.sideline.request.RequestManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -45,7 +47,8 @@ public class SidelineSpout extends BaseRichSpout {
     private StartingTrigger startingTrigger;
     private StoppingTrigger stoppingTrigger;
 
-    private RequestManager requestManager = new InMemoryManager();
+    // Stores state about starting/stopping sideline requests.
+    private PersistenceManager persistenceManager = new InMemoryPersistenceManager();
 
     /**
      * Determines which output stream to emit tuples out.
@@ -93,7 +96,7 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Store in request manager
-        requestManager.set(id, startingState);
+        persistenceManager.persistSidelineRequestState(id, startingState);
 
         // Add our new filter steps
         fireHoseSpout.getFilterChain().addSteps(id, startRequest.steps);
@@ -123,7 +126,7 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // This is the state that the VirtualSidelineSpout should start with
-        final ConsumerState startingState = requestManager.get(stopRequest.id);
+        final ConsumerState startingState = persistenceManager.retrieveSidelineRequestState(stopRequest.id);
 
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
