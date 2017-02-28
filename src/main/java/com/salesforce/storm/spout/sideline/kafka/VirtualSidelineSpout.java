@@ -97,11 +97,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Save an immutable clone of the config
         this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
-
         this.deserializer = deserializer;
-
         this.startingState = startingState;
-
         this.endingState = endingState;
     }
 
@@ -151,9 +148,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Set state to true.
         isOpened = true;
 
-        // TODO Remove
-        logger.info("Defined Starting State: {}", startingState);
-        logger.info("Defined Ending State: {}", endingState);
+        // For debugging purposes
+        logger.info("Open has Starting State: {}", startingState);
+        logger.info("Open has Ending State: {}", endingState);
 
         // If no failed msg retry manager was injected, then we should load it from the config
         if (failedMsgRetryManager == null) {
@@ -305,9 +302,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             throw new IllegalStateException("Consuming from a topic/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
         }
 
-        // If its >= the ending offset
+        // If its > the ending offset
         logger.info("Current Offset: {} EndingOffset: {}", currentOffset, endingOffset);
-        if (currentOffset >= endingOffset) {
+        if (currentOffset > endingOffset) {
             // Then
             return true;
         }

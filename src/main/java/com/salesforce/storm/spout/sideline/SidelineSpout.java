@@ -5,6 +5,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.request.InMemoryManager;
@@ -14,6 +15,7 @@ import com.salesforce.storm.spout.sideline.trigger.StartRequest;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StopRequest;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -73,10 +75,23 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
-        requestManager.set(id, fireHoseSpout.getCurrentState());
+        final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
+        // TODO - Talk to slemon about this.
+        // These are the committed offsets, meaning we have successfully processed them
+        // So we want to start at the next message in each partition
+        for (TopicPartition topicPartition: startingState.getTopicPartitions()) {
+            // Increment by 1?  This seems like a hack.
+            startingState.setOffset(topicPartition, startingState.getOffsetForTopicAndPartition(topicPartition) + 1);
+        }
+
+        // Store in request manager
+        requestManager.set(id, startingState);
+
+        // Add our new filter steps
         fireHoseSpout.getFilterChain().addSteps(id, startRequest.steps);
 
+        // Hit the start trigger
         startingTrigger.start(id);
     }
 
@@ -100,14 +115,23 @@ public class SidelineSpout extends BaseRichSpout {
             negatedSteps.add(new NegatingFilterChainStep(step));
         }
 
+        // This is the state that the VirtualSidelineSpout should start with
+        final ConsumerState startingState = requestManager.get(stopRequest.id);
+
+        // This is the state that the VirtualSidelineSpout should end with
+        final ConsumerState endingState = fireHoseSpout.getCurrentState();
+
+        logger.info("Starting VirtualSidelineSpout with starting state {}", startingState);
+        logger.info("Starting VirtualSidelineSpout with Ending state {}", endingState);
+
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
             deserializer,
             // Starting offset of the sideline request
-            requestManager.get(stopRequest.id),
+            startingState,
             // When the sideline request ends
-            fireHoseSpout.getCurrentState()
+            endingState
         );
         spout.setConsumerId(fireHoseSpout.getConsumerId() + "_" + stopRequest.id.toString());
         spout.getFilterChain().addSteps(stopRequest.id, negatedSteps);

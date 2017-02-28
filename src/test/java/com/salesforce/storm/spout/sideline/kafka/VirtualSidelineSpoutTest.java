@@ -309,7 +309,7 @@ public class VirtualSidelineSpoutTest {
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
-        final StaticMessageFilter filterStep = new StaticMessageFilter();
+        final StaticMessageFilter filterStep = new StaticMessageFilter(true);
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -320,8 +320,6 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.getFilterChain().addStep(new SidelineIdentifier(), filterStep);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
         virtualSidelineSpout.open();
-
-        filterStep.setShouldFilter(true);
 
         // Call nextTuple()
         KafkaMessage result = virtualSidelineSpout.nextTuple();
@@ -388,7 +386,7 @@ public class VirtualSidelineSpoutTest {
      * 1. publish a bunch of messages to a topic with a single partition.
      * 2. create a VirtualSideLineSpout where we explicitly define an ending offset less than the total msgs published
      * 3. Consume from the Spout (call nextTuple())
-     * 4. Ensure that we stop getting tuples back after we hit the ending state offset.
+     * 4. Ensure that we stop getting tuples back after we exceed the ending state offset.
      */
     @Test
     public void testNextTupleIgnoresMessagesThatHaveExceededEndingStatePositionSinglePartition() {
@@ -408,12 +406,16 @@ public class VirtualSidelineSpoutTest {
         // Create a ConsumerRecord who's offset is BEFORE the ending offset, this should pass
         final ConsumerRecord<byte[], byte[]> consumerRecordBeforeEnd = new ConsumerRecord<>(topic, partition, beforeOffset, "before-key".getBytes(Charsets.UTF_8), "before-value".getBytes(Charsets.UTF_8));
 
-        // These two should exceed the limit (since its >=) and nothing should be returned.
+        // This ConsumerRecord is EQUAL to the limit, and thus should pass.
         final ConsumerRecord<byte[], byte[]> consumerRecordEqualEnd = new ConsumerRecord<>(topic, partition, endingOffset, "equal-key".getBytes(Charsets.UTF_8), "equal-value".getBytes(Charsets.UTF_8));
+
+        // These two should exceed the limit (since its >) and nothing should be returned.
         final ConsumerRecord<byte[], byte[]> consumerRecordAfterEnd = new ConsumerRecord<>(topic, partition, afterOffset, "after-key".getBytes(Charsets.UTF_8), "after-value".getBytes(Charsets.UTF_8));
+        final ConsumerRecord<byte[], byte[]> consumerRecordAfterEnd2 = new ConsumerRecord<>(topic, partition, afterOffset + 1, "after-key2".getBytes(Charsets.UTF_8), "after-value2".getBytes(Charsets.UTF_8));
 
         // Define expected results returned
         final KafkaMessage expectedKafkaMessageBeforeEndingOffset = new KafkaMessage(new TupleMessageId(topic, partition, beforeOffset, "ConsumerId"), new Values("before-key", "before-value"));
+        final KafkaMessage expectedKafkaMessageEqualEndingOffset = new KafkaMessage(new TupleMessageId(topic, partition, endingOffset, "ConsumerId"), new Values("equal-key", "equal-value"));
 
         // Defining our Ending State
         final ConsumerState endingState = new ConsumerState();
@@ -426,14 +428,14 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
-        when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd);
+        when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer, null, endingState);
         virtualSidelineSpout.setConsumerId("ConsumerId");
         virtualSidelineSpout.open();
 
-        // Call nextTuple()
+        // Call nextTuple(), this should return our entry BEFORE the ending offset
         KafkaMessage result = virtualSidelineSpout.nextTuple();
 
         // Check result
@@ -446,13 +448,29 @@ public class VirtualSidelineSpoutTest {
         assertEquals("Found expected values", new Values("before-key", "before-value"), result.getValues());
         assertEquals("Got expected KafkaMessage", expectedKafkaMessageBeforeEndingOffset, result);
 
-        // Call nextTuple()
+        // Call nextTuple(), this offset should be equal to our ending offset
+        // Equal to the end offset should still get emitted.
         result = virtualSidelineSpout.nextTuple();
 
         // Check result
-        assertNull("Should be null because the offset is equal to the limit.", result);
+        assertNotNull("Should not be null because the offset is under the limit.", result);
 
-        // Call nextTuple()
+        // Validate it
+        assertEquals("Found expected topic", topic, result.getTopic());
+        assertEquals("Found expected partition", partition, result.getPartition());
+        assertEquals("Found expected offset", endingOffset, result.getOffset());
+        assertEquals("Found expected values", new Values("equal-key", "equal-value"), result.getValues());
+        assertEquals("Got expected KafkaMessage", expectedKafkaMessageEqualEndingOffset, result);
+
+        // Call nextTuple(), this offset should be greater than our ending offset
+        // and thus should return null.
+        result = virtualSidelineSpout.nextTuple();
+
+        // Check result
+        assertNull("Should be null because the offset is greater than the limit.", result);
+
+        // Call nextTuple(), again the offset hsould be greater than our ending offset
+        // and thus should return null.
         result = virtualSidelineSpout.nextTuple();
 
         // Check result
@@ -463,8 +481,8 @@ public class VirtualSidelineSpoutTest {
         verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
 
         // Validate that we called ack on the tuples that were filtered because they exceeded the max offset
-        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), endingOffset);
         verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), afterOffset);
+        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), afterOffset + 1);
     }
 
     /**
@@ -720,7 +738,8 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
-     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is equal to it.
+     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is equal to it,
+     * it should return false.
      */
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
@@ -747,7 +766,7 @@ public class VirtualSidelineSpoutTest {
 
         // Call our method & validate.
         final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-        assertTrue("Should be true", result);
+        assertFalse("Should be false", result);
     }
 
     /**
