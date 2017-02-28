@@ -20,6 +20,7 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,12 @@ public class SidelineSpout extends BaseRichSpout {
     private StoppingTrigger stoppingTrigger;
 
     private RequestManager requestManager = new InMemoryManager();
+
+    /**
+     * Determines which output stream to emit tuples out.
+     * Gets set during open().
+     */
+    private String outputStreamId = null;
 
     /**
      * Set a starting trigger on the spout for starting a sideline request
@@ -96,7 +103,7 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * Stops a sideline request
+     * Stops a sideline request.
      * @param stopRequest A representation of the request that is being stopped
      */
     public void stopSidelining(StopRequest stopRequest) {
@@ -142,7 +149,6 @@ public class SidelineSpout extends BaseRichSpout {
         stoppingTrigger.stop();
     }
 
-
     @Override
     public void open(Map toplogyConfig, TopologyContext context, SpoutOutputCollector collector) {
         // Save references.
@@ -155,6 +161,12 @@ public class SidelineSpout extends BaseRichSpout {
 
         // @TODO - Parse config, for now use these values
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+
+        // Determine output stream id
+        outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+        if (Strings.isNullOrEmpty(outputStreamId)) {
+            outputStreamId = Utils.DEFAULT_STREAM_ID;
+        }
 
         // Create the main spout for the topic
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), deserializer);
@@ -196,24 +208,22 @@ public class SidelineSpout extends BaseRichSpout {
             logger.info("Emitting MsgId[{}] - {}", kafkaMessage.getTupleMessageId(), kafkaMessage.getValues());
 
             // Dump to output collector.
-            outputCollector.emit(kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
+            outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
         }
     }
 
     /**
-     * Declare the output fields
+     * Declare the output fields.
 
      * @param declarer The output field declarer
      */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        final String outputStreamId = (String) topologyConfig.get(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+        // I'm unsure where declareOutputFields() gets called in the spout lifecycle, it may get called
+        // prior to open, in which case we need to shuffle some logic around.
 
-        if (!Strings.isNullOrEmpty(outputStreamId)) {
-            declarer.declareStream(outputStreamId, deserializer.getOutputFields());
-        } else {
-            declarer.declare(deserializer.getOutputFields());
-        }
+        // Handles both explicitly defined and default stream definitions.
+        declarer.declareStream(getOutputStreamId(), deserializer.getOutputFields());
     }
 
     @Override
@@ -258,5 +268,15 @@ public class SidelineSpout extends BaseRichSpout {
 
     public TopologyContext getTopologyContext() {
         return topologyContext;
+    }
+
+    /**
+     * @return - returns the stream that tuples will be emitted out.  This gets set during open().
+     */
+    public String getOutputStreamId() {
+        if (outputStreamId == null) {
+            throw new IllegalStateException("Open must be called before calling getOutputStreamId");
+        }
+        return outputStreamId;
     }
 }

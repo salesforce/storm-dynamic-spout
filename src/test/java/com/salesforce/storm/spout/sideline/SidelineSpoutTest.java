@@ -13,6 +13,9 @@ import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.sideline.trigger.StartRequest;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StopRequest;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.storm.generated.StreamInfo;
@@ -26,6 +29,7 @@ import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Int;
@@ -44,6 +48,7 @@ import static org.junit.Assert.*;
 /**
  * End to End testing of Sideline Spout as a whole under various scenarios.
  */
+@RunWith(DataProviderRunner.class)
 public class SidelineSpoutTest {
 
     // For logging within the test.
@@ -99,9 +104,13 @@ public class SidelineSpoutTest {
      *
      * This does not make use of any side lining logic, just simple consuming from the
      * 'fire hose' topic.
+     *
+     * We run this test multiple times using a DataProvider to test using various output
+     * stream Ids.
      */
     @Test
-    public void doBasicConsumingTest() throws InterruptedException {
+    @UseDataProvider("provideStreamIds")
+    public void doBasicConsumingTest(final String configuredStreamId, final String expectedStreamId) throws InterruptedException {
         // Define how many tuples we should push into the topic, and then consume back out.
         final int emitTupleCount = 10;
 
@@ -114,6 +123,12 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
 
+        // If we have a stream Id we should be configured with
+        if (configuredStreamId != null) {
+            // Drop it into our configuration.
+            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+        }
+
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
@@ -121,6 +136,9 @@ public class SidelineSpoutTest {
         // Create spout and call open
         final SidelineSpout spout = new SidelineSpout();
         spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Call next tuple, topic is empty, so should get nothing.
         spout.nextTuple();
@@ -164,7 +182,7 @@ public class SidelineSpoutTest {
             final SpoutEmission spoutEmission = emissionIterator.next();
 
             // validate it
-            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedMessageOffset);
+            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedMessageOffset, expectedStreamId);
 
             // Increment expected messageoffset for next iteration thru this loop.
             expectedMessageOffset++;
@@ -184,6 +202,20 @@ public class SidelineSpoutTest {
     }
 
     /**
+     * Provides various StreamIds to test emitting out of.
+     */
+    @DataProvider
+    public static Object[][] provideStreamIds() {
+        return new Object[][]{
+                // No explicitly defined streamId should use the default streamId.
+                { null, Utils.DEFAULT_STREAM_ID },
+
+                // Explicitly defined streamId should get used as is.
+                { "SpecialStreamId", "SpecialStreamId" }
+        };
+    }
+
+    /**
      * Our most basic End 2 End test that includes basic sidelining.
      * First we stand up our spout and produce some records into the kafka topic its consuming from.
      * Records 1 and 2 we get out of the spout.
@@ -192,9 +224,13 @@ public class SidelineSpoutTest {
      * Calling nextTuple() should get back the records that were previously skipped.
      * We produce additional records into the topic.
      * Call nextTuple() and we should get them out.
+     *
+     * We run this test multiple times using a DataProvider to test using various output
+     * stream Ids.
      */
     @Test
-    public void doTestWithSidelining() throws InterruptedException {
+    @UseDataProvider("provideStreamIds")
+    public void doTestWithSidelining(final String configuredStreamId, final String expectedStreamId) throws InterruptedException {
         // Define our ConsumerId prefix
         final String consumerIdPrefix = "SidelineSpout-";
 
@@ -203,6 +239,12 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+
+        // If we have a stream Id we should be configured with
+        if (configuredStreamId != null) {
+            // Drop it into our configuration.
+            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+        }
 
         // Create some stand-in mocks.
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -216,6 +258,9 @@ public class SidelineSpoutTest {
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Produce 3 records into kafka
         final int expectedOriginalRecordCount = 3;
@@ -250,7 +295,7 @@ public class SidelineSpoutTest {
             final SpoutEmission spoutEmission = emissionIterator.next();
 
             // validate it
-            validateEmission(producedRecord, spoutEmission, expectedFirehoseConsumerId, expectedMessageOffset);
+            validateEmission(producedRecord, spoutEmission, expectedFirehoseConsumerId, expectedMessageOffset, expectedStreamId);
 
             // Increment expected messageoffset for next iteration thru this loop.
             expectedMessageOffset++;
@@ -332,7 +377,7 @@ public class SidelineSpoutTest {
 
             // validate it
             // TODO - Need to get the SidelineConsumerId Here.
-            validateEmission(producedRecord, spoutEmission, "ThisShouldBeSidelineConsumerIdDunnoHowToGetThatOut", expectedMessageOffset);
+            validateEmission(producedRecord, spoutEmission, "ThisShouldBeSidelineConsumerIdDunnoHowToGetThatOut", expectedMessageOffset, expectedStreamId);
 
             // Increment expected messageoffset for next iteration thru this loop.
             expectedMessageOffset++;
@@ -373,7 +418,7 @@ public class SidelineSpoutTest {
             final SpoutEmission spoutEmission = emissionIterator.next();
 
             // validate it
-            validateEmission(producedRecord, spoutEmission, expectedFirehoseConsumerId, expectedMessageOffset);
+            validateEmission(producedRecord, spoutEmission, expectedFirehoseConsumerId, expectedMessageOffset, expectedStreamId);
 
             // Increment expected messageoffset for next iteration thru this loop.
             expectedMessageOffset++;
@@ -384,9 +429,8 @@ public class SidelineSpoutTest {
     }
 
     // Helper method
-    private void validateEmission(final ProducerRecord<byte[], byte[]> sourceProducerRecord, final SpoutEmission spoutEmission, final String expectedConsumerId, final int expectedMessageOffset) {
+    private void validateEmission(final ProducerRecord<byte[], byte[]> sourceProducerRecord, final SpoutEmission spoutEmission, final String expectedConsumerId, final int expectedMessageOffset, final String expectedOutputStreamId) {
         // These values may change
-        final String expectedStreamId = "default";
         final Integer expectedTaskId = null;
         final int expectedPartitionId = 0;
 
@@ -415,7 +459,7 @@ public class SidelineSpoutTest {
         assertEquals("Found expected 'value' value", new String(sourceProducerRecord.value(), Charsets.UTF_8), tupleValues.get(1));
 
         // Validate Emit Parameters
-        assertEquals("Got expected streamId", expectedStreamId, spoutEmission.getStreamId());
+        assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
         assertEquals("Got expected taskId", expectedTaskId, spoutEmission.getTaskId());
     }
 
@@ -430,6 +474,10 @@ public class SidelineSpoutTest {
         Thread.sleep(3000);
     }
 
+    /**
+     * Verifies that you do not define an output stream via the SidelineSpoutConfig
+     * declareOutputFields() method with default to using 'default' stream.
+     */
     @Test
     public void testDelcareOutputFields_without_stream() {
         final MockSpoutOutputCollector outputCollector = new MockSpoutOutputCollector();
@@ -457,8 +505,12 @@ public class SidelineSpoutTest {
         spout.close();
     }
 
+    /**
+     * Verifies that you can define an output stream via the SidelineSpoutConfig and it gets used
+     * in the declareOutputFields() method.
+     */
     @Test
-    public void testDelcareOutputFields_with_stream() {
+    public void testDeclareOutputFields_with_stream() {
         final String streamId = "foobar";
         final MockSpoutOutputCollector outputCollector = new MockSpoutOutputCollector();
         final TopologyContext context = new MockTopologyContext();
