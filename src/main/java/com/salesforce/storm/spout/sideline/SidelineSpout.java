@@ -10,8 +10,6 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
-import com.salesforce.storm.spout.sideline.request.InMemoryManager;
-import com.salesforce.storm.spout.sideline.request.RequestManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.StartRequest;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;

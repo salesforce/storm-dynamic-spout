@@ -88,14 +88,33 @@ public class ZookeeperPersistenceManager implements PersistenceManager {
 
     @Override
     public void persistConsumerState(final String consumerId, final ConsumerState consumerState) {
-        writeJSON(getZkStatePath(consumerId), consumerState.getState());
+        writeJSON(getZkConsumerStatePath(consumerId), consumerState.getState());
     }
 
     @Override
     public ConsumerState retrieveConsumerState(final String consumerId) {
-        Map<Object, Object> json = readJSON(getZkStatePath(consumerId));
+        Map<Object, Object> json = readJSON(getZkConsumerStatePath(consumerId));
         logger.info("Read state from Zookeeper: {}", json);
 
+        // Parse to ConsumerState
+        return parseJsonToConsumerState(json);
+    }
+
+    @Override
+    public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
+        writeJSON(getZkRequestStatePath(id.toString()), state.getState());
+    }
+
+    @Override
+    public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
+        Map<Object, Object> json = readJSON(getZkRequestStatePath(id.toString()));
+        logger.info("Read request state from Zookeeper: {}", json);
+
+        // Parse to ConsumerState
+        return parseJsonToConsumerState(json);
+    }
+
+    private ConsumerState parseJsonToConsumerState(final Map<Object, Object> json) {
         // Create new ConsumerState instance.
         final ConsumerState consumerState = new ConsumerState();
 
@@ -115,19 +134,6 @@ public class ZookeeperPersistenceManager implements PersistenceManager {
         return consumerState;
     }
 
-    @Override
-    public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
-        // TODO
-        throw new RuntimeException("Not yet implemented.");
-    }
-
-    @Override
-    public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
-        // TODO
-        //return null;
-        throw new RuntimeException("Not yet implemented.");
-    }
-
     private CuratorFramework newCurator() throws Exception {
         return CuratorFrameworkFactory.newClient(zkConnectionString, zkSessionTimeout, zkConnectionTimeout, new RetryNTimes(zkRetryAttempts, zkRetryInterval));
     }
@@ -135,8 +141,15 @@ public class ZookeeperPersistenceManager implements PersistenceManager {
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
-    protected String getZkStatePath(final String consumerId) {
-        return new StringBuilder(getZkRoot()).append("/").append(consumerId).toString();
+    protected String getZkConsumerStatePath(final String consumerId) {
+        return new StringBuilder(getZkRoot()).append("/consumers/").append(consumerId).toString();
+    }
+
+    /**
+     * @return - The full zookeeper path to where our consumer state is stored.
+     */
+    protected String getZkRequestStatePath(final String sidelineIdentifierStr) {
+        return new StringBuilder(getZkRoot()).append("/requests/").append(sidelineIdentifierStr).toString();
     }
 
     private void writeJSON(String path, Map data) {
