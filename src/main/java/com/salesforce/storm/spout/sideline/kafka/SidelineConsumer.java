@@ -10,10 +10,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ public class SidelineConsumer {
     /**
      * Used to control how often we flush state using PersistenceManager.
      */
+    private transient Clock clock = Clock.systemUTC();
     private long flushStateTimeMS = 15000;  // 15 seconds
     private long lastFlushTime = 0;
 
@@ -206,18 +208,20 @@ public class SidelineConsumer {
     }
 
     /**
-     * @TODO - I have a feeling DateTime.now() is potentially expensive (system call?)
-     *         lets replace it with something better.
+     * Conditionally flushes the consumer state to the persistence layer based
+     * on a time-out condition.
+     *
      * @return boolean - true if we flushed state, false if we didn't
      */
     private boolean timedFlushConsumerState() {
         // Set initial state if not defined
         if (lastFlushTime == 0) {
-            lastFlushTime = DateTime.now().getMillis();
+            lastFlushTime = Instant.now(getClock()).toEpochMilli();
             return false;
         }
 
-        if (DateTime.now().getMillis() - lastFlushTime >= flushStateTimeMS) {
+        // Determine if we should flush.
+        if (Instant.now(getClock()).toEpochMilli() - lastFlushTime >= flushStateTimeMS) {
             flushConsumerState();
             return true;
         }
@@ -344,5 +348,20 @@ public class SidelineConsumer {
      */
     public String getConsumerId() {
         return getConsumerConfig().getConsumerId();
+    }
+
+    /**
+     * @return - return our clock implementation.  Useful for testing.
+     */
+    protected Clock getClock() {
+        return clock;
+    }
+
+    /**
+     * For injecting a clock implementation.  Useful for testing.
+     * @param clock - the clock implementation to use.
+     */
+    protected void setClock(Clock clock) {
+        this.clock = clock;
     }
 }
