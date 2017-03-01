@@ -65,7 +65,6 @@ public class SidelineConsumer {
      * Used to control how often we flush state using PersistenceManager.
      */
     private transient Clock clock = Clock.systemUTC();
-    private long flushStateTimeMS = 15000;  // 15 seconds
     private long lastFlushTime = 0;
 
     /**
@@ -213,7 +212,7 @@ public class SidelineConsumer {
      *
      * @return boolean - true if we flushed state, false if we didn't
      */
-    private boolean timedFlushConsumerState() {
+    protected boolean timedFlushConsumerState() {
         // Set initial state if not defined
         if (lastFlushTime == 0) {
             lastFlushTime = Instant.now(getClock()).toEpochMilli();
@@ -221,8 +220,10 @@ public class SidelineConsumer {
         }
 
         // Determine if we should flush.
-        if (Instant.now(getClock()).toEpochMilli() - lastFlushTime >= flushStateTimeMS) {
+        final long currentTime = Instant.now(getClock()).toEpochMilli();
+        if (currentTime - lastFlushTime > getConsumerConfig().getFlushStateTimeMS()) {
             flushConsumerState();
+            lastFlushTime = currentTime;
             return true;
         }
         return false;
