@@ -64,15 +64,9 @@ public class SidelineSpout extends BaseRichSpout {
     private String outputStreamId = null;
 
     /**
-     * @Deprecated for other constructor.
-     */
-    @Deprecated
-    public SidelineSpout() {
-
-    }
-
-    /**
      * Constructor to create our SidelineSpout.
+     * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
+     *
      * @param topologyConfig - Our configuration.
      * @param deserializer - Deserializer to use.
      */

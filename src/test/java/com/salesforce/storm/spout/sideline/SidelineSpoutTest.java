@@ -532,7 +532,7 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testActivate() {
-        final SidelineSpout spout = new SidelineSpout();
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap(), new Utf8StringDeserializer());
         spout.activate();
     }
 
@@ -541,7 +541,7 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testDeactivate() {
-        final SidelineSpout spout = new SidelineSpout();
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap(), new Utf8StringDeserializer());
         spout.deactivate();
     }
 
