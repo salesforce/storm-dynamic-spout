@@ -25,6 +25,19 @@ public class SidelineSpoutConfig {
      */
     public static final String OUTPUT_STREAM_ID = "sideline_spout.output_stream_id";
 
+    /**
+     * (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format:
+     * ["zkhost1:2181", "zkhost2:2181", ...]
+     *
+     * Optional - Only required if you use the Zookeeper persistence implementation.
+     */
     public static final String PERSISTENCE_ZK_BROKERS = "sideline_spout.persistence.zk_brokers";
+
+    /**
+     * (String) Defines the root path to persist state under.
+     * Example: "/sideline-consumer-state"
+     *
+     * Optional - Only required if you use the Zookeeper persistence implementation.
+     */
     public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zk_root";
 }
