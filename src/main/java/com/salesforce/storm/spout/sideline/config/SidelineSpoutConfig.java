@@ -31,7 +31,7 @@ public class SidelineSpoutConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    public static final String PERSISTENCE_ZK_BROKERS = "sideline_spout.persistence.zk_brokers";
+    public static final String PERSISTENCE_ZK_SERVERS = "sideline_spout.persistence.zk_servers";
 
     /**
      * (String) Defines the root path to persist state under.
