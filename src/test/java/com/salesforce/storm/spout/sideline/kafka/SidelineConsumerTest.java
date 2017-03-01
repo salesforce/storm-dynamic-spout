@@ -845,6 +845,7 @@ public class SidelineConsumerTest {
 
         // Create our State Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.init();
 
         // Create a state in which we have already acked the first 5 messages
         ConsumerState consumerState = new ConsumerState();

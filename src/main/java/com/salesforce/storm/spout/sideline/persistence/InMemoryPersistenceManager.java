@@ -1,7 +1,5 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 
@@ -22,8 +20,13 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
 
     @Override
     public void init() {
-        storedConsumerState = new HashMap<>();
-        storedSidelineRequests = new HashMap<>();
+        // Allow non-destructive re-initin
+        if (storedConsumerState == null) {
+            storedConsumerState = new HashMap<>();
+        }
+        if (storedSidelineRequests == null) {
+            storedSidelineRequests = new HashMap<>();
+        }
     }
 
     @Override

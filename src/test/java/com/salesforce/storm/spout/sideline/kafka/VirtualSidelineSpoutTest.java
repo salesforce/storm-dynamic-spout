@@ -902,7 +902,8 @@ public class VirtualSidelineSpoutTest {
         defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
         defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, "MyTopic");
         defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
-
+        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
         return defaultConfig;
     }
 
