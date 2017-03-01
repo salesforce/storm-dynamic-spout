@@ -179,7 +179,7 @@ public class SidelineSpout extends BaseRichSpout {
         // Grab our ConsumerId prefix from the config
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         if (Strings.isNullOrEmpty(cfgConsumerIdPrefix)) {
-            throw new IllegalStateException(SidelineSpoutConfig.CONSUMER_ID_PREFIX + " configuration cannot be empty!");
+            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
         // init persistence manager.
