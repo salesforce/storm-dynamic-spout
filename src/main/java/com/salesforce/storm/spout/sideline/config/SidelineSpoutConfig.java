@@ -24,4 +24,7 @@ public class SidelineSpoutConfig {
      * (String) Defines the output stream id to use on the spout
      */
     public static final String OUTPUT_STREAM_ID = "sideline_spout.output_stream_id";
+
+    public static final String PERSISTENCE_ZK_BROKERS = "sideline_spout.persistence.zk_brokers";
+    public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zk_root";
 }

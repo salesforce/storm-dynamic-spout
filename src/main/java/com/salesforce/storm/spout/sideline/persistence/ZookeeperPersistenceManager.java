@@ -11,6 +11,7 @@ import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,7 @@ import java.util.Map;
  * Persistence layer implemented using Zookeeper.
  * Why Zookeeper?  Because its easy, and you most likely have it around.
  */
-public class ZookeeperPersistenceManager implements PersistenceManager {
+public class ZookeeperPersistenceManager implements PersistenceManager, Serializable {
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 

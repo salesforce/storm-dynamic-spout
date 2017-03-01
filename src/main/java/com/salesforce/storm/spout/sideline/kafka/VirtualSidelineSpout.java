@@ -162,8 +162,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Build our implementation of PersistenceManager
         // TODO: use values from incoming config
-        final List<String> zkHosts = Lists.newArrayList("localhost:21811");
-        final String zkRoot = "/storm-sideline-spouts";
+        //final List<String> zkHosts = Lists.newArrayList("localhost:21811");
+        final List<String> zkHosts = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.PERSISTENCE_ZK_BROKERS);
+        final String zkRoot = (String) getTopologyConfigItem(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
         final PersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkHosts, zkRoot);
 
         // Do we need to set starting offset here somewhere?  Probably.

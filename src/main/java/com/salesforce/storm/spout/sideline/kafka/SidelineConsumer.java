@@ -10,6 +10,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +59,12 @@ public class SidelineConsumer {
      */
     private ConsumerRecords<byte[], byte[]> buffer = null;
     private Iterator<ConsumerRecord<byte[], byte[]>> bufferIterator = null;
+
+    /**
+     * Used to control how often we flush state using PersistenceManager.
+     */
+    private long flushStateTimeMS = 15000;  // 15 seconds
+    private long lastFlushTime = 0;
 
     /**
      * Constructor.
@@ -183,7 +190,11 @@ public class SidelineConsumer {
      * @param offset - The offset that should be marked as completed.
      */
     public void commitOffset(TopicPartition topicPartition, long offset) {
+        // Track internally which offsets we've marked completed
         partitionStateManagers.get(topicPartition).finishOffset(offset);
+
+        // Occasionally flush
+        timedFlushConsumerState();
     }
 
     /**
@@ -192,6 +203,25 @@ public class SidelineConsumer {
      */
     public void commitOffset(ConsumerRecord consumerRecord) {
         commitOffset(new TopicPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
+    }
+
+    /**
+     * @TODO - I have a feeling DateTime.now() is potentially expensive (system call?)
+     *         lets replace it with something better.
+     * @return boolean - true if we flushed state, false if we didn't
+     */
+    private boolean timedFlushConsumerState() {
+        // Set initial state if not defined
+        if (lastFlushTime == 0) {
+            lastFlushTime = DateTime.now().getMillis();
+            return false;
+        }
+
+        if (DateTime.now().getMillis() - lastFlushTime >= flushStateTimeMS) {
+            flushConsumerState();
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -209,6 +239,7 @@ public class SidelineConsumer {
         }
 
         // Persist this state.
+        logger.info("Flushing consumer state {}", consumerState);
         persistenceManager.persistConsumerState(getConsumerId(), consumerState);
 
         // Return the state that was persisted.

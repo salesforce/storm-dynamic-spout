@@ -7,7 +7,6 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -38,7 +37,7 @@ public class SidelineSpout extends BaseRichSpout {
     private Map topologyConfig;
     private SpoutOutputCollector outputCollector;
     private TopologyContext topologyContext;
-    private Deserializer deserializer = new Utf8StringDeserializer();
+    private Deserializer deserializer;
     private transient ConcurrentLinkedDeque<KafkaMessage> queue;
     private VirtualSidelineSpout fireHoseSpout;
     private SpoutCoordinator coordinator;
@@ -47,6 +46,15 @@ public class SidelineSpout extends BaseRichSpout {
 
     // Stores state about starting/stopping sideline requests.
     private PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+
+    public SidelineSpout() {
+
+    }
+
+    public SidelineSpout(Map topologyConfig, Deserializer deserializer) {
+        this.topologyConfig = topologyConfig;
+        this.deserializer = deserializer;
+    }
 
     /**
      * Determines which output stream to emit tuples out.
@@ -276,7 +284,13 @@ public class SidelineSpout extends BaseRichSpout {
      */
     public String getOutputStreamId() {
         if (outputStreamId == null) {
-            throw new IllegalStateException("Open must be called before calling getOutputStreamId");
+            if (topologyConfig == null) {
+                throw new IllegalStateException("Open must be called before calling getOutputStreamId");
+            }
+            outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+            if (Strings.isNullOrEmpty(outputStreamId)) {
+                outputStreamId = Utils.DEFAULT_STREAM_ID;
+            }
         }
         return outputStreamId;
     }
