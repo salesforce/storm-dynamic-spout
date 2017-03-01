@@ -37,30 +37,49 @@ public class SidelineSpout extends BaseRichSpout {
     private Map topologyConfig;
     private SpoutOutputCollector outputCollector;
     private TopologyContext topologyContext;
-    private Deserializer deserializer;
     private transient ConcurrentLinkedDeque<KafkaMessage> queue;
     private VirtualSidelineSpout fireHoseSpout;
     private SpoutCoordinator coordinator;
     private StartingTrigger startingTrigger;
     private StoppingTrigger stoppingTrigger;
 
-    // Stores state about starting/stopping sideline requests.
+    /**
+     * Handles deserializing messages from Kafka.
+     * @TODO - create from config.  create new instance for every VirtualSidelineSpout.
+     *         right now we are sharing the same instance between all of them, which requires
+     *         the implementation to be thread safe.
+     */
+    private Deserializer deserializer;
+
+    /**
+     * Stores state about starting/stopping sideline requests.
+     * @TODO - create from config.
+     */
     private PersistenceManager persistenceManager = new InMemoryPersistenceManager();
-
-    public SidelineSpout() {
-
-    }
-
-    public SidelineSpout(Map topologyConfig, Deserializer deserializer) {
-        this.topologyConfig = topologyConfig;
-        this.deserializer = deserializer;
-    }
 
     /**
      * Determines which output stream to emit tuples out.
      * Gets set during open().
      */
     private String outputStreamId = null;
+
+    /**
+     * @Deprecated for other constructor.
+     */
+    @Deprecated
+    public SidelineSpout() {
+
+    }
+
+    /**
+     * Constructor to create our SidelineSpout.
+     * @param topologyConfig - Our configuration.
+     * @param deserializer - Deserializer to use.
+     */
+    public SidelineSpout(Map topologyConfig, Deserializer deserializer) {
+        this.topologyConfig = topologyConfig;
+        this.deserializer = deserializer;
+    }
 
     /**
      * Set a starting trigger on the spout for starting a sideline request
@@ -168,16 +187,16 @@ public class SidelineSpout extends BaseRichSpout {
         // Setup our concurrent queue.
         this.queue = new ConcurrentLinkedDeque<>();
 
-        // @TODO - Parse config, for now use these values
+        // Grab our ConsumerId prefix from the config
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
-
-        // Determine output stream id
-        outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
-        if (Strings.isNullOrEmpty(outputStreamId)) {
-            outputStreamId = Utils.DEFAULT_STREAM_ID;
+        if (Strings.isNullOrEmpty(cfgConsumerIdPrefix)) {
+            throw new IllegalStateException(SidelineSpoutConfig.CONSUMER_ID_PREFIX + " configuration cannot be empty!");
         }
 
-        // Create the main spout for the topic
+        // init persistence manager.
+        persistenceManager.init();
+
+        // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), deserializer);
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
@@ -238,7 +257,10 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void close() {
         logger.info("Stopping the coordinator and closing all spouts");
-        coordinator.stop();
+        if (coordinator != null) {
+            coordinator.stop();
+            coordinator = null;
+        }
     }
 
     @Override
@@ -280,12 +302,12 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * @return - returns the stream that tuples will be emitted out.  This gets set during open().
+     * @return - returns the stream that tuples will be emitted out.
      */
     public String getOutputStreamId() {
         if (outputStreamId == null) {
             if (topologyConfig == null) {
-                throw new IllegalStateException("Open must be called before calling getOutputStreamId");
+                throw new IllegalStateException("Missing required configuration!  TopologyConfig not defined!");
             }
             outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {

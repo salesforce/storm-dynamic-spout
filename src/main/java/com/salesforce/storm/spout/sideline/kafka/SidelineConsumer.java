@@ -239,7 +239,7 @@ public class SidelineConsumer {
         }
 
         // Persist this state.
-        logger.info("Flushing consumer state {}", consumerState);
+        logger.debug("Flushing consumer state {}", consumerState);
         persistenceManager.persistConsumerState(getConsumerId(), consumerState);
 
         // Return the state that was persisted.
