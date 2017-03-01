@@ -293,7 +293,7 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * @return - returns the stream that tuples will be emitted out.
      */
-    public String getOutputStreamId() {
+    protected String getOutputStreamId() {
         if (outputStreamId == null) {
             if (topologyConfig == null) {
                 throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
@@ -306,7 +306,10 @@ public class SidelineSpout extends BaseRichSpout {
         return outputStreamId;
     }
 
-    private Deserializer createNewDeserializerInstance() {
+    /**
+     * @return returns a new instance of the configured deserializer.
+     */
+    protected Deserializer createNewDeserializerInstance() {
         if (deserializerClass == null) {
             final String classStr = (String) getTopologyConfigItem(SidelineSpoutConfig.DESERIALIZER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
