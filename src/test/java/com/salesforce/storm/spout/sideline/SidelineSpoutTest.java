@@ -127,7 +127,7 @@ public class SidelineSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final SidelineSpout spout = new SidelineSpout(config, new Utf8StringDeserializer());
+        final SidelineSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -244,7 +244,7 @@ public class SidelineSpoutTest {
         final StaticTrigger staticTrigger = new StaticTrigger();
 
         // Create our spout, add references to our static trigger, and call open().
-        final SidelineSpout spout = new SidelineSpout(config, new Utf8StringDeserializer());
+        final SidelineSpout spout = new SidelineSpout(config);
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -476,7 +476,7 @@ public class SidelineSpoutTest {
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but don't call open
-        final SidelineSpout spout = new SidelineSpout(config, new Utf8StringDeserializer());
+        final SidelineSpout spout = new SidelineSpout(config);
 
         // call declareOutputFields
         spout.declareOutputFields(declarer);
@@ -505,7 +505,7 @@ public class SidelineSpoutTest {
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but do not call open.
-        final SidelineSpout spout = new SidelineSpout(config, new Utf8StringDeserializer());
+        final SidelineSpout spout = new SidelineSpout(config);
 
         // call declareOutputFields
         spout.declareOutputFields(declarer);
@@ -526,7 +526,7 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testActivate() {
-        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap(), new Utf8StringDeserializer());
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
         spout.activate();
     }
 
@@ -535,7 +535,7 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testDeactivate() {
-        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap(), new Utf8StringDeserializer());
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
         spout.deactivate();
     }
 
@@ -566,6 +566,7 @@ public class SidelineSpoutTest {
 
     private Map<String, Object> getDefaultConfig(final String consumerIdPrefix, final String configuredStreamId) {
         final Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));

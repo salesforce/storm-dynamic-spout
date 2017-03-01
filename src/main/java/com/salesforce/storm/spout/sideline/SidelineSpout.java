@@ -44,12 +44,9 @@ public class SidelineSpout extends BaseRichSpout {
     private StoppingTrigger stoppingTrigger;
 
     /**
-     * Handles deserializing messages from Kafka.
-     * @TODO - create from config.  create new instance for every VirtualSidelineSpout.
-     *         right now we are sharing the same instance between all of them, which requires
-     *         the implementation to be thread safe.
+     * Class instance of our Deserializer.
      */
-    private Deserializer deserializer;
+    private Class<? extends Deserializer> deserializerClass;
 
     /**
      * Stores state about starting/stopping sideline requests.
@@ -68,11 +65,9 @@ public class SidelineSpout extends BaseRichSpout {
      * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
      *
      * @param topologyConfig - Our configuration.
-     * @param deserializer - Deserializer to use.
      */
-    public SidelineSpout(Map topologyConfig, Deserializer deserializer) {
+    public SidelineSpout(Map topologyConfig) {
         this.topologyConfig = topologyConfig;
-        this.deserializer = deserializer;
     }
 
     /**
@@ -156,7 +151,7 @@ public class SidelineSpout extends BaseRichSpout {
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
-            deserializer,
+            createNewDeserializerInstance(),
             // Starting offset of the sideline request
             startingState,
             // When the sideline request ends
@@ -191,7 +186,7 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceManager.init();
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), deserializer);
+        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), createNewDeserializerInstance());
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
         // Setting up thread to call nextTuple
@@ -245,7 +240,7 @@ public class SidelineSpout extends BaseRichSpout {
         // prior to open, in which case we need to shuffle some logic around.
 
         // Handles both explicitly defined and default stream definitions.
-        declarer.declareStream(getOutputStreamId(), deserializer.getOutputFields());
+        declarer.declareStream(getOutputStreamId(), createNewDeserializerInstance().getOutputFields());
     }
 
     @Override
@@ -301,7 +296,7 @@ public class SidelineSpout extends BaseRichSpout {
     public String getOutputStreamId() {
         if (outputStreamId == null) {
             if (topologyConfig == null) {
-                throw new IllegalStateException("Missing required configuration!  TopologyConfig not defined!");
+                throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
             }
             outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {
@@ -309,5 +304,25 @@ public class SidelineSpout extends BaseRichSpout {
             }
         }
         return outputStreamId;
+    }
+
+    private Deserializer createNewDeserializerInstance() {
+        if (deserializerClass == null) {
+            final String classStr = (String) getTopologyConfigItem(SidelineSpoutConfig.DESERIALIZER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.DESERIALIZER_CLASS);
+            }
+
+            try {
+                deserializerClass = (Class<? extends Deserializer>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return deserializerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
