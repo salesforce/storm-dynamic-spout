@@ -91,7 +91,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Save an immutable clone of the config
         this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+
+        // Save deserializer instance
         this.deserializer = deserializer;
+
+        // Save state
         this.startingState = startingState;
         this.endingState = endingState;
     }

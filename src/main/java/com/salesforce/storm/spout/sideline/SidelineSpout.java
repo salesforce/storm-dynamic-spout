@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -47,6 +48,11 @@ public class SidelineSpout extends BaseRichSpout {
      * Class instance of our Deserializer.
      */
     private Class<? extends Deserializer> deserializerClass;
+
+    /**
+     * Class instance of our FailedMsgRetryManager.
+     */
+    private Class<? extends FailedMsgRetryManager> failedMsgRetryManagerClass;
 
     /**
      * Stores state about starting/stopping sideline requests.
@@ -324,6 +330,29 @@ public class SidelineSpout extends BaseRichSpout {
         }
         try {
             return deserializerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return returns a new instance of the configured deserializer.
+     */
+    protected FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
+        if (failedMsgRetryManagerClass == null) {
+            final String classStr = (String) getTopologyConfigItem(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
+            }
+
+            try {
+                failedMsgRetryManagerClass = (Class<? extends FailedMsgRetryManager>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return failedMsgRetryManagerClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }
