@@ -8,6 +8,7 @@ import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -68,7 +69,7 @@ public class SidelineSpout extends BaseRichSpout {
      * @param topologyConfig - Our configuration.
      */
     public SidelineSpout(Map topologyConfig) {
-        // Save off config
+        // Save off config.
         this.topologyConfig = topologyConfig;
 
         // Create our factory manager, which must be serializable.
@@ -157,6 +158,7 @@ public class SidelineSpout extends BaseRichSpout {
             topologyConfig,
             topologyContext,
             factoryManager.createNewDeserializerInstance(),
+            new NoRetryFailedMsgRetryManager(),
             // Starting offset of the sideline request
             startingState,
             // When the sideline request ends
@@ -191,7 +193,7 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceManager.init();
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance());
+        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance());
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
         // Setting up thread to call nextTuple

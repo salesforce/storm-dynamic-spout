@@ -10,6 +10,7 @@ import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -60,7 +61,7 @@ public class VirtualSidelineSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSidelineSpout.getTopologyConfig());
@@ -87,7 +88,7 @@ public class VirtualSidelineSpoutTest {
         expectedTopologyConfig.put("Key3", "Value3");
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, new MockTopologyContext(), new Utf8StringDeserializer());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSidelineSpout.getTopologyConfig());
@@ -115,7 +116,7 @@ public class VirtualSidelineSpoutTest {
         final String expectedConsumerId = "myConsumerId";
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
 
         // Set it
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
@@ -130,7 +131,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testSetAndGetIsFinished() {
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
 
         // Should default to false
         assertFalse("Should default to false", virtualSidelineSpout.isFinished());
@@ -152,7 +153,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
 
         // Call it once.
@@ -179,7 +180,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
 
         // Call open
@@ -208,7 +209,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -262,7 +263,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), nullDeserializer, mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), nullDeserializer, new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -315,7 +316,9 @@ public class VirtualSidelineSpoutTest {
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
                 topologyConfig,
                 new MockTopologyContext(),
-                stringDeserializer, mockSidelineConsumer
+                stringDeserializer,
+                new NoRetryFailedMsgRetryManager(),
+                mockSidelineConsumer
         );
         virtualSidelineSpout.getFilterChain().addStep(new SidelineIdentifier(), filterStep);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
@@ -364,7 +367,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
         virtualSidelineSpout.open();
 
@@ -547,9 +550,8 @@ public class VirtualSidelineSpoutTest {
         when(mockRetryManager.nextFailedMessageToRetry()).thenReturn(null, expectedKafkaMessage.getTupleMessageId(), null);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockRetryManager, mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
-        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -632,9 +634,8 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
-        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
         virtualSidelineSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -659,7 +660,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -688,9 +689,8 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
-        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
         virtualSidelineSpout.open();
 
         // Never called yet
@@ -721,7 +721,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -880,7 +880,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -920,7 +920,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -977,9 +977,8 @@ public class VirtualSidelineSpoutTest {
         FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockRetryManager, mockSidelineConsumer);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
-        virtualSidelineSpout.setFailedMsgRetryManager(mockRetryManager);
         virtualSidelineSpout.open();
 
         // Now call fail on this

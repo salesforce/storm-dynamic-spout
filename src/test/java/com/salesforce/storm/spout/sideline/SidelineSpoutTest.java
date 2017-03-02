@@ -572,6 +572,7 @@ public class SidelineSpoutTest {
     private Map<String, Object> getDefaultConfig(final String consumerIdPrefix, final String configuredStreamId) {
         final Map<String, Object> config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
+        config.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager");
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));

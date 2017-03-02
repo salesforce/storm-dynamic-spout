@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
@@ -64,18 +65,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private FailedMsgRetryManager failedMsgRetryManager;
     private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer) {
-        this(topologyConfig, topologyContext, deserializer, null, null);
-    }
-
-    /**
-     * Constructor.
-     * @param topologyConfig
-     * @param topologyContext
-     * @param startingState
-     */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, ConsumerState startingState) {
-        this(topologyConfig, topologyContext, deserializer, startingState, null);
+    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager) {
+        this(topologyConfig, topologyContext, deserializer, failedMsgRetryManager,null, null);
     }
 
     /**
@@ -85,7 +76,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param startingState
      * @param endingState
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -94,6 +85,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Save deserializer instance
         this.deserializer = deserializer;
+
+        // Save failed msg retry manager instance.
+        this.failedMsgRetryManager = failedMsgRetryManager;
 
         // Save state
         this.startingState = startingState;
@@ -108,8 +102,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param deserializer - Injected deserializer instance, typically used for testing.
      * @param sidelineConsumer
      */
-    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, SidelineConsumer sidelineConsumer) {
-        this(config, topologyContext, deserializer);
+    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, SidelineConsumer sidelineConsumer) {
+        this(config, topologyContext, deserializer, failedMsgRetryManager);
         this.sidelineConsumer = sidelineConsumer;
     }
 
@@ -122,16 +116,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param sidelineConsumer
      */
     protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
-        this(config, topologyContext, deserializer, startingState, endingState);
+        this(config, topologyContext, deserializer, new NoRetryFailedMsgRetryManager(), startingState, endingState);
         this.sidelineConsumer = sidelineConsumer;
-    }
-
-    /**
-     * Used to inject a mock RetryManager during test.
-     * @param failedMsgRetryManager
-     */
-    protected void setFailedMsgRetryManager(FailedMsgRetryManager failedMsgRetryManager) {
-        this.failedMsgRetryManager = failedMsgRetryManager;
     }
 
     /**
@@ -150,11 +136,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         logger.info("Open has Starting State: {}", startingState);
         logger.info("Open has Ending State: {}", endingState);
 
-        // If no failed msg retry manager was injected, then we should load it from the config
-        if (failedMsgRetryManager == null) {
-            // TODO: use appropriate manager, for now use no retry manager.
-            failedMsgRetryManager = new NoRetryFailedMsgRetryManager();
-        }
+        // Call prepare on failed msg retry manager instance.
         failedMsgRetryManager.prepare(topologyConfig);
 
         // Construct SidelineConsumerConfig from incoming config
