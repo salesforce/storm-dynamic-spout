@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.curator.framework.CuratorFramework;
@@ -39,18 +40,17 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     private CuratorFramework curator;
 
     /**
-     * Constructor.
+     * Initialization method.
+     * @param topologyConfig - the topology config.
      */
-    public ZookeeperPersistenceManager() {
-    }
+    public void open(Map topologyConfig) {
+         // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
+        final List<String> zkServers = (List<String>) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS);
 
-    /**
-     * Constructor.
-     *
-     * @param zkServers - List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..]
-     * @param zkRoot - Root node / prefix to write entries under.
-     */
-    public ZookeeperPersistenceManager(List<String> zkServers, String zkRoot) {
+        // Root node / prefix to write entries under.
+        final String zkRoot = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
+
+        // Build out our bits and pieces.
         String serverPorts = "";
         for (String server : zkServers) {
             serverPorts = serverPorts + server + ",";
@@ -58,24 +58,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         serverPorts = serverPorts.substring(0, serverPorts.length() - 1);
         this.zkConnectionString = serverPorts;
         this.zkRoot = zkRoot;
-    }
 
-    /**
-     * Constructor.
-     *
-     * @param zkConnectionStr - Comma deliminated list of zookeeper hosts in the format of: "host1:2181,host2:2181,.."
-     * @param zkRoot - Root node / prefix to write entries under.
-     */
-    public ZookeeperPersistenceManager(String zkConnectionStr, String zkRoot) {
-        this.zkConnectionString = zkConnectionStr;
-        this.zkRoot = zkRoot;
-    }
-
-    /**
-     * Initializes the ConsumerStateManager.
-     * In this particular implementation it connects to our zookeeper hosts using the Curator framework.
-     */
-    public void init() {
         try {
             curator = newCurator();
             curator.start();
@@ -95,11 +78,19 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     @Override
     public void persistConsumerState(final String consumerId, final ConsumerState consumerState) {
+        // Validate we're in a state that can be used.
+        verifyHasBeenOpened();
+
+        // Persist!
         writeJSON(getZkConsumerStatePath(consumerId), consumerState.getState());
     }
 
     @Override
     public ConsumerState retrieveConsumerState(final String consumerId) {
+        // Validate we're in a state that can be used.
+        verifyHasBeenOpened();
+
+        // Read!
         Map<Object, Object> json = readJSON(getZkConsumerStatePath(consumerId));
         logger.info("Read state from Zookeeper: {}", json);
 
@@ -109,11 +100,19 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     @Override
     public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
+        // Validate we're in a state that can be used.
+        verifyHasBeenOpened();
+
+        // Persist!
         writeJSON(getZkRequestStatePath(id.toString()), state.getState());
     }
 
     @Override
     public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
+        // Validate we're in a state that can be used.
+        verifyHasBeenOpened();
+
+        // Read!
         Map<Object, Object> json = readJSON(getZkRequestStatePath(id.toString()));
         logger.info("Read request state from Zookeeper: {}", json);
 
@@ -212,5 +211,14 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     protected String getZkConnectionString() {
         return zkConnectionString;
+    }
+
+    /**
+     * Makes sure we don't try to interact w/ this instance unless its been properly opened.
+     */
+    private void verifyHasBeenOpened() {
+        if (curator == null) {
+            throw new IllegalStateException("Instance has not been initialized via open() call yet!");
+        }
     }
 }

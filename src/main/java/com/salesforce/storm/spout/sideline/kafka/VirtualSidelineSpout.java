@@ -145,12 +145,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
         final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
 
-        // Build our implementation of PersistenceManager
-        // TODO: use values from incoming config
-        //final List<String> zkHosts = Lists.newArrayList("localhost:21811");
-        final List<String> zkHosts = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS);
-        final String zkRoot = (String) getTopologyConfigItem(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
-        final PersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkHosts, zkRoot);
+        // Build our implementation of PersistenceManager and open() it.
+        final PersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(getTopologyConfig());
 
         // Do we need to set starting offset here somewhere?  Probably.
         // Either we need to set the offsets from the incoming config,

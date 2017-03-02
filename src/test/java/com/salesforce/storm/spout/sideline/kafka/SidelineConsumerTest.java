@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
@@ -97,6 +98,7 @@ public class SidelineConsumerTest {
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
 
         // Call constructor
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
@@ -213,14 +215,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Make sure init was not called in the constructor
-        verify(mockPersistenceManager, never()).init();
-
         // Now call connect
         sidelineConsumer.connect(null);
-
-        // Make sure init was called in the connect
-        verify(mockPersistenceManager, times(1)).init();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
@@ -268,14 +264,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Make sure init was not called in the constructor
-        verify(mockPersistenceManager, never()).init();
-
         // Now call connect
         sidelineConsumer.connect(null);
-
-        // Make sure init was called in the connect
-        verify(mockPersistenceManager, times(1)).init();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -327,14 +317,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Make sure init was not called in the constructor
-        verify(mockPersistenceManager, never()).init();
-
         // Now call connect
         sidelineConsumer.connect(null);
-
-        // Make sure init was called in the connect
-        verify(mockPersistenceManager, times(1)).init();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
@@ -398,14 +382,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Make sure init was not called in the constructor
-        verify(mockPersistenceManager, never()).init();
-
         // Now call connect
         sidelineConsumer.connect(null);
-
-        // Make sure init was called in the connect
-        verify(mockPersistenceManager, times(1)).init();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -475,14 +453,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Make sure init was not called in the constructor
-        verify(mockPersistenceManager, never()).init();
-
         // Now call connect
         sidelineConsumer.connect(null);
-
-        // Make sure init was called in the connect
-        verify(mockPersistenceManager, times(1)).init();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -513,8 +485,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
@@ -542,8 +518,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(expectedTopicName);
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
@@ -571,8 +551,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
@@ -615,8 +599,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(expectedTopicName);
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
@@ -688,8 +676,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
@@ -732,8 +724,12 @@ public class SidelineConsumerTest {
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
         config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
@@ -779,8 +775,12 @@ public class SidelineConsumerTest {
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
         config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
@@ -837,8 +837,12 @@ public class SidelineConsumerTest {
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
         config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Read from topic, verify we get what we expect
@@ -919,9 +923,9 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
-        // Create our State Manager
+        // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
-        persistenceManager.init();
+        persistenceManager.open(Maps.newHashMap());
 
         // Create a state in which we have already acked the first 5 messages
         ConsumerState consumerState = new ConsumerState();
@@ -974,8 +978,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1092,8 +1100,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1167,8 +1179,12 @@ public class SidelineConsumerTest {
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
         // Create our consumer
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, new InMemoryPersistenceManager());
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.connect(null);
 
         // Ask the underlying consumer for our assigned partitions.

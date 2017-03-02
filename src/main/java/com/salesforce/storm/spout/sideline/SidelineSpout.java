@@ -189,8 +189,8 @@ public class SidelineSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
-        // init persistence manager.
-        persistenceManager.init();
+        // open() persistence manager passing appropriate configuration.
+        persistenceManager.open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance());

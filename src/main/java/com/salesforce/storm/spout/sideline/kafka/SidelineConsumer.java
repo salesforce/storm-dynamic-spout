@@ -100,9 +100,6 @@ public class SidelineConsumer {
         }
         hasCalledConnect = true;
 
-        // Initialize our persistence manager.
-        persistenceManager.init();
-
         // If we have a starting offset, lets persist it
         if (startingState != null) {
             // If we persist it here, when sideline consumer starts up, it should start from this position.

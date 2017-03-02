@@ -19,7 +19,7 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
     private Map<SidelineIdentifier, ConsumerState> storedSidelineRequests;
 
     @Override
-    public void init() {
+    public void open(Map topologyConfig) {
         // Allow non-destructive re-initin
         if (storedConsumerState == null) {
             storedConsumerState = new HashMap<>();

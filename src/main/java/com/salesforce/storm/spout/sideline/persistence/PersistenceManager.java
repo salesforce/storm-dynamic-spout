@@ -3,6 +3,8 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 
+import java.util.Map;
+
 /**
  * Interface that controls all persistence.
  */
@@ -12,7 +14,7 @@ public interface PersistenceManager {
      * the implementation.  By contract, this will be called once prior to calling
      * persistState() or getState().
      */
-    public void init();
+    public void open(Map topologyConfig);
 
     /**
      * Performs any cleanup required for the implementation on shutdown.

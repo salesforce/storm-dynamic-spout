@@ -2,6 +2,8 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.curator.test.InstanceSpec;
@@ -21,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -59,27 +62,7 @@ public class ZookeeperPersistenceManagerTest {
      * Tests that the constructor does what we think.
      */
     @Test
-    public void testConstructor() {
-        final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
-        final String expectedZkRoot = "/myRoot";
-        final String expectedConsumerId = "MyConsumerId";
-        final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
-        final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
-
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(expectedZkConnectionString, expectedZkRoot);
-        assertEquals("Unexpected zk connection string", expectedZkConnectionString, persistenceManager.getZkConnectionString());
-        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
-
-        // Validate that getZkXXXXStatePath returns the expected value
-        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId));
-        assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceManager.getZkRequestStatePath(expectedConsumerId));
-    }
-
-    /**
-     * Tests that the constructor does what we think.
-     */
-    @Test
-    public void testListConstructor() {
+    public void testOpen() {
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
         final String expectedZkRoot = "/myRoot";
@@ -87,7 +70,14 @@ public class ZookeeperPersistenceManagerTest {
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
         final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
 
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(inputHosts, expectedZkRoot);
+        // Create our config
+        final Map topologyConfig = createDefaultConfig(inputHosts, expectedZkRoot);
+
+        // Create instance and open it.
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
+
+        // Validate
         assertEquals("Unexpected zk connection string", expectedZkConnectionString, persistenceManager.getZkConnectionString());
         assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
 
@@ -110,9 +100,12 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootPath = "/poop";
         final String consumerId = "myConsumer" + DateTime.now().getMillis();
 
-        // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootPath);
-        persistenceManager.init();
+        // Create our config
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
+
+        // Create instance and open it.
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // Create state
         final ConsumerState consumerState = new ConsumerState();
@@ -144,8 +137,8 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.close();
 
         // Create new instance, reconnect to ZK, make sure we can still read it out with our new instance.
-        persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootPath);
-        persistenceManager.init();
+        persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
@@ -178,9 +171,12 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootPath = "/poop";
         final String consumerId = "myConsumer" + DateTime.now().getMillis();
 
-        // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootPath);
-        persistenceManager.init();
+        // Create our config
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
+
+        // Create instance and open it.
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // Create state
         final ConsumerState consumerStateOriginal = new ConsumerState();
@@ -278,9 +274,10 @@ public class ZookeeperPersistenceManagerTest {
             }
         }
 
-        // 2. Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootNodePath);
-        persistenceManager.init();
+        // 2. Create our instance and open it
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // 3. Attempt to persist some state.
         final String topicName = "MyTopic";
@@ -347,9 +344,12 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootPath = "/poop";
         final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
 
-        // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootPath);
-        persistenceManager.init();
+        // Create our config
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
+
+        // Create instance and open it.
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // Create state
         final ConsumerState consumerState = new ConsumerState();
@@ -381,8 +381,8 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.close();
 
         // Create new instance, reconnect to ZK, make sure we can still read it out with our new instance.
-        persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootPath);
-        persistenceManager.init();
+        persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
@@ -446,9 +446,10 @@ public class ZookeeperPersistenceManagerTest {
             }
         }
 
-        // 2. Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager(zkServer.getConnectString(), zkRootNodePath);
-        persistenceManager.init();
+        // 2. Create our instance and open it
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
 
         // 3. Attempt to persist some state.
         final String topicName = "MyTopic";
@@ -499,5 +500,22 @@ public class ZookeeperPersistenceManagerTest {
         logger.info("Stored data string {}", storedDataStr);
         assertNotNull("Stored data string should be non-null", storedDataStr);
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
+    }
+
+    /**
+     * Helper method.
+     */
+    private Map createDefaultConfig(List<String> zkServers, String zkRootNode) {
+        Map config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
+        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
+        return config;
+    }
+
+    /**
+     * Helper method.
+     */
+    private Map createDefaultConfig(String zkServers, String zkRootNode) {
+        return createDefaultConfig(Lists.newArrayList(zkServers.split(",")), zkRootNode);
     }
 }
