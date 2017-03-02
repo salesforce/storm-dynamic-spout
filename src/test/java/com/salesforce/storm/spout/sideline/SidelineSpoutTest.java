@@ -52,12 +52,6 @@ import static org.junit.Assert.*;
 @RunWith(DataProviderRunner.class)
 public class SidelineSpoutTest {
 
-    /**
-     * By default, no exceptions should be thrown.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutTest.class);
 
@@ -101,46 +95,6 @@ public class SidelineSpoutTest {
             e.printStackTrace();
         }
         kafkaTestServer = null;
-    }
-
-    /**
-     * Tests that if you fail to pass a deserializer config it throws an exception.
-     */
-    @Test
-    public void testCreateNewDeserializerInstance_missingConfig() {
-        // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
-        final SidelineSpout spout = new SidelineSpout(config);
-
-        expectedException.expect(IllegalStateException.class);
-        Deserializer deserializer = spout.createNewDeserializerInstance();
-    }
-
-    /**
-     * Tests that create new deserializer instance works as expected.
-     */
-    @Test
-    public void testCreateNewDeserializerInstance_usingDefaultImpl() {
-        // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
-        final SidelineSpout spout = new SidelineSpout(config);
-
-        // Create a few instances
-        List<Deserializer> deserializers = Lists.newArrayList();
-        for (int x=0; x<5; x++) {
-            Deserializer deserializer = spout.createNewDeserializerInstance();
-
-            // Validate it
-            assertNotNull(deserializer);
-            assertTrue("Is correct instance", deserializer instanceof Utf8StringDeserializer);
-
-            // Verify its a different instance than our previous ones
-            assertFalse("Not a previous instance", deserializers.contains(deserializer));
-
-            // Add to our list
-            deserializers.add(deserializer);
-        }
     }
 
     /**

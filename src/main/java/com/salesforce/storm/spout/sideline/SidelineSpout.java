@@ -45,14 +45,9 @@ public class SidelineSpout extends BaseRichSpout {
     private StoppingTrigger stoppingTrigger;
 
     /**
-     * Class instance of our Deserializer.
+     * Manages creating implementation instances.
      */
-    private Class<? extends Deserializer> deserializerClass;
-
-    /**
-     * Class instance of our FailedMsgRetryManager.
-     */
-    private Class<? extends FailedMsgRetryManager> failedMsgRetryManagerClass;
+    private FactoryManager factoryManager;
 
     /**
      * Stores state about starting/stopping sideline requests.
@@ -73,7 +68,11 @@ public class SidelineSpout extends BaseRichSpout {
      * @param topologyConfig - Our configuration.
      */
     public SidelineSpout(Map topologyConfig) {
+        // Save off config
         this.topologyConfig = topologyConfig;
+
+        // Create our factory manager, which must be serializable.
+        factoryManager = new FactoryManager(this.topologyConfig);
     }
 
     /**
@@ -157,7 +156,7 @@ public class SidelineSpout extends BaseRichSpout {
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
-            createNewDeserializerInstance(),
+            factoryManager.createNewDeserializerInstance(),
             // Starting offset of the sideline request
             startingState,
             // When the sideline request ends
@@ -192,7 +191,7 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceManager.init();
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), createNewDeserializerInstance());
+        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance());
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
         // Setting up thread to call nextTuple
@@ -246,7 +245,7 @@ public class SidelineSpout extends BaseRichSpout {
         // prior to open, in which case we need to shuffle some logic around.
 
         // Handles both explicitly defined and default stream definitions.
-        declarer.declareStream(getOutputStreamId(), createNewDeserializerInstance().getOutputFields());
+        declarer.declareStream(getOutputStreamId(), factoryManager.createNewDeserializerInstance().getOutputFields());
     }
 
     @Override
@@ -310,51 +309,5 @@ public class SidelineSpout extends BaseRichSpout {
             }
         }
         return outputStreamId;
-    }
-
-    /**
-     * @return returns a new instance of the configured deserializer.
-     */
-    protected Deserializer createNewDeserializerInstance() {
-        if (deserializerClass == null) {
-            final String classStr = (String) getTopologyConfigItem(SidelineSpoutConfig.DESERIALIZER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.DESERIALIZER_CLASS);
-            }
-
-            try {
-                deserializerClass = (Class<? extends Deserializer>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return deserializerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * @return returns a new instance of the configured deserializer.
-     */
-    protected FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
-        if (failedMsgRetryManagerClass == null) {
-            final String classStr = (String) getTopologyConfigItem(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
-            }
-
-            try {
-                failedMsgRetryManagerClass = (Class<? extends FailedMsgRetryManager>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return failedMsgRetryManagerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

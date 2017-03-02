@@ -155,7 +155,9 @@ public class SpoutCoordinator {
         }).exceptionally(throwable -> {
             // TODO: need to handle exceptions
             logger.info("Got exception for spout {}", spout.getConsumerId(), throwable);
-            return null;
+
+            // Re-throw for now?
+            throw new RuntimeException(throwable);
         });
     }
 
