@@ -21,11 +21,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -100,6 +106,76 @@ public class SidelineConsumerTest {
         assertEquals(config, sidelineConsumer.getConsumerConfig());
         assertNotNull("PersistenceManager is not null", sidelineConsumer.getPersistenceManager());
         assertEquals(persistenceManager, sidelineConsumer.getPersistenceManager());
+    }
+
+    /**
+     * Tests that our logic for flushing consumer state to the persistence layer works
+     * as we expect it to.
+     */
+    @Test
+    public void testTimedFlushConsumerState() throws InterruptedException {
+        final String expectedConsumerId = "MyConsumerId";
+
+        // Setup our config
+        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
+        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
+
+        // Set timeout to 1 seconds.
+        config.setFlushStateTimeMS(1000);
+
+        // Create mock persistence manager so we can determine if it was called
+        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
+
+        // Create a mock clock so we can control time (bwahaha)
+        Instant instant = Clock.systemUTC().instant();
+        Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
+
+        // Call constructor
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager);
+        sidelineConsumer.setClock(mockClock);
+
+        // Call our method once
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+
+        // Sleep for 1.5 seconds
+        Thread.sleep(1500);
+
+        // Call our method again
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+
+        // Now lets adjust our mock clock up by 2 seconds.
+        instant = instant.plus(2000, ChronoUnit.MILLIS);
+        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
+        sidelineConsumer.setClock(mockClock);
+
+        // Call our method again, it should have triggered this time.
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer WAS hit because we adjust our mock clock ahead 2 secs
+        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyObject());
+
+        // Call our method again, it shouldn't fire.
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit again because we're using a mocked clock that has not changed since the last call :p
+        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyObject());
+
+        // Now lets adjust our mock clock up by 1.5 seconds.
+        instant = instant.plus(1500, ChronoUnit.MILLIS);
+        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
+        sidelineConsumer.setClock(mockClock);
+
+        // Call our method again, it should have triggered this time.
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer WAS hit a 2nd time because we adjust our mock clock ahead
+        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyObject());
     }
 
     /**
@@ -845,6 +921,7 @@ public class SidelineConsumerTest {
 
         // Create our State Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.init();
 
         // Create a state in which we have already acked the first 5 messages
         ConsumerState consumerState = new ConsumerState();

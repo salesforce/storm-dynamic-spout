@@ -13,6 +13,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +60,12 @@ public class SidelineConsumer {
      */
     private ConsumerRecords<byte[], byte[]> buffer = null;
     private Iterator<ConsumerRecord<byte[], byte[]>> bufferIterator = null;
+
+    /**
+     * Used to control how often we flush state using PersistenceManager.
+     */
+    private transient Clock clock = Clock.systemUTC();
+    private long lastFlushTime = 0;
 
     /**
      * Constructor.
@@ -183,7 +191,11 @@ public class SidelineConsumer {
      * @param offset - The offset that should be marked as completed.
      */
     public void commitOffset(TopicPartition topicPartition, long offset) {
+        // Track internally which offsets we've marked completed
         partitionStateManagers.get(topicPartition).finishOffset(offset);
+
+        // Occasionally flush
+        timedFlushConsumerState();
     }
 
     /**
@@ -192,6 +204,29 @@ public class SidelineConsumer {
      */
     public void commitOffset(ConsumerRecord consumerRecord) {
         commitOffset(new TopicPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
+    }
+
+    /**
+     * Conditionally flushes the consumer state to the persistence layer based
+     * on a time-out condition.
+     *
+     * @return boolean - true if we flushed state, false if we didn't
+     */
+    protected boolean timedFlushConsumerState() {
+        // Set initial state if not defined
+        if (lastFlushTime == 0) {
+            lastFlushTime = Instant.now(getClock()).toEpochMilli();
+            return false;
+        }
+
+        // Determine if we should flush.
+        final long currentTime = Instant.now(getClock()).toEpochMilli();
+        if (currentTime - lastFlushTime > getConsumerConfig().getFlushStateTimeMS()) {
+            flushConsumerState();
+            lastFlushTime = currentTime;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -209,6 +244,7 @@ public class SidelineConsumer {
         }
 
         // Persist this state.
+        logger.debug("Flushing consumer state {}", consumerState);
         persistenceManager.persistConsumerState(getConsumerId(), consumerState);
 
         // Return the state that was persisted.
@@ -313,5 +349,20 @@ public class SidelineConsumer {
      */
     public String getConsumerId() {
         return getConsumerConfig().getConsumerId();
+    }
+
+    /**
+     * @return - return our clock implementation.  Useful for testing.
+     */
+    protected Clock getClock() {
+        return clock;
+    }
+
+    /**
+     * For injecting a clock implementation.  Useful for testing.
+     * @param clock - the clock implementation to use.
+     */
+    protected void setClock(Clock clock) {
+        this.clock = clock;
     }
 }

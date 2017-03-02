@@ -16,6 +16,11 @@ public class SidelineConsumerConfig {
     private ConsumerState startState = null;
     private ConsumerState stopState = null;
 
+    /**
+     * How often we'll flush consumer state to the persistence layer, in milliseconds.
+     */
+    private long flushStateTimeMS = 15000;  // 15 seconds
+
     public SidelineConsumerConfig(List<String> brokerHosts, String consumerId, String topic) {
         this.topic = topic;
         this.consumerId = consumerId;
@@ -72,5 +77,13 @@ public class SidelineConsumerConfig {
 
     public Properties getKafkaConsumerProperties() {
         return kafkaConsumerProperties;
+    }
+
+    public void setFlushStateTimeMS(long flushStateTimeMS) {
+        this.flushStateTimeMS = flushStateTimeMS;
+    }
+
+    public long getFlushStateTimeMS() {
+        return flushStateTimeMS;
     }
 }

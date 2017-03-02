@@ -1,10 +1,9 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,15 +11,22 @@ import java.util.Map;
  * In memory persistence layer implementation. useful for tests.
  * NOT for production use as all state will be lost between JVM restarts.
  */
-public class InMemoryPersistenceManager implements PersistenceManager {
+public class InMemoryPersistenceManager implements PersistenceManager, Serializable {
     // "Persists" consumer state in memory.
-    private final Map<String,ConsumerState> storedConsumerState = new HashMap<>();
+    private Map<String,ConsumerState> storedConsumerState;
 
     // "Persists" side line request states in memory.
-    private final Map<SidelineIdentifier, ConsumerState> storedSidelineRequests = new HashMap<>();
+    private Map<SidelineIdentifier, ConsumerState> storedSidelineRequests;
 
     @Override
     public void init() {
+        // Allow non-destructive re-initin
+        if (storedConsumerState == null) {
+            storedConsumerState = new HashMap<>();
+        }
+        if (storedSidelineRequests == null) {
+            storedSidelineRequests = new HashMap<>();
+        }
     }
 
     @Override

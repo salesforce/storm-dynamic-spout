@@ -6,8 +6,9 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.mocks.output.Emission;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.sideline.trigger.StartRequest;
@@ -22,23 +23,23 @@ import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.IRichSpout;
-import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.OutputFieldsGetter;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Int;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -50,6 +51,12 @@ import static org.junit.Assert.*;
  */
 @RunWith(DataProviderRunner.class)
 public class SidelineSpoutTest {
+
+    /**
+     * By default, no exceptions should be thrown.
+     */
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutTest.class);
@@ -97,6 +104,46 @@ public class SidelineSpoutTest {
     }
 
     /**
+     * Tests that if you fail to pass a deserializer config it throws an exception.
+     */
+    @Test
+    public void testCreateNewDeserializerInstance_missingConfig() {
+        // Try with UTF8 String deserializer
+        Map config = Maps.newHashMap();
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        expectedException.expect(IllegalStateException.class);
+        Deserializer deserializer = spout.createNewDeserializerInstance();
+    }
+
+    /**
+     * Tests that create new deserializer instance works as expected.
+     */
+    @Test
+    public void testCreateNewDeserializerInstance_usingDefaultImpl() {
+        // Try with UTF8 String deserializer
+        Map config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        // Create a few instances
+        List<Deserializer> deserializers = Lists.newArrayList();
+        for (int x=0; x<5; x++) {
+            Deserializer deserializer = spout.createNewDeserializerInstance();
+
+            // Validate it
+            assertNotNull(deserializer);
+            assertTrue("Is correct instance", deserializer instanceof Utf8StringDeserializer);
+
+            // Verify its a different instance than our previous ones
+            assertFalse("Not a previous instance", deserializers.contains(deserializer));
+
+            // Add to our list
+            deserializers.add(deserializer);
+        }
+    }
+
+    /**
      * Our most simple end-2-end test.
      * This test stands up our spout and ask it to consume from our kafka topic.
      * We publish some data into kafka, and validate that when we call nextTuple() on
@@ -117,11 +164,8 @@ public class SidelineSpoutTest {
         // Define our ConsumerId prefix
         final String consumerIdPrefix = "SidelineSpout-";
 
-        // Mock Config
-        final Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, null);
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
@@ -134,7 +178,7 @@ public class SidelineSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final SidelineSpout spout = new SidelineSpout();
+        final SidelineSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -235,10 +279,7 @@ public class SidelineSpoutTest {
         final String consumerIdPrefix = "SidelineSpout-";
 
         // Create our Config
-        final Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, null);
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
@@ -254,7 +295,7 @@ public class SidelineSpoutTest {
         final StaticTrigger staticTrigger = new StaticTrigger();
 
         // Create our spout, add references to our static trigger, and call open().
-        final SidelineSpout spout = new SidelineSpout();
+        final SidelineSpout spout = new SidelineSpout(config);
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -480,20 +521,18 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testDelcareOutputFields_without_stream() {
-        final MockSpoutOutputCollector outputCollector = new MockSpoutOutputCollector();
-        final TopologyContext context = new MockTopologyContext();
-        final Map<String,Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "SidelineSpout-");
-        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-
-        final SidelineSpout spout = new SidelineSpout();
-        spout.open(config, context, outputCollector);
+        // Create config with null stream id config option.
+        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
+        // Create spout, but don't call open
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        // call declareOutputFields
         spout.declareOutputFields(declarer);
 
+        // Validate results.
         final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
 
         assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
@@ -512,19 +551,14 @@ public class SidelineSpoutTest {
     @Test
     public void testDeclareOutputFields_with_stream() {
         final String streamId = "foobar";
-        final MockSpoutOutputCollector outputCollector = new MockSpoutOutputCollector();
-        final TopologyContext context = new MockTopologyContext();
-        final Map<String,Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "SidelineSpout-");
-        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-        config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, streamId);
-
-        final SidelineSpout spout = new SidelineSpout();
-        spout.open(config, context, outputCollector);
+        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
+        // Create spout, but do not call open.
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        // call declareOutputFields
         spout.declareOutputFields(declarer);
 
         final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
@@ -543,7 +577,7 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testActivate() {
-        final SidelineSpout spout = new SidelineSpout();
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
         spout.activate();
     }
 
@@ -552,7 +586,7 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testDeactivate() {
-        final SidelineSpout spout = new SidelineSpout();
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
         spout.deactivate();
     }
 
@@ -579,5 +613,23 @@ public class SidelineSpoutTest {
         producer.close();
 
         return producedRecords;
+    }
+
+    private Map<String, Object> getDefaultConfig(final String consumerIdPrefix, final String configuredStreamId) {
+        final Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
+        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
+        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
+        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+
+        // If we have a stream Id we should be configured with
+        if (configuredStreamId != null) {
+            // Drop it into our configuration.
+            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+        }
+
+        return config;
     }
 }

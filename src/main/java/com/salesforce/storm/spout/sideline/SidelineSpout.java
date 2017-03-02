@@ -7,7 +7,6 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -38,14 +37,21 @@ public class SidelineSpout extends BaseRichSpout {
     private Map topologyConfig;
     private SpoutOutputCollector outputCollector;
     private TopologyContext topologyContext;
-    private Deserializer deserializer = new Utf8StringDeserializer();
     private transient ConcurrentLinkedDeque<KafkaMessage> queue;
     private VirtualSidelineSpout fireHoseSpout;
     private SpoutCoordinator coordinator;
     private StartingTrigger startingTrigger;
     private StoppingTrigger stoppingTrigger;
 
-    // Stores state about starting/stopping sideline requests.
+    /**
+     * Class instance of our Deserializer.
+     */
+    private Class<? extends Deserializer> deserializerClass;
+
+    /**
+     * Stores state about starting/stopping sideline requests.
+     * @TODO - create from config.
+     */
     private PersistenceManager persistenceManager = new InMemoryPersistenceManager();
 
     /**
@@ -53,6 +59,16 @@ public class SidelineSpout extends BaseRichSpout {
      * Gets set during open().
      */
     private String outputStreamId = null;
+
+    /**
+     * Constructor to create our SidelineSpout.
+     * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
+     *
+     * @param topologyConfig - Our configuration.
+     */
+    public SidelineSpout(Map topologyConfig) {
+        this.topologyConfig = topologyConfig;
+    }
 
     /**
      * Set a starting trigger on the spout for starting a sideline request
@@ -135,7 +151,7 @@ public class SidelineSpout extends BaseRichSpout {
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
-            deserializer,
+            createNewDeserializerInstance(),
             // Starting offset of the sideline request
             startingState,
             // When the sideline request ends
@@ -160,17 +176,17 @@ public class SidelineSpout extends BaseRichSpout {
         // Setup our concurrent queue.
         this.queue = new ConcurrentLinkedDeque<>();
 
-        // @TODO - Parse config, for now use these values
+        // Grab our ConsumerId prefix from the config
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
-
-        // Determine output stream id
-        outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
-        if (Strings.isNullOrEmpty(outputStreamId)) {
-            outputStreamId = Utils.DEFAULT_STREAM_ID;
+        if (Strings.isNullOrEmpty(cfgConsumerIdPrefix)) {
+            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
-        // Create the main spout for the topic
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), deserializer);
+        // init persistence manager.
+        persistenceManager.init();
+
+        // Create the main spout for the topic, we'll dub it the 'firehose'
+        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), createNewDeserializerInstance());
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
         // Setting up thread to call nextTuple
@@ -224,13 +240,16 @@ public class SidelineSpout extends BaseRichSpout {
         // prior to open, in which case we need to shuffle some logic around.
 
         // Handles both explicitly defined and default stream definitions.
-        declarer.declareStream(getOutputStreamId(), deserializer.getOutputFields());
+        declarer.declareStream(getOutputStreamId(), createNewDeserializerInstance().getOutputFields());
     }
 
     @Override
     public void close() {
         logger.info("Stopping the coordinator and closing all spouts");
-        coordinator.stop();
+        if (coordinator != null) {
+            coordinator.stop();
+            coordinator = null;
+        }
     }
 
     @Override
@@ -272,12 +291,41 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * @return - returns the stream that tuples will be emitted out.  This gets set during open().
+     * @return - returns the stream that tuples will be emitted out.
      */
-    public String getOutputStreamId() {
+    protected String getOutputStreamId() {
         if (outputStreamId == null) {
-            throw new IllegalStateException("Open must be called before calling getOutputStreamId");
+            if (topologyConfig == null) {
+                throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
+            }
+            outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+            if (Strings.isNullOrEmpty(outputStreamId)) {
+                outputStreamId = Utils.DEFAULT_STREAM_ID;
+            }
         }
         return outputStreamId;
+    }
+
+    /**
+     * @return returns a new instance of the configured deserializer.
+     */
+    protected Deserializer createNewDeserializerInstance() {
+        if (deserializerClass == null) {
+            final String classStr = (String) getTopologyConfigItem(SidelineSpoutConfig.DESERIALIZER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.DESERIALIZER_CLASS);
+            }
+
+            try {
+                deserializerClass = (Class<? extends Deserializer>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return deserializerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
