@@ -135,8 +135,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         logger.info("Open has Starting State: {}", startingState);
         logger.info("Open has Ending State: {}", endingState);
 
-        // Call prepare on failed msg retry manager instance.
-        failedMsgRetryManager.prepare(topologyConfig);
+        // Call open on failed msg retry manager instance.
+        failedMsgRetryManager.open(topologyConfig);
 
         // Construct SidelineConsumerConfig from incoming config
         final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);

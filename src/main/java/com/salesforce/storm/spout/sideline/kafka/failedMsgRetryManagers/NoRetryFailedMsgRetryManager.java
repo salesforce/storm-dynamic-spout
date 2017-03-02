@@ -5,11 +5,11 @@ import com.salesforce.storm.spout.sideline.TupleMessageId;
 import java.util.Map;
 
 /**
- * Never retry failed messages.
+ * This implementation will never retry failed messages.  One and done.
  */
 public class NoRetryFailedMsgRetryManager implements FailedMsgRetryManager {
     @Override
-    public void prepare(Map stormConfig) {
+    public void open(Map stormConfig) {
         // Nothing to do
     }
 

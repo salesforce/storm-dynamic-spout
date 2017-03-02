@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +28,8 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
     private static final Logger logger = LoggerFactory.getLogger(DefaultFailedMsgRetryManager.class);
 
     // Configuration
-    private final int maxRetries;
-    private final long minRetryTimeMs;
+    private int maxRetries = 25;
+    private long minRetryTimeMs = 1000;
 
     /**
      * Where we track failed messageIds.
@@ -37,28 +38,19 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
     private Set<TupleMessageId> retriesInFlight;
 
     /**
-     * Defaults, attempt a max of 20 retries, with a minimum delay of 1 second.
-     */
-    public DefaultFailedMsgRetryManager() {
-        this(20, TimeUnit.SECONDS.toMillis(1));
-    }
-
-    /**
-     * Configure the parameters of this manager.
-     * @param maxRetries - Maximum number of retries to attempt on a failed tuple.
-     * @param minRetryTimeMs - minimum time between retries.
-     */
-    public DefaultFailedMsgRetryManager(int maxRetries, long minRetryTimeMs) {
-        this.maxRetries = maxRetries;
-        this.minRetryTimeMs = minRetryTimeMs;
-    }
-
-    /**
      * Called to initialize this implementation.
      * @param stormConfig - not used, at least for now.
      */
-    @Override
-    public void prepare(Map stormConfig) {
+    public void open(Map stormConfig) {
+        // Load config options.
+        if (stormConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
+            maxRetries = (int) stormConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES);
+        }
+        if (stormConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
+            minRetryTimeMs = (long) stormConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS);
+        }
+
+        // Init datastructures.
         failedTuples = Maps.newHashMap();
         retriesInFlight = Sets.newHashSet();
     }

@@ -2,16 +2,16 @@ package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.apache.storm.shade.org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
+
 import static org.junit.Assert.*;
 
-/**
- *
- */
 public class DefaultFailedMsgRetryManagerTest {
 
     private static final long FIXED_TIME = 100000L;
@@ -33,17 +33,38 @@ public class DefaultFailedMsgRetryManagerTest {
     }
 
     /**
-     * Tests that the constructor set properties from arguments.
+     * Tests that the open() set properties from the config.
      */
     @Test
-    public void testConstructor() {
+    public void testOpen() {
         final int expectedMaxRetries = 44;
         final long expectedMinRetryTimeMs = 4455;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         assertEquals("Wrong max retrys", expectedMaxRetries, retryManager.getMaxRetries());
         assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getMinRetryTimeMs());
+    }
+
+    /**
+     * Tests that the open() uses default values if not configured.
+     */
+    @Test
+    public void testOpenWithNoConfigUsesDefaults() {
+        // Build config.
+        Map stormConfig = getDefaultConfig(null, null);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
+
+        assertEquals("Wrong max retrys", 25, retryManager.getMaxRetries());
+        assertEquals("Wrong retry time", 1000, retryManager.getMinRetryTimeMs());
     }
 
     /**
@@ -54,8 +75,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 10;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -92,8 +118,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 10;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -142,8 +173,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 2;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
@@ -160,8 +196,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 0;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
@@ -178,8 +219,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -234,8 +280,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -286,8 +337,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -316,8 +372,13 @@ public class DefaultFailedMsgRetryManagerTest {
         // construct manager
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager(expectedMaxRetries, expectedMinRetryTimeMs);
-        retryManager.prepare(Maps.newHashMap());
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+
+        // Create instance and call open.
+        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.open(stormConfig);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -408,5 +469,17 @@ public class DefaultFailedMsgRetryManagerTest {
     private void validateTupleIsNotBeingTracked(DefaultFailedMsgRetryManager retryManager, TupleMessageId tupleMessageId) {
         assertFalse("Should not be tracked as failed", retryManager.getFailedTuples().containsKey(tupleMessageId));
         assertFalse("Should not be tracked as in flight", retryManager.getRetriesInFlight().contains(tupleMessageId));
+    }
+
+    // Helper method
+    private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs) {
+        Map stormConfig = Maps.newHashMap();
+        if (maxRetries != null) {
+            stormConfig.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, maxRetries);
+        }
+        if (minRetryTimeMs != null) {
+            stormConfig.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, minRetryTimeMs);
+        }
+        return stormConfig;
     }
 }

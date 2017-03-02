@@ -4,9 +4,9 @@ package com.salesforce.storm.spout.sideline.config;
  * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
  */
 public class SidelineSpoutConfig {
-    ///////////////////////////////////
-    // Spout Config
-    ///////////////////////////////////
+///////////////////////////////////
+// Spout Config
+///////////////////////////////////
 
     /**
      * (String) Defines the output stream id to use on the spout.
@@ -20,23 +20,10 @@ public class SidelineSpoutConfig {
      */
     public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
 
-    /**
-     * (String) Defines which FailedMsgRetryManager implementation to use.
-     * Should be a full classpath to a class that implements the FailedMsgRetryManager interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager"
-     */
-    public static final String FAILED_MSG_RETRY_MANAGER_CLASS = "sideline_spout.failed_msg_retry_manager.class";
+///////////////////////////////////
+// Kafka Consumer Config
+///////////////////////////////////
 
-    /**
-     * (String) Defines which PersistenceManager implementation to use.
-     * Should be a full classpath to a class that implements the PersistenceManager interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager"
-     */
-    public static final String PERSISTENCE_MANAGER_CLASS = "sideline_spout.persistence_manager.class";
-
-    ///////////////////////////////////
-    // Kafka Consumer Config
-    ///////////////////////////////////
     /**
      * (String) Holds which topic we should be consuming from.
      */
@@ -53,9 +40,17 @@ public class SidelineSpoutConfig {
      */
     public static final String CONSUMER_ID_PREFIX = "sideline_spout.consumer_id_prefix";
 
-    ///////////////////////////////////
-    // Persistence Layer Config
-    ///////////////////////////////////
+///////////////////////////////////
+// Persistence Layer Config
+///////////////////////////////////
+
+    /**
+     * (String) Defines which PersistenceManager implementation to use.
+     * Should be a full classpath to a class that implements the PersistenceManager interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager"
+     */
+    public static final String PERSISTENCE_MANAGER_CLASS = "sideline_spout.persistence_manager.class";
+
     /**
      * (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format:
      * ["zkhost1:2181", "zkhost2:2181", ...]
@@ -71,4 +66,37 @@ public class SidelineSpoutConfig {
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
     public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zk_root";
+
+///////////////////////////////////
+// Failed Message Retry Config
+///////////////////////////////////
+
+    /**
+     * (String) Defines which FailedMsgRetryManager implementation to use.
+     * Should be a full classpath to a class that implements the FailedMsgRetryManager interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager"
+     */
+    public static final String FAILED_MSG_RETRY_MANAGER_CLASS = "sideline_spout.failed_msg_retry_manager.class";
+
+    /**
+     * (int) Defines how many times a failed message will be replayed before just being acked.
+     * A value of 0 means tuples will never be retried.
+     * A negative value means tuples will be retried forever.
+     *
+     * Default Value: 25
+     * Optional - Only required if you use the DefaultFailedMsgRetryManager implementation.
+     */
+    public static final String FAILED_MSG_RETRY_MANAGER_MAX_RETRIES = "sideline_spout.failed_msg_retry_manager.max_retries";
+
+    /**
+     * (long) Defines how long to wait before retry attempts are made on failed tuples, in milliseconds.
+     * Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).
+     *
+     * Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds
+     * before the next retry attempt.
+     *
+     * Default Value: 1000
+     * Optional - Only required if you use the DefaultFailedMsgRetryManager implementation.
+     */
+    public static final String FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS = "sideline_spout.failed_msg_retry_manager.min_retry_time_ms";
 }
