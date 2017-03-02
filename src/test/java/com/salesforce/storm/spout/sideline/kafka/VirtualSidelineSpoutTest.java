@@ -620,6 +620,56 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
+     * Test calling fail with null, it should just silently drop it.
+     */
+    @Test
+    public void testFailWithNull() {
+        // Create inputs
+        final Map expectedTopologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call ack with null, nothing should explode.
+        virtualSidelineSpout.fail(null);
+
+        // No iteractions w/ our mocks
+        verify(mockRetryManager, never()).retryFurther(anyObject());
+        verify(mockRetryManager, never()).acked(anyObject());
+        verify(mockRetryManager, never()).failed(anyObject());
+        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
+    }
+
+    /**
+     * Call fail() with invalid msg type should throw an exception.
+     */
+    @Test
+    public void testFailWithInvalidMsgIdObject() {
+        // Create inputs
+        final Map expectedTopologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call ack with a string object, it should throw an exception.
+        expectedException.expect(IllegalArgumentException.class);
+        virtualSidelineSpout.fail("Poop");
+    }
+
+    /**
      * Test calling ack with null, it should just silently drop it.
      */
     @Test
@@ -994,4 +1044,39 @@ public class VirtualSidelineSpoutTest {
         verify(mockSidelineConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
     }
 
+    /**
+     * Tests that calling getCurrentState() is based down to the
+     * sidelineConsumer appropriately.
+     */
+    @Test
+    public void testGetCurrentState() {
+        // Create inputs
+        final Map expectedTopologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        final ConsumerState expectedConsumerState = new ConsumerState();
+        expectedConsumerState.setOffset(new TopicPartition("myTopic", 0), 200L);
+
+        // Setup our mock to return exepected value
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
+
+        // Call get current state.
+        final ConsumerState result = virtualSidelineSpout.getCurrentState();
+
+        // Verify mock interactions
+        verify(mockSidelineConsumer, times(1)).getCurrentState();
+
+        // Verify result
+        assertNotNull("result should not be null", result);
+        assertEquals("Should be our expected instance", expectedConsumerState, result);
+    }
 }

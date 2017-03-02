@@ -110,6 +110,11 @@ public class SidelineConsumerTest {
         assertEquals(persistenceManager, sidelineConsumer.getPersistenceManager());
     }
 
+    // TODO: these test cases
+    // test calling connect twice throws exception.
+    // test calling connect w/ a starting state.
+    // test calling getCurrentState().
+
     /**
      * Tests that our logic for flushing consumer state to the persistence layer works
      * as we expect it to.

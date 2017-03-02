@@ -59,12 +59,35 @@ public class AbstractSchemeTest {
     }
 
     /**
+     * If we return null, return null.
+     */
+    @Test
+    public void testDeserializeReturnsNull() {
+        // Create implementation, and force abstract implementation to return null.
+        final MyScheme myScheme = new MyScheme();
+        myScheme.setReturnNull(true);
+
+        // Attempt to deserialize
+        final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(Charsets.UTF_8), "value".getBytes(Charsets.UTF_8));
+
+        // Validate
+        assertNull("Should pass the null thru", myValues);
+    }
+
+    /**
      * Test Implementation.
      */
     private static class MyScheme extends AbstractScheme {
 
+        private boolean returnNull = false;
+
         @Override
         public List<Object> deserialize(ByteBuffer ser) {
+            // Hack to force a return value
+            if (returnNull) {
+                return null;
+            }
+
             // Probably a better way to do this juggling.
             if (ser == null) {
                 return null;
@@ -79,6 +102,10 @@ public class AbstractSchemeTest {
         @Override
         public Fields getOutputFields() {
             return new Fields("MyFields", "Here", "For", "You");
+        }
+
+        public void setReturnNull(boolean returnNull) {
+            this.returnNull = returnNull;
         }
     }
 }

@@ -17,7 +17,9 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +36,12 @@ import static org.junit.Assert.*;
  * Tests our Zookeeper Persistence layer.
  */
 public class ZookeeperPersistenceManagerTest {
+    /**
+     * By default, no exceptions should be thrown.
+     */
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     // For logging within test.
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManagerTest.class);
 
@@ -501,6 +509,27 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Stored data string should be non-null", storedDataStr);
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
     }
+
+    /**
+     * Verify we get an exception if you try to persist before calling open().
+     */
+    @Test
+    public void testPersistConsumerStateBeforeBeingOpened() {
+        // Define our ZK Root Node
+        final String zkRootNodePath = "/TestRootPath";
+
+        // Create our instance
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        // Call method and watch for exception
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.persistConsumerState("MyConsumerId", new ConsumerState());
+    }
+
+    // TODO: at test cases:
+    // test parseJsonToConsumerState() with null argument returns empty consumer state.
+    // test read/write when open() not called throws exception
 
     /**
      * Helper method.
