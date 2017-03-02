@@ -3,7 +3,6 @@ package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Never retry failed messages.

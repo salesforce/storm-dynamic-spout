@@ -4,7 +4,6 @@ import com.salesforce.storm.spout.sideline.TupleMessageId;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Interface for Tracking Failed messages.
