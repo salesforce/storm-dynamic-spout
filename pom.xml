@@ -78,10 +78,11 @@
             <version>3.2.2</version>
         </dependency>
 
+        <!-- TODO: Our version of Curator is not compatible with Guava > 20.0 :( -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>21.0</version>
+            <version>20.0</version>
         </dependency>
 
         <dependency>
@@ -89,7 +90,6 @@
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
         </dependency>
-
 
         <!-- https://mvnrepository.com/artifact/com.yammer.metrics/metrics-core -->
         <dependency>
@@ -114,14 +114,7 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
-            <version>2.11.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-test</artifactId>
-            <version>2.11.0</version>
-            <scope>test</scope>
+            <version>2.11.1</version>
         </dependency>
 
         <!-- Testing Dependencies -->
@@ -153,6 +146,12 @@
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility-scala</artifactId>
             <version>2.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <version>2.11.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
