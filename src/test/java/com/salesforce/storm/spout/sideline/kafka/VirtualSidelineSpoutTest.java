@@ -169,7 +169,6 @@ public class VirtualSidelineSpoutTest {
 
     /**
      * Validate that Open behaves like we expect.
-     * @TODO - Need to expand upon this test once we have configuration for more things working.
      */
     @Test
     public void testOpen() {

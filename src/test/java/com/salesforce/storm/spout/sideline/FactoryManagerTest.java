@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -102,6 +103,47 @@ public class FactoryManagerTest {
 
             // Add to our list
             instances.add(retryManager);
+        }
+    }
+
+    /**
+     * Tests that if you fail to pass a config it throws an exception.
+     */
+    @Test
+    public void testCreateNewPersistenceManagerInstance_missingConfig() {
+        // Try with UTF8 String deserializer
+        Map config = Maps.newHashMap();
+        final FactoryManager factoryManager = new FactoryManager(config);
+
+        // We expect this to throw an exception.
+        expectedException.expect(IllegalStateException.class);
+        factoryManager.createNewPersistenceManagerInstance();
+    }
+
+    /**
+     * Tests that create new deserializer instance works as expected.
+     */
+    @Test
+    public void testCreateNewPersistenceManager_usingDefaultImpl() {
+        // Try with UTF8 String deserializer
+        Map config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager");
+        final FactoryManager factoryManager = new FactoryManager(config);
+
+        // Create a few instances
+        List<PersistenceManager> instances = Lists.newArrayList();
+        for (int x=0; x<5; x++) {
+            PersistenceManager instance = factoryManager.createNewPersistenceManagerInstance();
+
+            // Validate it
+            assertNotNull(instance);
+            assertTrue("Is correct instance", instance instanceof PersistenceManager);
+
+            // Verify its a different instance than our previous ones
+            assertFalse("Not a previous instance", instances.contains(instance));
+
+            // Add to our list
+            instances.add(instance);
         }
     }
 

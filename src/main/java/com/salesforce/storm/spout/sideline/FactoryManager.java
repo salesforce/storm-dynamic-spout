@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -28,6 +29,11 @@ public class FactoryManager implements Serializable {
      */
     private transient Class<? extends FailedMsgRetryManager> failedMsgRetryManagerClass;
 
+    /**
+     * Class instance of our PersistenceManager.
+     */
+    private transient Class<? extends PersistenceManager> persistenceManagerClass;
+
     public FactoryManager(Map topologyConfig) {
         this.topologyConfig = topologyConfig;
     }
@@ -35,7 +41,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured deserializer.
      */
-    protected Deserializer createNewDeserializerInstance() {
+    public Deserializer createNewDeserializerInstance() {
         if (deserializerClass == null) {
             final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.DESERIALIZER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -56,9 +62,9 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured deserializer.
+     * @return returns a new instance of the configured FailedMsgRetryManager.
      */
-    protected FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
+    public FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
             final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -73,6 +79,29 @@ public class FactoryManager implements Serializable {
         }
         try {
             return failedMsgRetryManagerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return returns a new instance of the configured persistence manager.
+     */
+    public PersistenceManager createNewPersistenceManagerInstance() {
+        if (persistenceManagerClass == null) {
+            final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS);
+            }
+
+            try {
+                persistenceManagerClass = (Class<? extends PersistenceManager>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return persistenceManagerClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }

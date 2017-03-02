@@ -17,7 +17,6 @@ public class SidelineSpoutConfig {
      * (String) Defines which Deserializer (Schema?) implementation to use.
      * Should be a full classpath to a class that implements the Deserializer interface.
      * Default Value: "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer"
-     * @TODO: Do we want to rename this?
      */
     public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
 
@@ -25,9 +24,15 @@ public class SidelineSpoutConfig {
      * (String) Defines which FailedMsgRetryManager implementation to use.
      * Should be a full classpath to a class that implements the FailedMsgRetryManager interface.
      * Default Value: "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager"
-     * @TODO: Do we want to rename this?
      */
-    public static final String FAILED_MSG_RETRY_MANAGER_CLASS = "sideline_spout.failedmsgretrymanager.class";
+    public static final String FAILED_MSG_RETRY_MANAGER_CLASS = "sideline_spout.failed_msg_retry_manager.class";
+
+    /**
+     * (String) Defines which PersistenceManager implementation to use.
+     * Should be a full classpath to a class that implements the PersistenceManager interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager"
+     */
+    public static final String PERSISTENCE_MANAGER_CLASS = "sideline_spout.persistence_manager.class";
 
     ///////////////////////////////////
     // Kafka Consumer Config

@@ -25,8 +25,8 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 
     // Config
-    private final String zkConnectionString;
-    private final String zkRoot;
+    private String zkConnectionString;
+    private String zkRoot;
 
     // Additional Config
     // TODO - Move into some kind of config/properties class/map/thing.
@@ -37,6 +37,12 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     // Zookeeper connection
     private CuratorFramework curator;
+
+    /**
+     * Constructor.
+     */
+    public ZookeeperPersistenceManager() {
+    }
 
     /**
      * Constructor.
