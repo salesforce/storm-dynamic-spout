@@ -140,7 +140,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         failedMsgRetryManager.prepare(topologyConfig);
 
         // Construct SidelineConsumerConfig from incoming config
-        // TODO: use values from incoming config
         final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
         final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
         final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
