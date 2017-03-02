@@ -21,6 +21,14 @@ public class SidelineSpoutConfig {
      */
     public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
 
+    /**
+     * (String) Defines which FailedMsgRetryManager implementation to use.
+     * Should be a full classpath to a class that implements the FailedMsgRetryManager interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager"
+     * @TODO: Do we want to rename this?
+     */
+    public static final String FAILED_MSG_RETRY_MANAGER_CLASS = "sideline_spout.failedmsgretrymanager.class";
+
     ///////////////////////////////////
     // Kafka Consumer Config
     ///////////////////////////////////
