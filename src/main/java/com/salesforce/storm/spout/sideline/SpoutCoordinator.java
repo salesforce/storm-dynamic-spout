@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 /**
- * Spout Coordinator
+ * Spout Coordinator.
  *
  * Manages X number of spouts and coordinates their nextTuple(), ack() and fail() calls across threads
  */
@@ -210,8 +210,8 @@ public class SpoutCoordinator {
             handler.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             handler.cancel(true);
-        } catch (InterruptedException e) {
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("Caught Exception while stopping: {}", e);
         }
 
         executor.shutdownNow();
@@ -221,7 +221,7 @@ public class SpoutCoordinator {
     }
 
     /**
-     * For testing, returns the total number of running spouts
+     * For testing, returns the total number of running spouts.
      * @return The total number of spouts the coordinator is running
      */
     int getTotalSpouts() {

@@ -527,9 +527,56 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.persistConsumerState("MyConsumerId", new ConsumerState());
     }
 
-    // TODO: at test cases:
-    // test parseJsonToConsumerState() with null argument returns empty consumer state.
-    // test read/write when open() not called throws exception
+    /**
+     * Verify we get an exception if you try to retrieve before calling open().
+     */
+    @Test
+    public void testRetrieveConsumerStateBeforeBeingOpened() {
+        // Define our ZK Root Node
+        final String zkRootNodePath = "/TestRootPath";
+
+        // Create our instance
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        // Call method and watch for exception
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.retrieveConsumerState("MyConsumerId");
+    }
+
+    /**
+     * Verify we get an exception if you try to persist before calling open().
+     */
+    @Test
+    public void testPersistSidelineRequestStateBeforeBeingOpened() {
+        // Define our ZK Root Node
+        final String zkRootNodePath = "/TestRootPath";
+
+        // Create our instance
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        // Call method and watch for exception
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.persistSidelineRequestState(new SidelineIdentifier(), new ConsumerState());
+    }
+
+    /**
+     * Verify we get an exception if you try to retrieve before calling open().
+     */
+    @Test
+    public void testRetrieveSidelineRequestStateBeforeBeingOpened() {
+        // Define our ZK Root Node
+        final String zkRootNodePath = "/TestRootPath";
+
+        // Create our instance
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        // Call method and watch for exception
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.retrieveSidelineRequestState(new SidelineIdentifier());
+    }
 
     /**
      * Helper method.

@@ -587,4 +587,6 @@ public class SidelineSpoutTest {
 
         return config;
     }
+
+    // TODO: Add test over fail() method.
 }
