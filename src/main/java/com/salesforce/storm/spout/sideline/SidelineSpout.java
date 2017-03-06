@@ -53,9 +53,8 @@ public class SidelineSpout extends BaseRichSpout {
 
     /**
      * Stores state about starting/stopping sideline requests.
-     * @TODO - create from config.
      */
-    private PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+    private PersistenceManager persistenceManager;
 
     /**
      * Determines which output stream to emit tuples out.
@@ -190,7 +189,8 @@ public class SidelineSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
-        // open() persistence manager passing appropriate configuration.
+        // Create and open() persistence manager passing appropriate configuration.
+        persistenceManager = factoryManager.createNewPersistenceManagerInstance();
         persistenceManager.open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
