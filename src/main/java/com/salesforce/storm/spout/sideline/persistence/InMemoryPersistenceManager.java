@@ -1,9 +1,12 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 
 import java.io.Serializable;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 

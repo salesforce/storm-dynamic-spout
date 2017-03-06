@@ -71,26 +71,6 @@ public class KafkaTestServer implements AutoCloseable {
     }
 
     /**
-     * Returns config settings that are needed by Storm.
-     */
-    public Config getIntegrationTestConfig() {
-        // Create config
-        Config config = new Config();
-
-        // New ZK Host list uses a list
-        final List<String> zkHostsAndPorts = Lists.newArrayList(getZkServer().getConnectString().split(","));
-
-        // Use new config entry lines
-        config.put(KAFKA_ZOOKEEPER, zkHostsAndPorts);
-        config.put(STORM_ZOOKEEPER, Lists.newArrayList("127.0.0.1:2181"));
-
-        // Not entirely sure what these are used for.  We'll leave em for now.
-        config.put("storm.zookeeper.servers", Lists.newArrayList("127.0.0.1"));
-        config.put("storm.zookeeper.port", getZkServer().getPort());
-        return config;
-    }
-
-    /**
      * Creates and starts ZooKeeper and Kafka server instances.
      * @throws Exception
      */

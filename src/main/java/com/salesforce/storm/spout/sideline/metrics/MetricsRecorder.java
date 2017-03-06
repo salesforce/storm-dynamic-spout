@@ -57,6 +57,6 @@ public interface MetricsRecorder {
      *
      * @throws Exception Hopefully whatever went wrong in your callable
      */
-    void timer(Class sourceClass, String metricName, long timeInMs) throws Exception;
+    void timer(Class sourceClass, String metricName, long timeInMs);
 
 }

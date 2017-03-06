@@ -90,7 +90,7 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void timer(Class sourceClass, String metricName, long timeInMs) throws Exception {
+    public void timer(Class sourceClass, String metricName, long timeInMs) {
         logger.info("[TIMER] {} + {}", generateKey(sourceClass, metricName), timeInMs);
     }
 

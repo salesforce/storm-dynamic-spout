@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
@@ -154,6 +155,8 @@ public class SidelineSpout extends BaseRichSpout {
             negatedSteps.add(new NegatingFilterChainStep(step));
         }
 
+        final FailedMsgRetryManager failedMsgRetryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
+
         // This is the state that the VirtualSidelineSpout should start with
         final ConsumerState startingState = persistenceManager.retrieveSidelineRequestState(stopRequest.id);
 
@@ -167,7 +170,8 @@ public class SidelineSpout extends BaseRichSpout {
             topologyConfig,
             topologyContext,
             factoryManager.createNewDeserializerInstance(),
-            new NoRetryFailedMsgRetryManager(),
+            failedMsgRetryManager,
+            metricsRecorder,
             // Starting offset of the sideline request
             startingState,
             // When the sideline request ends
@@ -211,7 +215,7 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceManager.open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance());
+        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance(), metricsRecorder);
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
 
         // Setting up thread to call nextTuple
