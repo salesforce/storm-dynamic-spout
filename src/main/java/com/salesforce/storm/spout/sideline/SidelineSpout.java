@@ -8,8 +8,6 @@ import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.metrics.StormRecorder;
-import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.StartRequest;
@@ -241,7 +239,7 @@ public class SidelineSpout extends BaseRichSpout {
         // TODO: Look for any existing sideline requests that haven't finished and add them to the
         //  coordinator
 
-        coordinator.start((KafkaMessage message) -> {
+        coordinator.open((KafkaMessage message) -> {
             queue.add(message);
         });
     }
@@ -288,7 +286,7 @@ public class SidelineSpout extends BaseRichSpout {
         logger.info("Stopping the coordinator and closing all spouts");
 
         if (coordinator != null) {
-            coordinator.stop();
+            coordinator.close();
             coordinator = null;
         }
 

@@ -46,7 +46,7 @@ public class SpoutCoordinatorTest {
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder);
-        coordinator.start(actual::add);
+        coordinator.open(actual::add);
 
         assertEquals(1, coordinator.getTotalSpouts());
 
@@ -88,7 +88,7 @@ public class SpoutCoordinatorTest {
             message2.getTupleMessageId().equals(sidelineSpout1.acks.poll())
         );
 
-        coordinator.stop();
+        coordinator.close();
 
         System.out.println("Expected = " + expected);
         System.out.println("Actual = " + actual);

@@ -1,7 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
-import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +65,7 @@ public class SpoutCoordinator {
      * Start coordinating delegate spouts
      * @param consumer A lambda to receive messages as they are coming off of various spouts
      */
-    public void start(final Consumer<KafkaMessage> consumer) {
+    public void open(final Consumer<KafkaMessage> consumer) {
         running = true;
 
         final CountDownLatch startSignal = new CountDownLatch(sidelineSpouts.size());
@@ -77,7 +76,7 @@ public class SpoutCoordinator {
                     for (DelegateSidelineSpout spout : sidelineSpouts) {
                         sidelineSpouts.remove(spout);
 
-                        startSpout(spout, consumer, startSignal);
+                        openSpout(spout, consumer, startSignal);
                     }
                 }
 
@@ -98,7 +97,7 @@ public class SpoutCoordinator {
         }
     }
 
-    protected void startSpout(
+    protected void openSpout(
         final DelegateSidelineSpout spout,
         final Consumer<KafkaMessage> consumer,
         final CountDownLatch startSignal
@@ -203,7 +202,7 @@ public class SpoutCoordinator {
     /**
      * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts
      */
-    public void stop() {
+    public void close() {
         // Tell every spout to finish what they're doing
         for (DelegateSidelineSpout spout : runningSpouts.values()) {
             // Marking it as finished will cause the thread to end, remove it from the thread map
