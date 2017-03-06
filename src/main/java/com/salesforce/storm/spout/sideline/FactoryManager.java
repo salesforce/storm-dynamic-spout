@@ -4,7 +4,9 @@ import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.yammer.metrics.Metrics;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -33,6 +35,11 @@ public class FactoryManager implements Serializable {
      * Class instance of our PersistenceManager.
      */
     private transient Class<? extends PersistenceManager> persistenceManagerClass;
+
+    /**
+     * Class instance of our Metrics Recorder.
+     */
+    private transient Class<? extends MetricsRecorder> metricsRecorderClass;
 
     public FactoryManager(Map topologyConfig) {
         this.topologyConfig = topologyConfig;
@@ -102,6 +109,30 @@ public class FactoryManager implements Serializable {
         }
         try {
             return persistenceManagerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return returns a new instance of the configured Metrics Recorder manager.
+     */
+    public MetricsRecorder createNewMetricsRecorder() {
+        if (metricsRecorderClass == null) {
+            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                // Use default value
+                classStr = "com.salesforce.storm.spout.sideline.metrics.StormRecorder";
+            }
+
+            try {
+                metricsRecorderClass = (Class<? extends MetricsRecorder>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return metricsRecorderClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }

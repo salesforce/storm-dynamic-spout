@@ -7,6 +7,8 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.sideline.metrics.StormRecorder;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -53,9 +55,13 @@ public class SidelineSpout extends BaseRichSpout {
 
     /**
      * Stores state about starting/stopping sideline requests.
-     * @TODO - create from config.
      */
-    private PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+    private PersistenceManager persistenceManager;
+
+    /**
+     * For collecting metrics.
+     */
+    private transient MetricsRecorder metricsRecorder;
 
     /**
      * Determines which output stream to emit tuples out.
@@ -125,6 +131,9 @@ public class SidelineSpout extends BaseRichSpout {
         // Call back to the trigger after starting
         // TODO: Revisit this, specifically the payload
         startingTrigger.start(id);
+
+        // Update start count metric
+        metricsRecorder.count(getClass(), "start-sideline", 1L);
     }
 
     /**
@@ -174,6 +183,9 @@ public class SidelineSpout extends BaseRichSpout {
         // Callback to teh trigger after stopping
         // TODO: Revisit this, specifically the payload
         stoppingTrigger.stop();
+
+        // Update stop count metric
+        metricsRecorder.count(getClass(), "stop-sideline", 1L);
     }
 
     @Override
@@ -182,6 +194,10 @@ public class SidelineSpout extends BaseRichSpout {
         this.topologyConfig = Collections.unmodifiableMap(toplogyConfig);
         this.topologyContext = context;
         this.outputCollector = collector;
+
+        // Initialize Metrics Collection
+        this.metricsRecorder = factoryManager.createNewMetricsRecorder();
+        metricsRecorder.open(this.topologyConfig, this.topologyContext);
 
         // Setup our concurrent queue.
         this.queue = new ConcurrentLinkedDeque<>();
@@ -192,7 +208,8 @@ public class SidelineSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
-        // open() persistence manager passing appropriate configuration.
+        // Create and open() persistence manager passing appropriate configuration.
+        persistenceManager = factoryManager.createNewPersistenceManagerInstance();
         persistenceManager.open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
@@ -211,7 +228,11 @@ public class SidelineSpout extends BaseRichSpout {
             // Maybe this instance is a wrapper/container around all of the VirtualSideLineSpout instances?
 
         coordinator = new SpoutCoordinator(
-            fireHoseSpout
+                // Our main firehose spout instance.
+                fireHoseSpout,
+
+                // Our metrics recorder.
+                metricsRecorder
         );
 
         startingTrigger.open(toplogyConfig);
@@ -239,6 +260,12 @@ public class SidelineSpout extends BaseRichSpout {
 
             // Dump to output collector.
             outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
+
+            // Update emit count metric for SidelineSpout
+            metricsRecorder.count(getClass(), "emit", 1L);
+
+            // Update emit count metric for VirtualSidelineSpout this tuple originated from
+            metricsRecorder.count(VirtualSidelineSpout.class, kafkaMessage.getTupleMessageId().getSrcConsumerId() + ".emit", 1);
         }
     }
 
@@ -284,7 +311,14 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
+        // Ack the tuple
         coordinator.ack(tupleMessageId);
+
+        // Update ack count metric
+        metricsRecorder.count(getClass(), "ack", 1L);
+
+        // Update ack count metric for VirtualSidelineSpout this tuple originated from
+        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcConsumerId() + ".ack", 1);
     }
 
     @Override
@@ -292,7 +326,14 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
+        // Fail the tuple
         coordinator.fail(tupleMessageId);
+
+        // Update fail count metric
+        metricsRecorder.count(getClass(), "fail", 1L);
+
+        // Update ack count metric for VirtualSidelineSpout this tuple originated from
+        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcConsumerId() + ".fail", 1);
     }
 
     public Map getTopologyConfig() {

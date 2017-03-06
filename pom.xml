@@ -28,7 +28,7 @@
         <jarOutputDir></jarOutputDir>
 
         <!-- Define which version of storm you'll be running this topology on -->
-        <stormVersion>1.0.2</stormVersion>
+        <stormVersion>1.0.3</stormVersion>
     </properties>
 
     <dependencies>

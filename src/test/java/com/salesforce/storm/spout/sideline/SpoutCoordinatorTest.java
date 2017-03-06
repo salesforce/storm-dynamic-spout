@@ -1,7 +1,11 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -36,7 +40,12 @@ public class SpoutCoordinatorTest {
 
         final Set<KafkaMessage> actual = Sets.newConcurrentHashSet();
 
-        final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout);
+        // Create noop metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+
+        // Create coordinator
+        final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder);
         coordinator.start(actual::add);
 
         assertEquals(1, coordinator.getTotalSpouts());
