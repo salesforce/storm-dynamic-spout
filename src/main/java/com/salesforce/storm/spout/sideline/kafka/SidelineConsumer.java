@@ -93,10 +93,10 @@ public class SidelineConsumer {
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
      */
-    public void connect(ConsumerState startingState) {
+    public void open(ConsumerState startingState) {
         // Simple state enforcement.
         if (hasCalledConnect) {
-            throw new RuntimeException("Cannot call connect more than once...");
+            throw new RuntimeException("Cannot call open more than once...");
         }
         hasCalledConnect = true;
 

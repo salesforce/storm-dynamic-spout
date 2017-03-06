@@ -111,8 +111,8 @@ public class SidelineConsumerTest {
     }
 
     // TODO: these test cases
-    // test calling connect twice throws exception.
-    // test calling connect w/ a starting state.
+    // test calling open twice throws exception.
+    // test calling open w/ a starting state.
     // test calling getCurrentState().
 
     /**
@@ -186,7 +186,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call connect that it makes the appropriate calls
+     * Verifies that when we call open that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return an empty ConsumerState.
@@ -220,8 +220,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Now call connect
-        sidelineConsumer.connect(null);
+        // Now call open
+        sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
@@ -231,7 +231,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call connect that it makes the appropriate calls
+     * Verifies that when we call open that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return an empty ConsumerState.
@@ -269,8 +269,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Now call connect
-        sidelineConsumer.connect(null);
+        // Now call open
+        sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -286,7 +286,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call connect that it makes the appropriate calls
+     * Verifies that when we call open that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return ConsumerState.
@@ -322,8 +322,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Now call connect
-        sidelineConsumer.connect(null);
+        // Now call open
+        sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
@@ -336,7 +336,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call connect that it makes the appropriate calls
+     * Verifies that when we call open that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return ConsumerState for every partition on the topic.
@@ -387,8 +387,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Now call connect
-        sidelineConsumer.connect(null);
+        // Now call open
+        sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -407,7 +407,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call connect that it makes the appropriate calls
+     * Verifies that when we call open that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return ConsumerState for every partition on the topic.
@@ -458,8 +458,8 @@ public class SidelineConsumerTest {
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
-        // Now call connect
-        sidelineConsumer.connect(null);
+        // Now call open
+        sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -496,7 +496,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -529,7 +529,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -562,7 +562,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -610,7 +610,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -687,7 +687,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -735,7 +735,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -786,7 +786,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -848,7 +848,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -939,7 +939,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Read from topic, verify we get what we expect
         for (int x=numberOfExpectedRecordsToConsume; x<numberOfRecordsToProduce; x++) {
@@ -989,7 +989,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1111,7 +1111,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1190,7 +1190,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.connect(null);
+        sidelineConsumer.open(null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();

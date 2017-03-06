@@ -158,7 +158,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // Connect the consumer
-        sidelineConsumer.connect(startingState);
+        sidelineConsumer.open(startingState);
     }
 
     @Override
