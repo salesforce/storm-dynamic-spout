@@ -2,10 +2,22 @@ package com.salesforce.storm.spout.sideline.trigger;
 
 import com.salesforce.storm.spout.sideline.SidelineSpout;
 
+import java.util.Map;
+
 public class StaticTrigger implements StartingTrigger, StoppingTrigger {
 
     private SidelineSpout sidelineSpout;
     private SidelineIdentifier currentSidelineIdentifier;
+
+    @Override
+    public void open(Map config) {
+
+    }
+
+    @Override
+    public void close() {
+
+    }
 
     public void start(SidelineIdentifier sidelineIdentifier) {
         this.currentSidelineIdentifier = sidelineIdentifier;

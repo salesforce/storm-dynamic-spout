@@ -122,7 +122,8 @@ public class SidelineSpout extends BaseRichSpout {
         // Add our new filter steps
         fireHoseSpout.getFilterChain().addSteps(id, startRequest.steps);
 
-        // Hit the start trigger
+        // Call back to the trigger after starting
+        // TODO: Revisit this, specifically the payload
         startingTrigger.start(id);
     }
 
@@ -170,7 +171,8 @@ public class SidelineSpout extends BaseRichSpout {
 
         coordinator.addSidelineSpout(spout);
 
-        // If any cleanup is necessary it could be handled here
+        // Callback to teh trigger after stopping
+        // TODO: Revisit this, specifically the payload
         stoppingTrigger.stop();
     }
 
@@ -211,6 +213,9 @@ public class SidelineSpout extends BaseRichSpout {
         coordinator = new SpoutCoordinator(
             fireHoseSpout
         );
+
+        startingTrigger.open(toplogyConfig);
+        stoppingTrigger.open(toplogyConfig);
 
         // TODO: Look for any existing sideline requests that haven't finished and add them to the
         //  coordinator
@@ -254,10 +259,14 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void close() {
         logger.info("Stopping the coordinator and closing all spouts");
+
         if (coordinator != null) {
             coordinator.stop();
             coordinator = null;
         }
+
+        startingTrigger.close();
+        stoppingTrigger.close();
     }
 
     @Override
