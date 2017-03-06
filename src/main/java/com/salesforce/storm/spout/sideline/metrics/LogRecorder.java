@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.util.concurrent.Callable;
 
 /**
@@ -18,147 +19,45 @@ public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
 
-    /**
-     * Count a metric, given a name, increments it by 1
-     *
-     * @param metric Name of the metric
-     */
-    public void count(Counter metric) {
-        count(metric, 1L);
+
+    @Override
+    public void count(Class sourceClass, String metricName) {
+        count(sourceClass, metricName, 1);
     }
 
-    /**
-     * Count a metric, given a name and increment it by the supplied value
-     *
-     * @param metric Name of the metric
-     * @param value The value to increment by
-     */
-    public void count(Counter metric, long value) {
-        logger.debug("[COUNTER] {} = {}", metric, value);
+    @Override
+    public void count(Class sourceClass, String metricName, long incrementBy) {
+        logger.info("[COUNTER] {} + {}", generateKey(sourceClass, metricName), incrementBy);
     }
 
-    /**
-     * Count a metric, given a name and a scope, increment it by the supplied value
-     *
-     * A scope is a secondary keyspace, so Foo.Bar as a metric name.
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     * @param value The value to increment by
-     */
-    public void count(Counter metric, final String scope, long value) {
-        logger.debug("[COUNTER] {} {} = {}", metric, scope, value);
+    @Override
+    public void average(Class sourceClass, String metricName, Object value) {
+        logger.info("[AVERAGE] {} + {}", generateKey(sourceClass, metricName), value);
     }
 
-    /**
-     * Count a metric, given a name and a scope, increment it by the supplied value
-     *
-     * This is a short hand for supplying a long as the scope, this would most commonly be an account id
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     * @param value The value to increment by
-     */
-    public void count(Counter metric, final long scope, long value) {
-        count(metric, String.valueOf(scope), value);
-    }
-
-
-    /**
-     * Count a metric, given a name and a scope, increments it by 1
-     *
-     * A scope is a secondary keyspace, so Foo.Bar as a metric name.
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     */
-    public void count(Counter metric, final String scope) {
-        count(metric, scope, 1L);
-    }
-
-    /**
-     * Gauge a metric, given a name, by a specify value
-     *
-     * @param metric Name of the metric
-     * @param value The value to include in the average
-     */
-    public void gauge(Gauge metric, Object value) {
-        logger.debug("[GAUGE] {} = {}", metric, value);
-    }
-
-    /**
-     * Gauge a metric, given a name and a scope by a specify value
-     *
-     * A scope is a secondary keyspace, so Foo.Bar as a metric name.
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     * @param value The value to include in the average
-     */
-    public void gauge(final Gauge metric, final String scope, final Object value) {
-        logger.debug("[GAUGE] {} {} = {}", metric, scope, value);
-    }
-
-    /**
-     * Gauge a metric, given a name and a scope by a specify value
-     *
-     * This is a short hand for supplying a long as the scope, this would most commonly be an account id
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     * @param value The value to include in the average
-     */
-    public void gauge(final Gauge metric, final long scope, final Object value) {
-        gauge(metric, String.valueOf(scope), value);
-    }
-
-    /**
-     * Gauge the execution time, given a name, for the Callable code (you should use a lambda!)
-     *
-     * @param metric Name of the metric
-     * @param callable Some code that you want to time when it runs
-     * @return The result of the Callable, whatever they might be
-     * @throws Exception Hopefully whatever went wrong in your callable
-     */
-    public <T> T timer(Gauge metric, Callable<T> callable) throws Exception {
-        final long start = System.currentTimeMillis();
+    @Override
+    public <T> T timer(Class sourceClass, String metricName, Callable<T> callable) throws Exception {
+        // Wrap in timing
+        final long start = Clock.systemUTC().millis();
         T result = callable.call();
-        final long end = System.currentTimeMillis();
-        logger.debug("[GAUGE] {} = {}", metric, end - start);
+        final long end = Clock.systemUTC().millis();
+
+        // Update
+        timer(sourceClass, metricName, (end - start));
+
+        // return result.
         return (T) result;
     }
 
-    /**
-     * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
-     *
-     * A scope is a secondary keyspace, so Foo.Bar as a metric name.
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     * @param callable Some code that you want to time when it runs
-     * @return The result of the Callable, whatever they might be
-     * @throws Exception Hopefully whatever went wrong in your callable
-     */
-    public <T> T timer(Gauge metric, final String scope, Callable<T> callable) throws Exception {
-        final long start = System.currentTimeMillis();
-        T result = callable.call();
-        final long end = System.currentTimeMillis();
-        logger.debug("[GAUGE] {} {} = {}", metric, scope, end - start);
-        return (T) result;
+    @Override
+    public void timer(Class sourceClass, String metricName, long timeInMs) throws Exception {
+        logger.info("[TIMER] {} + {}", generateKey(sourceClass, metricName), timeInMs);
     }
 
-    /**
-     * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
-     *
-     * This is a short hand for supplying a long as the scope, this would most commonly be an account id
-     *
-     * @param metric Name of the metric
-     * @param scope The scope, or the second part of the namespace for the metric
-     * @param callable Some code that you want to time when it runs
-     * @return The result of the Callable, whatever they might be
-     * @throws Exception Hopefully whatever went wrong in your callable
-     */
-    public <T> T timer(Gauge metric, final long scope, Callable<T> callable) throws Exception {
-        return timer(metric, String.valueOf(scope), callable);
+    private String generateKey(Class sourceClass, String metricName) {
+        return new StringBuilder(sourceClass.getSimpleName())
+                .append(".")
+                .append(metricName)
+                .toString();
     }
 }

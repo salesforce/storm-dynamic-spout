@@ -12,6 +12,8 @@ The purpose of this project is to provide a ....
 # Getting started
 ## Configuration
 
+# Metrics
+
 # Customization
 ## Interfaces
 ### Interface A
