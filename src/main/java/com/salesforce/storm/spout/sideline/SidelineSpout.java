@@ -233,8 +233,13 @@ public class SidelineSpout extends BaseRichSpout {
                 metricsRecorder
         );
 
-        startingTrigger.open(toplogyConfig);
-        stoppingTrigger.open(toplogyConfig);
+        if (startingTrigger != null) {
+            startingTrigger.open(toplogyConfig);
+        }
+
+        if (stoppingTrigger != null) {
+            stoppingTrigger.open(toplogyConfig);
+        }
 
         // TODO: Look for any existing sideline requests that haven't finished and add them to the
         //  coordinator
@@ -290,8 +295,13 @@ public class SidelineSpout extends BaseRichSpout {
             coordinator = null;
         }
 
-        startingTrigger.close();
-        stoppingTrigger.close();
+        if (startingTrigger != null) {
+            startingTrigger.close();
+        }
+
+        if (stoppingTrigger != null) {
+            stoppingTrigger.close();
+        }
     }
 
     @Override

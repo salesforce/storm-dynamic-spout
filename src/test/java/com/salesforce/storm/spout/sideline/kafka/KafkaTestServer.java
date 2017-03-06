@@ -103,7 +103,7 @@ public class KafkaTestServer implements AutoCloseable {
         String kafkaPort = String.valueOf(InstanceSpec.getRandomPort());
 
         Properties p = new Properties();
-        p.setProperty("zookeeper.open", connectionString);
+        p.setProperty("zookeeper.connect", connectionString);
         p.setProperty("broker.id", String.valueOf(new Random().nextInt(Integer.MAX_VALUE)));
         p.setProperty("port", kafkaPort);
         p.setProperty("log.dir", logDir.getAbsolutePath());
@@ -188,7 +188,7 @@ public class KafkaTestServer implements AutoCloseable {
      */
     public ConsumerConnector getKafkaConsumerConnector() {
         Properties consumerProperties = new Properties();
-        consumerProperties.put("zookeeper.open", getZkServer().getConnectString());
+        consumerProperties.put("zookeeper.connect", getZkServer().getConnectString());
         consumerProperties.put("group.id", "test-group");
 
         // Start from the head of the topic by default
