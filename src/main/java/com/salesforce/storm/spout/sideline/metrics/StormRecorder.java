@@ -30,19 +30,13 @@ public class StormRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
 
-    private final MultiReducedMetric averages;
-    private final MultiReducedMetric timers;
-    private final MultiCountMetric counters;
+    private MultiReducedMetric averages;
+    private MultiReducedMetric timers;
+    private MultiCountMetric counters;
 
-    /**
-     * Sets up all of the known Counter's and Gauge's in the Topology.
-     *
-     * A counter is additive over the time window
-     * A gauge will average all supplied value over the time window
-     *
-     * @param topologyContext Storm topology context, where all metrics will be registered
-     */
-    public StormRecorder(final TopologyContext topologyContext) {
+
+    @Override
+    public void open(final Map topologyConfig, final TopologyContext topologyContext) {
         // Configuration items, hardcoded for now.
         final String topLevelPrefix = SidelineSpout.class.getSimpleName();
         final int timeBucket = 60;

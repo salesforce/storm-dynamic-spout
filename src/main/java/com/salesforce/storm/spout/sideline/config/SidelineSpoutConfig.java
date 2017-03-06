@@ -99,4 +99,16 @@ public class SidelineSpoutConfig {
      * Optional - Only required if you use the DefaultFailedMsgRetryManager implementation.
      */
     public static final String FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS = "sideline_spout.failed_msg_retry_manager.min_retry_time_ms";
+
+///////////////////////////////////
+// Metrics Collection
+///////////////////////////////////
+
+    /**
+     * (String) Defines which MetricsRecorder implementation to use.
+     * Should be a full classpath to a class that implements the MetricsRecorder interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.metrics.StormRecorder"
+     */
+    public static final String METRICS_RECORDER_CLASS = "sideline_spout.metrics.class";
+
 }

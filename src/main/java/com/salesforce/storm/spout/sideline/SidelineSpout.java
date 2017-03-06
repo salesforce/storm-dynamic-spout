@@ -7,6 +7,8 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.sideline.metrics.StormRecorder;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
@@ -55,6 +57,11 @@ public class SidelineSpout extends BaseRichSpout {
      * Stores state about starting/stopping sideline requests.
      */
     private PersistenceManager persistenceManager;
+
+    /**
+     * For collecting metrics.
+     */
+    private transient MetricsRecorder metricsRecorder;
 
     /**
      * Determines which output stream to emit tuples out.
@@ -179,6 +186,10 @@ public class SidelineSpout extends BaseRichSpout {
         this.topologyConfig = Collections.unmodifiableMap(toplogyConfig);
         this.topologyContext = context;
         this.outputCollector = collector;
+
+        // Initialize Metrics Collection
+        this.metricsRecorder = factoryManager.createNewMetricsRecorder();
+        metricsRecorder.open(this.topologyConfig, this.topologyContext);
 
         // Setup our concurrent queue.
         this.queue = new ConcurrentLinkedDeque<>();

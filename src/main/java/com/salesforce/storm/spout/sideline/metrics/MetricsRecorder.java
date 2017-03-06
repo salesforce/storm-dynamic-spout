@@ -1,9 +1,19 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
 
+import org.apache.storm.task.TopologyContext;
+
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 public interface MetricsRecorder {
+
+    /**
+     * Performs any required initialization/connection/setup required for
+     * the implementation.  By contract, this will be called once prior to calling
+     * collecting any metrics.
+     */
+    void open(final Map topologyConfig, final TopologyContext topologyContext);
 
     /**
      * Count a metric, given a name, increments it by 1.

@@ -1,9 +1,11 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
+import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -19,6 +21,10 @@ public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
 
+    @Override
+    public void open(Map topologyConfig, TopologyContext topologyContext) {
+        // Nothing to do.
+    }
 
     @Override
     public void count(Class sourceClass, String metricName) {
