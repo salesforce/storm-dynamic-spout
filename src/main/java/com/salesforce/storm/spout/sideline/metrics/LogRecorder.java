@@ -40,7 +40,7 @@ public class LogRecorder implements MetricsRecorder {
             final long newValue = counters.getOrDefault(key, 0L) + incrementBy;
             counters.put(key, newValue);
 
-            logger.info("[COUNTER] {} = {}", key, newValue);
+            logger.debug("[COUNTER] {} = {}", key, newValue);
         }
     }
 
@@ -64,7 +64,7 @@ public class LogRecorder implements MetricsRecorder {
             for (Object entry: averages.get(key)) {
                 total = total.doubleValue() + ((Number)entry).doubleValue();
             }
-            logger.info("[AVERAGE] {} => {}", key, (total.doubleValue() / averages.get(key).size()));
+            logger.debug("[AVERAGE] {} => {}", key, (total.doubleValue() / averages.get(key).size()));
         }
     }
 
@@ -72,7 +72,7 @@ public class LogRecorder implements MetricsRecorder {
     public void assignValue(Class sourceClass, String metricName, Object value) {
         final String key = generateKey(sourceClass, metricName);
         assignedValues.put(key, value);
-        logger.info("[ASSIGNED] {} => {}", key, value);
+        logger.debug("[ASSIGNED] {} => {}", key, value);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class LogRecorder implements MetricsRecorder {
 
     @Override
     public void timer(Class sourceClass, String metricName, long timeInMs) {
-        logger.info("[TIMER] {} + {}", generateKey(sourceClass, metricName), timeInMs);
+        logger.debug("[TIMER] {} + {}", generateKey(sourceClass, metricName), timeInMs);
     }
 
     private String generateKey(Class sourceClass, String metricName) {
