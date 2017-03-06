@@ -111,8 +111,8 @@ public class SidelineConsumerTest {
     }
 
     // TODO: these test cases
-    // test calling open twice throws exception.
-    // test calling open w/ a starting state.
+    // test calling connect twice throws exception.
+    // test calling connect w/ a starting state.
     // test calling getCurrentState().
 
     /**
@@ -186,7 +186,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call open that it makes the appropriate calls
+     * Verifies that when we call connect that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return an empty ConsumerState.
@@ -231,7 +231,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call open that it makes the appropriate calls
+     * Verifies that when we call connect that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return an empty ConsumerState.
@@ -286,7 +286,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call open that it makes the appropriate calls
+     * Verifies that when we call connect that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return ConsumerState.
@@ -336,7 +336,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call open that it makes the appropriate calls
+     * Verifies that when we call connect that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return ConsumerState for every partition on the topic.
@@ -407,7 +407,7 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Verifies that when we call open that it makes the appropriate calls
+     * Verifies that when we call connect that it makes the appropriate calls
      * to ConsumerStateManager to initialize.
      *
      * This test has the ConsumerStateManager (a mock) return ConsumerState for every partition on the topic.
