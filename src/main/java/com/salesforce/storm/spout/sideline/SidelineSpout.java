@@ -202,8 +202,13 @@ public class SidelineSpout extends BaseRichSpout {
         // Setup our concurrent queue.
         this.queue = new ConcurrentLinkedDeque<>();
 
-        this.startingTrigger.setSidelineSpout(this);
-        this.stoppingTrigger.setSidelineSpout(this);
+        if (startingTrigger != null) {
+            startingTrigger.setSidelineSpout(this);
+        }
+
+        if (stoppingTrigger != null) {
+            stoppingTrigger.setSidelineSpout(this);
+        }
 
         // Grab our ConsumerId prefix from the config
         final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
