@@ -9,6 +9,8 @@ import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -56,7 +58,15 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      */
     private boolean isOpened = false;
 
+    /**
+     * Is our unique ConsumerId.
+     */
     private String consumerId;
+
+    /**
+     * For collecting metrics.
+     */
+    private MetricsRecorder metricsRecorder;
 
     /**
      * For tracking failed messages, and knowing when to replay them.
@@ -64,8 +74,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private FailedMsgRetryManager failedMsgRetryManager;
     private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager) {
-        this(topologyConfig, topologyContext, deserializer, failedMsgRetryManager,null, null);
+    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, MetricsRecorder metricsRecorder) {
+        this(topologyConfig, topologyContext, deserializer, failedMsgRetryManager, metricsRecorder, null, null);
     }
 
     /**
@@ -75,7 +85,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param startingState
      * @param endingState
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -87,6 +97,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Save failed msg retry manager instance.
         this.failedMsgRetryManager = failedMsgRetryManager;
+
+        // Save metrics record
+        this.metricsRecorder = metricsRecorder;
 
         // Save state
         this.startingState = startingState;
@@ -102,7 +115,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param sidelineConsumer
      */
     protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, SidelineConsumer sidelineConsumer) {
-        this(config, topologyContext, deserializer, failedMsgRetryManager);
+        this(config, topologyContext, deserializer, failedMsgRetryManager, (MetricsRecorder) null);
         this.sidelineConsumer = sidelineConsumer;
     }
 
@@ -115,7 +128,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param sidelineConsumer
      */
     protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
-        this(config, topologyContext, deserializer, new NoRetryFailedMsgRetryManager(), startingState, endingState);
+        this(config, topologyContext, deserializer, new NoRetryFailedMsgRetryManager(), null, startingState, endingState);
         this.sidelineConsumer = sidelineConsumer;
     }
 
@@ -131,6 +144,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Set state to true.
         isOpened = true;
 
+        // TODO - This should get passed in.
+        if (metricsRecorder == null) {
+            logger.error("TODO REMOVE THIS");
+            metricsRecorder = new LogRecorder();
+            metricsRecorder.open(topologyConfig, topologyContext);
+        }
+
         // For debugging purposes
         logger.info("Open has Starting State: {}", startingState);
         logger.info("Open has Ending State: {}", endingState);
@@ -143,22 +163,29 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
         final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
 
-        // Build our implementation of PersistenceManager and open() it.
-        final PersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(getTopologyConfig());
-
         // Do we need to set starting offset here somewhere?  Probably.
         // Either we need to set the offsets from the incoming config,
         // Or we need to tell it to start from somewhere
 
+        // TODO: this should be removed I believe?  We always inject one.
         // Create a consumer, but..
         // if one was injected via the constructor, just use it.
         if (sidelineConsumer == null) {
+            // Build our implementation of PersistenceManager and open() it.
+            final PersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+            persistenceManager.open(getTopologyConfig());
+
             sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
         }
 
         // Connect the consumer
         sidelineConsumer.open(startingState);
+
+        // If we have an ending state, assign values
+        if (endingState != null) {
+            // Update our metrics
+            updateMetrics(endingState, "endingOffset");
+        }
     }
 
     @Override
@@ -309,6 +336,17 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Mark it as completed in the failed message handler if it exists.
         failedMsgRetryManager.acked(tupleMessageId);
+
+        // Update our metrics,
+        // TODO: probably doesn't need to happen every ack?
+        updateMetrics(sidelineConsumer.getCurrentState(), "currentOffset");
+    }
+
+    private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
+        for (TopicPartition partition: consumerState.getState().keySet()) {
+            final String key = getConsumerId() +  "." + keyPrefix + ".partition" + partition.partition();
+            metricsRecorder.assignValue(getClass(), key, consumerState.getOffsetForTopicAndPartition(partition));
+        }
     }
 
     @Override

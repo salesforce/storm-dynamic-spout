@@ -11,6 +11,8 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -61,7 +63,7 @@ public class VirtualSidelineSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), new LogRecorder());
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSidelineSpout.getTopologyConfig());
@@ -88,7 +90,7 @@ public class VirtualSidelineSpoutTest {
         expectedTopologyConfig.put("Key3", "Value3");
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), new LogRecorder());
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSidelineSpout.getTopologyConfig());
@@ -116,7 +118,7 @@ public class VirtualSidelineSpoutTest {
         final String expectedConsumerId = "myConsumerId";
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), new LogRecorder());
 
         // Set it
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
@@ -131,7 +133,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testSetAndGetIsFinished() {
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager());
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), new LogRecorder());
 
         // Should default to false
         assertFalse("Should default to false", virtualSidelineSpout.isFinished());
@@ -258,6 +260,9 @@ public class VirtualSidelineSpoutTest {
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
+        // TODO: Validate metric collection here
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
+
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
@@ -305,6 +310,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // TODO: Validate metric collection here
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
@@ -428,6 +436,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // TODO: Validate metric collection here
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
         when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
@@ -736,6 +747,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // TODO: Validate metric collection here
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
