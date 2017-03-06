@@ -1,9 +1,12 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Queue;
@@ -39,11 +42,14 @@ public class SpoutCoordinator {
     private final Map<String,Queue<TupleMessageId>> acked = new ConcurrentHashMap<>();
     private final Map<String,Queue<TupleMessageId>> failed = new ConcurrentHashMap<>();
 
+    private final MetricsRecorder metricsRecorder;
+
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts
      * @param spout Fire hose spout
      */
-    public SpoutCoordinator(final DelegateSidelineSpout spout) {
+    public SpoutCoordinator(final DelegateSidelineSpout spout, final MetricsRecorder metricsRecorder) {
+        this.metricsRecorder = metricsRecorder;
         addSidelineSpout(spout);
     }
 
@@ -100,6 +106,9 @@ public class SpoutCoordinator {
         runningSpouts.put(spout.getConsumerId(), spout);
 
         CompletableFuture.runAsync(() -> {
+            // Start run timer
+            final long startTime = Clock.systemUTC().millis();
+
             // Rename thread
             Thread.currentThread().setName(spout.getConsumerId());
             logger.info("Opening {} spout", spout.getConsumerId());
@@ -142,6 +151,10 @@ public class SpoutCoordinator {
                     logger.warn("Thread interrupted, shutting down...");
                     spout.finish();
                 }
+
+                // Update run timer, this clicks up for as long as this instance is running.
+                final long currentRunTime = Clock.systemUTC().millis();
+                metricsRecorder.assignValue(spout.getClass(), spout.getConsumerId() + ".runTimeMS", (currentRunTime - startTime));
             }
 
             logger.info("Finishing {} spout", spout.getConsumerId());

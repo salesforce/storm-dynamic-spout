@@ -1,11 +1,17 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
 
+import org.apache.storm.shade.org.apache.http.annotation.ThreadSafe;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * Any implementation of this should be written to be thread safe.  This instance
+ * is definitely shared across multiple threads.
+ */
+@ThreadSafe
 public interface MetricsRecorder {
 
     /**
@@ -29,7 +35,9 @@ public interface MetricsRecorder {
     /**
      * Gauge a metric, given a name, by a specify value.
      */
-    void average(Class sourceClass, String metricName, Object value);
+    void averageValue(Class sourceClass, String metricName, Object value);
+
+    void assignValue(Class sourceClass, String metricName, Object value);
 
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)

@@ -1,19 +1,14 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
-import com.google.common.base.CaseFormat;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
-import org.apache.storm.metric.api.AssignableMetric;
-import org.apache.storm.metric.api.CountMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
-import org.apache.storm.metric.api.ReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -30,7 +25,8 @@ public class StormRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
 
-    private MultiReducedMetric averages;
+    private MultiReducedMetric averagedValues;
+    private MultiAssignableMetric assignedValues;
     private MultiReducedMetric timers;
     private MultiCountMetric counters;
 
@@ -42,7 +38,8 @@ public class StormRecorder implements MetricsRecorder {
         final int timeBucket = 60;
 
         // Register the top level metrics.
-        averages = topologyContext.registerMetric(topLevelPrefix + "-avgs", new MultiReducedMetric(new MeanReducer()), timeBucket);
+        averagedValues = topologyContext.registerMetric(topLevelPrefix + "-avgs", new MultiReducedMetric(new MeanReducer()), timeBucket);
+        assignedValues = topologyContext.registerMetric(topLevelPrefix + "-values", new MultiAssignableMetric(), timeBucket);
         timers = topologyContext.registerMetric(topLevelPrefix + "-timers", new MultiReducedMetric(new MeanReducer()), timeBucket);
         counters = topologyContext.registerMetric(topLevelPrefix + "-counters", new MultiCountMetric(), timeBucket);
     }
@@ -61,10 +58,16 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void average(Class sourceClass, String metricName, Object value) {
+    public void averageValue(Class sourceClass, String metricName, Object value) {
         final String key = generateKey(sourceClass, metricName);
 
-        averages.scope(key).update(value);
+        averagedValues.scope(key).update(value);
+    }
+
+    @Override
+    public void assignValue(Class sourceClass, String metricName, Object value) {
+        final String key = generateKey(sourceClass, metricName);
+        assignedValues.scope(key).setValue(value);
     }
 
     /**

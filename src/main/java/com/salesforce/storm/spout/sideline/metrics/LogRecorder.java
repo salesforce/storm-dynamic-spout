@@ -1,5 +1,9 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
+import com.google.common.collect.Maps;
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.apache.storm.metric.api.MeanReducer;
+import org.apache.storm.shade.org.apache.http.annotation.ThreadSafe;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,22 +12,20 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-/**
- * A wrapper for recording metrics in Storm
- *
- * Learn more about Storm metrics here: http://storm.apache.org/releases/1.0.1/Metrics.html
- *
- * Use this as an instance variable on your bolt, make sure to create it inside of prepareBolt()
- * and pass it down stream to any classes that need to track metrics in your application.
- *
- */
+@ThreadSafe
 public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
+    private Map<String, Long> counters;
+    private Map<String, CircularFifoBuffer> averages;
+    private Map<String, Object> assignedValues;
 
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext) {
-        // Nothing to do.
+        // Create concurrent maps
+        counters = Maps.newConcurrentMap();
+        assignedValues = Maps.newConcurrentMap();
+        averages = Maps.newConcurrentMap();
     }
 
     @Override
@@ -33,12 +35,44 @@ public class LogRecorder implements MetricsRecorder {
 
     @Override
     public void count(Class sourceClass, String metricName, long incrementBy) {
-        logger.info("[COUNTER] {} + {}", generateKey(sourceClass, metricName), incrementBy);
+        final String key = generateKey(sourceClass, metricName);
+        synchronized (counters) {
+            final long newValue = counters.getOrDefault(key, 0L) + incrementBy;
+            counters.put(key, newValue);
+
+            logger.info("[COUNTER] {} = {}", key, newValue);
+        }
     }
 
     @Override
-    public void average(Class sourceClass, String metricName, Object value) {
-        logger.info("[AVERAGE] {} + {}", generateKey(sourceClass, metricName), value);
+    public void averageValue(Class sourceClass, String metricName, Object value) {
+        if (!(value instanceof Number)) {
+            // Dunno what to do?
+            return;
+        }
+        final String key = generateKey(sourceClass, metricName);
+
+        synchronized (averages) {
+            if (!averages.containsKey(key)) {
+                averages.put(key, new CircularFifoBuffer(64));
+            }
+            averages.get(key).add(value);
+
+            // TODO - make this work, for now assume double values?
+            // Now calculate average using the ring buffer.
+            Number total = 0;
+            for (Object entry: averages.get(key)) {
+                total = total.doubleValue() + ((Number)entry).doubleValue();
+            }
+            logger.info("[AVERAGE] {} => {}", key, (total.doubleValue() / averages.get(key).size()));
+        }
+    }
+
+    @Override
+    public void assignValue(Class sourceClass, String metricName, Object value) {
+        final String key = generateKey(sourceClass, metricName);
+        assignedValues.put(key, value);
+        logger.info("[ASSIGNED] {} => {}", key, value);
     }
 
     @Override

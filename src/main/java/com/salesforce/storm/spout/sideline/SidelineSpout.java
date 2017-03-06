@@ -130,6 +130,9 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Hit the start trigger
         startingTrigger.start(id);
+
+        // Update start count metric
+        metricsRecorder.count(getClass(), "start-sideline", 1L);
     }
 
     /**
@@ -178,6 +181,9 @@ public class SidelineSpout extends BaseRichSpout {
 
         // If any cleanup is necessary it could be handled here
         stoppingTrigger.stop();
+
+        // Update stop count metric
+        metricsRecorder.count(getClass(), "stop-sideline", 1L);
     }
 
     @Override
@@ -220,7 +226,11 @@ public class SidelineSpout extends BaseRichSpout {
             // Maybe this instance is a wrapper/container around all of the VirtualSideLineSpout instances?
 
         coordinator = new SpoutCoordinator(
-            fireHoseSpout
+                // Our main firehose spout instance.
+                fireHoseSpout,
+
+                // Our metrics recorder.
+                metricsRecorder
         );
 
         // TODO: Look for any existing sideline requests that haven't finished and add them to the
@@ -245,6 +255,12 @@ public class SidelineSpout extends BaseRichSpout {
 
             // Dump to output collector.
             outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
+
+            // Update emit count metric for SidelineSpout
+            metricsRecorder.count(getClass(), "emit", 1L);
+
+            // Update emit count metric for VirtualSidelineSpout this tuple originated from
+            metricsRecorder.count(VirtualSidelineSpout.class, kafkaMessage.getTupleMessageId().getSrcConsumerId() + ".emit", 1);
         }
     }
 
@@ -286,7 +302,14 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
+        // Ack the tuple
         coordinator.ack(tupleMessageId);
+
+        // Update ack count metric
+        metricsRecorder.count(getClass(), "ack", 1L);
+
+        // Update ack count metric for VirtualSidelineSpout this tuple originated from
+        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcConsumerId() + ".ack", 1);
     }
 
     @Override
@@ -294,7 +317,14 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
+        // Fail the tuple
         coordinator.fail(tupleMessageId);
+
+        // Update fail count metric
+        metricsRecorder.count(getClass(), "fail", 1L);
+
+        // Update ack count metric for VirtualSidelineSpout this tuple originated from
+        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcConsumerId() + ".fail", 1);
     }
 
     public Map getTopologyConfig() {
