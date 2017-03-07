@@ -30,6 +30,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -296,7 +297,12 @@ public class SidelineConsumerTest {
     public void testConnectWithSinglePartitionOnTopicWithStateSaved() {
         // Define our ConsumerId and expected offset.
         final String consumerId = "MyConsumerId";
-        final long expectedOffset = 12345L;
+
+        // This defines the last offset that was committed.
+        final long lastCommittedOffset = 12345L;
+
+        // This defines what offset we're expected to start consuming from, which should be the lastCommittedOffset + 1.
+        final long expectedOffsetToStartConsumeFrom = lastCommittedOffset + 1;
 
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
@@ -315,7 +321,7 @@ public class SidelineConsumerTest {
 
         // When getState is called, return the following state
         ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), expectedOffset);
+        consumerState.setOffset(new TopicPartition(topicName, 0), lastCommittedOffset);
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
@@ -331,7 +337,7 @@ public class SidelineConsumerTest {
         verify(mockKafkaConsumer, never()).seekToBeginning(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
 
         // Instead since there is state, we should call seek on that partition
-        verify(mockKafkaConsumer, times(1)).seek(eq(new TopicPartition(topicName, 0)), eq(expectedOffset));
+        verify(mockKafkaConsumer, times(1)).seek(eq(new TopicPartition(topicName, 0)), eq(expectedOffsetToStartConsumeFrom));
     }
 
     /**
@@ -352,10 +358,16 @@ public class SidelineConsumerTest {
         final TopicPartition partition1 = new TopicPartition(topicName, 1);
         final TopicPartition partition2 = new TopicPartition(topicName, 2);
 
-        // Define expected offsets per partition
-        final long expectedPartition0Offset = 1234L;
-        final long expectedPartition1Offset = 4321L;
-        final long expectedPartition2Offset = 1337L;
+        // Define last committed offsets per partition
+        final long lastCommittedOffsetPartition0 = 1234L;
+        final long lastCommittedOffsetPartition1 = 4321L;
+        final long lastCommittedOffsetPartition2 = 1337L;
+
+        // Define the offsets for each partition we expect the consumer to start consuming from, which should
+        // be last committed offset + 1
+        final long expectedPartition0Offset = lastCommittedOffsetPartition0 + 1;
+        final long expectedPartition1Offset = lastCommittedOffsetPartition1 + 1;
+        final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
@@ -378,9 +390,9 @@ public class SidelineConsumerTest {
 
         // When getState is called, return the following state
         ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(partition0, expectedPartition0Offset);
-        consumerState.setOffset(partition1, expectedPartition1Offset);
-        consumerState.setOffset(partition2, expectedPartition2Offset);
+        consumerState.setOffset(partition0, lastCommittedOffsetPartition0);
+        consumerState.setOffset(partition1, lastCommittedOffsetPartition1);
+        consumerState.setOffset(partition2, lastCommittedOffsetPartition2);
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
@@ -424,9 +436,13 @@ public class SidelineConsumerTest {
         final TopicPartition partition2 = new TopicPartition(topicName, 2);
         final TopicPartition partition3 = new TopicPartition(topicName, 3);
 
-        // Define expected offsets per partition, partition 1 and 3 has no previously saved state.
-        final long expectedPartition0Offset = 1234L;
-        final long expectedPartition2Offset = 1337L;
+        // Define last committed offsets per partition, partitions 1 and 3 have no previously saved state.
+        final long lastCommittedOffsetPartition0 = 1234L;
+        final long lastCommittedOffsetPartition2 = 1337L;
+
+        // Define what offsets we expect to start consuming from, which should be our last committed offset + 1
+        final long expectedPartition0Offset = lastCommittedOffsetPartition0 + 1;
+        final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
@@ -450,8 +466,8 @@ public class SidelineConsumerTest {
 
         // When getState is called, return the following state for partitions 0 and 2.
         ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(partition0, expectedPartition0Offset);
-        consumerState.setOffset(partition2, expectedPartition2Offset);
+        consumerState.setOffset(partition0, lastCommittedOffsetPartition0);
+        consumerState.setOffset(partition2, lastCommittedOffsetPartition2);
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
@@ -476,6 +492,10 @@ public class SidelineConsumerTest {
         InOrder inOrderVerification = inOrder(mockKafkaConsumer);
         inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(partition0), eq(expectedPartition0Offset));
         inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(partition2), eq(expectedPartition2Offset));
+
+        // Never seeked for partitions without any state
+        verify(mockKafkaConsumer, never()).seek(eq(partition1), anyLong());
+        verify(mockKafkaConsumer, never()).seek(eq(partition3), anyLong());
     }
 
     /**
@@ -802,8 +822,8 @@ public class SidelineConsumerTest {
         }
         logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
 
-        // Verify state is still 0
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+        // Verify state is still -1 (meaning it hasn't acked/completed ANY offsets yet)
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, -1L);
 
         // Now ack them one by one
         for (ConsumerRecord foundRecord : foundRecords) {
@@ -864,17 +884,17 @@ public class SidelineConsumerTest {
         }
         logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
 
-        // Verify state is still 0
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+        // Verify state is still -1 (meaning it hasn't acked/completed ANY offsets yet)
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, -1L);
 
         // Now ack in the following order:
         // commit offset 2 => offset should be 0 still
         sidelineConsumer.commitOffset(partition0, 2L);
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, -1L);
 
         // commit offset 1 => offset should be 0 still
         sidelineConsumer.commitOffset(partition0, 1L);
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, -1L);
 
         // commit offset 0 => offset should be 2 now
         sidelineConsumer.commitOffset(partition0, 0L);
@@ -932,8 +952,9 @@ public class SidelineConsumerTest {
         persistenceManager.open(Maps.newHashMap());
 
         // Create a state in which we have already acked the first 5 messages
+        // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
         ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 5L);
+        consumerState.setOffset(new TopicPartition(topicName, 0), 4L);
         persistenceManager.persistConsumerState(config.getConsumerId(), consumerState);
 
         // Create our consumer
@@ -1038,26 +1059,26 @@ public class SidelineConsumerTest {
 
         logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
 
-        // Verify state is still 0 for partition 0
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
+        // Verify state is still -1 for partition 0, meaning not acked offsets yet,
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, -1L);
 
-        // Verify state is still 0 for partition 1
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+        // Verify state is still -1 for partition 1, meaning not acked offsets yet,
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, -1L);
 
-        // Ack offset 1 on partition 0, state should be: [partition0: 0, partition1: 0]
+        // Ack offset 1 on partition 0, state should be: [partition0: -1, partition1: -1]
         sidelineConsumer.commitOffset(partition0, 1L);
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 0L);
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, -1L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, -1L);
 
-        // Ack offset 0 on partition 0, state should be: [partition0: 1, partition1: 0]
+        // Ack offset 0 on partition 0, state should be: [partition0: 1, partition1: -1]
         sidelineConsumer.commitOffset(partition0, 0L);
         validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 1L);
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, -1L);
 
-        // Ack offset 2 on partition 0, state should be: [partition0: 2, partition1: 0]
+        // Ack offset 2 on partition 0, state should be: [partition0: 2, partition1: -1]
         sidelineConsumer.commitOffset(partition0, 2L);
         validateConsumerState(sidelineConsumer.flushConsumerState(), partition0, 2L);
-        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, 0L);
+        validateConsumerState(sidelineConsumer.flushConsumerState(), partition1, -1L);
 
         // Ack offset 0 on partition 1, state should be: [partition0: 2, partition1: 0]
         sidelineConsumer.commitOffset(partition1, 0L);
