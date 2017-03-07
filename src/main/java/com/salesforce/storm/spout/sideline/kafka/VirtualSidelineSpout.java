@@ -340,6 +340,30 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Update our metrics,
         // TODO: probably doesn't need to happen every ack?
         updateMetrics(sidelineConsumer.getCurrentState(), "currentOffset");
+
+        // See if we can finished
+        attemptToFinish();
+    }
+
+    /**
+     * Internal method that determines if this sideline consumer is finished.
+     */
+    private void attemptToFinish() {
+        // If we're still tracking msgs
+        if (!trackedMessages.isEmpty()) {
+            // We cannot finish.
+            return;
+        }
+
+        // Check to see if we are still subscribed to any partitions
+        if (!sidelineConsumer.getAssignedPartitions().isEmpty()) {
+            // We still are subscribed to some partitions, so cannot finish
+            return;
+        }
+
+        // If we're here, we are no longer tracking any tuples, and we are not subscribed to anything
+        // So we can finish
+        finish();
     }
 
     private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
