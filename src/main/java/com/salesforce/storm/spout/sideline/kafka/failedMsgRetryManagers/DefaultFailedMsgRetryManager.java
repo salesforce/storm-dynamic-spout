@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +71,6 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         if (!failedTuples.containsKey(messageId)) {
             // Determine when we should retry this msg
             final long retryTime = Instant.now(getClock()).toEpochMilli() + minRetryTimeMs;
-            final long oldRetryTime = DateTime.now().getMillis() + minRetryTimeMs;
 
             // Track new failed message.
             failedTuples.put(messageId, new FailedMessage(1, retryTime));

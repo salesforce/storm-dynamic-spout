@@ -22,7 +22,7 @@ public class DefaultFailedMsgRetryManagerTest {
     private Clock mockClock;
 
     /**
-     * Handles mocking joda's DateTime clock for some of our tests.
+     * Handles mocking Clock using Java 1.8's Clock interface.
      */
     @Before
     public void setup() {
