@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline.metrics;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
-import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.shade.org.apache.http.annotation.ThreadSafe;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
