@@ -474,7 +474,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            logger.info("{} Current Offset: {}  Ending Offset: {} (This partition is completed!)");
+            logger.info("{} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
             sidelineConsumer.unsubscribeTopicPartition(topicPartition);
         }
 
