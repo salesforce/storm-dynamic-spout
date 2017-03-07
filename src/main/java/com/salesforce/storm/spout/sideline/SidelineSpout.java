@@ -164,7 +164,7 @@ public class SidelineSpout extends BaseRichSpout {
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
 
         logger.info("Starting VirtualSidelineSpout with starting state {}", startingState);
-        logger.info("Starting VirtualSidelineSpout with Ending state {}", endingState);
+        logger.info("Starting VirtualSidelineSpout with ending state {}", endingState);
 
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,

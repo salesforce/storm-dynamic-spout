@@ -152,8 +152,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // For debugging purposes
-        logger.info("Open has Starting State: {}", startingState);
-        logger.info("Open has Ending State: {}", endingState);
+        logger.info("Open has starting state: {}", startingState);
+        logger.info("Open has ending state: {}", endingState);
 
         // Call open on failed msg retry manager instance.
         failedMsgRetryManager.open(topologyConfig);

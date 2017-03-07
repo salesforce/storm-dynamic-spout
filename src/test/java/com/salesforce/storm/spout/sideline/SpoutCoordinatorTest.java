@@ -167,6 +167,11 @@ public class SpoutCoordinatorTest {
         }
 
         @Override
+        public void flushState() {
+
+        }
+
+        @Override
         public String getConsumerId() {
             return consumerId;
         }
