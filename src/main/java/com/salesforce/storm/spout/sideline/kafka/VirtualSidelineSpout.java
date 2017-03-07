@@ -363,6 +363,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // If we're here, we are no longer tracking any tuples, and we are not subscribed to anything
         // So we can finish
+        logger.info("We no longer have any outstanding tracked messages, and have no subscribed partitions, so marking myself as finished");
         finish();
     }
 
