@@ -224,7 +224,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance(), metricsRecorder);
-        fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
+        fireHoseSpout.setConsumerId(cfgConsumerIdPrefix);
 
         // Setting up thread to call nextTuple
 
