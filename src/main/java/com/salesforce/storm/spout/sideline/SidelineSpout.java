@@ -245,6 +245,13 @@ public class SidelineSpout extends BaseRichSpout {
                 metricsRecorder
         );
 
+        // TODO: Look for any existing sideline requests that haven't finished and add them to the
+        //  coordinator
+
+        coordinator.open((KafkaMessage message) -> {
+            queue.add(message);
+        });
+
         if (startingTrigger != null) {
             startingTrigger.open(toplogyConfig);
         }
@@ -252,13 +259,6 @@ public class SidelineSpout extends BaseRichSpout {
         if (stoppingTrigger != null) {
             stoppingTrigger.open(toplogyConfig);
         }
-
-        // TODO: Look for any existing sideline requests that haven't finished and add them to the
-        //  coordinator
-
-        coordinator.open((KafkaMessage message) -> {
-            queue.add(message);
-        });
     }
 
     @Override
