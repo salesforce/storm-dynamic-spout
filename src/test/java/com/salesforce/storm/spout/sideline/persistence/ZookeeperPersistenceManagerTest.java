@@ -106,7 +106,7 @@ public class ZookeeperPersistenceManagerTest {
     public void testEndToEndConsumerStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic";
         final String zkRootPath = "/poop";
-        final String consumerId = "myConsumer" + Clock.systemUTC().millis()
+        final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
