@@ -92,8 +92,9 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Read!
-        Map<Object, Object> json = readJSON(getZkConsumerStatePath(consumerId));
-        logger.info("Read state from Zookeeper: {}", json);
+        final String path = getZkConsumerStatePath(consumerId);
+        Map<Object, Object> json = readJSON(path);
+        logger.info("Read state from Zookeeper at {}: {}", path, json);
 
         // Parse to ConsumerState
         return parseJsonToConsumerState(json);
@@ -114,8 +115,9 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Read!
-        Map<Object, Object> json = readJSON(getZkRequestStatePath(id.toString()));
-        logger.info("Read request state from Zookeeper: {}", json);
+        final String path = getZkRequestStatePath(id.toString());
+        Map<Object, Object> json = readJSON(path);
+        logger.info("Read request state from Zookeeper at {}: {}", path, json);
 
         // Parse to ConsumerState
         return parseJsonToConsumerState(json);

@@ -111,14 +111,6 @@ public class SidelineSpout extends BaseRichSpout {
         // this offset
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
-        // TODO - Talk to slemon about this.
-        // These are the committed offsets, meaning we have successfully processed them
-        // So we want to start at the next message in each partition
-        for (TopicPartition topicPartition: startingState.getTopicPartitions()) {
-            // Increment by 1?  This seems like a hack.
-            startingState.setOffset(topicPartition, startingState.getOffsetForTopicAndPartition(topicPartition) + 1);
-        }
-
         // Store in request manager
         persistenceManager.persistSidelineRequestState(id, startingState);
 

@@ -141,15 +141,18 @@ public class SidelineConsumer {
             final TopicPartition availableTopicPartition = new TopicPartition(availablePartitionInfo.topic(), availablePartitionInfo.partition());
             Long offset = initialState.getOffsetForTopicAndPartition(availableTopicPartition);
             if (offset == null) {
+                // Unstarted partitions should "begin" at -1
                 noStatePartitions.add(availableTopicPartition);
-                offset = 0L;
+                offset = -1L;
             } else {
-                logger.info("Resuming topic {} partition {} at offset {}", availableTopicPartition.topic(), availableTopicPartition.partition(), offset);
-                kafkaConsumer.seek(availableTopicPartition, offset);
+                // We start consuming at our offset + 1, otherwise we'd replay a previously "finished" offset.
+                logger.info("Resuming topic {} partition {} at offset {}", availableTopicPartition.topic(), availableTopicPartition.partition(), (offset + 1));
+                kafkaConsumer.seek(availableTopicPartition, offset + 1);
                 logger.info("Will resume at offset {}", kafkaConsumer.position(availableTopicPartition));
             }
 
             // Starting managing offsets for this partition
+            // Set our completed offset to our 'completed' offset, not it + 1, otherwise we could skip the next uncompleted offset.
             partitionStateManagers.put(availableTopicPartition, new PartitionOffsetManager(availableTopicPartition.topic(), availableTopicPartition.partition(), offset));
         }
         if (!noStatePartitions.isEmpty()) {
