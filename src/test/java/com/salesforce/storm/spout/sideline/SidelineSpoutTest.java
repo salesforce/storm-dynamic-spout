@@ -6,14 +6,11 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
-import com.salesforce.storm.spout.sideline.trigger.StartRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
-import com.salesforce.storm.spout.sideline.trigger.StopRequest;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -305,15 +302,11 @@ public class SidelineSpoutTest {
         // It should filter ALL messages
         final StaticMessageFilter staticMessageFilter = new StaticMessageFilter(true);
 
+        final SidelineRequest request = new SidelineRequest(staticMessageFilter);
+
         // Send a new start request with our filter.
         // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
-        staticTrigger.sendStartRequest(
-            new StartRequest(
-                Lists.newArrayList(
-                    staticMessageFilter
-                )
-            )
-        );
+        staticTrigger.sendStartRequest(request);
 
         // Produce another 3 records into kafka.
         producedRecords = produceRecords(expectedOriginalRecordCount);
@@ -331,11 +324,7 @@ public class SidelineSpoutTest {
         assertEquals("Should contain no records", 0, spoutOutputCollector.getEmissions().size());
 
         // Send a stop sideline request
-        staticTrigger.sendStopRequest(
-            new StopRequest(
-                staticTrigger.getCurrentSidelineIdentifier()
-            )
-        );
+        staticTrigger.sendStopRequest(request);
 
         // We need to wait a bit for the sideline spout instance to spin up and start consuming
         // Call next tuple, it should get a tuple from our sidelined spout instance.

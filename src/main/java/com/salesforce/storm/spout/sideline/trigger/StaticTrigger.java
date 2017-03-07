@@ -1,12 +1,12 @@
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.sideline.SidelineSpout;
+import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 
 import java.util.Map;
 
 public class StaticTrigger implements StartingTrigger, StoppingTrigger {
 
-    private SidelineSpout sidelineSpout;
+    private SpoutTriggerProxy sidelineSpout;
     private SidelineIdentifier currentSidelineIdentifier;
 
     @Override
@@ -27,15 +27,15 @@ public class StaticTrigger implements StartingTrigger, StoppingTrigger {
 
     }
 
-    public void sendStartRequest(StartRequest request) {
+    public void sendStartRequest(SidelineRequest request) {
         this.sidelineSpout.startSidelining(request);
     }
 
-    public void sendStopRequest(StopRequest request) {
+    public void sendStopRequest(SidelineRequest request) {
         this.sidelineSpout.stopSidelining(request);
     }
 
-    public void setSidelineSpout(SidelineSpout sidelineSpout) {
+    public void setSidelineSpout(SpoutTriggerProxy sidelineSpout) {
         this.sidelineSpout = sidelineSpout;
     }
 

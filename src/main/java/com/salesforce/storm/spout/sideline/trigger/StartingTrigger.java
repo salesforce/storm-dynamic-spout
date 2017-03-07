@@ -1,10 +1,8 @@
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.sideline.SidelineSpout;
+import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 
 public interface StartingTrigger extends Trigger {
 
-    void start(SidelineIdentifier id);
-
-    void setSidelineSpout(SidelineSpout sidelineSpout);
+    void setSidelineSpout(SpoutTriggerProxy spout);
 }
