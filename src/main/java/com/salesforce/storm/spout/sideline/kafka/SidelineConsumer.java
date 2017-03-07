@@ -193,6 +193,7 @@ public class SidelineConsumer {
         // Track internally which offsets we've marked completed
         partitionStateManagers.get(topicPartition).finishOffset(offset);
 
+        // TODO: We can probably drop this.
         // Occasionally flush
         timedFlushConsumerState();
     }

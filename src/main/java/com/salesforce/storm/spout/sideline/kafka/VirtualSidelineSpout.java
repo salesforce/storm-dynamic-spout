@@ -340,32 +340,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Update our metrics,
         // TODO: probably doesn't need to happen every ack?
         updateMetrics(sidelineConsumer.getCurrentState(), "currentOffset");
-
-        // See if we can finished
-        // TODO: Move this to maintance loop
-        attemptToFinish();
-    }
-
-    /**
-     * Internal method that determines if this sideline consumer is finished.
-     */
-    private void attemptToFinish() {
-        // If we're still tracking msgs
-        if (!trackedMessages.isEmpty()) {
-            // We cannot finish.
-            return;
-        }
-
-        // Check to see if we are still subscribed to any partitions
-        if (!sidelineConsumer.getAssignedPartitions().isEmpty()) {
-            // We still are subscribed to some partitions, so cannot finish
-            return;
-        }
-
-        // If we're here, we are no longer tracking any tuples, and we are not subscribed to anything
-        // So we can finish
-        logger.info("We no longer have any outstanding tracked messages, and have no subscribed partitions, so marking myself as finished");
-        finish();
     }
 
     private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
@@ -423,11 +397,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         return consumerId;
     }
 
-    @Override
-    public void flushState() {
-        
-    }
-
     public void setConsumerId(String consumerId) {
         this.consumerId = consumerId;
     }
@@ -461,5 +430,56 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     public boolean unsubscribeTopicPartition(TopicPartition topicPartition) {
         logger.info("Unsubscribing from partition {}", topicPartition);
         return sidelineConsumer.unsubscribeTopicPartition(topicPartition);
+    }
+
+    /**
+     * Our maintenance loop.
+     */
+    @Override
+    public void flushState() {
+        // Flush consumer state to our persistence layer.
+        sidelineConsumer.flushConsumerState();
+
+        // See if we can finish and close out this VirtualSidelineConsumer.
+        attemptToFinish();
+    }
+
+    /**
+     * Internal method that determines if this sideline consumer is finished.
+     */
+    private void attemptToFinish() {
+        // If we don't have a defined ending state
+        if (endingState == null) {
+            // Then we never finished.
+            return;
+        }
+
+        // If we're still tracking msgs
+        if (!trackedMessages.isEmpty()) {
+            // We cannot finish.
+            return;
+        }
+
+        // Get current state and compare it against our ending state
+        final ConsumerState currentState = sidelineConsumer.getCurrentState();
+
+        // Compare it against our ending state
+        for (TopicPartition topicPartition: currentState.getTopicPartitions()) {
+            final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
+            final long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
+
+            // If the current offset is < ending offset
+            if (currentOffset < endingOffset) {
+                // Then we cannot end
+                return;
+            }
+            // Log that this partition is finished, and make sure we unsubscribe from it.
+            logger.info("{} Current Offset: {}  Ending Offset: {} (This partition is completed!)");
+            sidelineConsumer.unsubscribeTopicPartition(topicPartition);
+        }
+
+        // If we made it all the way thru the above loop, we can finish!
+        logger.info("Looks like all partitions are complete!  Lets wrap this up.");
+        finish();
     }
 }
