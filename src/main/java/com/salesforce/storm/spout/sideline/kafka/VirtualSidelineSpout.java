@@ -342,6 +342,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         updateMetrics(sidelineConsumer.getCurrentState(), "currentOffset");
 
         // See if we can finished
+        // TODO: Move this to maintance loop
         attemptToFinish();
     }
 
@@ -420,6 +421,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     @Override
     public String getConsumerId() {
         return consumerId;
+    }
+
+    @Override
+    public void flushState() {
+        
     }
 
     public void setConsumerId(String consumerId) {

@@ -19,4 +19,6 @@ public interface DelegateSidelineSpout {
     void finish();
 
     String getConsumerId();
+
+    void flushState();
 }
