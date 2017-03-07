@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ public class SpoutCoordinator {
     private static final int MONITOR_THREAD_SLEEP = 10;
     private static final int SPOUT_THREAD_SLEEP = 10;
     private static final int MAX_SPOUT_STOP_TIME = 5000;
+    private static final long FLUSH_INTERVAL = 30000;
 
     private boolean running = false;
 
@@ -119,6 +121,8 @@ public class SpoutCoordinator {
 
             startSignal.countDown();
 
+            long lastFlush = DateTime.now().getMillis();
+
             while (!spout.isFinished()) {
                 logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
 
@@ -142,6 +146,13 @@ public class SpoutCoordinator {
                 while (!failed.get(spout.getConsumerId()).isEmpty()) {
                     TupleMessageId id = failed.get(spout.getConsumerId()).poll();
                     spout.fail(id);
+                }
+
+                // Periodically we flush the state of the spout to capture progress
+                if (lastFlush + FLUSH_INTERVAL < DateTime.now().getMillis()) {
+                    logger.info("Flushing state for spout {}", spout.getConsumerId());
+                    spout.flushState();
+                    lastFlush = DateTime.now().getMillis();
                 }
 
                 try {
