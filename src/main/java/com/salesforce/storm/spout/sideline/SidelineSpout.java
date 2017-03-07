@@ -102,7 +102,7 @@ public class SidelineSpout extends BaseRichSpout {
      * Starts a sideline request
      * @param startRequest A representation of the request that is being started
      */
-    public void startSidelining(StartRequest startRequest) {
+    public SidelineIdentifier startSidelining(StartRequest startRequest) {
         logger.info("Received START sideline request");
 
         final SidelineIdentifier id = new SidelineIdentifier();
@@ -131,6 +131,8 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Update start count metric
         metricsRecorder.count(getClass(), "start-sideline", 1L);
+
+        return id;
     }
 
     /**
