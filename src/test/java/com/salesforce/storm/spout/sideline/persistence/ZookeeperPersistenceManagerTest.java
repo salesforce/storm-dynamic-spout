@@ -9,7 +9,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.storm.shade.org.joda.time.DateTime;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -24,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -106,7 +106,7 @@ public class ZookeeperPersistenceManagerTest {
     public void testEndToEndConsumerStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic";
         final String zkRootPath = "/poop";
-        final String consumerId = "myConsumer" + DateTime.now().getMillis();
+        final String consumerId = "myConsumer" + Clock.systemUTC().millis()
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
@@ -177,7 +177,7 @@ public class ZookeeperPersistenceManagerTest {
     public void testEndToEndConsumerStatePersistenceUpdatingEntryForSameConsumerId() throws InterruptedException {
         final String topicName = "MyTopic";
         final String zkRootPath = "/poop";
-        final String consumerId = "myConsumer" + DateTime.now().getMillis();
+        final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
@@ -258,7 +258,7 @@ public class ZookeeperPersistenceManagerTest {
         // Define our ZK Root Node
         final String zkRootNodePath = "/TestRootPath";
         final String zkConsumersRootNodePath = zkRootNodePath + "/consumers";
-        final String consumerId = "MyConsumer" + DateTime.now().getMillis();
+        final String consumerId = "MyConsumer" + Clock.systemUTC().millis();
 
         // 1 - Connect to ZK directly
         ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, new Watcher() {
