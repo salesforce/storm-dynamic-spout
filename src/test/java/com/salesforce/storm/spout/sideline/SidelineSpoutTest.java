@@ -24,19 +24,15 @@ import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.IRichSpout;
 import org.apache.storm.topology.OutputFieldsGetter;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +70,7 @@ public class SidelineSpoutTest {
         kafkaTestServer.start();
 
         // Generate topic name
-        topicName = SidelineConsumerTest.class.getSimpleName() + DateTime.now().getMillis();
+        topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create topic
         kafkaTestServer.createTopic(topicName);
@@ -550,7 +546,7 @@ public class SidelineSpoutTest {
         KafkaProducer producer = kafkaTestServer.getKafkaProducer("org.apache.kafka.common.serialization.ByteArraySerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
         for (int x=0; x<numberOfRecords; x++) {
             // Construct key and value
-            long timeStamp = DateTime.now().getMillis();
+            long timeStamp = Clock.systemUTC().millis();
             String key = "key" + timeStamp;
             String value = "value" + timeStamp;
 

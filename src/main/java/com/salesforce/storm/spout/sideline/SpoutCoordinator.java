@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,8 @@ public class SpoutCoordinator {
     private static final long FLUSH_INTERVAL = 30000;
 
     private boolean running = false;
+
+    private Clock clock = Clock.systemUTC();
 
     private final Queue<DelegateSidelineSpout> sidelineSpouts = new ConcurrentLinkedQueue<>();
     private final Map<String,DelegateSidelineSpout> runningSpouts = new ConcurrentHashMap<>();
@@ -108,7 +109,7 @@ public class SpoutCoordinator {
 
         CompletableFuture.runAsync(() -> {
             // Start run timer
-            final long startTime = Clock.systemUTC().millis();
+            final long startTime = clock.millis();
 
             // Rename thread
             Thread.currentThread().setName(spout.getConsumerId());
@@ -121,7 +122,7 @@ public class SpoutCoordinator {
 
             startSignal.countDown();
 
-            long lastFlush = DateTime.now().getMillis();
+            long lastFlush = clock.millis();
 
             while (!spout.isFinished()) {
                 logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
@@ -149,10 +150,10 @@ public class SpoutCoordinator {
                 }
 
                 // Periodically we flush the state of the spout to capture progress
-                if (lastFlush + FLUSH_INTERVAL < DateTime.now().getMillis()) {
+                if (lastFlush + FLUSH_INTERVAL < clock.millis()) {
                     logger.info("Flushing state for spout {}", spout.getConsumerId());
                     spout.flushState();
-                    lastFlush = DateTime.now().getMillis();
+                    lastFlush = clock.millis();
                 }
 
                 try {
@@ -163,7 +164,7 @@ public class SpoutCoordinator {
                 }
 
                 // Update run timer, this clicks up for as long as this instance is running.
-                final long currentRunTime = Clock.systemUTC().millis();
+                final long currentRunTime = clock.millis();
                 metricsRecorder.assignValue(spout.getClass(), spout.getConsumerId() + ".runTimeMS", (currentRunTime - startTime));
             }
 

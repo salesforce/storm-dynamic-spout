@@ -13,7 +13,6 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,7 +62,7 @@ public class SidelineConsumerTest {
         kafkaTestServer.start();
 
         // Generate topic name
-        topicName = SidelineConsumerTest.class.getSimpleName() + DateTime.now().getMillis();
+        topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create topic
         kafkaTestServer.createTopic(topicName);
@@ -1292,7 +1291,7 @@ public class SidelineConsumerTest {
         KafkaProducer producer = kafkaTestServer.getKafkaProducer("org.apache.kafka.common.serialization.ByteArraySerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
         for (int x=0; x<numberOfRecords; x++) {
             // Construct key and value
-            long timeStamp = DateTime.now().getMillis();
+            long timeStamp = Clock.systemUTC().millis();
             String key = "key" + timeStamp;
             String value = "value" + timeStamp;
 
