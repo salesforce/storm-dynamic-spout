@@ -102,7 +102,7 @@ public class SidelineSpout extends BaseRichSpout {
      * Starts a sideline request
      * @param startRequest A representation of the request that is being started
      */
-    public void startSidelining(StartRequest startRequest) {
+    public SidelineIdentifier startSidelining(StartRequest startRequest) {
         logger.info("Received START sideline request");
 
         final SidelineIdentifier id = new SidelineIdentifier();
@@ -131,6 +131,8 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Update start count metric
         metricsRecorder.count(getClass(), "start-sideline", 1L);
+
+        return id;
     }
 
     /**
@@ -222,7 +224,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance(), metricsRecorder);
-        fireHoseSpout.setConsumerId(cfgConsumerIdPrefix + "firehose");
+        fireHoseSpout.setConsumerId(cfgConsumerIdPrefix);
 
         // Setting up thread to call nextTuple
 
@@ -243,6 +245,13 @@ public class SidelineSpout extends BaseRichSpout {
                 metricsRecorder
         );
 
+        // TODO: Look for any existing sideline requests that haven't finished and add them to the
+        //  coordinator
+
+        coordinator.open((KafkaMessage message) -> {
+            queue.add(message);
+        });
+
         if (startingTrigger != null) {
             startingTrigger.open(toplogyConfig);
         }
@@ -250,13 +259,6 @@ public class SidelineSpout extends BaseRichSpout {
         if (stoppingTrigger != null) {
             stoppingTrigger.open(toplogyConfig);
         }
-
-        // TODO: Look for any existing sideline requests that haven't finished and add them to the
-        //  coordinator
-
-        coordinator.open((KafkaMessage message) -> {
-            queue.add(message);
-        });
     }
 
     @Override
