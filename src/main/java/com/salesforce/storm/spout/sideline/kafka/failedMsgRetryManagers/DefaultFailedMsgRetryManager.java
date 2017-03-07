@@ -8,9 +8,10 @@ import org.apache.storm.shade.org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This Retry Manager implementation does 2 things.
@@ -38,6 +39,12 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
     private Set<TupleMessageId> retriesInFlight;
 
     /**
+     * Used to control timing around retries.
+     * Also allows us to inject a mock clock for testing.
+     */
+    private transient Clock clock = Clock.systemUTC();
+
+    /**
      * Called to initialize this implementation.
      * @param stormConfig - not used, at least for now.
      */
@@ -63,8 +70,12 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
     public void failed(TupleMessageId messageId) {
         // If we haven't tracked it yet
         if (!failedTuples.containsKey(messageId)) {
+            // Determine when we should retry this msg
+            final long retryTime = Instant.now(getClock()).toEpochMilli() + minRetryTimeMs;
+            final long oldRetryTime = DateTime.now().getMillis() + minRetryTimeMs;
+
             // Track new failed message.
-            failedTuples.put(messageId, new FailedMessage(1, DateTime.now().getMillis() + minRetryTimeMs));
+            failedTuples.put(messageId, new FailedMessage(1, retryTime));
 
             // Mark it as no longer in flight to be safe.
             retriesInFlight.remove(messageId);
@@ -76,7 +87,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         // If its already tracked, we should increment some stuff
         final FailedMessage previousEntry = failedTuples.get(messageId);
         final int newFailCount = previousEntry.getFailCount() + 1;
-        final long newRetry = DateTime.now().getMillis() + (minRetryTimeMs * newFailCount);
+        final long newRetry = Instant.now(getClock()).toEpochMilli() + (minRetryTimeMs * newFailCount);
 
         // Update entry.
         failedTuples.put(messageId, new FailedMessage(newFailCount, newRetry));
@@ -105,7 +116,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         // search for the next entry.
 
         // Get now timestamp
-        final long now = DateTime.now().getMillis();
+        final long now = Instant.now(getClock()).toEpochMilli();
 
         // Loop thru fails
         for (TupleMessageId messageId : failedTuples.keySet()) {
@@ -169,6 +180,21 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
      */
     protected Set<TupleMessageId> getRetriesInFlight() {
         return retriesInFlight;
+    }
+
+    /**
+     * @return - return our clock implementation.  Useful for testing.
+     */
+    protected Clock getClock() {
+        return clock;
+    }
+
+    /**
+     * For injecting a clock implementation.  Useful for testing.
+     * @param clock - the clock implementation to use.
+     */
+    protected void setClock(Clock clock) {
+        this.clock = clock;
     }
 
     /**

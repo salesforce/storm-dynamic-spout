@@ -3,33 +3,31 @@ package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import org.apache.storm.shade.org.joda.time.DateTimeUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Map;
 
 import static org.junit.Assert.*;
 
 public class DefaultFailedMsgRetryManagerTest {
 
+    /**
+     * Used to mock the system clock.
+     */
     private static final long FIXED_TIME = 100000L;
+    private Clock mockClock;
 
     /**
      * Handles mocking joda's DateTime clock for some of our tests.
      */
     @Before
     public void setup() {
-        DateTimeUtils.setCurrentMillisFixed(FIXED_TIME);
-    }
-
-    /**
-     * Handles cleaning up joda's DateTime mock.
-     */
-    @After
-    public void cleanup() {
-        DateTimeUtils.setCurrentMillisSystem();
+        // Set our clock to be fixed.
+        mockClock = Clock.fixed(Instant.ofEpochMilli(FIXED_TIME), ZoneId.of("UTC"));
     }
 
     /**
@@ -79,8 +77,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -122,8 +121,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -177,8 +177,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -200,8 +201,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -223,8 +225,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -284,8 +287,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -341,8 +345,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -376,8 +381,9 @@ public class DefaultFailedMsgRetryManagerTest {
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
-        // Create instance and call open.
+        // Create instance, inject our mock clock,  and call open.
         DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
         // Define our tuple message id
@@ -402,7 +408,7 @@ public class DefaultFailedMsgRetryManagerTest {
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
 
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
-        DateTimeUtils.setCurrentMillisFixed(FIXED_TIME + expectedMinRetryTimeMs);
+        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + expectedMinRetryTimeMs), ZoneId.of("UTC")));
 
         // Now tupleMessageId1 should expire next, even after repeated calls
         assertNotNull("result should not be null", retryManager.nextFailedMessageToRetry());
@@ -423,7 +429,7 @@ public class DefaultFailedMsgRetryManagerTest {
 
         // Advance time again, by 2x expected retry time, plus a few MS
         final long newFixedTime = FIXED_TIME + (2 * expectedMinRetryTimeMs) + 10;
-        DateTimeUtils.setCurrentMillisFixed(newFixedTime);
+        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(newFixedTime), ZoneId.of("UTC")));
         // Now tupleMessageId1 should expire next, even after repeated calls
         assertNotNull("result should not be null", retryManager.nextFailedMessageToRetry());
         assertEquals("Should be our tupleMessageId2", tupleMessageId2, retryManager.nextFailedMessageToRetry());
