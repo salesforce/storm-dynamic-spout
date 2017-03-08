@@ -95,4 +95,8 @@ public class FilterChain {
     public SidelineIdentifier findStep(FilterChainStep seek) {
         return findSteps(Collections.singletonList(seek));
     }
+
+    public Map<SidelineIdentifier,List<FilterChainStep>> getSteps() {
+        return steps;
+    }
 }

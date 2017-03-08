@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.util.List;
 import java.util.Map;
@@ -36,17 +37,18 @@ public interface PersistenceManager {
     ConsumerState retrieveConsumerState(final String consumerId);
 
     /**
+     * @param type
      * @param id - unique identifier for the sideline request.
-     * @param state - the associated state to be stored w/ the request.
+     * @param endingState
      */
-    void persistSidelineRequestState(final SidelineIdentifier id, final SidelineRequest request, final ConsumerState state);
+    void persistSidelineRequestState(SidelineType type, final SidelineIdentifier id, final SidelineRequest request, final ConsumerState startingState, ConsumerState endingState);
 
     /**
      * Retrieves a sideline request state for the given SidelineIdentifier.
      * @param id - SidelineIdentifier you want to retrieve the state for.
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
-    ConsumerState retrieveSidelineRequestState(final SidelineIdentifier id);
+    SidelinePayload retrieveSidelineRequest(final SidelineIdentifier id);
 
     /**
      * Lists existing sideline requests

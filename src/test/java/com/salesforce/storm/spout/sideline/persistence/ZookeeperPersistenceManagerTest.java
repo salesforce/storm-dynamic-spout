@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.TopicPartition;
@@ -370,10 +371,10 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(sidelineIdentifier, sidelineRequest, consumerState);
+        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineIdentifier, sidelineRequest, consumerState, null);
 
         // Attempt to read it?
-        ConsumerState result = persistenceManager.retrieveSidelineRequestState(sidelineIdentifier);
+        ConsumerState result = persistenceManager.retrieveSidelineRequest(sidelineIdentifier).startingState;
         logger.info("Result {}", result);
 
         // Validate result
@@ -397,7 +398,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
-        result = persistenceManager.retrieveSidelineRequestState(sidelineIdentifier);
+        result = persistenceManager.retrieveSidelineRequest(sidelineIdentifier).startingState;
         logger.info("Result {}", result);
 
         // Validate result
@@ -467,7 +468,8 @@ public class ZookeeperPersistenceManagerTest {
         final String topicName = "MyTopic";
 
         // Define our expected result that will be stored in zookeeper
-        final String expectedStoredState = "{\"filterChainSteps\":\"rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==\",\"consumerState\":{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}}";
+        // TODO: I hate this, let's build the damn map...
+        final String expectedStoredState = "{\"filterChainSteps\":\"rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==\",\"type\":\"START\",\"startingState\":{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}}";
 
         final ConsumerState consumerState = new ConsumerState();
         consumerState.setOffset(new TopicPartition(topicName, 0), 0L);
@@ -476,7 +478,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(sidelineIdentifier, sidelineRequest, consumerState);
+        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineIdentifier, sidelineRequest, consumerState, null);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -564,7 +566,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistSidelineRequestState(new SidelineIdentifier(), sidelineRequest, new ConsumerState());
+        persistenceManager.persistSidelineRequestState(SidelineType.START, new SidelineIdentifier(), sidelineRequest, new ConsumerState(), null);
     }
 
     /**
@@ -581,7 +583,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.retrieveSidelineRequestState(new SidelineIdentifier());
+        persistenceManager.retrieveSidelineRequest(new SidelineIdentifier());
     }
 
     /**

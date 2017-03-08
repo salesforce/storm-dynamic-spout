@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.filter.Serializer;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -106,12 +107,22 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     }
 
     @Override
-    public void persistSidelineRequestState(SidelineIdentifier id, SidelineRequest request, ConsumerState state) {
+    public void persistSidelineRequestState(
+        SidelineType type,
+        SidelineIdentifier id,
+        SidelineRequest request,
+        ConsumerState startingState,
+        ConsumerState endingState
+    ) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         Map<String, Object> data = new HashMap<>();
-        data.put("consumerState", state.getState());
+        data.put("type", type.toString());
+        data.put("startingState", startingState.getState());
+        if (endingState != null) { // Optional
+            data.put("endingState", endingState.getState());
+        }
         data.put("filterChainSteps", Serializer.serialize(request.steps));
 
         // Persist!
@@ -119,7 +130,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     }
 
     @Override
-    public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineIdentifier id) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
@@ -128,9 +139,27 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         Map<Object, Object> json = readJSON(path);
         logger.info("Read request state from Zookeeper at {}: {}", path, json);
 
-        // Parse to ConsumerState
-        return parseJsonToConsumerState(
-            (Map<Object, Object>) json.get("consumerState")
+        final String typeString = (String) json.get("type");
+
+        final SidelineType type = typeString.equals(SidelineType.STOP.toString()) ?
+            SidelineType.STOP : SidelineType.START;
+
+        final List<FilterChainStep> steps = parseJsonToFilterChainSteps(json);
+
+        final ConsumerState startingState = parseJsonToConsumerState(
+            (Map<Object, Object>) json.get("startingState")
+        );
+
+        final ConsumerState endingState = parseJsonToConsumerState(
+            (Map<Object, Object>) json.get("endingState")
+        );
+
+        return new SidelinePayload(
+            type,
+            id,
+            new SidelineRequest(steps),
+            startingState,
+            endingState
         );
     }
 
@@ -140,13 +169,17 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         final List<SidelineIdentifier> ids = new ArrayList<>();
 
         try {
-            List<String> paths = curator.getChildren().forPath(
-                // TODO: This should be moved to it's own method
-                new StringBuilder(getZkRoot()).append("/requests").toString()
-            );
+            // TODO: This should be moved to it's own method
+            final String path = new StringBuilder(getZkRoot()).append("/requests").toString();
 
-            for (String path : paths) {
-                ids.add(new SidelineIdentifier(UUID.fromString(path)));
+            if (curator.checkExists().forPath(path) == null) {
+                return ids;
+            }
+
+            final List<String> requests = curator.getChildren().forPath(path);
+
+            for (String request : requests) {
+                ids.add(new SidelineIdentifier(UUID.fromString(request)));
             }
 
             logger.info("Existing sideline request identifiers = {}", ids);
