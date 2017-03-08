@@ -1,8 +1,11 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
+import com.salesforce.storm.spout.sideline.filter.Serializer;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -14,8 +17,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * Persistence layer implemented using Zookeeper.
@@ -100,12 +106,16 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     }
 
     @Override
-    public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
+    public void persistSidelineRequestState(SidelineIdentifier id, SidelineRequest request, ConsumerState state) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
+        Map<String, Object> data = new HashMap<>();
+        data.put("consumerState", state.getState());
+        data.put("filterChainSteps", Serializer.serialize(request.steps));
+
         // Persist!
-        writeJSON(getZkRequestStatePath(id.toString()), state.getState());
+        writeJSON(getZkRequestStatePath(id.toString()), data);
     }
 
     @Override
@@ -119,7 +129,44 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         logger.info("Read request state from Zookeeper at {}: {}", path, json);
 
         // Parse to ConsumerState
-        return parseJsonToConsumerState(json);
+        return parseJsonToConsumerState(
+            (Map<Object, Object>) json.get("consumerState")
+        );
+    }
+
+    public List<SidelineIdentifier> listSidelineRequests() {
+        verifyHasBeenOpened();
+
+        final List<SidelineIdentifier> ids = new ArrayList<>();
+
+        try {
+            List<String> paths = curator.getChildren().forPath(
+                // TODO: This should be moved to it's own method
+                new StringBuilder(getZkRoot()).append("/requests").toString()
+            );
+
+            for (String path : paths) {
+                ids.add(new SidelineIdentifier(UUID.fromString(path)));
+            }
+
+            logger.info("Existing sideline request identifiers = {}", ids);
+        } catch (Exception ex) {
+            logger.error("{}", ex);
+        }
+
+        return ids;
+    }
+
+    // TODO: Add a method to remove a sideline request from Zookeeper
+
+    private List<FilterChainStep> parseJsonToFilterChainSteps(final Map<Object, Object> json) {
+        if (json == null) {
+            return new ArrayList<>();
+        }
+
+        final String chainStepData = (String) json.get("filterChainSteps");
+
+        return Serializer.deserialize(chainStepData);
     }
 
     private ConsumerState parseJsonToConsumerState(final Map<Object, Object> json) {

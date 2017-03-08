@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.common.TopicPartition;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -351,6 +353,7 @@ public class ZookeeperPersistenceManagerTest {
         final String topicName = "MyTopic1";
         final String zkRootPath = "/poop";
         final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
+        final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
@@ -367,7 +370,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(sidelineIdentifier, consumerState);
+        persistenceManager.persistSidelineRequestState(sidelineIdentifier, sidelineRequest, consumerState);
 
         // Attempt to read it?
         ConsumerState result = persistenceManager.retrieveSidelineRequestState(sidelineIdentifier);
@@ -431,6 +434,7 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
         final String zkRequestsRootNodePath = zkRootNodePath + "/requests";
         final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
+        final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
         // 1 - Connect to ZK directly
         ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, new Watcher() {
@@ -463,7 +467,7 @@ public class ZookeeperPersistenceManagerTest {
         final String topicName = "MyTopic";
 
         // Define our expected result that will be stored in zookeeper
-        final String expectedStoredState = "{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}";
+        final String expectedStoredState = "{\"filterChainSteps\":\"rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==\",\"consumerState\":{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}}";
 
         final ConsumerState consumerState = new ConsumerState();
         consumerState.setOffset(new TopicPartition(topicName, 0), 0L);
@@ -472,7 +476,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(sidelineIdentifier, consumerState);
+        persistenceManager.persistSidelineRequestState(sidelineIdentifier, sidelineRequest, consumerState);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -556,9 +560,11 @@ public class ZookeeperPersistenceManagerTest {
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
+        final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
+
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistSidelineRequestState(new SidelineIdentifier(), new ConsumerState());
+        persistenceManager.persistSidelineRequestState(new SidelineIdentifier(), sidelineRequest, new ConsumerState());
     }
 
     /**

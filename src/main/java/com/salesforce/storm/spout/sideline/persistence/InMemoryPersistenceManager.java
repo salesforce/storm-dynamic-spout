@@ -2,9 +2,13 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -59,7 +63,7 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
      * @param state - the associated state to be stored w/ the request.
      */
     @Override
-    public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
+    public void persistSidelineRequestState(SidelineIdentifier id, SidelineRequest request, ConsumerState state) {
         storedSidelineRequests.put(id, state);
     }
 
@@ -71,5 +75,10 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
     @Override
     public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
         return storedSidelineRequests.get(id);
+    }
+
+    @Override
+    public List<SidelineIdentifier> listSidelineRequests() {
+        return new ArrayList<>(storedSidelineRequests.keySet());
     }
 }

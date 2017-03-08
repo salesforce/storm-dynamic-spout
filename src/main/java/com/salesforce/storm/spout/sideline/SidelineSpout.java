@@ -109,7 +109,7 @@ public class SidelineSpout extends BaseRichSpout {
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
         // Store in request manager
-        persistenceManager.persistSidelineRequestState(id, startingState);
+        persistenceManager.persistSidelineRequestState(id, sidelineRequest, startingState);
 
         // Add our new filter steps
         fireHoseSpout.getFilterChain().addSteps(id, sidelineRequest.steps);
@@ -122,7 +122,7 @@ public class SidelineSpout extends BaseRichSpout {
 
     /**
      * Stops a sideline request.
-     * @param stopRequest A representation of the request that is being stopped
+     * @param sidelineRequest A representation of the request that is being stopped
      */
     public void stopSidelining(SidelineRequest sidelineRequest) {
         final SidelineIdentifier id = fireHoseSpout.getFilterChain().findSteps(sidelineRequest.steps);
@@ -229,7 +229,11 @@ public class SidelineSpout extends BaseRichSpout {
         );
 
         // TODO: Look for any existing sideline requests that haven't finished and add them to the
-        //  coordinator
+        final List<SidelineIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
+
+        for (SidelineIdentifier id : existingRequestIds) {
+            // TODO: Look up the filter chain and initiate a sideline request with this id
+        }
 
         coordinator.open((KafkaMessage message) -> {
             queue.add(message);

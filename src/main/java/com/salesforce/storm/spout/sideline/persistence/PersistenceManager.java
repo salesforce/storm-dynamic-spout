@@ -2,7 +2,9 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,35 +16,41 @@ public interface PersistenceManager {
      * the implementation.  By contract, this will be called once prior to calling
      * persistState() or getState().
      */
-    public void open(Map topologyConfig);
+    void open(Map topologyConfig);
 
     /**
      * Performs any cleanup required for the implementation on shutdown.
      */
-    public void close();
+    void close();
 
     /**
      * Pass in the consumer state that you'd like persisted.
      * @param consumerState - ConsumerState to be persisted.
      */
-    public void persistConsumerState(final String consumerId, final ConsumerState consumerState);
+    void persistConsumerState(final String consumerId, final ConsumerState consumerState);
 
     /**
      * Retrieves the consumer state from the persistence layer.
      * @return ConsumerState
      */
-    public ConsumerState retrieveConsumerState(final String consumerId);
+    ConsumerState retrieveConsumerState(final String consumerId);
 
     /**
      * @param id - unique identifier for the sideline request.
      * @param state - the associated state to be stored w/ the request.
      */
-    void persistSidelineRequestState(final SidelineIdentifier id, final ConsumerState state);
+    void persistSidelineRequestState(final SidelineIdentifier id, final SidelineRequest request, final ConsumerState state);
 
     /**
      * Retrieves a sideline request state for the given SidelineIdentifier.
      * @param id - SidelineIdentifier you want to retrieve the state for.
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
-    public ConsumerState retrieveSidelineRequestState(final SidelineIdentifier id);
+    ConsumerState retrieveSidelineRequestState(final SidelineIdentifier id);
+
+    /**
+     * Lists existing sideline requests
+     * @return A list of identifiers for existing sideline requests
+     */
+    List<SidelineIdentifier> listSidelineRequests();
 }
