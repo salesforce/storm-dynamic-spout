@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,5 +66,37 @@ public class FilterChain {
         }
 
         return true;
+    }
+
+    /**
+     * Find the identifier for a set of steps
+     *
+     * @param seek The list of steps to find
+     * @return Identifier for the steps in the chain
+     */
+    public SidelineIdentifier findSteps(List<FilterChainStep> seek) {
+        for (SidelineIdentifier id : steps.keySet()) {
+            List<FilterChainStep> listOfSteps = steps.get(id);
+
+            if (listOfSteps.equals(seek)) {
+                return id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the identifier for a set that only had one step
+     *
+     * @param seek The step to find
+     * @return Identifier for the steps in the chain
+     */
+    public SidelineIdentifier findStep(FilterChainStep seek) {
+        return findSteps(Collections.singletonList(seek));
+    }
+
+    public Map<SidelineIdentifier,List<FilterChainStep>> getSteps() {
+        return steps;
     }
 }

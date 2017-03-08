@@ -2,9 +2,13 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,7 +20,7 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
     private Map<String,ConsumerState> storedConsumerState;
 
     // "Persists" side line request states in memory.
-    private Map<SidelineIdentifier, ConsumerState> storedSidelineRequests;
+    private Map<SidelineIdentifier, SidelinePayload> storedSidelineRequests;
 
     @Override
     public void open(Map topologyConfig) {
@@ -55,12 +59,13 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
     }
 
     /**
+     * @param type
      * @param id - unique identifier for the sideline request.
-     * @param state - the associated state to be stored w/ the request.
+     * @param endingState
      */
     @Override
-    public void persistSidelineRequestState(SidelineIdentifier id, ConsumerState state) {
-        storedSidelineRequests.put(id, state);
+    public void persistSidelineRequestState(SidelineType type, SidelineIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
+        storedSidelineRequests.put(id, new SidelinePayload(type, id, request, startingState, null));
     }
 
     /**
@@ -69,7 +74,12 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
     @Override
-    public ConsumerState retrieveSidelineRequestState(SidelineIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineIdentifier id) {
         return storedSidelineRequests.get(id);
+    }
+
+    @Override
+    public List<SidelineIdentifier> listSidelineRequests() {
+        return new ArrayList<>(storedSidelineRequests.keySet());
     }
 }
