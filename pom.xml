@@ -29,6 +29,11 @@
 
         <!-- Define which version of storm you'll be running this topology on -->
         <stormVersion>1.0.3</stormVersion>
+
+        <!-- Define which kafka version -->
+
+        <!-- Define which Curator version (was 2.11.1) -->
+        <curatorVersion>3.2.1</curatorVersion>
     </properties>
 
     <dependencies>
@@ -47,6 +52,7 @@
             <artifactId>kafka_2.11</artifactId>
             <version>0.10.0.1</version>
             <exclusions>
+                <!-- Don't bring in kafka's logging framework -->
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
@@ -54,6 +60,11 @@
                 <exclusion>
                     <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
+                </exclusion>
+                <!-- Don't bring in kafka's zookeeper version -->
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -72,7 +83,7 @@
             <version>3.2.2</version>
         </dependency>
 
-        <!-- TODO: Our version of Curator is not compatible with Guava > 20.0 :( -->
+        <!-- Our version of Curator is not compatible with Guava > 20.0 :( -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -90,7 +101,7 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
-            <version>2.11.1</version>
+            <version>${curatorVersion}</version>
         </dependency>
 
         <!-- Testing Dependencies -->
@@ -121,7 +132,7 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>2.11.1</version>
+            <version>${curatorVersion}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
