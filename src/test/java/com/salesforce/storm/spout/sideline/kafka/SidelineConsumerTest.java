@@ -116,8 +116,8 @@ public class SidelineConsumerTest {
     // test calling getCurrentState().
 
     /**
-     * Tests that our logic for flushing consumer state to the persistence layer works
-     * as we expect it to.
+     * Tests that our logic for flushing consumer state works if auto commit is enabled.
+     * This is kind of a weak test for this.
      */
     @Test
     public void testTimedFlushConsumerState() throws InterruptedException {
@@ -127,8 +127,9 @@ public class SidelineConsumerTest {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
 
-        // Set timeout to 1 seconds.
-        config.setFlushStateTimeMS(1000);
+        // Enable auto commit and Set timeout to 1 second.
+        config.setConsumerStateAutoCommit(true);
+        config.setConsumerStateAutoCommitIntervalMs(1000);
 
         // Create mock persistence manager so we can determine if it was called
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
@@ -183,6 +184,77 @@ public class SidelineConsumerTest {
 
         // Make sure persistence layer WAS hit a 2nd time because we adjust our mock clock ahead
         verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyObject());
+    }
+
+    /**
+     * Tests that our logic for flushing consumer state is disabled if auto commit is disabled.
+     * This is kind of a weak test for this.
+     */
+    @Test
+    public void testTimedFlushConsumerStateWhenAutoCommitIsDisabled() throws InterruptedException {
+        final String expectedConsumerId = "MyConsumerId";
+
+        // Setup our config
+        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
+        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
+
+        // Disable and set interval to 1 second.
+        config.setConsumerStateAutoCommit(false);
+        config.setConsumerStateAutoCommitIntervalMs(1000);
+
+        // Create mock persistence manager so we can determine if it was called
+        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
+
+        // Create a mock clock so we can control time (bwahaha)
+        Instant instant = Clock.systemUTC().instant();
+        Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
+
+        // Call constructor
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager);
+        sidelineConsumer.setClock(mockClock);
+
+        // Call our method once
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+
+        // Sleep for 1.5 seconds
+        Thread.sleep(1500);
+
+        // Call our method again
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+
+        // Now lets adjust our mock clock up by 2 seconds.
+        instant = instant.plus(2000, ChronoUnit.MILLIS);
+        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
+        sidelineConsumer.setClock(mockClock);
+
+        // Call our method again, it should have triggered this time.
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+
+        // Call our method again, it shouldn't fire.
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+
+        // Now lets adjust our mock clock up by 1.5 seconds.
+        instant = instant.plus(1500, ChronoUnit.MILLIS);
+        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
+        sidelineConsumer.setClock(mockClock);
+
+        // Call our method again, it should have triggered this time.
+        sidelineConsumer.timedFlushConsumerState();
+
+        // Make sure persistence layer was not hit
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
     }
 
     /**

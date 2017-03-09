@@ -7,7 +7,8 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
- * Wrpaper around Kafka's Consumer Config to abstract it and enforce some requirements.
+ * Wrapper around Kafka's Consumer Config to abstract it and enforce some requirements.
+ * TODO: should probably be immutable and use the builder pattern.
  */
 public class SidelineConsumerConfig {
     private final Properties kafkaConsumerProperties = new Properties();
@@ -17,9 +18,15 @@ public class SidelineConsumerConfig {
     private ConsumerState stopState = null;
 
     /**
-     * How often we'll flush consumer state to the persistence layer, in milliseconds.
+     * Settings for consumer state auto commit.  Defaulted to off.
      */
-    private long flushStateTimeMS = 15000;  // 15 seconds
+    private boolean consumerStateAutoCommit = false;
+
+    /**
+     * If autoCommit is enabled, how often we will flush that state, in milliseconds.
+     * Defaults to 15 seconds.
+     */
+    private long consumerStateAutoCommitIntervalMs = 15000;
 
     public SidelineConsumerConfig(List<String> brokerHosts, String consumerId, String topic) {
         this.topic = topic;
@@ -79,11 +86,19 @@ public class SidelineConsumerConfig {
         return kafkaConsumerProperties;
     }
 
-    public void setFlushStateTimeMS(long flushStateTimeMS) {
-        this.flushStateTimeMS = flushStateTimeMS;
+    public boolean isConsumerStateAutoCommit() {
+        return consumerStateAutoCommit;
     }
 
-    public long getFlushStateTimeMS() {
-        return flushStateTimeMS;
+    public void setConsumerStateAutoCommit(boolean consumerStateAutoCommit) {
+        this.consumerStateAutoCommit = consumerStateAutoCommit;
+    }
+
+    public long getConsumerStateAutoCommitIntervalMs() {
+        return consumerStateAutoCommitIntervalMs;
+    }
+
+    public void setConsumerStateAutoCommitIntervalMs(long consumerStateAutoCommitIntervalMs) {
+        this.consumerStateAutoCommitIntervalMs = consumerStateAutoCommitIntervalMs;
     }
 }

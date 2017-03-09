@@ -346,7 +346,6 @@ public class SidelineSpoutTest {
         // Loop over what we produced into kafka
         // These offsets should be 3,4,5 since its the 2nd batch of 3 we produced, and our last
         // completed offset was 2, so we should start at the next one.
-        // TODO - talk to slemon about this.
         emissionIterator = spoutEmissions.iterator();
         for (ProducerRecord<byte[], byte[]> producedRecord: producedRecords) {
             // Sanity check
