@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
@@ -398,6 +399,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     public void setConsumerId(String consumerId) {
+        if (Strings.isNullOrEmpty(consumerId)) {
+            throw new IllegalStateException("Consumer id cannot be null or empty! (" + consumerId + ")");
+        }
         this.consumerId = consumerId;
     }
 
