@@ -30,12 +30,33 @@ public class SpoutCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
-    public static final int MONITOR_THREAD_SLEEP_MS = 30000;
-    public static final int MAX_SPOUT_STOP_TIME_MS = 5000;
+    /**
+     * How long our monitor thread will sit around and sleep between monitoring
+     * if new VirtualSpouts need to be started up, in Milliseconds.
+     */
+    public static final int MONITOR_THREAD_SLEEP_MS = 2000;
+
+    /**
+     * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
+     * them with force, in Milliseconds.
+     */
+    public static final int MAX_SPOUT_STOP_TIME_MS = 10000;
+
+    /**
+     * How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
+     */
     public static final long FLUSH_INTERVAL_MS = 30000;
 
+    /**
+     * Flag that gets set to false on shutdown, to signal to close up shop.
+     * This probably should be renamed at some point.
+     */
     private boolean running = false;
 
+    /**
+     * Which Clock instance to get reference to the system time.
+     * We use this to allow injecting a fake System clock in tests.
+     */
     private Clock clock = Clock.systemUTC();
 
     private final Queue<DelegateSidelineSpout> sidelineSpouts = new ConcurrentLinkedQueue<>();
