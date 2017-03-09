@@ -30,9 +30,9 @@ public class SpoutCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
-    private static final int MONITOR_THREAD_SLEEP_MS = 30000;
-    private static final int MAX_SPOUT_STOP_TIME = 5000;
-    private static final long FLUSH_INTERVAL = 30000;
+    public static final int MONITOR_THREAD_SLEEP_MS = 30000;
+    public static final int MAX_SPOUT_STOP_TIME_MS = 5000;
+    public static final long FLUSH_INTERVAL_MS = 30000;
 
     private boolean running = false;
 
@@ -79,11 +79,11 @@ public class SpoutCoordinator {
             // Start monitoring loop.
             while (running) {
                 logger.info("Still here.. my input queue is {}", sidelineSpouts.size());
-                if (!sidelineSpouts.isEmpty()) {
-                    for (DelegateSidelineSpout spout : sidelineSpouts) {
-                        sidelineSpouts.remove(spout);
-                        openSpout(spout, queue, startSignal);
-                    }
+
+                for (DelegateSidelineSpout spout; (spout = sidelineSpouts.poll()) != null;) {
+                    logger.info("I'm about to open a spout {}", spout.getConsumerId());
+
+                    openSpout(spout, queue, startSignal);
                 }
 
                 // Pause for a period before checking for more spouts
@@ -116,6 +116,8 @@ public class SpoutCoordinator {
         final BlockingQueue queue,
         final CountDownLatch startSignal
     ) {
+        logger.info("Preparing thread for spout {}", spout.getConsumerId());
+
         runningSpouts.put(spout.getConsumerId(), spout);
 
         CompletableFuture.runAsync(() -> {
@@ -162,7 +164,7 @@ public class SpoutCoordinator {
                 }
 
                 // Periodically we flush the state of the spout to capture progress
-                if (lastFlush + FLUSH_INTERVAL < clock.millis()) {
+                if (lastFlush + FLUSH_INTERVAL_MS < clock.millis()) {
                     logger.info("Flushing state for spout {}", spout.getConsumerId());
                     spout.flushState();
                     lastFlush = clock.millis();
@@ -223,7 +225,7 @@ public class SpoutCoordinator {
             spout.finish();
         }
 
-        final Duration timeout = Duration.ofMillis(MAX_SPOUT_STOP_TIME);
+        final Duration timeout = Duration.ofMillis(MAX_SPOUT_STOP_TIME_MS);
 
         final ExecutorService executor = Executors.newSingleThreadExecutor();
 

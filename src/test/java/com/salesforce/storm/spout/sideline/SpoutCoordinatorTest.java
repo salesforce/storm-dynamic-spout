@@ -27,6 +27,8 @@ public class SpoutCoordinatorTest {
 
     @Test
     public void testCoordinator() throws Exception {
+        final int waitTime = SpoutCoordinator.MONITOR_THREAD_SLEEP_MS + 100;
+
         final List<KafkaMessage> expected = new ArrayList<>();
 
         final MockDelegateSidelineSpout fireHoseSpout = new MockDelegateSidelineSpout();
@@ -53,7 +55,7 @@ public class SpoutCoordinatorTest {
         coordinator.addSidelineSpout(sidelineSpout1);
         coordinator.addSidelineSpout(sidelineSpout2);
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> coordinator.getTotalSpouts(), equalTo(3));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> coordinator.getTotalSpouts(), equalTo(3));
 
         assertEquals(3, coordinator.getTotalSpouts());
 
@@ -66,15 +68,15 @@ public class SpoutCoordinatorTest {
         fireHoseSpout.addMessage(message3);
         expected.add(message3);
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> actual.size(), equalTo(3));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> actual.size(), equalTo(3));
 
         coordinator.ack(message1.getTupleMessageId());
         coordinator.ack(message2.getTupleMessageId());
         coordinator.fail(message3.getTupleMessageId());
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> fireHoseSpout.acks.size(), equalTo(1));
-        await().atMost(5, TimeUnit.SECONDS).until(() -> fireHoseSpout.fails.size(), equalTo(1));
-        await().atMost(5, TimeUnit.SECONDS).until(() -> sidelineSpout1.acks.size(), equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.acks.size(), equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.fails.size(), equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.acks.size(), equalTo(1));
 
         assertTrue(
             message1.getTupleMessageId().equals(fireHoseSpout.acks.poll())
