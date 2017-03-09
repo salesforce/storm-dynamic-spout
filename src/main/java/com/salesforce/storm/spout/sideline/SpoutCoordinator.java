@@ -73,17 +73,20 @@ public class SpoutCoordinator {
         final CountDownLatch startSignal = new CountDownLatch(sidelineSpouts.size());
 
         CompletableFuture.runAsync(() -> {
+            // Rename our thread.
+            Thread.currentThread().setName("SidelineSpout-NewSpoutMonitor");
+
+            // Start monitoring loop.
             while (running) {
                 logger.info("Still here.. my input queue is {}", sidelineSpouts.size());
                 if (!sidelineSpouts.isEmpty()) {
                     for (DelegateSidelineSpout spout : sidelineSpouts) {
                         sidelineSpouts.remove(spout);
-
                         openSpout(spout, queue, startSignal);
                     }
                 }
 
-                // Pause for a minute before checking for more spouts
+                // Pause for a period before checking for more spouts
                 try {
                     Thread.sleep(MONITOR_THREAD_SLEEP_MS);
                 } catch (InterruptedException ex) {
@@ -92,10 +95,10 @@ public class SpoutCoordinator {
                 }
             }
 
-            logger.warn("Spout coordinator is ceasing to run...");
+            logger.warn("!!!!!! Spout coordinator is ceasing to run...");
         }).exceptionally(throwable -> {
             // TODO: need to handle exceptions
-            logger.error("Got exception in spout watcher thread {}", throwable);
+            logger.error("!!!!!! Got exception in spout watcher thread {}", throwable);
 
             // Re-throw for now?
             throw new RuntimeException(throwable);
