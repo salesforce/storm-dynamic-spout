@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
@@ -23,6 +24,7 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -63,6 +65,8 @@ public class SidelineSpout extends BaseRichSpout {
      * For collecting metrics.
      */
     private transient MetricsRecorder metricsRecorder;
+    private transient Map<String, Long> emitCountMetrics;
+    private long emitCounter = 0L;
 
     /**
      * Determines which output stream to emit tuples out.
@@ -298,6 +302,9 @@ public class SidelineSpout extends BaseRichSpout {
         if (stoppingTrigger != null) {
             stoppingTrigger.open(toplogyConfig);
         }
+
+        // For emit metrics
+        emitCountMetrics = Maps.newHashMap();
     }
 
     @Override
@@ -313,7 +320,24 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Debug logging
-        logger.info("Emitting MsgId[{}]", kafkaMessage.getTupleMessageId());
+        logger.debug("Emitting MsgId[{}]", kafkaMessage.getTupleMessageId());
+
+
+        // Update / Display emit metrics
+        final String srcId = kafkaMessage.getTupleMessageId().getSrcConsumerId();
+        if (!emitCountMetrics.containsKey(srcId)) {
+            emitCountMetrics.put(srcId, 1L);
+        } else {
+            emitCountMetrics.put(srcId, emitCountMetrics.get(srcId) + 1L);
+        }
+        emitCounter++;
+        if (emitCounter >= 2000L) {
+            for (String key : emitCountMetrics.keySet()) {
+                logger.info("Emit Count on {} => {}", key, emitCountMetrics.get(key));
+            }
+            emitCountMetrics.clear();
+            emitCounter = 0;
+        }
 
         // Dump to output collector.
         outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());

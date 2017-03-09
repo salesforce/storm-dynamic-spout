@@ -265,8 +265,8 @@ public class SidelineConsumer {
             // Create new iterator
             bufferIterator = buffer.iterator();
 
-            // TODO: Count is potentially expensive, remove the call from the info line.
-            logger.info("Done filling buffer with {} entries has next? => {}", buffer.count(), bufferIterator.hasNext());
+            // Count is potentially expensive, remove the call from the info line.
+            //logger.debug("Done filling buffer with {} entries", buffer.count());
         }
     }
 
