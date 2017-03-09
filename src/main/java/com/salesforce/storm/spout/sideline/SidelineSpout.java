@@ -27,7 +27,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Skeleton implementation for now.
@@ -36,11 +37,13 @@ public class SidelineSpout extends BaseRichSpout {
     // Logging
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpout.class);
 
+    private static final int QUEUE_MAX_SIZE = 10000;
+
     // Storm Topology Items
     private Map topologyConfig;
     private SpoutOutputCollector outputCollector;
     private TopologyContext topologyContext;
-    private transient ConcurrentLinkedDeque<KafkaMessage> queue;
+    private transient BlockingQueue<KafkaMessage> queue;
     private VirtualSidelineSpout fireHoseSpout;
     private SpoutCoordinator coordinator;
     private StartingTrigger startingTrigger;
@@ -205,7 +208,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.open(this.topologyConfig, this.topologyContext);
 
         // Setup our concurrent queue.
-        this.queue = new ConcurrentLinkedDeque<>();
+        this.queue = new LinkedBlockingQueue<>(QUEUE_MAX_SIZE);
 
         if (startingTrigger != null) {
             startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
@@ -248,9 +251,7 @@ public class SidelineSpout extends BaseRichSpout {
             metricsRecorder
         );
 
-        coordinator.open((KafkaMessage message) -> {
-            queue.add(message);
-        });
+        coordinator.open(queue);
 
         // TODO: We should build the full payload here rather than individual requests later on
         final List<SidelineIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
@@ -305,21 +306,23 @@ public class SidelineSpout extends BaseRichSpout {
         // Ensure that the tuple's Id identifies which spout instance it came from
         // so we can trace the tuple id back to the spout later.
         // Emit tuple.
-        if (!queue.isEmpty()) {
-            final KafkaMessage kafkaMessage = queue.removeFirst();
+        final KafkaMessage kafkaMessage = queue.poll();
 
-            // Debug logging
-            logger.info("Emitting MsgId[{}] - {}", kafkaMessage.getTupleMessageId(), kafkaMessage.getValues());
-
-            // Dump to output collector.
-            outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
-
-            // Update emit count metric for SidelineSpout
-            metricsRecorder.count(getClass(), "emit", 1L);
-
-            // Update emit count metric for VirtualSidelineSpout this tuple originated from
-            metricsRecorder.count(VirtualSidelineSpout.class, kafkaMessage.getTupleMessageId().getSrcConsumerId() + ".emit", 1);
+        if (kafkaMessage == null) {
+            return;
         }
+
+        // Debug logging
+        logger.info("Emitting MsgId[{}] - {}", kafkaMessage.getTupleMessageId(), kafkaMessage.getValues());
+
+        // Dump to output collector.
+        outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
+
+        // Update emit count metric for SidelineSpout
+        metricsRecorder.count(getClass(), "emit", 1L);
+
+        // Update emit count metric for VirtualSidelineSpout this tuple originated from
+        metricsRecorder.count(VirtualSidelineSpout.class, kafkaMessage.getTupleMessageId().getSrcConsumerId() + ".emit", 1);
     }
 
     /**

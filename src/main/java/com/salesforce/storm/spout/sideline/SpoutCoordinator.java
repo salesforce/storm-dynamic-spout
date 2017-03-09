@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -19,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 
 /**
  * Spout Coordinator.
@@ -65,9 +65,9 @@ public class SpoutCoordinator {
 
     /**
      * Start coordinating delegate spouts
-     * @param consumer A lambda to receive messages as they are coming off of various spouts
+     * @param queue The queue to put messages onto
      */
-    public void open(final Consumer<KafkaMessage> consumer) {
+    public void open(final BlockingQueue queue) {
         running = true;
 
         final CountDownLatch startSignal = new CountDownLatch(sidelineSpouts.size());
@@ -78,7 +78,7 @@ public class SpoutCoordinator {
                     for (DelegateSidelineSpout spout : sidelineSpouts) {
                         sidelineSpouts.remove(spout);
 
-                        openSpout(spout, consumer, startSignal);
+                        openSpout(spout, queue, startSignal);
                     }
                 }
 
@@ -101,7 +101,7 @@ public class SpoutCoordinator {
 
     protected void openSpout(
         final DelegateSidelineSpout spout,
-        final Consumer<KafkaMessage> consumer,
+        final BlockingQueue queue,
         final CountDownLatch startSignal
     ) {
         runningSpouts.put(spout.getConsumerId(), spout);
@@ -126,8 +126,12 @@ public class SpoutCoordinator {
                 final KafkaMessage message = spout.nextTuple();
 
                 if (message != null) {
-                    // Lambda that passes the tuple back to the main spout
-                    consumer.accept(message);
+                    try {
+                        queue.put(message);
+                    } catch (InterruptedException ex) {
+                        // TODO: Revisit this
+                        logger.error("{}", ex);
+                    }
                 }
 
                 // Lemon's note: Should we ack and then remove from the queue? What happens in the event

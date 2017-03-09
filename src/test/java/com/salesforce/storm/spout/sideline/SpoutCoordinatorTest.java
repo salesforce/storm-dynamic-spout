@@ -1,7 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -14,9 +13,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -38,7 +38,7 @@ public class SpoutCoordinatorTest {
         final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("message2", 1, 1L, sidelineSpout1.getConsumerId()), new Values("message2"));
         final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("message3", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
 
-        final Set<KafkaMessage> actual = Sets.newConcurrentHashSet();
+        final BlockingQueue<KafkaMessage> actual = new LinkedBlockingQueue<>();
 
         // Create noop metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -46,7 +46,7 @@ public class SpoutCoordinatorTest {
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder);
-        coordinator.open(actual::add);
+        coordinator.open(actual);
 
         assertEquals(1, coordinator.getTotalSpouts());
 
