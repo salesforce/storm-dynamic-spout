@@ -108,9 +108,6 @@ public class SpoutCoordinator {
         runningSpouts.put(spout.getConsumerId(), spout);
 
         CompletableFuture.runAsync(() -> {
-            // Start run timer
-            final long startTime = clock.millis();
-
             // Rename thread
             Thread.currentThread().setName(spout.getConsumerId());
             logger.info("Opening {} spout", spout.getConsumerId());
@@ -162,10 +159,6 @@ public class SpoutCoordinator {
                     logger.warn("Thread interrupted, shutting down...");
                     spout.finish();
                 }
-
-                // Update run timer, this clicks up for as long as this instance is running.
-                final long currentRunTime = clock.millis();
-                metricsRecorder.assignValue(spout.getClass(), spout.getConsumerId() + ".runTimeMS", (currentRunTime - startTime));
             }
 
             logger.info("Finishing {} spout", spout.getConsumerId());
