@@ -30,7 +30,7 @@ public class SpoutCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
-    private static final int MONITOR_THREAD_SLEEP = 10;
+    private static final int MONITOR_THREAD_SLEEP_MS = 30000;
     private static final int MAX_SPOUT_STOP_TIME = 5000;
     private static final long FLUSH_INTERVAL = 30000;
 
@@ -74,6 +74,7 @@ public class SpoutCoordinator {
 
         CompletableFuture.runAsync(() -> {
             while (running) {
+                logger.info("Still here.. my input queue is {}", sidelineSpouts.size());
                 if (!sidelineSpouts.isEmpty()) {
                     for (DelegateSidelineSpout spout : sidelineSpouts) {
                         sidelineSpouts.remove(spout);
@@ -84,14 +85,14 @@ public class SpoutCoordinator {
 
                 // Pause for a minute before checking for more spouts
                 try {
-                    Thread.sleep(MONITOR_THREAD_SLEEP);
+                    Thread.sleep(MONITOR_THREAD_SLEEP_MS);
                 } catch (InterruptedException ex) {
-                    logger.warn("Thread interrupted, shutting down...");
+                    logger.warn("!!!!!! Thread interrupted, shutting down...");
                     return;
                 }
             }
 
-            logger.info("Spout coordinator is ceasing to run...");
+            logger.warn("Spout coordinator is ceasing to run...");
         }).exceptionally(throwable -> {
             // TODO: need to handle exceptions
             logger.error("Got exception in spout watcher thread {}", throwable);
