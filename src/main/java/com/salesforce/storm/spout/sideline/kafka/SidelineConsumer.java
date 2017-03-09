@@ -43,6 +43,13 @@ public class SidelineConsumer {
     private boolean hasCalledConnect = false;
 
     /**
+     * Flag to turn auto-state committing on/off.
+     * With this turned off, it becomes whoever manages this instance responsibility
+     * to call flushState() to persist the state.
+     */
+    private boolean autoCommitState = false;
+
+    /**
      * State/offset management.
      * ConsumerStateManager - Used to manage persisting consumer state, and when the consumer is restarted,
      * loading the last known consumer state back in.
@@ -214,6 +221,11 @@ public class SidelineConsumer {
      * @return boolean - true if we flushed state, false if we didn't
      */
     protected boolean timedFlushConsumerState() {
+        // If we have auto commit off, don't commit
+        if (!autoCommitState) {
+            return false;
+        }
+
         // Set initial state if not defined
         if (lastFlushTime == 0) {
             lastFlushTime = Instant.now(getClock()).toEpochMilli();
