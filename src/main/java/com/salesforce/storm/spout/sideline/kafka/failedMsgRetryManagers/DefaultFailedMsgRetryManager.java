@@ -119,7 +119,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         // Loop thru fails
         for (TupleMessageId messageId : failedTuples.keySet()) {
             // If its expired and not already in flight
-            logger.info("{} <= {} for {}", failedTuples.get(messageId).getNextRetry(), now, messageId);
+            logger.debug("{} <= {} for {} => Replaying it!", failedTuples.get(messageId).getNextRetry(), now, messageId);
             if (failedTuples.get(messageId).getNextRetry() <= now && !retriesInFlight.contains(messageId)) {
                 // return msg id.
                 return messageId;

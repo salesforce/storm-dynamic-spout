@@ -313,7 +313,7 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Debug logging
-        logger.info("Emitting MsgId[{}] - {}", kafkaMessage.getTupleMessageId(), kafkaMessage.getValues());
+        logger.info("Emitting MsgId[{}]", kafkaMessage.getTupleMessageId());
 
         // Dump to output collector.
         outputCollector.emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
