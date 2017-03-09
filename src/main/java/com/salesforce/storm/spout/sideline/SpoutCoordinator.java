@@ -90,6 +90,14 @@ public class SpoutCoordinator {
                     return;
                 }
             }
+
+            logger.info("Spout coordinator is ceasing to run...");
+        }).exceptionally(throwable -> {
+            // TODO: need to handle exceptions
+            logger.error("Got exception in spout watcher thread {}", throwable);
+
+            // Re-throw for now?
+            throw new RuntimeException(throwable);
         });
 
         try {
