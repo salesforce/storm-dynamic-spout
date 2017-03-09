@@ -167,7 +167,7 @@ public class SpoutCoordinator {
             runningSpouts.remove(spout.getConsumerId());
         }).exceptionally(throwable -> {
             // TODO: need to handle exceptions
-            logger.info("Got exception for spout {}", spout.getConsumerId(), throwable);
+            logger.error("Got exception for spout {}", spout.getConsumerId(), throwable);
 
             // Re-throw for now?
             throw new RuntimeException(throwable);
