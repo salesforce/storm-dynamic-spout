@@ -31,7 +31,6 @@ public class SpoutCoordinator {
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
     private static final int MONITOR_THREAD_SLEEP = 10;
-    private static final int SPOUT_THREAD_SLEEP = 10;
     private static final int MAX_SPOUT_STOP_TIME = 5000;
     private static final long FLUSH_INTERVAL = 30000;
 
@@ -154,13 +153,6 @@ public class SpoutCoordinator {
                     logger.info("Flushing state for spout {}", spout.getConsumerId());
                     spout.flushState();
                     lastFlush = clock.millis();
-                }
-
-                try {
-                    Thread.sleep(SPOUT_THREAD_SLEEP);
-                } catch (InterruptedException ex) {
-                    logger.warn("Thread interrupted, shutting down...");
-                    spout.finish();
                 }
 
                 // Update run timer, this clicks up for as long as this instance is running.
