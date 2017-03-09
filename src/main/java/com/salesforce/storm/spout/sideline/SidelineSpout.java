@@ -285,6 +285,7 @@ public class SidelineSpout extends BaseRichSpout {
                     payload.startingState,
                     payload.endingState
                 );
+                spout.setConsumerId(fireHoseSpout.getConsumerId() + "_" + payload.id.toString());
 
                 // Add the request's filter steps
                 spout.getFilterChain().addSteps(payload.id, payload.request.steps);
