@@ -217,7 +217,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
                 failedMsgRetryManager.retryStarted(nextFailedMessageId);
 
                 // Emit the tuple.
-                logger.info("Emitting previously failed tuple with msgId {}", nextFailedMessageId);
+                logger.debug("Emitting previously failed tuple with msgId {}", nextFailedMessageId);
                 return trackedMessages.get(nextFailedMessageId);
             } else {
                 logger.warn("Unable to find tuple that should be replayed due to a fail {}", nextFailedMessageId);
@@ -249,7 +249,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Determine if this tuple exceeds our ending offset
         if (doesMessageExceedEndingOffset(tupleMessageId)) {
-            logger.info("Tuple {} exceeds max offset, acking", tupleMessageId);
+            logger.debug("Tuple {} exceeds max offset, acking", tupleMessageId);
 
             // Unsubscribe partition this tuple belongs to.
             unsubscribeTopicPartition(tupleMessageId.getTopicPartition());
@@ -267,7 +267,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
-            logger.info("Tuple {} is filtered, acking", message.getTupleMessageId());
+            logger.debug("Tuple {} is filtered, acking", message.getTupleMessageId());
             // Ack
             ack(tupleMessageId);
 
@@ -305,7 +305,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If its > the ending offset
-        logger.info("Current Offset: {} EndingOffset: {}", currentOffset, endingOffset);
+        logger.debug("Current Offset: {} EndingOffset: {}", currentOffset, endingOffset);
         if (currentOffset > endingOffset) {
             // Then
             return true;
@@ -428,8 +428,10 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @return boolean - true if successfully unsub'd, false if not.
      */
     public boolean unsubscribeTopicPartition(TopicPartition topicPartition) {
-        logger.info("Unsubscribing from partition {}", topicPartition);
-        return sidelineConsumer.unsubscribeTopicPartition(topicPartition);
+        final boolean result = sidelineConsumer.unsubscribeTopicPartition(topicPartition);
+        if (result) {
+            logger.info("Unsubscribed from partition {}", topicPartition);
+        }
     }
 
     /**
@@ -474,7 +476,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            logger.info("{} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
+            logger.debug("{} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
             sidelineConsumer.unsubscribeTopicPartition(topicPartition);
         }
 
