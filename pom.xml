@@ -2,13 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+    <modelVersion>4.0.0</modelVersion>
     <groupId>com.salesforce</groupId>
     <artifactId>storm-sideline-spout</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <modelVersion>4.0.0</modelVersion>
-
     <name>storm-sideline-spout</name>
 
     <!-- Require Maven 3.3.9 -->
@@ -33,7 +31,9 @@
         <!-- Define which kafka version -->
 
         <!-- Define which Curator version (was 2.11.1) -->
-        <curatorVersion>3.2.1</curatorVersion>
+        <curatorVersion>2.11.1</curatorVersion>
+
+        <artifactoryHost>artifactory.dev.pardot.com</artifactoryHost>
     </properties>
 
     <dependencies>
@@ -61,11 +61,6 @@
                     <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
-                <!-- Don't bring in kafka's zookeeper version -->
-                <exclusion>
-                    <groupId>org.apache.zookeeper</groupId>
-                    <artifactId>zookeeper</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
 
@@ -83,7 +78,7 @@
             <version>3.2.2</version>
         </dependency>
 
-        <!-- Our version of Curator is not compatible with Guava > 20.0 :( -->
+        <!-- Curator is not compatible with Guava > 20.0 :( -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -108,7 +103,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -259,6 +254,12 @@
                 </configuration>
             </plugin>
 
+            <!-- Artifactory deploy -->
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+            </plugin>
+
             <!-- set output location -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -270,5 +271,9 @@
             </plugin>
         </plugins>
     </build>
+
+
+
+
 
 </project>
