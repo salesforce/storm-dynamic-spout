@@ -432,6 +432,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (result) {
             logger.info("Unsubscribed from partition {}", topicPartition);
         }
+        return result;
     }
 
     /**
