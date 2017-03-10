@@ -6,20 +6,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Spout Coordinator.
@@ -48,10 +44,9 @@ public class SpoutCoordinator {
     public static final long FLUSH_INTERVAL_MS = 30000;
 
     /**
-     * Flag that gets set to false on shutdown, to signal to close up shop.
-     * This probably should be renamed at some point.
+     * The size of the thread pool for running virtual spouts for sideline requests
      */
-    private boolean running = false;
+    public static final int SPOUT_RUNNER_THREAD_POOL_SIZE = 10;
 
     /**
      * Which Clock instance to get reference to the system time.
@@ -61,19 +56,51 @@ public class SpoutCoordinator {
      */
     private Clock clock = Clock.systemUTC();
 
-    private final Queue<DelegateSidelineSpout> sidelineSpouts = new ConcurrentLinkedQueue<>();
-    private final Map<String,DelegateSidelineSpout> runningSpouts = new ConcurrentHashMap<>();
+    /**
+     * Queue of spouts that need to be passed to the monitor and spun up
+     */
+    private final Queue<DelegateSidelineSpout> spouts = new ConcurrentLinkedQueue<>();
+
+    /**
+     * Buffer by spout consumer id of messages that have been acked
+     */
     private final Map<String,Queue<TupleMessageId>> acked = new ConcurrentHashMap<>();
+
+    /**
+     * Buffer by spout consumer id of messages that have been failed
+     */
     private final Map<String,Queue<TupleMessageId>> failed = new ConcurrentHashMap<>();
 
+    /**
+     * Thread Pool Executor
+     */
+    private final ExecutorService executor;
+
+    /**
+     * For capturing metrics
+     */
     private final MetricsRecorder metricsRecorder;
+
+    /**
+     * The spout monitor runnable, which handles spinning up threads for sideline spouts
+     */
+    private SpoutMonitor spoutMonitor;
+
+    /**
+     * Flag that gets set to false on shutdown, to signal to close up shop.
+     * This probably should be renamed at some point.
+     */
+    private boolean isOpen = false;
 
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts
      * @param spout Fire hose spout
      */
     public SpoutCoordinator(final DelegateSidelineSpout spout, final MetricsRecorder metricsRecorder) {
+        this.executor = Executors.newFixedThreadPool(SPOUT_RUNNER_THREAD_POOL_SIZE);
+
         this.metricsRecorder = metricsRecorder;
+
         addSidelineSpout(spout);
     }
 
@@ -83,137 +110,35 @@ public class SpoutCoordinator {
      * @param spout New delegate spout
      */
     public void addSidelineSpout(final DelegateSidelineSpout spout) {
-        sidelineSpouts.add(spout);
+        spouts.add(spout);
     }
 
     /**
-     * Start coordinating delegate spouts
+     * Open the coordinator and begin spinning up virtual spout threads
      * @param queue The queue to put messages onto
      */
     public void open(final BlockingQueue queue) {
-        running = true;
+        isOpen = true;
 
-        final CountDownLatch startSignal = new CountDownLatch(sidelineSpouts.size());
+        final CountDownLatch latch = new CountDownLatch(spouts.size());
 
-        CompletableFuture.runAsync(() -> {
-            // Rename our thread.
-            Thread.currentThread().setName("SidelineSpout-NewSpoutMonitor");
+        spoutMonitor = new SpoutMonitor(
+            executor,
+            spouts,
+            queue,
+            acked,
+            failed,
+            latch,
+            clock
+        );
 
-            // Start monitoring loop.
-            while (running) {
-                logger.info("Still here.. my input queue is {}", sidelineSpouts.size());
-
-                for (DelegateSidelineSpout spout; (spout = sidelineSpouts.poll()) != null;) {
-                    logger.info("I'm about to open a spout {}", spout.getConsumerId());
-
-                    openSpout(spout, queue, startSignal);
-                }
-
-                // Pause for a period before checking for more spouts
-                try {
-                    Thread.sleep(MONITOR_THREAD_SLEEP_MS);
-                } catch (InterruptedException ex) {
-                    logger.warn("!!!!!! Thread interrupted, shutting down...");
-                    return;
-                }
-            }
-
-            logger.warn("!!!!!! Spout coordinator is ceasing to run...");
-        }).exceptionally(throwable -> {
-            // TODO: need to handle exceptions
-            logger.error("!!!!!! Got exception in spout watcher thread {}", throwable);
-
-            // Re-throw for now?
-            throw new RuntimeException(throwable);
-        });
+        executor.submit(spoutMonitor);
 
         try {
-            startSignal.await();
+            latch.await();
         } catch (InterruptedException ex) {
             logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
         }
-    }
-
-    protected void openSpout(
-        final DelegateSidelineSpout spout,
-        final BlockingQueue queue,
-        final CountDownLatch startSignal
-    ) {
-        logger.info("Preparing thread for spout {}", spout.getConsumerId());
-
-        runningSpouts.put(spout.getConsumerId(), spout);
-
-        // Fire up our new VirtualSpout within a new thread.
-        CompletableFuture.runAsync(() -> {
-            // Rename thread
-            Thread.currentThread().setName(spout.getConsumerId());
-            logger.info("Opening {} spout", spout.getConsumerId());
-
-            spout.open();
-
-            acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-            failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-
-            startSignal.countDown();
-
-            long lastFlush = clock.millis();
-
-            // Loop forever until someone requests the spout to stop
-            while (!spout.isStopRequested()) {
-
-                // First look for any new tuples to be emitted.
-                logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
-                final KafkaMessage message = spout.nextTuple();
-                if (message != null) {
-                    try {
-                        queue.put(message);
-                    } catch (InterruptedException ex) {
-                        // TODO: Revisit this
-                        logger.error("{}", ex);
-                    }
-                }
-
-                // Lemon's note: Should we ack and then remove from the queue? What happens in the event
-                //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
-
-                // Ack anything that needs to be acked
-                while (!acked.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = acked.get(spout.getConsumerId()).poll();
-                    spout.ack(id);
-                }
-
-                // Fail anything that needs to be failed
-                while (!failed.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = failed.get(spout.getConsumerId()).poll();
-                    spout.fail(id);
-                }
-
-                // Periodically we flush the state of the spout to capture progress
-                if (lastFlush + FLUSH_INTERVAL_MS < clock.millis()) {
-                    logger.info("Flushing state for spout {}", spout.getConsumerId());
-                    spout.flushState();
-                    lastFlush = clock.millis();
-                }
-            }
-
-            // Looks like someone requested that we stop this instance.
-            // So we call close on it.
-            logger.info("Finishing {} spout", spout.getConsumerId());
-            spout.close();
-
-            // Remove our entries from the acked and failed queue.
-            acked.remove(spout.getConsumerId());
-            failed.remove(spout.getConsumerId());
-        }).thenRun(() -> {
-            // Remove from our running spouts
-            runningSpouts.remove(spout.getConsumerId());
-        }).exceptionally(throwable -> {
-            // TODO: need to handle exceptions
-            logger.error("Got exception for spout {}", spout.getConsumerId(), throwable);
-
-            // Re-throw for now?
-            throw new RuntimeException(throwable);
-        });
     }
 
     /**
@@ -246,33 +171,18 @@ public class SpoutCoordinator {
      * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts
      */
     public void close() {
-        // Tell every spout to finish what they're doing
-        for (DelegateSidelineSpout spout : runningSpouts.values()) {
-            // Marking it as finished will cause the thread to end, remove it from the thread map
-            // and ultimately remove it from the list of spouts
-            spout.requestStop();
-        }
-
-        final Duration timeout = Duration.ofMillis(MAX_SPOUT_STOP_TIME_MS);
-
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-        final Future handler = executor.submit(() -> {
-            while (!runningSpouts.isEmpty()) {}
-        });
+        spoutMonitor.close();
 
         try {
-            handler.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            handler.cancel(true);
-        } catch (InterruptedException | ExecutionException e) {
-            logger.error("Caught Exception while stopping: {}", e);
+            executor.awaitTermination(MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            logger.error("Caught Exception while stopping: {}", ex);
         }
 
         executor.shutdownNow();
 
         // Will trigger the monitor thread to stop running, which should be the end of it
-        running = false;
+        isOpen = false;
     }
 
     /**
@@ -280,6 +190,208 @@ public class SpoutCoordinator {
      * @return The total number of spouts the coordinator is running
      */
     int getTotalSpouts() {
-        return runningSpouts.size();
+        return spoutMonitor.getTotalSpouts();
+    }
+
+
+    /**
+     * Monitors the lifecycle of spinning up virtual spouts
+     */
+    private static class SpoutMonitor implements Runnable {
+
+        private static final Logger logger = LoggerFactory.getLogger(SpoutMonitor.class);
+
+        private final ExecutorService executor;
+        private final Queue<DelegateSidelineSpout> spouts;
+        private final BlockingQueue queue;
+        private final Map<String,Queue<TupleMessageId>> acked;
+        private final Map<String,Queue<TupleMessageId>> failed;
+        private final CountDownLatch latch;
+        private final Clock clock;
+
+        private final Map<String,SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
+        private final Map<String,Future> spoutThreads = new ConcurrentHashMap<>();
+        private boolean isOpen = true;
+
+        SpoutMonitor(
+            final ExecutorService executor,
+            final Queue<DelegateSidelineSpout> spouts,
+            final BlockingQueue queue,
+            final Map<String,Queue<TupleMessageId>> acked,
+            final Map<String,Queue<TupleMessageId>> failed,
+            final CountDownLatch latch,
+            final Clock clock
+        ) {
+            this.executor = executor;
+            this.spouts = spouts;
+            this.queue = queue;
+            this.acked = acked;
+            this.failed = failed;
+            this.latch = latch;
+            this.clock = clock;
+        }
+
+        @Override
+        public void run() {
+            try {
+                // Rename our thread.
+                Thread.currentThread().setName("SidelineSpout-NewSpoutMonitor");
+
+                // Start monitoring loop.
+                while (isOpen) {
+                    logger.info("Still here.. my input queue is {}", spouts.size());
+
+                    for (DelegateSidelineSpout spout; (spout = spouts.poll()) != null;) {
+                        logger.info("Preparing thread for spout {}", spout.getConsumerId());
+
+                        final SpoutRunner spoutRunner = new SpoutRunner(
+                            spout,
+                            queue,
+                            acked,
+                            failed,
+                            latch,
+                            clock
+                        );
+
+                        spoutRunners.put(spout.getConsumerId(), spoutRunner);
+
+                        final Future spoutInstance = executor.submit(spoutRunner);
+
+                        spoutThreads.put(spout.getConsumerId(), spoutInstance);
+                    }
+
+                    // Pause for a period before checking for more spouts
+                    try {
+                        Thread.sleep(MONITOR_THREAD_SLEEP_MS);
+                    } catch (InterruptedException ex) {
+                        logger.warn("!!!!!! Thread interrupted, shutting down...");
+                        return;
+                    }
+                }
+
+                logger.warn("!!!!!! Spout coordinator is ceasing to run...");
+            } catch (Exception ex) {
+                // TODO: Should we restart the monitor?
+                logger.error("SpoutMonitor threw an exception {}", ex);
+
+            }
+        }
+
+        public void close() {
+            isOpen = false;
+
+            for (SpoutRunner spoutRunner : spoutRunners.values()) {
+                spoutRunner.requestStop();
+            }
+
+            spoutRunners.clear();
+            spoutThreads.clear();
+        }
+
+        public int getTotalSpouts() {
+            return spoutRunners.size();
+        }
+    }
+
+    private static class SpoutRunner implements Runnable {
+
+        private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
+
+        private final DelegateSidelineSpout spout;
+        private final BlockingQueue queue;
+        private final Map<String,Queue<TupleMessageId>> acked;
+        private final Map<String,Queue<TupleMessageId>> failed;
+        private final CountDownLatch latch;
+        private final Clock clock;
+
+        SpoutRunner(
+            final DelegateSidelineSpout spout,
+            final BlockingQueue queue,
+            final Map<String,Queue<TupleMessageId>> acked,
+            final Map<String,Queue<TupleMessageId>> failed,
+            final CountDownLatch latch,
+            final Clock clock
+        ) {
+            this.spout = spout;
+            this.queue = queue;
+            this.acked = acked;
+            this.failed = failed;
+            this.latch = latch;
+            this.clock = clock;
+        }
+
+        @Override
+        public void run() {
+            try {
+                logger.info("Opening {} spout", spout.getConsumerId());
+
+                // Rename thread to use the spout's consumer id
+                Thread.currentThread().setName(spout.getConsumerId());
+
+                spout.open();
+
+                acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+                failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+
+                latch.countDown();
+
+                long lastFlush = clock.millis();
+
+                // Loop forever until someone requests the spout to stop
+                while (!spout.isStopRequested()) {
+                    // First look for any new tuples to be emitted.
+                    logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
+
+                    final KafkaMessage message = spout.nextTuple();
+
+                    if (message != null) {
+                        try {
+                            queue.put(message);
+                        } catch (InterruptedException ex) {
+                            // TODO: Revisit this
+                            logger.error("{}", ex);
+                        }
+                    }
+
+                    // Lemon's note: Should we ack and then remove from the queue? What happens in the event
+                    //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
+
+                    // Ack anything that needs to be acked
+                    while (!acked.get(spout.getConsumerId()).isEmpty()) {
+                        TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                        spout.ack(id);
+                    }
+
+                    // Fail anything that needs to be failed
+                    while (!failed.get(spout.getConsumerId()).isEmpty()) {
+                        TupleMessageId id = failed.get(spout.getConsumerId()).poll();
+                        spout.fail(id);
+                    }
+
+                    // Periodically we flush the state of the spout to capture progress
+                    if (lastFlush + FLUSH_INTERVAL_MS < clock.millis()) {
+                        logger.info("Flushing state for spout {}", spout.getConsumerId());
+                        spout.flushState();
+                        lastFlush = clock.millis();
+                    }
+                }
+
+                // Looks like someone requested that we stop this instance.
+                // So we call close on it.
+                logger.info("Finishing {} spout", spout.getConsumerId());
+                spout.close();
+
+                // Remove our entries from the acked and failed queue.
+                acked.remove(spout.getConsumerId());
+                failed.remove(spout.getConsumerId());
+            } catch (Exception ex) {
+                // TODO: Should we restart the SpoutRunner?
+                logger.error("SpoutRunner for {} threw an exception {}", spout.getConsumerId(), ex);
+            }
+        }
+
+        public void requestStop() {
+            this.spout.requestStop();
+        }
     }
 }
