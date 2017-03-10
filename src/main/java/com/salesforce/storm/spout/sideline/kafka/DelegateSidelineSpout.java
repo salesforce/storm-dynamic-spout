@@ -19,5 +19,6 @@ public interface DelegateSidelineSpout {
     void flushState();
 
     void requestStop();
+
     boolean isStopRequested();
 }
