@@ -27,7 +27,7 @@ public class SpoutCoordinatorTest {
 
     @Test
     public void testCoordinator() throws Exception {
-        final int waitTime = SpoutCoordinator.MONITOR_THREAD_SLEEP_MS + 100;
+        final int waitTime = SpoutCoordinator.MONITOR_THREAD_SLEEP_MS + 200;
 
         final List<KafkaMessage> expected = new ArrayList<>();
 
