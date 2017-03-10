@@ -56,6 +56,8 @@ public class SpoutCoordinator {
     /**
      * Which Clock instance to get reference to the system time.
      * We use this to allow injecting a fake System clock in tests.
+     *
+     * ThreadSafety - Lucky for us, Clock is all thread safe :)
      */
     private Clock clock = Clock.systemUTC();
 
@@ -141,6 +143,7 @@ public class SpoutCoordinator {
 
         runningSpouts.put(spout.getConsumerId(), spout);
 
+        // Fire up our new VirtualSpout within a new thread.
         CompletableFuture.runAsync(() -> {
             // Rename thread
             Thread.currentThread().setName(spout.getConsumerId());
@@ -155,11 +158,12 @@ public class SpoutCoordinator {
 
             long lastFlush = clock.millis();
 
-            while (!spout.isFinished()) {
+            // Loop forever until someone requests the spout to stop
+            while (!spout.isStopRequested()) {
+
+                // First look for any new tuples to be emitted.
                 logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
-
                 final KafkaMessage message = spout.nextTuple();
-
                 if (message != null) {
                     try {
                         queue.put(message);
@@ -192,13 +196,16 @@ public class SpoutCoordinator {
                 }
             }
 
+            // Looks like someone requested that we stop this instance.
+            // So we call close on it.
             logger.info("Finishing {} spout", spout.getConsumerId());
-
             spout.close();
 
+            // Remove our entries from the acked and failed queue.
             acked.remove(spout.getConsumerId());
             failed.remove(spout.getConsumerId());
         }).thenRun(() -> {
+            // Remove from our running spouts
             runningSpouts.remove(spout.getConsumerId());
         }).exceptionally(throwable -> {
             // TODO: need to handle exceptions
@@ -243,7 +250,7 @@ public class SpoutCoordinator {
         for (DelegateSidelineSpout spout : runningSpouts.values()) {
             // Marking it as finished will cause the thread to end, remove it from the thread map
             // and ultimately remove it from the list of spouts
-            spout.finish();
+            spout.requestStop();
         }
 
         final Duration timeout = Duration.ofMillis(MAX_SPOUT_STOP_TIME_MS);

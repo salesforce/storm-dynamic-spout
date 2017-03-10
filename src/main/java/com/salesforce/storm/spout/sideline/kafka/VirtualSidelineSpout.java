@@ -48,7 +48,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private SidelineConsumer sidelineConsumer;
     private Deserializer deserializer;
     private FilterChain filterChain = new FilterChain();
-    private boolean finished = false;
 
     // Define starting and ending offsets.
     private ConsumerState startingState = null;
@@ -58,6 +57,17 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * Flag to maintain if open() has been called already.
      */
     private boolean isOpened = false;
+
+    /**
+     * This flag is used to signal for this instance to cleanly stop.
+     * Marked as volatile because currently its accessed via multiple threads.
+     */
+    private volatile boolean requestedStop = false;
+
+    /**
+     * This flag represents when we have finished consuming all that needs to be consumed.
+     */
+    private boolean isCompleted = false;
 
     /**
      * Is our unique ConsumerId.
@@ -191,9 +201,16 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public void close() {
-        // TODO: Do we need to clean up state and remove it?
-
-        // Close out the consumer
+        // If we've successfully completed processing
+        if (isCompleted) {
+            // We should clean up consumer state
+            sidelineConsumer.removeConsumerState();
+        } else {
+            // We are just closing up shop,
+            // First flush our current consumer state.
+            sidelineConsumer.flushConsumerState();
+        }
+        // Call close & null reference.
         sidelineConsumer.close();
         sidelineConsumer = null;
     }
@@ -383,14 +400,24 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         failedMsgRetryManager.failed(tupleMessageId);
     }
 
-    @Override
-    public boolean isFinished() {
-        return finished;
+    /**
+     * Call this method to request this VirtualSidelineSpout instance
+     * to cleanly stop.
+     */
+    public void requestStop() {
+        synchronized (this) {
+            requestedStop = true;
+        }
     }
 
-    @Override
-    public void finish() {
-        finished = true;
+    /**
+     * Determine if anyone has requested stop on this instance.
+     * @return - true if so, false if not.
+     */
+    public boolean isStopRequested() {
+        synchronized (this) {
+            return requestedStop;
+        }
     }
 
     @Override
@@ -448,13 +475,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         sidelineConsumer.flushConsumerState();
 
         // See if we can finish and close out this VirtualSidelineConsumer.
-        attemptToFinish();
+        attemptToComplete();
     }
 
     /**
      * Internal method that determines if this sideline consumer is finished.
      */
-    private void attemptToFinish() {
+    private void attemptToComplete() {
         // If we don't have a defined ending state
         if (endingState == null) {
             // Then we never finished.
@@ -485,8 +512,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer.unsubscribeTopicPartition(topicPartition);
         }
 
-        // If we made it all the way thru the above loop, we can finish!
+        // If we made it all the way thru the above loop, we completed!
+        // Lets flip our flag to true.
         logger.info("Looks like all partitions are complete!  Lets wrap this up.");
-        finish();
+        isCompleted = true;
+
+        // Cleanup consumerState.
+        // Request that we stop.
+        requestStop();
     }
 }

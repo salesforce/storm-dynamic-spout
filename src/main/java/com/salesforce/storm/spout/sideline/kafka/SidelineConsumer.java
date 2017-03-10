@@ -279,17 +279,14 @@ public class SidelineConsumer {
      * Close out Kafka connections.
      */
     public void close() {
+        // If our consumer is already nulled out
         if (kafkaConsumer == null) {
+            // Do nothing.
             return;
         }
 
-        // Flush state first?
-        flushConsumerState();
-
-        // Close out consumer state manager.
-        if (persistenceManager != null) {
-            persistenceManager.close();
-        }
+        // Close out persistence manager.
+        persistenceManager.close();
 
         // Call close on underlying consumer
         kafkaConsumer.close();
@@ -370,5 +367,15 @@ public class SidelineConsumer {
      */
     protected void setClock(Clock clock) {
         this.clock = clock;
+    }
+
+    /**
+     * This will remove all state from the persistence manager.
+     * This is typically called when the consumer has finished reading
+     * everything that it wants to read, and does not need to be resumed.
+     */
+    public void removeConsumerState() {
+        logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
+        getPersistenceManager().clearConsumerState(getConsumerId());
     }
 }

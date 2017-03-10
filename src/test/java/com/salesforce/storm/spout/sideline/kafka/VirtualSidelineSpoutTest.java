@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -131,16 +132,16 @@ public class VirtualSidelineSpoutTest {
      * Test setter and getter.
      */
     @Test
-    public void testSetAndGetIsFinished() {
+    public void testSetAndGetStopRequested() {
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), new LogRecorder());
 
         // Should default to false
-        assertFalse("Should default to false", virtualSidelineSpout.isFinished());
+        assertFalse("Should default to false", virtualSidelineSpout.isStopRequested());
 
         // Set to true
-        virtualSidelineSpout.finish();
-        assertTrue("Should be true", virtualSidelineSpout.isFinished());
+        virtualSidelineSpout.requestStop();
+        assertTrue("Should be true", virtualSidelineSpout.isStopRequested());
     }
 
     /**
@@ -971,10 +972,10 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
-     * Test calling close, calls close on underlying consumer.
+     * Test calling close, verifies what happens if the completed flag is false.
      */
     @Test
-    public void testClose() {
+    public void testCloseWithCompletedFlagSetToFalse() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
         final Map expectedTopologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -987,14 +988,59 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
+        // Mark sure is completed field is set to false before calling close
+        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        isCompletedField.setAccessible(true);
+        isCompletedField.set(virtualSidelineSpout, false);
+
         // Verify close hasn't been called yet.
         verify(mockSidelineConsumer, never()).close();
 
         // Call close
         virtualSidelineSpout.close();
 
-        // Verify close was called
+        // Verify close was called, and state was flushed
+        verify(mockSidelineConsumer, times(1)).flushConsumerState();
         verify(mockSidelineConsumer, times(1)).close();
+
+        // But we never called remove consumer state.
+        verify(mockSidelineConsumer, never()).removeConsumerState();
+    }
+
+    /**
+     * Test calling close, verifies what happens if the completed flag is true.
+     */
+    @Test
+    public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
+        // Create inputs
+        final Map expectedTopologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Mark sure is completed field is set to true before calling close
+        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        isCompletedField.setAccessible(true);
+        isCompletedField.set(virtualSidelineSpout, true);
+
+        // Verify close hasn't been called yet.
+        verify(mockSidelineConsumer, never()).close();
+
+        // Call close
+        virtualSidelineSpout.close();
+
+        // Verify close was called, and state was cleared
+        verify(mockSidelineConsumer, times(1)).removeConsumerState();
+        verify(mockSidelineConsumer, times(1)).close();
+
+        // But we never called flush consumer state.
+        verify(mockSidelineConsumer, never()).flushConsumerState();
     }
 
     /**
