@@ -131,16 +131,16 @@ public class VirtualSidelineSpoutTest {
      * Test setter and getter.
      */
     @Test
-    public void testSetAndGetIsFinished() {
+    public void testSetAndGetStopRequested() {
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), new LogRecorder());
 
         // Should default to false
-        assertFalse("Should default to false", virtualSidelineSpout.isFinished());
+        assertFalse("Should default to false", virtualSidelineSpout.isStopRequested());
 
         // Set to true
-        virtualSidelineSpout.finish();
-        assertTrue("Should be true", virtualSidelineSpout.isFinished());
+        virtualSidelineSpout.requestStop();
+        assertTrue("Should be true", virtualSidelineSpout.isStopRequested());
     }
 
     /**

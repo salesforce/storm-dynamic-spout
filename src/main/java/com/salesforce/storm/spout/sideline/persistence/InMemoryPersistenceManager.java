@@ -58,6 +58,11 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
         return storedConsumerState.get(consumerId);
     }
 
+    @Override
+    public void clearConsumerState(String consumerId) {
+        storedConsumerState.remove(consumerId);
+    }
+
     /**
      * @param type
      * @param id - unique identifier for the sideline request.

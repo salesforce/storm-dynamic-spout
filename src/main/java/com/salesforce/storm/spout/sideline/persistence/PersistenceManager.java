@@ -37,6 +37,12 @@ public interface PersistenceManager {
     ConsumerState retrieveConsumerState(final String consumerId);
 
     /**
+     * Removes consumer state from the persistence layer.
+     * @param consumerId
+     */
+    void clearConsumerState(String consumerId);
+
+    /**
      * @param type
      * @param id - unique identifier for the sideline request.
      * @param endingState

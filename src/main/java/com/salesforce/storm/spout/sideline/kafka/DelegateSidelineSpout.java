@@ -14,11 +14,10 @@ public interface DelegateSidelineSpout {
 
     void fail(Object msgId);
 
-    boolean isFinished();
-
-    void finish();
-
     String getConsumerId();
 
     void flushState();
+
+    void requestStop();
+    boolean isStopRequested();
 }

@@ -106,6 +106,41 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         return parseJsonToConsumerState(json);
     }
 
+    /**
+     * Removes consumer state.
+     * @param consumerId - consumerId to remove state for.
+     */
+    @Override
+    public void clearConsumerState(String consumerId) {
+        // Validate we're in a state that can be used.
+        verifyHasBeenOpened();
+
+        // Delete!
+        final String path = getZkConsumerStatePath(consumerId);
+        logger.info("Delete state from Zookeeper at {}", path);
+        deleteNode(path);
+    }
+
+    /**
+     * Delete a node from Zookeeper.
+     * @param path - the node to delete.
+     */
+    private void deleteNode(final String path) {
+        try {
+            // If it doesn't exist,
+            if (curator.checkExists().forPath(path) == null) {
+                // Nothing to do!
+                logger.warn("Tried to delete {}, but it doesnt exist.", path);
+                return;
+            }
+
+            // Delete.
+            curator.delete().forPath(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void persistSidelineRequestState(
         SidelineType type,

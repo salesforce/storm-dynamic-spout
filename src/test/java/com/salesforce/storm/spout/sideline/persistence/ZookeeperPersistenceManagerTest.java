@@ -32,7 +32,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
 
 /**
@@ -339,6 +341,18 @@ public class ZookeeperPersistenceManagerTest {
         logger.info("Stored data string {}", storedDataStr);
         assertNotNull("Stored data string should be non-null", storedDataStr);
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
+
+        // Test clearing state actually clears state.
+        persistenceManager.clearConsumerState(consumerId);
+
+        // Validate the node no longer exists
+        // Since this is an async operation, use await() to watch for the change
+        await()
+                .atMost(6, TimeUnit.SECONDS)
+                .until(() -> {
+                    return zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId, false);
+                }, nullValue());
+
     }
 
     /**
@@ -548,6 +562,23 @@ public class ZookeeperPersistenceManagerTest {
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
         persistenceManager.retrieveConsumerState("MyConsumerId");
+    }
+
+    /**
+     * Verify we get an exception if you try to persist before calling open().
+     */
+    @Test
+    public void testClearConsumerStateBeforeBeingOpened() {
+        // Define our ZK Root Node
+        final String zkRootNodePath = "/TestRootPath";
+
+        // Create our instance
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        // Call method and watch for exception
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.clearConsumerState("MyConsumerId");
     }
 
     /**

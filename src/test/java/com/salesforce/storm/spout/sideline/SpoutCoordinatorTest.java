@@ -116,7 +116,7 @@ public class SpoutCoordinatorTest {
         private static final Logger logger = LoggerFactory.getLogger(MockDelegateSidelineSpout.class);
 
         private String consumerId;
-        private boolean finished = false;
+        private boolean requestedStop = false;
         private Queue<TupleMessageId> acks = new ConcurrentLinkedQueue<>();
         private Queue<TupleMessageId> fails = new ConcurrentLinkedQueue<>();
         private Queue<KafkaMessage> messages = new ConcurrentLinkedQueue<>();
@@ -158,19 +158,21 @@ public class SpoutCoordinatorTest {
             this.fails.add((TupleMessageId) id);
         }
 
-        @Override
-        public boolean isFinished() {
-            return this.finished;
-        }
 
-        @Override
-        public void finish() {
-            this.finished = true;
-        }
 
         @Override
         public void flushState() {
 
+        }
+
+        @Override
+        public void requestStop() {
+            requestedStop = true;
+        }
+
+        @Override
+        public boolean isStopRequested() {
+            return requestedStop;
         }
 
         @Override
