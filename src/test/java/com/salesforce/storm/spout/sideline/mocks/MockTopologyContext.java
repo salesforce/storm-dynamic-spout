@@ -3,7 +3,9 @@ package com.salesforce.storm.spout.sideline.mocks;
 import org.apache.storm.metric.api.IMetric;
 import org.apache.storm.task.TopologyContext;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MockTopologyContext extends TopologyContext {
@@ -31,4 +33,15 @@ public class MockTopologyContext extends TopologyContext {
         return taskId;
     }
 
+    public String getThisComponentId() {
+        return "Mock";
+    }
+
+    public List<Integer> getComponentTasks(String componentId) {
+        return Collections.singletonList(1);
+    }
+
+    public int getThisTaskIndex() {
+        return 0;
+    }
 }

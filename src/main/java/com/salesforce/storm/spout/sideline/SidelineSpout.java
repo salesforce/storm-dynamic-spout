@@ -221,8 +221,14 @@ public class SidelineSpout extends BaseRichSpout {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
-        // Grab our ConsumerId prefix from the config
-        final String cfgConsumerIdPrefix = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        // Grab our ConsumerId prefix from the config, append the task index.  This will probably cause problems
+        // if you decrease the number of instances of the spout.
+        final String cfgConsumerIdPrefix = new StringBuilder()
+            .append(getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))
+            .append("-")
+            .append(topologyContext.getThisTaskIndex())
+            .toString();
+
         if (Strings.isNullOrEmpty(cfgConsumerIdPrefix)) {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }

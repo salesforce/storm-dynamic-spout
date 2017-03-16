@@ -15,12 +15,14 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -189,14 +191,36 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
         }
 
-        // Connect the consumer
-        sidelineConsumer.open(startingState);
+            // Connect the consumer
+        sidelineConsumer.open(startingState, getPartitions());
 
         // If we have an ending state, assign values
         if (endingState != null) {
             // Update our metrics
             updateMetrics(endingState, "endingOffset");
         }
+    }
+
+    /**
+     * Get the partitions that this particular spout instance should consume from
+     * @return List of partitions to consume from
+     */
+    private List<PartitionInfo> getPartitions() {
+        final int numInstances = topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size();
+
+        final int instanceIndex = topologyContext.getThisTaskIndex();
+
+        final List<PartitionInfo> allPartitions = sidelineConsumer.getPartitions();
+
+        final List<PartitionInfo> myPartitions = new ArrayList<>();
+
+        for (PartitionInfo partition : allPartitions) {
+            if (partition.partition() % numInstances == instanceIndex) {
+                myPartitions.add(partition);
+            }
+        }
+
+        return myPartitions;
     }
 
     @Override

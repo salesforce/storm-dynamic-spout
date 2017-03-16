@@ -40,7 +40,7 @@ public class SidelineConsumer {
     /**
      * Boolean to prevent double initialization.
      */
-    private boolean hasCalledConnect = false;
+    private boolean isOpen = false;
 
     /**
      * State/offset management.
@@ -89,16 +89,61 @@ public class SidelineConsumer {
     }
 
     /**
+     * Get a list of the partition for the given kafka topic
+     * @return List of partition for the topic
+     */
+    public List<PartitionInfo> getPartitions() {
+        return getKafkaConsumer().partitionsFor(getConsumerConfig().getTopic());
+    }
+
+    /**
+     * Get the kafka consumer, if it has been retried yet, set it up
+     * @return Kafka consumer
+     */
+    private KafkaConsumer getKafkaConsumer() {
+        // If kafkaConsumer is not null, we'll create one.
+        // If it is NOT null, we'll re-use the instance we got passed in from the constructor.
+        // Typically you'd pass in an instance for testing.
+        if (kafkaConsumer == null) {
+            // Construct new consumer
+            kafkaConsumer = new KafkaConsumer<>(getConsumerConfig().getKafkaConsumerProperties());
+        }
+
+        return kafkaConsumer;
+    }
+
+    /**
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
+     *
+     * Warning: Consumes from ALL partitions.
+     *
+     * @param startingState Starting state of the consumer
      */
     public void open(ConsumerState startingState) {
+        open(
+            startingState,
+            getPartitions()
+        );
+    }
+
+    /**
+     * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
+     * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
+     * each partition.
+     *
+     * Warning: Consumes from ALL partitions.
+     *
+     * @param startingState Starting state of the consumer
+     * @param partitions The partitions to consume from
+     */
+    public void open(ConsumerState startingState, List<PartitionInfo> partitions) {
         // Simple state enforcement.
-        if (hasCalledConnect) {
+        if (isOpen) {
             throw new RuntimeException("Cannot call open more than once...");
         }
-        hasCalledConnect = true;
+        isOpen = true;
 
         // If we have a starting offset, lets persist it
         if (startingState != null) {
@@ -114,29 +159,19 @@ public class SidelineConsumer {
             initialState = new ConsumerState();
         }
 
-        // If kafkaConsumer is not null, we'll create one.
-        // If it is NOT null, we'll re-use the instance we got passed in from the constructor.
-        // Typically you'd pass in an instance for testing.
-        if (kafkaConsumer == null) {
-            // Construct new consumer
-            kafkaConsumer = new KafkaConsumer<>(getConsumerConfig().getKafkaConsumerProperties());
-        }
-
-        // Grab all partitions available for our topic
-        List<PartitionInfo> availablePartitions = kafkaConsumer.partitionsFor(getConsumerConfig().getTopic());
-        logger.info("Available partitions {}", availablePartitions);
+        final KafkaConsumer kafkaConsumer = getKafkaConsumer();
 
         // Assign them all to this consumer
         List<TopicPartition> allTopicPartitions = Lists.newArrayList();
-        for (PartitionInfo availablePartitionInfo: availablePartitions) {
-            allTopicPartitions.add(new TopicPartition(availablePartitionInfo.topic(), availablePartitionInfo.partition()));
+        for (PartitionInfo partition : partitions) {
+            allTopicPartitions.add(new TopicPartition(partition.topic(), partition.partition()));
         }
         kafkaConsumer.assign(allTopicPartitions);
 
         // Seek to specific positions based on our initial state
         List<TopicPartition> noStatePartitions = Lists.newArrayList();
-        for (PartitionInfo availablePartitionInfo: availablePartitions) {
-            final TopicPartition availableTopicPartition = new TopicPartition(availablePartitionInfo.topic(), availablePartitionInfo.partition());
+        for (PartitionInfo partition : partitions) {
+            final TopicPartition availableTopicPartition = new TopicPartition(partition.topic(), partition.partition());
             Long offset = initialState.getOffsetForTopicAndPartition(availableTopicPartition);
             if (offset == null) {
                 // Unstarted partitions should "begin" at -1

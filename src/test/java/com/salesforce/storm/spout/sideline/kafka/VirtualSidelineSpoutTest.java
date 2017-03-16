@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -163,7 +164,7 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open(null);
+        verify(mockSidelineConsumer, times(1)).open(null, Collections.emptyList());
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -189,7 +190,7 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open(null);
+        verify(mockSidelineConsumer, times(1)).open(null, Collections.emptyList());
     }
 
     /**
