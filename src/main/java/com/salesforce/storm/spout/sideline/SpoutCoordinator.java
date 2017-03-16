@@ -44,7 +44,7 @@ public class SpoutCoordinator {
     public static final long FLUSH_INTERVAL_MS = 30000;
 
     /**
-     * The size of the thread pool for running virtual spouts for sideline requests
+     * The size of the thread pool for running virtual spouts for sideline requests.
      */
     public static final int SPOUT_RUNNER_THREAD_POOL_SIZE = 10;
 
@@ -57,32 +57,32 @@ public class SpoutCoordinator {
     private Clock clock = Clock.systemUTC();
 
     /**
-     * Queue of spouts that need to be passed to the monitor and spun up
+     * Queue of spouts that need to be passed to the monitor and spun up.
      */
-    private final Queue<DelegateSidelineSpout> spouts = new ConcurrentLinkedQueue<>();
+    private final Queue<DelegateSidelineSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
-     * Buffer by spout consumer id of messages that have been acked
+     * Buffer by spout consumer id of messages that have been acked.
      */
-    private final Map<String,Queue<TupleMessageId>> acked = new ConcurrentHashMap<>();
+    private final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue = new ConcurrentHashMap<>();
 
     /**
-     * Buffer by spout consumer id of messages that have been failed
+     * Buffer by spout consumer id of messages that have been failed.
      */
-    private final Map<String,Queue<TupleMessageId>> failed = new ConcurrentHashMap<>();
+    private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue = new ConcurrentHashMap<>();
 
     /**
-     * Thread Pool Executor
+     * Thread Pool Executor.
      */
     private final ExecutorService executor;
 
     /**
-     * For capturing metrics
+     * For capturing metrics.
      */
     private final MetricsRecorder metricsRecorder;
 
     /**
-     * The spout monitor runnable, which handles spinning up threads for sideline spouts
+     * The spout monitor runnable, which handles spinning up threads for sideline spouts.
      */
     private SpoutMonitor spoutMonitor;
 
@@ -93,7 +93,7 @@ public class SpoutCoordinator {
     private boolean isOpen = false;
 
     /**
-     * Create a new coordinator, supplying the 'fire hose' or the starting spouts
+     * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
      * @param spout Fire hose spout
      */
     public SpoutCoordinator(final DelegateSidelineSpout spout, final MetricsRecorder metricsRecorder) {
@@ -106,28 +106,28 @@ public class SpoutCoordinator {
 
     /**
      * Add a new spout to the coordinator, this will get picked up by the coordinator's monitor, opened and
-     * managed with teh other currently running spouts
+     * managed with teh other currently running spouts.
      * @param spout New delegate spout
      */
     public void addSidelineSpout(final DelegateSidelineSpout spout) {
-        spouts.add(spout);
+        newSpoutQueue.add(spout);
     }
 
     /**
-     * Open the coordinator and begin spinning up virtual spout threads
+     * Open the coordinator and begin spinning up virtual spout threads.
      * @param queue The queue to put messages onto
      */
     public void open(final BlockingQueue queue) {
         isOpen = true;
 
-        final CountDownLatch latch = new CountDownLatch(spouts.size());
+        final CountDownLatch latch = new CountDownLatch(newSpoutQueue.size());
 
         spoutMonitor = new SpoutMonitor(
             executor,
-            spouts,
+            newSpoutQueue,
             queue,
-            acked,
-            failed,
+            ackedTuplesInputQueue,
+            failedTuplesInputQueue,
             latch,
             clock
         );
@@ -142,33 +142,33 @@ public class SpoutCoordinator {
     }
 
     /**
-     *Acks a tuple on the spout that it belongs to
+     * Acks a tuple on the spout that it belongs to.
      * @param id Tuple message id to ack
      */
     public void ack(final TupleMessageId id) {
-        if (!acked.containsKey(id.getSrcConsumerId())) {
+        if (!ackedTuplesInputQueue.containsKey(id.getSrcConsumerId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
         }
 
-        acked.get(id.getSrcConsumerId()).add(id);
+        ackedTuplesInputQueue.get(id.getSrcConsumerId()).add(id);
     }
 
     /**
-     * Fails a tuple on the spout that it belongs to
+     * Fails a tuple on the spout that it belongs to.
      * @param id Tuple message id to fail
      */
     public void fail(final TupleMessageId id) {
-        if (!failed.containsKey(id.getSrcConsumerId())) {
+        if (!failedTuplesInputQueue.containsKey(id.getSrcConsumerId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
         }
 
-        failed.get(id.getSrcConsumerId()).add(id);
+        failedTuplesInputQueue.get(id.getSrcConsumerId()).add(id);
     }
 
     /**
-     * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts
+     * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts.
      */
     public void close() {
         spoutMonitor.close();
@@ -195,7 +195,7 @@ public class SpoutCoordinator {
 
 
     /**
-     * Monitors the lifecycle of spinning up virtual spouts
+     * Monitors the lifecycle of spinning up virtual spouts.
      */
     private static class SpoutMonitor implements Runnable {
 
