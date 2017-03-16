@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -28,37 +29,65 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * Kafka based Persistence adapter.  Currently this is not fully implemented.
  */
 public class KafkaPersistenceManager implements PersistenceManager {
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 
-    // Kafka Configuration
+    // Kafka client configuration
     private int readTimeoutMS = 5000;
-    private int correlationId = 0;
-    private BlockingChannel channel;
+
 
     // Configuration
-    private String consumerId = "myConsumerId";
     private String topicName;
+    private List<String> brokerHosts;
+
+    // Internal state management.
+    private boolean hasLoadedOffsetMetadata = false;
+    private int correlationId = 0;
+    private BlockingChannel channel;
     private List<TopicAndPartition> availablePartitions;
 
+    /**
+     * Called to initialize this instance.
+     * @param topologyConfig - our topology config.
+     */
     @Override
     public void open(Map topologyConfig) {
-        // Grab topic name
+        // Grab topic name from our config
         topicName = (String) topologyConfig.get(SidelineSpoutConfig.KAFKA_TOPIC);
+        if (Strings.isNullOrEmpty(topicName)) {
+            throw new IllegalStateException("No kafka topic defined in configuration " + SidelineSpoutConfig.KAFKA_TOPIC);
+        }
 
-        // Grab first brokerHost
-        final String[] brokerBits = ((List<String>)topologyConfig.get(SidelineSpoutConfig.KAFKA_BROKERS)).get(0).split(":");
+        // Grab our kafka broker list from our config
+        brokerHosts = Collections.unmodifiableList((List<String>)topologyConfig.get(SidelineSpoutConfig.KAFKA_BROKERS));
+
+        // Validate configuration
+        if (brokerHosts.isEmpty()) {
+            throw new IllegalStateException("No kafka brokers defined in configuration " + SidelineSpoutConfig.KAFKA_BROKERS);
+        }
+
+        // Ensure our flag is false
+        hasLoadedOffsetMetadata = false;
+    }
+
+    private void loadOffsetMetadata(final String consumerId) {
+        // If flag is true
+        if (hasLoadedOffsetMetadata) {
+            // Nothing to do.
+            return;
+        }
+
+        // Grab first broker host from our list, split into hostname and port.
+        final String[] brokerBits = brokerHosts.get(0).split(":");
         final String brokerHost = brokerBits[0];
         final int brokerPort;
         if (brokerBits.length == 2) {
@@ -67,18 +96,22 @@ public class KafkaPersistenceManager implements PersistenceManager {
             brokerPort = 9092;
         }
 
-        // Sometimes it takes a few to load the data?
-        while (loadConsumerMetadata(brokerHost, brokerPort) == false) {
+        // Sometimes it takes a few attempts load the data?  Not sure I fully understand this.
+        // TODO: this shouldn't infinite loop.
+        while (!requestConsumerMetadata(brokerHost, brokerPort, consumerId)) {
             logger.error("Failed to load consumer metadata...retrying");
             try {
-                Thread.sleep(1000L);
+                Thread.sleep(500L);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+
+        // Flip flag to true.
+        hasLoadedOffsetMetadata = true;
     }
 
-    private boolean loadConsumerMetadata(final String brokerHost, final int brokerPort) {
+    private boolean requestConsumerMetadata(final String brokerHost, final int brokerPort, final String consumerId) {
         // Connect to static kafka broker,
         channel = new BlockingChannel(
                 brokerHost, brokerPort,
@@ -128,7 +161,6 @@ public class KafkaPersistenceManager implements PersistenceManager {
             }
         }
         availablePartitions = Collections.unmodifiableList(partitionIdsFound);
-
         return true;
     }
 
@@ -136,20 +168,31 @@ public class KafkaPersistenceManager implements PersistenceManager {
     public void close() {
         if (channel != null && channel.isConnected()) {
             channel.disconnect();
+            channel = null;
+
+            // Flip flag to false.
+            hasLoadedOffsetMetadata = false;
         }
     }
 
     @Override
     public void persistConsumerState(String consumerId, ConsumerState consumerState) {
-        long now = System.currentTimeMillis();
-        final Map<TopicAndPartition, OffsetAndMetadata> offsets = Maps.newHashMap();
+        // Ensure offset metadata has been loaded.
+        loadOffsetMetadata(consumerId);
+
+        // Get current time
+        final long now = System.currentTimeMillis();
+
+        // Get expiration time?  Why can't this be forever?
+        final long expiresAt = now + TimeUnit.DAYS.toMillis(365);
 
         // Build Topic And Partitions
+        final Map<TopicAndPartition, OffsetAndMetadata> offsets = Maps.newHashMap();
         for (TopicPartition topicPartition : consumerState.getTopicPartitions()) {
             final long offset = consumerState.getOffsetForTopicAndPartition(topicPartition);
             final TopicAndPartition topicAndPartition = new TopicAndPartition(topicPartition.topic(), topicPartition.partition());
             logger.info("Committing offset {} => {}", topicPartition, offset);
-            offsets.put(topicAndPartition, new OffsetAndMetadata(new OffsetMetadata(offset, "my-metadata"), now, now + 1000000L));
+            offsets.put(topicAndPartition, new OffsetAndMetadata(new OffsetMetadata(offset, "my-metadata"), now, expiresAt));
         }
         OffsetCommitRequest commitRequest = new OffsetCommitRequest(
                 consumerId,
@@ -183,6 +226,9 @@ public class KafkaPersistenceManager implements PersistenceManager {
 
     @Override
     public ConsumerState retrieveConsumerState(String consumerId) {
+        // Ensure offset metadata has been loaded.
+        loadOffsetMetadata(consumerId);
+
         OffsetFetchRequest fetchRequest = new OffsetFetchRequest(
                 consumerId,
                 availablePartitions,
@@ -218,22 +264,27 @@ public class KafkaPersistenceManager implements PersistenceManager {
     @Override
     public void clearConsumerState(String consumerId) {
         // Not implemented?
+        throw new RuntimeException("Not implemented yet..");
     }
 
     @Override
     public void persistSidelineRequestState(SidelineType type, SidelineIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
         // Can this be stored into kafka?
+        // Not implemented?
+        throw new RuntimeException("Not implemented yet..");
     }
 
     @Override
     public SidelinePayload retrieveSidelineRequest(SidelineIdentifier id) {
         // Can this be stored into kafka?
-        return null;
+        // Not implemented?
+        throw new RuntimeException("Not implemented yet..");
     }
 
     @Override
     public List<SidelineIdentifier> listSidelineRequests() {
         // Can this be stored into kafka?
-        return null;
+        // Not implemented?
+        throw new RuntimeException("Not implemented yet..");
     }
 }
