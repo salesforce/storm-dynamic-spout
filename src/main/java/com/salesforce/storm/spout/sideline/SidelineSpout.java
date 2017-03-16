@@ -38,13 +38,10 @@ public class SidelineSpout extends BaseRichSpout {
     // Logging
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpout.class);
 
-    private static final int QUEUE_MAX_SIZE = 10000;
-
     // Storm Topology Items
     private Map topologyConfig;
     private SpoutOutputCollector outputCollector;
     private TopologyContext topologyContext;
-    private transient BlockingQueue<KafkaMessage> queue;
     private VirtualSidelineSpout fireHoseSpout;
     private SpoutCoordinator coordinator;
     private StartingTrigger startingTrigger;
@@ -210,9 +207,6 @@ public class SidelineSpout extends BaseRichSpout {
         this.metricsRecorder = factoryManager.createNewMetricsRecorder();
         metricsRecorder.open(this.topologyConfig, this.topologyContext);
 
-        // Setup our concurrent queue.
-        this.queue = new LinkedBlockingQueue<>(QUEUE_MAX_SIZE);
-
         if (startingTrigger != null) {
             startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
@@ -260,7 +254,8 @@ public class SidelineSpout extends BaseRichSpout {
             metricsRecorder
         );
 
-        coordinator.open(queue);
+        // Call open on coordinator.
+        coordinator.open();
 
         // TODO: We should build the full payload here rather than individual requests later on
         final List<SidelineIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
@@ -319,15 +314,13 @@ public class SidelineSpout extends BaseRichSpout {
         // Ensure that the tuple's Id identifies which spout instance it came from
         // so we can trace the tuple id back to the spout later.
         // Emit tuple.
-        final KafkaMessage kafkaMessage = queue.poll();
-
+        final KafkaMessage kafkaMessage = coordinator.nextMessage();
         if (kafkaMessage == null) {
             return;
         }
 
         // Debug logging
         logger.debug("Emitting MsgId[{}]", kafkaMessage.getTupleMessageId());
-
 
         // Update / Display emit metrics
         final String srcId = kafkaMessage.getTupleMessageId().getSrcConsumerId();
