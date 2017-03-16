@@ -11,7 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
- * A round-robbin implementation.  Each virtual spout has its own buffer that gets cycled thru.
+ * A round-robbin implementation.  Each virtual spout has its own buffer that both gets added to individually, and thus chatty
+ * virtual spouts will not block less chatty ones.  We RR thru all the available buffers to get the next msg.
+ *
  * I think there are some concurrency issues here between add/remove consumerId, and poll().
  */
 public class RoundRobbinBuffer implements TupleBuffer {

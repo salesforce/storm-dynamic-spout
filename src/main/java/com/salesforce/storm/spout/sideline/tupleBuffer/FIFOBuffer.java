@@ -8,7 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
- * FIFO implementation.
+ * FIFO implementation.  This is basically a wrapper around what we already had.
  */
 public class FIFOBuffer implements TupleBuffer {
     // Logging.
@@ -31,13 +31,8 @@ public class FIFOBuffer implements TupleBuffer {
         return;
     }
 
-    public void put(final String consumerId, final KafkaMessage kafkaMessage) {
-        try {
-            tupleBuffer.put(kafkaMessage);
-        } catch (InterruptedException e) {
-            // TODO: Revisit this
-            logger.error("{}", e);
-        }
+    public void put(final String consumerId, final KafkaMessage kafkaMessage) throws InterruptedException {
+        tupleBuffer.put(kafkaMessage);
     }
 
     public KafkaMessage poll() {
