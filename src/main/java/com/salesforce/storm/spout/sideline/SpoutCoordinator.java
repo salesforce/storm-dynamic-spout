@@ -115,9 +115,9 @@ public class SpoutCoordinator {
 
     /**
      * Open the coordinator and begin spinning up virtual spout threads.
-     * @param queue The queue to put messages onto
+     * @param tupleOutputQueue The queue to put messages onto
      */
-    public void open(final BlockingQueue queue) {
+    public void open(final BlockingQueue tupleOutputQueue) {
         isOpen = true;
 
         final CountDownLatch latch = new CountDownLatch(newSpoutQueue.size());
@@ -125,7 +125,7 @@ public class SpoutCoordinator {
         spoutMonitor = new SpoutMonitor(
             executor,
             newSpoutQueue,
-            queue,
+            tupleOutputQueue,
             ackedTuplesInputQueue,
             failedTuplesInputQueue,
             latch,
@@ -202,10 +202,10 @@ public class SpoutCoordinator {
         private static final Logger logger = LoggerFactory.getLogger(SpoutMonitor.class);
 
         private final ExecutorService executor;
-        private final Queue<DelegateSidelineSpout> spouts;
-        private final BlockingQueue queue;
-        private final Map<String,Queue<TupleMessageId>> acked;
-        private final Map<String,Queue<TupleMessageId>> failed;
+        private final Queue<DelegateSidelineSpout> newSpoutQueue;
+        private final BlockingQueue tupleOutputQueue;
+        private final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue;
+        private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue;
         private final CountDownLatch latch;
         private final Clock clock;
 
@@ -215,18 +215,18 @@ public class SpoutCoordinator {
 
         SpoutMonitor(
             final ExecutorService executor,
-            final Queue<DelegateSidelineSpout> spouts,
-            final BlockingQueue queue,
-            final Map<String,Queue<TupleMessageId>> acked,
-            final Map<String,Queue<TupleMessageId>> failed,
+            final Queue<DelegateSidelineSpout> newSpoutQueue,
+            final BlockingQueue tupleOutputQueue,
+            final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue,
+            final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue,
             final CountDownLatch latch,
             final Clock clock
         ) {
             this.executor = executor;
-            this.spouts = spouts;
-            this.queue = queue;
-            this.acked = acked;
-            this.failed = failed;
+            this.newSpoutQueue = newSpoutQueue;
+            this.tupleOutputQueue = tupleOutputQueue;
+            this.ackedTuplesInputQueue = ackedTuplesInputQueue;
+            this.failedTuplesInputQueue = failedTuplesInputQueue;
             this.latch = latch;
             this.clock = clock;
         }
@@ -239,16 +239,16 @@ public class SpoutCoordinator {
 
                 // Start monitoring loop.
                 while (isOpen) {
-                    logger.info("Still here.. my input queue is {}", spouts.size());
+                    logger.info("Still here.. my input queue is {}", newSpoutQueue.size());
 
-                    for (DelegateSidelineSpout spout; (spout = spouts.poll()) != null;) {
+                    for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
                         logger.info("Preparing thread for spout {}", spout.getConsumerId());
 
                         final SpoutRunner spoutRunner = new SpoutRunner(
                             spout,
-                            queue,
-                            acked,
-                            failed,
+                            tupleOutputQueue,
+                            ackedTuplesInputQueue,
+                            failedTuplesInputQueue,
                             latch,
                             clock
                         );
@@ -298,24 +298,24 @@ public class SpoutCoordinator {
         private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
         private final DelegateSidelineSpout spout;
-        private final BlockingQueue queue;
-        private final Map<String,Queue<TupleMessageId>> acked;
-        private final Map<String,Queue<TupleMessageId>> failed;
+        private final BlockingQueue tupleOutputQueue;
+        private final Map<String,Queue<TupleMessageId>> ackedTupleInputQueue;
+        private final Map<String,Queue<TupleMessageId>> failedTupleInputQueue;
         private final CountDownLatch latch;
         private final Clock clock;
 
         SpoutRunner(
             final DelegateSidelineSpout spout,
-            final BlockingQueue queue,
-            final Map<String,Queue<TupleMessageId>> acked,
-            final Map<String,Queue<TupleMessageId>> failed,
+            final BlockingQueue tupleOutputQueue,
+            final Map<String,Queue<TupleMessageId>> ackedTupleInputQueue,
+            final Map<String,Queue<TupleMessageId>> failedTupleInputQueue,
             final CountDownLatch latch,
             final Clock clock
         ) {
             this.spout = spout;
-            this.queue = queue;
-            this.acked = acked;
-            this.failed = failed;
+            this.tupleOutputQueue = tupleOutputQueue;
+            this.ackedTupleInputQueue = ackedTupleInputQueue;
+            this.failedTupleInputQueue = failedTupleInputQueue;
             this.latch = latch;
             this.clock = clock;
         }
@@ -330,8 +330,8 @@ public class SpoutCoordinator {
 
                 spout.open();
 
-                acked.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-                failed.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+                ackedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+                failedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
 
                 latch.countDown();
 
@@ -346,7 +346,7 @@ public class SpoutCoordinator {
 
                     if (message != null) {
                         try {
-                            queue.put(message);
+                            tupleOutputQueue.put(message);
                         } catch (InterruptedException ex) {
                             // TODO: Revisit this
                             logger.error("{}", ex);
@@ -357,14 +357,14 @@ public class SpoutCoordinator {
                     //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
                     // Ack anything that needs to be acked
-                    while (!acked.get(spout.getConsumerId()).isEmpty()) {
-                        TupleMessageId id = acked.get(spout.getConsumerId()).poll();
+                    while (!ackedTupleInputQueue.get(spout.getConsumerId()).isEmpty()) {
+                        TupleMessageId id = ackedTupleInputQueue.get(spout.getConsumerId()).poll();
                         spout.ack(id);
                     }
 
                     // Fail anything that needs to be failed
-                    while (!failed.get(spout.getConsumerId()).isEmpty()) {
-                        TupleMessageId id = failed.get(spout.getConsumerId()).poll();
+                    while (!failedTupleInputQueue.get(spout.getConsumerId()).isEmpty()) {
+                        TupleMessageId id = failedTupleInputQueue.get(spout.getConsumerId()).poll();
                         spout.fail(id);
                     }
 
@@ -382,8 +382,8 @@ public class SpoutCoordinator {
                 spout.close();
 
                 // Remove our entries from the acked and failed queue.
-                acked.remove(spout.getConsumerId());
-                failed.remove(spout.getConsumerId());
+                ackedTupleInputQueue.remove(spout.getConsumerId());
+                failedTupleInputQueue.remove(spout.getConsumerId());
             } catch (Exception ex) {
                 // TODO: Should we restart the SpoutRunner?
                 logger.error("SpoutRunner for {} threw an exception {}", spout.getConsumerId(), ex);
