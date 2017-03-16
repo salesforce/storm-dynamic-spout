@@ -6,17 +6,13 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Clock;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -49,8 +45,8 @@ public class KafkaPersistenceManagerTest {
         // Generate topic name
         topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
-        // Create topic
-        kafkaTestServer.createTopic(topicName);
+        // Create topic with 3 partitions
+        kafkaTestServer.createTopic(topicName, 3);
     }
 
     /**
@@ -71,7 +67,7 @@ public class KafkaPersistenceManagerTest {
     }
 
     @Test
-    public void doTest() throws InterruptedException {
+    public void doSimpleEndToEndTest() throws InterruptedException {
         // Create our config
         final Map topologyConfig = getDefaultConfig(consumerIdPrefix);
 
@@ -81,11 +77,23 @@ public class KafkaPersistenceManagerTest {
         // Create state
         final ConsumerState consumerState = new ConsumerState();
         consumerState.setOffset(new TopicPartition(topicName, 0), 100L);
+        consumerState.setOffset(new TopicPartition(topicName, 1), 200L);
+        consumerState.setOffset(new TopicPartition(topicName, 2), 300L);
 
         // Persist it
-        //logger.info("Persisting {}", consumerState);
         persistenceManager.persistConsumerState(consumerIdPrefix, consumerState);
-        persistenceManager.retrieveConsumerState(consumerIdPrefix);
+
+        // Now attempt to retrieve it
+        final ConsumerState results = persistenceManager.retrieveConsumerState(consumerIdPrefix);
+
+        // Validate it
+        assertNotNull("Should be non-null", results);
+        assertNotNull("Should be non-null", results.getState());
+        assertNotNull("should be non-null", results.getTopicPartitions());
+        assertEquals("Should have 3 entries", 3, results.getTopicPartitions().size());
+        assertEquals("Should have correct value", 100L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertEquals("Should have correct value", 200L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertEquals("Should have correct value", 300L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 2)));
     }
 
     private Map<String, Object> getDefaultConfig(final String consumerIdPrefix) {
