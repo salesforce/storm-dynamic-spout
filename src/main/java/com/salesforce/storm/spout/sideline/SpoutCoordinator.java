@@ -15,6 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * Manages X number of spouts and coordinates their nextTuple(), ack() and fail() calls across threads
  */
 public class SpoutCoordinator {
-
+    // Logging.
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
     /**
@@ -49,6 +50,12 @@ public class SpoutCoordinator {
     public static final int SPOUT_RUNNER_THREAD_POOL_SIZE = 10;
 
     /**
+     * The size of our tuple output queue.  This is the maximum number of entries we will
+     * internally queue up for being emitted into the topology.
+     */
+    private static final int QUEUE_MAX_SIZE = 10000;
+
+    /**
      * Which Clock instance to get reference to the system time.
      * We use this to allow injecting a fake System clock in tests.
      *
@@ -60,6 +67,11 @@ public class SpoutCoordinator {
      * Queue of spouts that need to be passed to the monitor and spun up.
      */
     private final Queue<DelegateSidelineSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
+
+    /**
+     * Queue for tuples that are ready to be emitted out into the topology.
+     */
+    private final BlockingQueue<KafkaMessage> tupleOutputQueue = new LinkedBlockingQueue<>(QUEUE_MAX_SIZE);
 
     /**
      * Buffer by spout consumer id of messages that have been acked.
@@ -115,11 +127,12 @@ public class SpoutCoordinator {
 
     /**
      * Open the coordinator and begin spinning up virtual spout threads.
-     * @param tupleOutputQueue The queue to put messages onto
      */
-    public void open(final BlockingQueue tupleOutputQueue) {
+    public void open() {
+        // Mark us as being open
         isOpen = true;
 
+        // Create a countdown latch
         final CountDownLatch latch = new CountDownLatch(newSpoutQueue.size());
 
         spoutMonitor = new SpoutMonitor(
@@ -165,6 +178,13 @@ public class SpoutCoordinator {
         }
 
         failedTuplesInputQueue.get(id.getSrcConsumerId()).add(id);
+    }
+
+    /**
+     * @return - Returns the next available KafkaMessage to be emitted into the topology.
+     */
+    public KafkaMessage nextMessage() {
+        return tupleOutputQueue.poll();
     }
 
     /**
