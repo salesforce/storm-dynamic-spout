@@ -3,9 +3,12 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -15,6 +18,8 @@ import java.util.Map;
  * our configuration.
  */
 public class FactoryManager implements Serializable {
+    private static final Logger logger = LoggerFactory.getLogger(FactoryManager.class);
+
     /**
      * Holds our configuration so we know what classes to create instances of.
      */
@@ -72,9 +77,10 @@ public class FactoryManager implements Serializable {
      */
     public FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
-            final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
+            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
+                logger.warn("Missing required configuration {} defaulting to using {}", SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, DefaultFailedMsgRetryManager.class.getSimpleName());
+                classStr = DefaultFailedMsgRetryManager.class.getName();
             }
 
             try {

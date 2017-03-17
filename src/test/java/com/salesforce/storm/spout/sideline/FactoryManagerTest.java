@@ -5,17 +5,26 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
 
+@RunWith(DataProviderRunner.class)
 public class FactoryManagerTest {
 
     /**
@@ -66,7 +75,7 @@ public class FactoryManagerTest {
     }
 
     /**
-     * Tests that if you fail to pass a deserializer config it throws an exception.
+     * Tests that if you fail to pass a deserializer config it gives you the default.
      */
     @Test
     public void testCreateNewFailedMsgRetryManagerInstance_missingConfig() {
@@ -74,19 +83,34 @@ public class FactoryManagerTest {
         Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
-        // We expect this to throw an exception.
-        expectedException.expect(IllegalStateException.class);
-        factoryManager.createNewFailedMsgRetryManagerInstance();
+        // We expect to get the default one back.
+        FailedMsgRetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
+
+        // Validate it
+        assertNotNull(retryManager);
+        assertTrue("Is correct default instance", retryManager instanceof DefaultFailedMsgRetryManager);
+    }
+
+    /**
+     * Provides various tuple buffer implementation.
+     */
+    @DataProvider
+    public static Object[][] provideFailedMsgRetryManagerClasses() {
+        return new Object[][]{
+                { NoRetryFailedMsgRetryManager.class },
+                { DefaultFailedMsgRetryManager.class }
+        };
     }
 
     /**
      * Tests that create new deserializer instance works as expected.
      */
     @Test
-    public void testCreateNewFailedMsgRetryManager_usingDefaultImpl() {
+    @UseDataProvider("provideFailedMsgRetryManagerClasses")
+    public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager");
+        config.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
@@ -96,7 +120,7 @@ public class FactoryManagerTest {
 
             // Validate it
             assertNotNull(retryManager);
-            assertTrue("Is correct instance", retryManager instanceof FailedMsgRetryManager);
+            assertEquals("Is correct instance type", retryManager.getClass(), clazz);
 
             // Verify its a different instance than our previous ones
             assertFalse("Not a previous instance", instances.contains(retryManager));
