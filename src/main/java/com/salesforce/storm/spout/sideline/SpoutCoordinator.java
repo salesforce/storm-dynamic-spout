@@ -210,7 +210,6 @@ public class SpoutCoordinator {
         return spoutMonitor.getTotalSpouts();
     }
 
-
     /**
      * Monitors the lifecycle of spinning up virtual spouts.
      */

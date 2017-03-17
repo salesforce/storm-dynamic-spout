@@ -111,4 +111,33 @@ public class SidelineSpoutConfig {
      */
     public static final String METRICS_RECORDER_CLASS = "sideline_spout.metrics.class";
 
+///////////////////////////////////
+// Internal Coordinator Config
+///////////////////////////////////
+
+    /**
+     * (Long) How long our monitor thread will sit around and sleep between monitoring
+     * if new VirtualSpouts need to be started up, in Milliseconds.
+     * Default Value: 2000
+     */
+    public static final String MONITOR_THREAD_SLEEP_MS = "sideline_spout.coordinator.monitor_thread_sleep_ms";
+
+    /**
+     * (Long) How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
+     * them with force, in Milliseconds.
+     * Default Value: 10000
+     */
+    public static final String MAX_SPOUT_STOP_TIME_MS = "sideline_spout.coordinator.max_spout_stop_time_ms";
+
+    /**
+     * (Long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
+     * Default Value: 30000
+     */
+    public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "sideline_spout.coordinator.consumer_state_flush_interval_ms";
+
+    /**
+     * (Integer) The size of the thread pool for running virtual spouts for sideline requests.
+     * Default Value: 10
+     */
+    public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "sideline_spout.coordinator.max_concurrent_virtual_spouts";
 }
