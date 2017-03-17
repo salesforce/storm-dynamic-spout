@@ -65,8 +65,7 @@ public class SpoutCoordinator {
     /**
      * Queue for tuples that are ready to be emitted out into the topology.
      */
-    //private final BlockingQueue<KafkaMessage> tupleOutputQueue = new LinkedBlockingQueue<>(QUEUE_MAX_SIZE);
-    private final TupleBuffer tupleOutputQueue = new RoundRobbinBuffer();
+    private final TupleBuffer tupleBuffer;
 
     /**
      * Buffer by spout consumer id of messages that have been acked.
@@ -103,8 +102,13 @@ public class SpoutCoordinator {
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
      * @param spout Fire hose spout
      */
-    public SpoutCoordinator(final DelegateSidelineSpout spout, final MetricsRecorder metricsRecorder) {
+    public SpoutCoordinator(
+        final DelegateSidelineSpout spout,
+        final MetricsRecorder metricsRecorder,
+        final TupleBuffer tupleBuffer
+    ) {
         this.metricsRecorder = metricsRecorder;
+        this.tupleBuffer = tupleBuffer;
 
         addSidelineSpout(spout);
     }
@@ -132,7 +136,7 @@ public class SpoutCoordinator {
 
         spoutMonitor = new SpoutMonitor(
             newSpoutQueue,
-            tupleOutputQueue,
+            tupleBuffer,
             ackedTuplesInputQueue,
             failedTuplesInputQueue,
             latch,
@@ -178,7 +182,7 @@ public class SpoutCoordinator {
      * @return - Returns the next available KafkaMessage to be emitted into the topology.
      */
     public KafkaMessage nextMessage() {
-        return tupleOutputQueue.poll();
+        return tupleBuffer.poll();
     }
 
     /**

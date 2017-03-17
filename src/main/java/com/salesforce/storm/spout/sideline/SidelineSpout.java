@@ -16,6 +16,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobbinBuffer;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -251,7 +252,9 @@ public class SidelineSpout extends BaseRichSpout {
             fireHoseSpout,
 
             // Our metrics recorder.
-            metricsRecorder
+            metricsRecorder,
+
+            new RoundRobbinBuffer()
         );
 
         // Call open on coordinator.
