@@ -178,8 +178,7 @@ public class SidelineSpout extends BaseRichSpout {
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
-            factoryManager.createNewDeserializerInstance(),
-            failedMsgRetryManager,
+            factoryManager,
             metricsRecorder,
             // Starting offset of the sideline request
             startingState,
@@ -232,7 +231,11 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceManager.open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance(), metricsRecorder);
+        fireHoseSpout = new VirtualSidelineSpout(
+                getTopologyConfig(),
+                getTopologyContext(),
+                factoryManager,
+                metricsRecorder);
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix);
 
         // Create TupleBuffer
@@ -287,8 +290,7 @@ public class SidelineSpout extends BaseRichSpout {
                 final VirtualSidelineSpout spout = new VirtualSidelineSpout(
                     topologyConfig,
                     topologyContext,
-                    factoryManager.createNewDeserializerInstance(),
-                    factoryManager.createNewFailedMsgRetryManagerInstance(),
+                    factoryManager,
                     metricsRecorder,
                     payload.startingState,
                     payload.endingState
