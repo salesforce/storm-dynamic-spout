@@ -156,8 +156,6 @@ public class SidelineSpout extends BaseRichSpout {
             negatedSteps.add(new NegatingFilterChainStep(step));
         }
 
-        final FailedMsgRetryManager failedMsgRetryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
-
         // This is the state that the VirtualSidelineSpout should start with
         final ConsumerState startingState = persistenceManager.retrieveSidelineRequest(id).startingState;
 

@@ -102,12 +102,26 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private FailedMsgRetryManager failedMsgRetryManager;
     private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
-    // KEEP THIS
+    /**
+     * Constructor.
+     * @param topologyConfig - our topology config
+     * @param topologyContext - our topology context
+     * @param factoryManager - FactoryManager instance.
+     * @param metricsRecorder - For recording metrics.
+     */
     public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
         this(topologyConfig, topologyContext, factoryManager, metricsRecorder, null, null);
     }
 
-    // KEEP THIS
+    /**
+     * Constructor.
+     * @param topologyConfig - our topology config
+     * @param topologyContext - our topology context
+     * @param factoryManager - FactoryManager instance.
+     * @param metricsRecorder - For recording metrics.
+     * @param startingState - Where the underlying consumer should start from, Null if start from head.
+     * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
+     */
     public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
