@@ -5,6 +5,8 @@ import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
+import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,15 +42,15 @@ public class SpoutCoordinatorTest {
         final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("message2", 1, 1L, sidelineSpout1.getConsumerId()), new Values("message2"));
         final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("message3", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
 
-        final BlockingQueue<KafkaMessage> actual = new LinkedBlockingQueue<>();
+        final FIFOBuffer actual = new FIFOBuffer();
 
         // Create noop metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Create coordinator
-        final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder);
-        coordinator.open(actual);
+        final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder, actual);
+        coordinator.open();
 
         assertEquals(1, coordinator.getTotalSpouts());
 
@@ -68,7 +70,7 @@ public class SpoutCoordinatorTest {
         fireHoseSpout.addMessage(message3);
         expected.add(message3);
 
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> actual.size(), equalTo(3));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> actual.getUnderlyingQueue().size(), equalTo(3));
 
         coordinator.ack(message1.getTupleMessageId());
         coordinator.ack(message2.getTupleMessageId());
@@ -98,7 +100,7 @@ public class SpoutCoordinatorTest {
         for (KafkaMessage a : expected) {
             boolean found = false;
 
-            for (KafkaMessage b : actual) {
+            for (KafkaMessage b : actual.getUnderlyingQueue()) {
                 if (a.equals(b)) {
                     found = true;
                 }
