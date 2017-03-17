@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -9,11 +10,8 @@ import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
-import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -47,8 +45,22 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      */
     private final Map topologyConfig;
 
+    /**
+     * Our Factory Manager.
+     */
+    private final FactoryManager factoryManager;
+
+    /**
+     * Our underlying Kafka Consumer.
+     */
     private SidelineConsumer sidelineConsumer;
+
+    /**
+     * Our Deserializer, it deserializes messages from Kafka into objects.
+     */
     private Deserializer deserializer;
+
+
     private FilterChain filterChain = new FilterChain();
 
     // Define starting and ending offsets.
@@ -87,31 +99,40 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private FailedMsgRetryManager failedMsgRetryManager;
     private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, MetricsRecorder metricsRecorder) {
-        this(topologyConfig, topologyContext, deserializer, failedMsgRetryManager, metricsRecorder, null, null);
+    /**
+     * Constructor.
+     * Use this constructor for your "FireHose" instance.  IE an instance that has no starting or ending state.
+     * @param topologyConfig - our topology config
+     * @param topologyContext - our topology context
+     * @param factoryManager - FactoryManager instance.
+     * @param metricsRecorder - For recording metrics.
+     */
+    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+        this(topologyConfig, topologyContext, factoryManager, metricsRecorder, null, null);
     }
 
     /**
      * Constructor.
-     * @param topologyConfig
-     * @param topologyContext
-     * @param startingState
-     * @param endingState
+     * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
+     * state.
+     * @param topologyConfig - our topology config
+     * @param topologyContext - our topology context
+     * @param factoryManager - FactoryManager instance.
+     * @param metricsRecorder - For recording metrics.
+     * @param startingState - Where the underlying consumer should start from, Null if start from head.
+     * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
         // Save an immutable clone of the config
         this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
 
-        // Save deserializer instance
-        this.deserializer = deserializer;
+        // Save factory manager instance
+        this.factoryManager = factoryManager;
 
-        // Save failed msg retry manager instance.
-        this.failedMsgRetryManager = failedMsgRetryManager;
-
-        // Save metrics record
+        // Save metrics recorder
         this.metricsRecorder = metricsRecorder;
 
         // Save state
@@ -121,27 +142,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
-     *
-     * @param config
-     * @param topologyContext
-     * @param deserializer - Injected deserializer instance, typically used for testing.
-     * @param sidelineConsumer
      */
-    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager, SidelineConsumer sidelineConsumer) {
-        this(config, topologyContext, deserializer, failedMsgRetryManager, (MetricsRecorder) null);
-        this.sidelineConsumer = sidelineConsumer;
-    }
+    protected VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
+        this(topologyConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
-    /**
-     * For testing only! Constructor used in testing to inject SidelineConsumer instance.
-     *
-     * @param config
-     * @param topologyContext
-     * @param deserializer - Injected deserializer instance, typically used for testing.
-     * @param sidelineConsumer
-     */
-    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
-        this(config, topologyContext, deserializer, new NoRetryFailedMsgRetryManager(), metricsRecorder, startingState, endingState);
+        // Inject the sideline consumer.
         this.sidelineConsumer = sidelineConsumer;
     }
 
@@ -161,30 +166,33 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         logger.info("Open has starting state: {}", startingState);
         logger.info("Open has ending state: {}", endingState);
 
-        // Call open on failed msg retry manager instance.
-        failedMsgRetryManager.open(topologyConfig);
+        // Create our deserializer
+        deserializer = getFactoryManager().createNewDeserializerInstance();
 
-        // Construct SidelineConsumerConfig from incoming config
-        final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-        final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-        final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
+        // Create our failed msg retry manager & open
+        failedMsgRetryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
+        failedMsgRetryManager.open(getTopologyConfig());
 
-        // TODO: We need to make this injected always, or something.
-        // Basically right now you can't define your persistence layer because this is hard coded.
-        // Create a consumer, but..
-        // if one was injected via the constructor, just use it.
+        // Create underlying kafka consumer - Normal Behavior is for this to be null here.
+        // The only time this would be non-null would be if it was injected for tests.
         if (sidelineConsumer == null) {
-            // Build our implementation of PersistenceManager and open() it.
-            final PersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+            // Create persistence manager instance and open.
+            final PersistenceManager persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
             persistenceManager.open(getTopologyConfig());
 
+            // Construct SidelineConsumerConfig based on topology config.
+            final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
+            final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
+            final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
+
+            // Create sideline consumer
             sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
         }
 
-        // Connect the consumer
+        // Open the consumer
         sidelineConsumer.open(startingState, getPartitions());
 
-        // If we have an ending state, assign values
+        // If we have an ending state, we set some metrics.
         if (endingState != null) {
             // Update our metrics
             updateMetrics(endingState, "endingOffset");
@@ -462,6 +470,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     public Object getTopologyConfigItem(final String key) {
         return topologyConfig.get(key);
+    }
+
+    /**
+     * Used in tests.
+     */
+    protected FactoryManager getFactoryManager() {
+        return factoryManager;
     }
 
     /**

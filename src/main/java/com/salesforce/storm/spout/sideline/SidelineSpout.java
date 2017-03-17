@@ -7,7 +7,6 @@ import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
@@ -156,8 +155,6 @@ public class SidelineSpout extends BaseRichSpout {
             negatedSteps.add(new NegatingFilterChainStep(step));
         }
 
-        final FailedMsgRetryManager failedMsgRetryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
-
         // This is the state that the VirtualSidelineSpout should start with
         final ConsumerState startingState = persistenceManager.retrieveSidelineRequest(id).startingState;
 
@@ -178,8 +175,7 @@ public class SidelineSpout extends BaseRichSpout {
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,
             topologyContext,
-            factoryManager.createNewDeserializerInstance(),
-            failedMsgRetryManager,
+            factoryManager,
             metricsRecorder,
             // Starting offset of the sideline request
             startingState,
@@ -232,7 +228,11 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceManager.open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance(), metricsRecorder);
+        fireHoseSpout = new VirtualSidelineSpout(
+                getTopologyConfig(),
+                getTopologyContext(),
+                factoryManager,
+                metricsRecorder);
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix);
 
         // Create TupleBuffer
@@ -287,8 +287,7 @@ public class SidelineSpout extends BaseRichSpout {
                 final VirtualSidelineSpout spout = new VirtualSidelineSpout(
                     topologyConfig,
                     topologyContext,
-                    factoryManager.createNewDeserializerInstance(),
-                    factoryManager.createNewFailedMsgRetryManagerInstance(),
+                    factoryManager,
                     metricsRecorder,
                     payload.startingState,
                     payload.endingState

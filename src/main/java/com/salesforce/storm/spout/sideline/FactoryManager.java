@@ -57,7 +57,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured deserializer.
      */
-    public Deserializer createNewDeserializerInstance() {
+    synchronized public Deserializer createNewDeserializerInstance() {
         if (deserializerClass == null) {
             final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.DESERIALIZER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -80,7 +80,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured FailedMsgRetryManager.
      */
-    public FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
+    synchronized public FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -103,7 +103,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured persistence manager.
      */
-    public PersistenceManager createNewPersistenceManagerInstance() {
+    synchronized public PersistenceManager createNewPersistenceManagerInstance() {
         if (persistenceManagerClass == null) {
             final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -126,7 +126,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured Metrics Recorder manager.
      */
-    public MetricsRecorder createNewMetricsRecorder() {
+    synchronized public MetricsRecorder createNewMetricsRecorder() {
         if (metricsRecorderClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -149,7 +149,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured TupleBuffer interface.
      */
-    public TupleBuffer createNewTupleBufferInstance() {
+    synchronized public TupleBuffer createNewTupleBufferInstance() {
         if (tupleBufferClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
