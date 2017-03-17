@@ -22,11 +22,10 @@ public interface TupleBuffer {
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.
-     * @param virtualSpoutId - ConsumerId this message is from.
      * @param kafkaMessage - KafkaMessage to be added to the queue.
      * @throws InterruptedException - thrown if a thread is interrupted while blocked adding to the queue.
      */
-    void put(final String virtualSpoutId, final KafkaMessage kafkaMessage) throws InterruptedException;
+    void put(final KafkaMessage kafkaMessage) throws InterruptedException;
 
     /**
      * @return - returns the next KafkaMessage to be processed out of the queue.

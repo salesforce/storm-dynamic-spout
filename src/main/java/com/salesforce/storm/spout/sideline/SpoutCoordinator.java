@@ -372,7 +372,7 @@ public class SpoutCoordinator {
 
                     if (message != null) {
                         try {
-                            tupleOutputQueue.put(spout.getConsumerId(), message);
+                            tupleOutputQueue.put(message);
                         } catch (InterruptedException ex) {
                             // TODO: Revisit this
                             logger.error("{}", ex);
