@@ -7,7 +7,6 @@ import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;

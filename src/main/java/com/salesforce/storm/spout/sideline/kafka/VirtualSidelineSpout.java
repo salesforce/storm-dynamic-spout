@@ -10,11 +10,8 @@ import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
-import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -170,20 +167,20 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         logger.info("Open has ending state: {}", endingState);
 
         // Create our deserializer
-        deserializer = factoryManager.createNewDeserializerInstance();
+        deserializer = getFactoryManager().createNewDeserializerInstance();
 
         // Create our failed msg retry manager & open
-        failedMsgRetryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
+        failedMsgRetryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
         failedMsgRetryManager.open(getTopologyConfig());
 
-        // Create Persistence Manager
-        // The only reason this would be non-null would be if it was injected for tests.
+        // Create underlying kafka consumer - Normal Behavior is for this to be null here.
+        // The only time this would be non-null would be if it was injected for tests.
         if (sidelineConsumer == null) {
-            // Create persistence manager
-            final PersistenceManager persistenceManager = factoryManager.createNewPersistenceManagerInstance();
+            // Create persistence manager instance and open.
+            final PersistenceManager persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
             persistenceManager.open(getTopologyConfig());
 
-            // Construct SidelineConsumerConfig from incoming config
+            // Construct SidelineConsumerConfig based on topology config.
             final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
             final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
             final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
@@ -195,7 +192,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Open the consumer
         sidelineConsumer.open(startingState, getPartitions());
 
-        // If we have an ending state, assign values
+        // If we have an ending state, we set some metrics.
         if (endingState != null) {
             // Update our metrics
             updateMetrics(endingState, "endingOffset");
@@ -475,6 +472,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         return topologyConfig.get(key);
     }
 
+    /**
+     * Used in tests.
+     */
     protected FactoryManager getFactoryManager() {
         return factoryManager;
     }
