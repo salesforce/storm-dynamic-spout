@@ -38,4 +38,8 @@ public class FIFOBuffer implements TupleBuffer {
     public KafkaMessage poll() {
         return tupleBuffer.poll();
     }
+
+    public BlockingQueue<KafkaMessage> getUnderlyingQueue() {
+        return tupleBuffer;
+    }
 }
