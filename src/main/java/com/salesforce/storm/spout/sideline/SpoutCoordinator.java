@@ -88,14 +88,14 @@ public class SpoutCoordinator {
     private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue = new ConcurrentHashMap<>();
 
     /**
-     * Thread Pool Executor.
-     */
-    private final ExecutorService executor;
-
-    /**
      * For capturing metrics.
      */
     private final MetricsRecorder metricsRecorder;
+
+    /**
+     * Thread Pool Executor.
+     */
+    private ExecutorService executor;
 
     /**
      * The spout monitor runnable, which handles spinning up threads for sideline spouts.
@@ -113,8 +113,6 @@ public class SpoutCoordinator {
      * @param spout Fire hose spout
      */
     public SpoutCoordinator(final DelegateSidelineSpout spout, final MetricsRecorder metricsRecorder) {
-        this.executor = Executors.newFixedThreadPool(SPOUT_RUNNER_THREAD_POOL_SIZE);
-
         this.metricsRecorder = metricsRecorder;
 
         addSidelineSpout(spout);
@@ -139,8 +137,9 @@ public class SpoutCoordinator {
         // Create a countdown latch
         final CountDownLatch latch = new CountDownLatch(newSpoutQueue.size());
 
+        this.executor = Executors.newSingleThreadExecutor();
+
         spoutMonitor = new SpoutMonitor(
-            executor,
             newSpoutQueue,
             tupleOutputQueue,
             ackedTuplesInputQueue,
@@ -238,7 +237,6 @@ public class SpoutCoordinator {
         private boolean isOpen = true;
 
         SpoutMonitor(
-            final ExecutorService executor,
             final Queue<DelegateSidelineSpout> newSpoutQueue,
             final TupleBuffer tupleOutputQueue,
             final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue,
@@ -246,13 +244,14 @@ public class SpoutCoordinator {
             final CountDownLatch latch,
             final Clock clock
         ) {
-            this.executor = executor;
             this.newSpoutQueue = newSpoutQueue;
             this.tupleOutputQueue = tupleOutputQueue;
             this.ackedTuplesInputQueue = ackedTuplesInputQueue;
             this.failedTuplesInputQueue = failedTuplesInputQueue;
             this.latch = latch;
             this.clock = clock;
+
+            this.executor = Executors.newFixedThreadPool(SPOUT_RUNNER_THREAD_POOL_SIZE);
         }
 
         @Override
@@ -307,6 +306,14 @@ public class SpoutCoordinator {
             for (SpoutRunner spoutRunner : spoutRunners.values()) {
                 spoutRunner.requestStop();
             }
+
+            try {
+                executor.awaitTermination(MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                logger.error("Caught Exception while stopping: {}", ex);
+            }
+
+            executor.shutdownNow();
 
             spoutRunners.clear();
             spoutThreads.clear();
