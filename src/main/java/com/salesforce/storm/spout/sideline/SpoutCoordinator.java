@@ -256,7 +256,7 @@ public class SpoutCoordinator {
 
                 // Start monitoring loop.
                 while (isOpen) {
-                    logger.info("Still here.. my input queue is {}", newSpoutQueue.size());
+                    logger.debug("Still here.. my input queue is {}", newSpoutQueue.size());
 
                     for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
                         logger.info("Preparing thread for spout {}", spout.getConsumerId());
@@ -285,12 +285,10 @@ public class SpoutCoordinator {
                         return;
                     }
                 }
-
                 logger.warn("!!!!!! Spout coordinator is ceasing to run...");
             } catch (Exception ex) {
                 // TODO: Should we restart the monitor?
                 logger.error("SpoutMonitor threw an exception {}", ex);
-
             }
         }
 
