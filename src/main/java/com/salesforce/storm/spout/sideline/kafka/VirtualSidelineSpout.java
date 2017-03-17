@@ -140,8 +140,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param deserializer - Injected deserializer instance, typically used for testing.
      * @param sidelineConsumer
      */
-    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
-        this(config, topologyContext, deserializer, new NoRetryFailedMsgRetryManager(), null, startingState, endingState);
+    protected VirtualSidelineSpout(Map config, TopologyContext topologyContext, Deserializer deserializer, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
+        this(config, topologyContext, deserializer, new NoRetryFailedMsgRetryManager(), metricsRecorder, startingState, endingState);
         this.sidelineConsumer = sidelineConsumer;
     }
 
@@ -157,13 +157,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Set state to true.
         isOpened = true;
 
-        // TODO - This should get passed in.
-        if (metricsRecorder == null) {
-            logger.error("TODO REMOVE THIS");
-            metricsRecorder = new LogRecorder();
-            metricsRecorder.open(topologyConfig, topologyContext);
-        }
-
         // For debugging purposes
         logger.info("Open has starting state: {}", startingState);
         logger.info("Open has ending state: {}", endingState);
@@ -176,11 +169,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
         final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
 
-        // Do we need to set starting offset here somewhere?  Probably.
-        // Either we need to set the offsets from the incoming config,
-        // Or we need to tell it to start from somewhere
-
-        // TODO: this should be removed I believe?  We always inject one.
+        // TODO: We need to make this injected always, or something.
+        // Basically right now you can't define your persistence layer because this is hard coded.
         // Create a consumer, but..
         // if one was injected via the constructor, just use it.
         if (sidelineConsumer == null) {
@@ -191,7 +181,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
         }
 
-            // Connect the consumer
+        // Connect the consumer
         sidelineConsumer.open(startingState, getPartitions());
 
         // If we have an ending state, assign values
@@ -202,7 +192,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     /**
-     * Get the partitions that this particular spout instance should consume from
+     * Get the partitions that this particular spout instance should consume from.
      * @return List of partitions to consume from
      */
     private List<PartitionInfo> getPartitions() {
@@ -277,6 +267,18 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Create a Tuple Message Id
         final TupleMessageId tupleMessageId = new TupleMessageId(record.topic(), record.partition(), record.offset(), getConsumerId());
 
+        // Determine if this tuple exceeds our ending offset
+        if (doesMessageExceedEndingOffset(tupleMessageId)) {
+            logger.debug("Tuple {} exceeds max offset, acking", tupleMessageId);
+
+            // Unsubscribe partition this tuple belongs to.
+            unsubscribeTopicPartition(tupleMessageId.getTopicPartition());
+
+            // We don't need to ack the tuple because it never got emitted out.
+            // Simply return null.
+            return null;
+        }
+
         // Attempt to deserialize.
         final Values deserializedValues = deserializer.deserialize(record.topic(), record.partition(), record.offset(), record.key(), record.value());
         if (deserializedValues == null) {
@@ -288,20 +290,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Create KafkaMessage
         final KafkaMessage message = new KafkaMessage(tupleMessageId, deserializedValues);
-
-        // Determine if this tuple exceeds our ending offset
-        if (doesMessageExceedEndingOffset(tupleMessageId)) {
-            logger.debug("Tuple {} exceeds max offset, acking", tupleMessageId);
-
-            // Unsubscribe partition this tuple belongs to.
-            unsubscribeTopicPartition(tupleMessageId.getTopicPartition());
-
-            // Ack tuple
-            ack(tupleMessageId);
-
-            // Return null.
-            return null;
-        }
 
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?
         // Loops through each step in the chain to filter a filter before emitting

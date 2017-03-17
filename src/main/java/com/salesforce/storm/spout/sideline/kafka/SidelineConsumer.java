@@ -89,7 +89,7 @@ public class SidelineConsumer {
     }
 
     /**
-     * Get a list of the partition for the given kafka topic
+     * Get a list of the partition for the given kafka topic.
      * @return List of partition for the topic
      */
     public List<PartitionInfo> getPartitions() {
@@ -97,7 +97,7 @@ public class SidelineConsumer {
     }
 
     /**
-     * Get the kafka consumer, if it has been retried yet, set it up
+     * Get the kafka consumer, if it has been retried yet, set it up.
      * @return Kafka consumer
      */
     private KafkaConsumer getKafkaConsumer() {
@@ -229,7 +229,6 @@ public class SidelineConsumer {
         // Track internally which offsets we've marked completed
         partitionStateManagers.get(topicPartition).finishOffset(offset);
 
-        // TODO: We can probably drop this.
         // Occasionally flush
         timedFlushConsumerState();
     }

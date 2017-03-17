@@ -411,6 +411,7 @@ public class SpoutCoordinator {
             } catch (Exception ex) {
                 // TODO: Should we restart the SpoutRunner?
                 logger.error("SpoutRunner for {} threw an exception {}", spout.getConsumerId(), ex);
+                ex.printStackTrace();
             }
         }
 

@@ -12,6 +12,7 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserial
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -448,8 +449,15 @@ public class VirtualSidelineSpoutTest {
         // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
         when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
 
+        // Define a mock topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockSidelineConsumer, null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, stringDeserializer, metricsRecorder, mockSidelineConsumer, null, endingState);
         virtualSidelineSpout.setConsumerId("ConsumerId");
         virtualSidelineSpout.open();
 
@@ -498,9 +506,9 @@ public class VirtualSidelineSpoutTest {
         // Right now this is called twice... unsure if thats an issue. I don't think it is.
         verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
 
-        // Validate that we called ack on the tuples that were filtered because they exceeded the max offset
-        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), afterOffset);
-        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(topic, partition), afterOffset + 1);
+        // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
+        verify(mockSidelineConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset);
+        verify(mockSidelineConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset + 1);
     }
 
     /**
@@ -827,8 +835,12 @@ public class VirtualSidelineSpoutTest {
         ConsumerState endingState = new ConsumerState();
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
 
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
+
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -858,8 +870,12 @@ public class VirtualSidelineSpoutTest {
         ConsumerState endingState = new ConsumerState();
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100));
 
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
+
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -889,8 +905,12 @@ public class VirtualSidelineSpoutTest {
         ConsumerState endingState = new ConsumerState();
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100));
 
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
+
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
@@ -921,8 +941,12 @@ public class VirtualSidelineSpoutTest {
         ConsumerState endingState = new ConsumerState();
         endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
 
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
+
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockSidelineConsumer, null, endingState);
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
