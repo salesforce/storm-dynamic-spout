@@ -123,27 +123,41 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (Long) How long our monitor thread will sit around and sleep between monitoring
+     * (String) Defines which TupleBuffer implementation to use.
+     * Should be a full classpath to a class that implements the TupleBuffer interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer"
+     */
+    public static final String TUPLE_BUFFER_CLASS = "sideline_spout.coordinator.tuple_buffer.class";
+
+    /**
+     * (int) Defines maximum size of the tuple buffer.  After the buffer reaches this size
+     * the internal kafka consumers will be blocked from consuming.
+     * Default Value: 10000
+     */
+    public static final String TUPLE_BUFFER_MAX_SIZE = "sideline_spout.coordinator.tuple_buffer.max_size";
+
+    /**
+     * (long) How long our monitor thread will sit around and sleep between monitoring
      * if new VirtualSpouts need to be started up, in Milliseconds.
      * Default Value: 2000
      */
     public static final String MONITOR_THREAD_SLEEP_MS = "sideline_spout.coordinator.monitor_thread_sleep_ms";
 
     /**
-     * (Long) How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
+     * (long) How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
      * them with force, in Milliseconds.
      * Default Value: 10000
      */
     public static final String MAX_SPOUT_STOP_TIME_MS = "sideline_spout.coordinator.max_spout_stop_time_ms";
 
     /**
-     * (Long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
+     * (long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
      * Default Value: 30000
      */
     public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "sideline_spout.coordinator.consumer_state_flush_interval_ms";
 
     /**
-     * (Integer) The size of the thread pool for running virtual spouts for sideline requests.
+     * (int) The size of the thread pool for running virtual spouts for sideline requests.
      * Default Value: 10
      */
     public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "sideline_spout.coordinator.max_concurrent_virtual_spouts";
@@ -195,6 +209,14 @@ public class SidelineSpoutConfig {
         if (!clonedConfig.containsKey(MAX_CONCURRENT_VIRTUAL_SPOUTS)) {
             clonedConfig.put(MAX_CONCURRENT_VIRTUAL_SPOUTS, 10);
             logger.info("Missing configuration {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
+        }
+        if (!clonedConfig.containsKey(TUPLE_BUFFER_CLASS)) {
+            clonedConfig.put(TUPLE_BUFFER_CLASS, "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer");
+            logger.info("Missing configuration {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
+        }
+        if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
+            clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 10000);
+            logger.info("Missing configuration {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
         }
 
         return clonedConfig;

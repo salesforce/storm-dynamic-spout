@@ -11,6 +11,7 @@ import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryF
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -75,7 +76,7 @@ public class FactoryManagerTest {
     }
 
     /**
-     * Tests that if you fail to pass a deserializer config it gives you the default.
+     * Tests that if you fail to pass a deserializer config it throws an exception.
      */
     @Test
     public void testCreateNewFailedMsgRetryManagerInstance_missingConfig() {
@@ -83,12 +84,9 @@ public class FactoryManagerTest {
         Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
-        // We expect to get the default one back.
-        FailedMsgRetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
-
-        // Validate it
-        assertNotNull(retryManager);
-        assertTrue("Is correct default instance", retryManager instanceof DefaultFailedMsgRetryManager);
+        // We expect this to throw an exception.
+        expectedException.expect(IllegalStateException.class);
+        factoryManager.createNewFailedMsgRetryManagerInstance();
     }
 
     /**
@@ -171,4 +169,56 @@ public class FactoryManagerTest {
         }
     }
 
+    /**
+     * Tests that if you fail to pass a deserializer config it throws an exception.
+     */
+    @Test
+    public void testCreateNewTupleBufferInstance_missingConfig() {
+        // Try with UTF8 String deserializer
+        Map config = Maps.newHashMap();
+        final FactoryManager factoryManager = new FactoryManager(config);
+
+        // We expect this to throw an exception.
+        expectedException.expect(IllegalStateException.class);
+        factoryManager.createNewTupleBufferInstance();
+    }
+
+    /**
+     * Provides various tuple buffer implementation.
+     */
+    @DataProvider
+    public static Object[][] provideTupleBufferClasses() {
+        return new Object[][]{
+                { FIFOBuffer.class },
+                { RoundRobinBuffer.class }
+        };
+    }
+
+    /**
+     * Tests that create new deserializer instance works as expected.
+     */
+    @Test
+    @UseDataProvider("provideTupleBufferClasses")
+    public void testCreateNewTupleBuffer(final Class clazz) {
+        // Try with UTF8 String deserializer
+        Map config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
+        final FactoryManager factoryManager = new FactoryManager(config);
+
+        // Create a few instances
+        List<TupleBuffer> instances = Lists.newArrayList();
+        for (int x=0; x<5; x++) {
+            TupleBuffer tupleBuffer = factoryManager.createNewTupleBufferInstance();
+
+            // Validate it
+            assertNotNull(tupleBuffer);
+            assertEquals("Is correct instance type", tupleBuffer.getClass(), clazz);
+
+            // Verify its a different instance than our previous ones
+            assertFalse("Not a previous instance", instances.contains(tupleBuffer));
+
+            // Add to our list
+            instances.add(tupleBuffer);
+        }
+    }
 }

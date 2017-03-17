@@ -16,7 +16,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
-import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -77,14 +76,14 @@ public class SidelineSpout extends BaseRichSpout {
      */
     public SidelineSpout(Map topologyConfig) {
         // Save off config.
-        this.topologyConfig = topologyConfig;
+        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(topologyConfig));
 
         // Create our factory manager, which must be serializable.
-        factoryManager = new FactoryManager(this.topologyConfig);
+        factoryManager = new FactoryManager(getTopologyConfig());
     }
 
     /**
-     * Set a starting trigger on the spout for starting a sideline request
+     * Set a starting trigger on the spout for starting a sideline request.
      * @param startingTrigger An impplementation of a starting trigger
      */
     public void setStartingTrigger(StartingTrigger startingTrigger) {
@@ -92,7 +91,7 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * Set a trigger on the spout for stopping a sideline request
+     * Set a trigger on the spout for stopping a sideline request.
      * @param stoppingTrigger An implementation of a stopping trigger
      */
     public void setStoppingTrigger(StoppingTrigger stoppingTrigger) {
@@ -100,7 +99,7 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * Starts a sideline request
+     * Starts a sideline request.
      * @param sidelineRequest A representation of the request that is being started
      */
     public SidelineIdentifier startSidelining(SidelineRequest sidelineRequest) {
@@ -196,9 +195,9 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     @Override
-    public void open(Map toplogyConfig, TopologyContext context, SpoutOutputCollector collector) {
+    public void open(Map topologyConfig, TopologyContext context, SpoutOutputCollector collector) {
         // Save references.
-        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(toplogyConfig));
+        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(topologyConfig));
         this.topologyContext = context;
         this.outputCollector = collector;
 
@@ -214,6 +213,11 @@ public class SidelineSpout extends BaseRichSpout {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
+        // Ensure a consumer id prefix has been correctly set.
+        if (Strings.isNullOrEmpty((String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))) {
+            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        }
+
         // Grab our ConsumerId prefix from the config, append the task index.  This will probably cause problems
         // if you decrease the number of instances of the spout.
         final String cfgConsumerIdPrefix = new StringBuilder()
@@ -221,10 +225,6 @@ public class SidelineSpout extends BaseRichSpout {
             .append("-")
             .append(topologyContext.getThisTaskIndex())
             .toString();
-
-        if (Strings.isNullOrEmpty(cfgConsumerIdPrefix)) {
-            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
-        }
 
         // Create and open() persistence manager passing appropriate configuration.
         persistenceManager = factoryManager.createNewPersistenceManagerInstance();
@@ -253,7 +253,7 @@ public class SidelineSpout extends BaseRichSpout {
             metricsRecorder,
 
             // Our TupleBuffer/Queue Implementation.
-            new RoundRobinBuffer()
+            factoryManager.createNewTupleBufferInstance()
         );
 
         // Call open on coordinator.
@@ -299,11 +299,11 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         if (startingTrigger != null) {
-            startingTrigger.open(toplogyConfig);
+            startingTrigger.open(getTopologyConfig());
         }
 
         if (stoppingTrigger != null) {
-            stoppingTrigger.open(toplogyConfig);
+            stoppingTrigger.open(getTopologyConfig());
         }
 
         // For emit metrics
@@ -352,14 +352,10 @@ public class SidelineSpout extends BaseRichSpout {
 
     /**
      * Declare the output fields.
-
      * @param declarer The output field declarer
      */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // I'm unsure where declareOutputFields() gets called in the spout lifecycle, it may get called
-        // prior to open, in which case we need to shuffle some logic around.
-
         // Handles both explicitly defined and default stream definitions.
         declarer.declareStream(getOutputStreamId(), factoryManager.createNewDeserializerInstance().getOutputFields());
     }

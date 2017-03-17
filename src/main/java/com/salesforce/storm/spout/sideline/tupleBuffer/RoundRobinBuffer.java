@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
-import com.google.common.collect.Iterators;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

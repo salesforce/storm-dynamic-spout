@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultF
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,11 @@ public class FactoryManager implements Serializable {
      */
     private transient Class<? extends MetricsRecorder> metricsRecorderClass;
 
+    /**
+     * Class instance of our Tuple Buffer.
+     */
+    private transient Class<? extends TupleBuffer> tupleBufferClass;
+
     public FactoryManager(Map topologyConfig) {
         this.topologyConfig = topologyConfig;
     }
@@ -79,8 +85,7 @@ public class FactoryManager implements Serializable {
         if (failedMsgRetryManagerClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                logger.warn("Missing required configuration {} defaulting to using {}", SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, DefaultFailedMsgRetryManager.class.getSimpleName());
-                classStr = DefaultFailedMsgRetryManager.class.getName();
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             }
 
             try {
@@ -126,8 +131,7 @@ public class FactoryManager implements Serializable {
         if (metricsRecorderClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                // Use default value
-                classStr = "com.salesforce.storm.spout.sideline.metrics.StormRecorder";
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.METRICS_RECORDER_CLASS);
             }
 
             try {
@@ -138,6 +142,29 @@ public class FactoryManager implements Serializable {
         }
         try {
             return metricsRecorderClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @return returns a new instance of the configured TupleBuffer interface.
+     */
+    public TupleBuffer createNewTupleBufferInstance() {
+        if (tupleBufferClass == null) {
+            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
+            }
+
+            try {
+                tupleBufferClass = (Class<? extends TupleBuffer>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return tupleBufferClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }
