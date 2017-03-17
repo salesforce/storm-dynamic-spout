@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobbinBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -356,7 +355,7 @@ public class SpoutCoordinator {
 
                 spout.open();
 
-                tupleOutputQueue.addConsumerId(spout.getConsumerId());
+                tupleOutputQueue.addVirtualSpoutId(spout.getConsumerId());
                 ackedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
                 failedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
 
@@ -409,7 +408,7 @@ public class SpoutCoordinator {
                 spout.close();
 
                 // Remove our entries from the acked and failed queue.
-                tupleOutputQueue.removeConsumerId(spout.getConsumerId());
+                tupleOutputQueue.removeVirtualSpoutId(spout.getConsumerId());
                 ackedTupleInputQueue.remove(spout.getConsumerId());
                 failedTupleInputQueue.remove(spout.getConsumerId());
             } catch (Exception ex) {
