@@ -745,318 +745,447 @@ public class VirtualSidelineSpoutTest {
         assertEquals("Found expected values", new Values(unexpectedKey, unexpectedValue), result.getValues());
         assertEquals("Got expected KafkaMessage", unexpectedKafkaMessage, result);
     }
-//
-//    /**
-//     * Test calling fail with null, it should just silently drop it.
-//     */
-//    @Test
-//    public void testFailWithNull() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call ack with null, nothing should explode.
-//        virtualSidelineSpout.fail(null);
-//
-//        // No iteractions w/ our mocks
-//        verify(mockRetryManager, never()).retryFurther(anyObject());
-//        verify(mockRetryManager, never()).acked(anyObject());
-//        verify(mockRetryManager, never()).failed(anyObject());
-//        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
-//    }
-//
-//    /**
-//     * Call fail() with invalid msg type should throw an exception.
-//     */
-//    @Test
-//    public void testFailWithInvalidMsgIdObject() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call ack with a string object, it should throw an exception.
-//        expectedException.expect(IllegalArgumentException.class);
-//        virtualSidelineSpout.fail("Poop");
-//    }
-//
-//    /**
-//     * Test calling ack with null, it should just silently drop it.
-//     */
-//    @Test
-//    public void testAckWithNull() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call ack with null, nothing should explode.
-//        virtualSidelineSpout.ack(null);
-//
-//        // No iteractions w/ our mock sideline consumer for committing offsets
-//        verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
-//        verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
-//        verify(mockRetryManager, never()).acked(anyObject());
-//    }
-//
-//    /**
-//     * Call ack() with invalid msg type should throw an exception.
-//     */
-//    @Test
-//    public void testAckWithInvalidMsgIdObject() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call ack with a string object, it should throw an exception.
-//        expectedException.expect(IllegalArgumentException.class);
-//        virtualSidelineSpout.ack("Poop");
-//    }
-//
-//    /**
-//     * Test calling ack, ensure it passes the commit command to its internal consumer
-//     */
-//    @Test
-//    public void testAck() {
-//        // Define our msgId
-//        final String expectedTopicName = "MyTopic";
-//        final int expectedPartitionId = 33;
-//        final long expectedOffset = 313376L;
-//        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
-//
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // TODO: Validate metric collection here
-//        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Never called yet
-//        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
-//        verify(mockRetryManager, never()).acked(anyObject());
-//
-//        // Call ack with a string object, it should throw an exception.
-//        virtualSidelineSpout.ack(tupleMessageId);
-//
-//        // Verify mock gets called with appropriate arguments
-//        verify(mockSidelineConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
-//
-//        // Gets acked on the failed retry manager
-//        verify(mockRetryManager, times(1)).acked(tupleMessageId);
-//    }
-//
-//    /**
-//     * Test calling this method when no defined endingState.  It should default to always
-//     * return false in that case.
-//     */
-//    @Test
-//    public void testDoesMessageExceedEndingOffsetWithNoEndingStateDefined() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Create our test TupleMessageId
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 1;
-//        final long expectedOffset = 31332L;
-//        final String consumerId = "MyConsumerId";
-//        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
-//
-//        // Call our method & validate.
-//        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-//        assertFalse("Should always be false", result);
-//    }
-//
-//    /**
-//     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is equal to it,
-//     * it should return false.
-//     */
-//    @Test
-//    public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create our test TupleMessageId
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 1;
-//        final long expectedOffset = 31332L;
-//        final String consumerId = "MyConsumerId";
-//        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
-//
-//        // Define our endingState with a position equal to our TupleMessageId
-//        ConsumerState endingState = new ConsumerState();
-//        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
-//
-//        // Define metric record
-//        final MetricsRecorder metricsRecorder = new LogRecorder();
-//        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
-//
-//        // Create spout passing in ending state.
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call our method & validate.
-//        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-//        assertFalse("Should be false", result);
-//    }
-//
-//    /**
-//     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is beyond it.
-//     */
-//    @Test
-//    public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create our test TupleMessageId
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 1;
-//        final long expectedOffset = 31332L;
-//        final String consumerId = "MyConsumerId";
-//        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
-//
-//        // Define our endingState with a position less than our TupleMessageId
-//        ConsumerState endingState = new ConsumerState();
-//        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100));
-//
-//        // Define metric record
-//        final MetricsRecorder metricsRecorder = new LogRecorder();
-//        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
-//
-//        // Create spout passing in ending state.
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call our method & validate.
-//        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-//        assertTrue("Should be true", result);
-//    }
-//
-//    /**
-//     * Test calling this method with a defined endingState, and the TupleMEssageId's offset is before it.
-//     */
-//    @Test
-//    public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create our test TupleMessageId
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 1;
-//        final long expectedOffset = 31332L;
-//        final String consumerId = "MyConsumerId";
-//        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
-//
-//        // Define our endingState with a position greater than than our TupleMessageId
-//        ConsumerState endingState = new ConsumerState();
-//        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100));
-//
-//        // Define metric record
-//        final MetricsRecorder metricsRecorder = new LogRecorder();
-//        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
-//
-//        // Create spout passing in ending state.
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call our method & validate.
-//        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-//        assertFalse("Should be false", result);
-//    }
-//
-//    /**
-//     * Test calling this method with a defined endingState, and then send in a TupleMessageId
-//     * associated with a partition that doesn't exist in the ending state.
-//     */
-//    @Test
-//    public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create our test TupleMessageId
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 1;
-//        final long expectedOffset = 31332L;
-//        final String consumerId = "MyConsumerId";
-//        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
-//
-//        // Define our endingState with a position greater than than our TupleMessageId, but on a different partition
-//        ConsumerState endingState = new ConsumerState();
-//        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
-//
-//        // Define metric record
-//        final MetricsRecorder metricsRecorder = new LogRecorder();
-//        metricsRecorder.open(expectedTopologyConfig, mockTopologyContext);
-//
-//        // Create spout passing in ending state.
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), metricsRecorder, mockSidelineConsumer, null, endingState);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Call our method & validate exception is thrown
-//        expectedException.expect(IllegalStateException.class);
-//        virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
-//    }
+
+    /**
+     * Test calling fail with null, it should just silently drop it.
+     */
+    @Test
+    public void testFailWithNull() {
+        // Create mock failed msg retry manager
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                mockFactoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call ack with null, nothing should explode.
+        virtualSidelineSpout.fail(null);
+
+        // No iteractions w/ our mocks
+        verify(mockRetryManager, never()).retryFurther(anyObject());
+        verify(mockRetryManager, never()).acked(anyObject());
+        verify(mockRetryManager, never()).failed(anyObject());
+        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
+    }
+
+    /**
+     * Call fail() with invalid msg type should throw an exception.
+     */
+    @Test
+    public void testFailWithInvalidMsgIdObject() {
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call ack with a string object, it should throw an exception.
+        expectedException.expect(IllegalArgumentException.class);
+        virtualSidelineSpout.fail("Poop");
+    }
+
+    /**
+     * Test calling ack with null, it should just silently drop it.
+     */
+    @Test
+    public void testAckWithNull() {
+        // Create mock Failed msg retry manager
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                mockFactoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call ack with null, nothing should explode.
+        virtualSidelineSpout.ack(null);
+
+        // No iteractions w/ our mock sideline consumer for committing offsets
+        verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
+        verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
+        verify(mockRetryManager, never()).acked(anyObject());
+    }
+
+    /**
+     * Call ack() with invalid msg type should throw an exception.
+     */
+    @Test
+    public void testAckWithInvalidMsgIdObject() {
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call ack with a string object, it should throw an exception.
+        expectedException.expect(IllegalArgumentException.class);
+        virtualSidelineSpout.ack("Poop");
+    }
+
+    /**
+     * Test calling ack, ensure it passes the commit command to its internal consumer
+     */
+    @Test
+    public void testAck() {
+        // Define our msgId
+        final String expectedTopicName = "MyTopic";
+        final int expectedPartitionId = 33;
+        final long expectedOffset = 313376L;
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
+
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // TODO: Validate metric collection here
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                mockFactoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Never called yet
+        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockRetryManager, never()).acked(anyObject());
+
+        // Call ack with a string object, it should throw an exception.
+        virtualSidelineSpout.ack(tupleMessageId);
+
+        // Verify mock gets called with appropriate arguments
+        verify(mockSidelineConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
+
+        // Gets acked on the failed retry manager
+        verify(mockRetryManager, times(1)).acked(tupleMessageId);
+    }
+
+    /**
+     * Test calling this method when no defined endingState.  It should default to always
+     * return false in that case.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWithNoEndingStateDefined() {
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertFalse("Should always be false", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMessageId's offset is equal to it,
+     * it should return false.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position equal to our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertFalse("Should be false", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMessageId's offset is beyond it.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position less than our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100));
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertTrue("Should be true", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and the TupleMessageId's offset is before it.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position greater than than our TupleMessageId
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100));
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        assertFalse("Should be false", result);
+    }
+
+    /**
+     * Test calling this method with a defined endingState, and then send in a TupleMessageId
+     * associated with a partition that doesn't exist in the ending state.  It should throw
+     * an illegal state exception.
+     */
+    @Test
+    public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final long expectedOffset = 31332L;
+        final String consumerId = "MyConsumerId";
+        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+
+        // Define our endingState with a position greater than than our TupleMessageId, but on a different partition
+        ConsumerState endingState = new ConsumerState();
+        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout passing in ending state.
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, endingState);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Call our method & validate exception is thrown
+        expectedException.expect(IllegalStateException.class);
+        virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+    }
 //
 //    /**
 //     * This test uses a mock to validate when you call unsubsubscribeTopicPartition() that it passes the argument
