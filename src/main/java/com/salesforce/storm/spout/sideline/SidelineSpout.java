@@ -198,7 +198,7 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void open(Map toplogyConfig, TopologyContext context, SpoutOutputCollector collector) {
         // Save references.
-        this.topologyConfig = Collections.unmodifiableMap(toplogyConfig);
+        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(toplogyConfig));
         this.topologyContext = context;
         this.outputCollector = collector;
 

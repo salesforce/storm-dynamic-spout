@@ -566,7 +566,6 @@ public class SidelineSpoutTest {
 
         // For now use the Log Recorder
         config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, "com.salesforce.storm.spout.sideline.metrics.LogRecorder");
-        //config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, "com.salesforce.storm.spout.sideline.metrics.StormRecorder");
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {

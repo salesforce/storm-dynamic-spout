@@ -1,5 +1,13 @@
 package com.salesforce.storm.spout.sideline.config;
 
+import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+
 /**
  * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
  */
@@ -16,7 +24,6 @@ public class SidelineSpoutConfig {
     /**
      * (String) Defines which Deserializer (Schema?) implementation to use.
      * Should be a full classpath to a class that implements the Deserializer interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer"
      */
     public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
 
@@ -107,7 +114,7 @@ public class SidelineSpoutConfig {
     /**
      * (String) Defines which MetricsRecorder implementation to use.
      * Should be a full classpath to a class that implements the MetricsRecorder interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.metrics.StormRecorder"
+     * Default Value: "com.salesforce.storm.spout.sideline.metrics.LogRecorder"
      */
     public static final String METRICS_RECORDER_CLASS = "sideline_spout.metrics.class";
 
@@ -140,4 +147,56 @@ public class SidelineSpoutConfig {
      * Default Value: 10
      */
     public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "sideline_spout.coordinator.max_concurrent_virtual_spouts";
+
+///////////////////////////////////
+// Utility Methods.
+///////////////////////////////////
+    private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutConfig.class);
+
+    /**
+     * Utility method to add any missing configuration items with their defaults.
+     * @param config - the config to update.
+     * @return - a cloned copy of the config that is updated.
+     */
+    public static Map setDefaults(Map config) {
+        // Clone the map
+        Map<String, Object> clonedConfig = Maps.newHashMap();
+        clonedConfig.putAll(config);
+
+        // Add in defaults where needed.
+        if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_CLASS)) {
+            clonedConfig.put(FAILED_MSG_RETRY_MANAGER_CLASS, DefaultFailedMsgRetryManager.class.getName());
+            logger.info("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_CLASS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_CLASS));
+        }
+        if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
+            clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, 25);
+            logger.info("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES));
+        }
+        if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
+            clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, 1000L);
+            logger.info("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS));
+        }
+        if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
+            clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+            logger.info("Missing configuration {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
+        }
+        if (!clonedConfig.containsKey(MONITOR_THREAD_SLEEP_MS)) {
+            clonedConfig.put(MONITOR_THREAD_SLEEP_MS, 2000L);
+            logger.info("Missing configuration {} using default value {}", MONITOR_THREAD_SLEEP_MS, clonedConfig.get(MONITOR_THREAD_SLEEP_MS));
+        }
+        if (!clonedConfig.containsKey(MAX_SPOUT_STOP_TIME_MS)) {
+            clonedConfig.put(MAX_SPOUT_STOP_TIME_MS, 10000L);
+            logger.info("Missing configuration {} using default value {}", MAX_SPOUT_STOP_TIME_MS, clonedConfig.get(MAX_SPOUT_STOP_TIME_MS));
+        }
+        if (!clonedConfig.containsKey(CONSUMER_STATE_FLUSH_INTERVAL_MS)) {
+            clonedConfig.put(CONSUMER_STATE_FLUSH_INTERVAL_MS, 30000L);
+            logger.info("Missing configuration {} using default value {}", CONSUMER_STATE_FLUSH_INTERVAL_MS, clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS));
+        }
+        if (!clonedConfig.containsKey(MAX_CONCURRENT_VIRTUAL_SPOUTS)) {
+            clonedConfig.put(MAX_CONCURRENT_VIRTUAL_SPOUTS, 10);
+            logger.info("Missing configuration {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
+        }
+
+        return clonedConfig;
+    }
 }
