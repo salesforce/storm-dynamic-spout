@@ -104,6 +104,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     /**
      * Constructor.
+     * Use this constructor for your "FireHose" instance.  IE an instance that has no starting or ending state.
      * @param topologyConfig - our topology config
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
@@ -115,6 +116,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     /**
      * Constructor.
+     * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
+     * state.
      * @param topologyConfig - our topology config
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
