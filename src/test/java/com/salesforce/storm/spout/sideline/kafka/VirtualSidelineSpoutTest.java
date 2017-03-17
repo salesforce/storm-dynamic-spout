@@ -45,9 +45,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- *
- */
 public class VirtualSidelineSpoutTest {
 
     /**
@@ -1186,211 +1183,277 @@ public class VirtualSidelineSpoutTest {
         expectedException.expect(IllegalStateException.class);
         virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
     }
-//
-//    /**
-//     * This test uses a mock to validate when you call unsubsubscribeTopicPartition() that it passes the argument
-//     * to its underlying consumer, and passes back the right result value from that call.
-//     */
-//    @Test
-//    public void testUnsubscribeTopicPartition() {
-//        final boolean expectedResult = true;
-//
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//        when(mockSidelineConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Create our test TupleMessageId
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 1;
-//        final TopicPartition topicPartition = new TopicPartition(expectedTopic, expectedPartition);
-//
-//        // Call our method & validate.
-//        final boolean result = virtualSidelineSpout.unsubscribeTopicPartition(topicPartition);
-//        assertEquals("Got expected result from our method", expectedResult, result);
-//
-//        // Validate mock call
-//        verify(mockSidelineConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
-//    }
-//
-//
-//    /**
-//     * Test calling close, verifies what happens if the completed flag is false.
-//     */
-//    @Test
-//    public void testCloseWithCompletedFlagSetToFalse() throws NoSuchFieldException, IllegalAccessException {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Mark sure is completed field is set to false before calling close
-//        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
-//        isCompletedField.setAccessible(true);
-//        isCompletedField.set(virtualSidelineSpout, false);
-//
-//        // Verify close hasn't been called yet.
-//        verify(mockSidelineConsumer, never()).close();
-//
-//        // Call close
-//        virtualSidelineSpout.close();
-//
-//        // Verify close was called, and state was flushed
-//        verify(mockSidelineConsumer, times(1)).flushConsumerState();
-//        verify(mockSidelineConsumer, times(1)).close();
-//
-//        // But we never called remove consumer state.
-//        verify(mockSidelineConsumer, never()).removeConsumerState();
-//    }
-//
-//    /**
-//     * Test calling close, verifies what happens if the completed flag is true.
-//     */
-//    @Test
-//    public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), new NoRetryFailedMsgRetryManager(), mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        // Mark sure is completed field is set to true before calling close
-//        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
-//        isCompletedField.setAccessible(true);
-//        isCompletedField.set(virtualSidelineSpout, true);
-//
-//        // Verify close hasn't been called yet.
-//        verify(mockSidelineConsumer, never()).close();
-//
-//        // Call close
-//        virtualSidelineSpout.close();
-//
-//        // Verify close was called, and state was cleared
-//        verify(mockSidelineConsumer, times(1)).removeConsumerState();
-//        verify(mockSidelineConsumer, times(1)).close();
-//
-//        // But we never called flush consumer state.
-//        verify(mockSidelineConsumer, never()).flushConsumerState();
-//    }
-//
-//    /**
-//     * This test does the following:
-//     *
-//     * 1. Call nextTuple() -
-//     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
-//     *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
-//     * 2. Call fail() with the message previously returned from nextTuple().
-//     * 2. Call nextTuple()
-//     *  a. This time FailedMsgRetryManager should return the failed tuple
-//     * 3. Call nextTuple()
-//     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
-//     *  b. sideline consumer should return a new consumer record.
-//     */
-//    @Test
-//    public void testCallingFailCallsAckOnWhenItShouldNotBeRetried() {
-//        // Use UTF8 String Deserializer
-//        // Define a deserializer that always returns null
-//        final Deserializer stringDeserializer = new Utf8StringDeserializer();
-//
-//        // This is the record coming from the consumer.
-//        final String expectedTopic = "MyTopic";
-//        final int expectedPartition = 3;
-//        final long expectedOffset = 434323L;
-//        final String expectedConsumerId = "MyConsumerId";
-//        final String expectedKey = "MyKey";
-//        final String expectedValue = "MyValue";
-//        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-//        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-//        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
-//
-//        // Define expected result
-//        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
-//
-//        // Create test config
-//        Map topologyConfig = getDefaultConfig();
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create a mock RetryManager
-//        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
-//
-//        // Create spout & open
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, new MockTopologyContext(), stringDeserializer, mockRetryManager, mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId(expectedConsumerId);
-//        virtualSidelineSpout.open();
-//
-//        // Now call fail on this
-//        final TupleMessageId failedMessageId = expectedKafkaMessage.getTupleMessageId();
-//
-//        // Retry manager should retry this tuple.
-//        when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
-//
-//        // call fail on our message id
-//        virtualSidelineSpout.fail(failedMessageId);
-//
-//        // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
-//        verify(mockRetryManager, times(1)).acked(failedMessageId);
-//        verify(mockSidelineConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
-//    }
-//
-//    /**
-//     * Tests that calling getCurrentState() is based down to the
-//     * sidelineConsumer appropriately.
-//     */
-//    @Test
-//    public void testGetCurrentState() {
-//        // Create inputs
-//        final Map expectedTopologyConfig = getDefaultConfig();
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
-//
-//        // Create a mock SidelineConsumer
-//        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-//
-//        // Create spout
-//        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, new Utf8StringDeserializer(), mockRetryManager, mockSidelineConsumer);
-//        virtualSidelineSpout.setConsumerId("MyConsumerId");
-//        virtualSidelineSpout.open();
-//
-//        final ConsumerState expectedConsumerState = new ConsumerState();
-//        expectedConsumerState.setOffset(new TopicPartition("myTopic", 0), 200L);
-//
-//        // Setup our mock to return exepected value
-//        when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
-//
-//        // Call get current state.
-//        final ConsumerState result = virtualSidelineSpout.getCurrentState();
-//
-//        // Verify mock interactions
-//        verify(mockSidelineConsumer, times(1)).getCurrentState();
-//
-//        // Verify result
-//        assertNotNull("result should not be null", result);
-//        assertEquals("Should be our expected instance", expectedConsumerState, result);
-//    }
 
+    /**
+     * This test uses a mock to validate when you call unsubsubscribeTopicPartition() that it passes the argument
+     * to its underlying consumer, and passes back the right result value from that call.
+     */
+    @Test
+    public void testUnsubscribeTopicPartition() {
+        final boolean expectedResult = true;
+
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Create our test TupleMessageId
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 1;
+        final TopicPartition topicPartition = new TopicPartition(expectedTopic, expectedPartition);
+
+        // Call our method & validate.
+        final boolean result = virtualSidelineSpout.unsubscribeTopicPartition(topicPartition);
+        assertEquals("Got expected result from our method", expectedResult, result);
+
+        // Validate mock call
+        verify(mockSidelineConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
+    }
+
+    /**
+     * Test calling close, verifies what happens if the completed flag is false.
+     */
+    @Test
+    public void testCloseWithCompletedFlagSetToFalse() throws NoSuchFieldException, IllegalAccessException {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Mark sure is completed field is set to false before calling close
+        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        isCompletedField.setAccessible(true);
+        isCompletedField.set(virtualSidelineSpout, false);
+
+        // Verify close hasn't been called yet.
+        verify(mockSidelineConsumer, never()).close();
+
+        // Call close
+        virtualSidelineSpout.close();
+
+        // Verify close was called, and state was flushed
+        verify(mockSidelineConsumer, times(1)).flushConsumerState();
+        verify(mockSidelineConsumer, times(1)).close();
+
+        // But we never called remove consumer state.
+        verify(mockSidelineConsumer, never()).removeConsumerState();
+    }
+
+    /**
+     * Test calling close, verifies what happens if the completed flag is true.
+     */
+    @Test
+    public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        // Mark sure is completed field is set to true before calling close
+        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        isCompletedField.setAccessible(true);
+        isCompletedField.set(virtualSidelineSpout, true);
+
+        // Verify close hasn't been called yet.
+        verify(mockSidelineConsumer, never()).close();
+
+        // Call close
+        virtualSidelineSpout.close();
+
+        // Verify close was called, and state was cleared
+        verify(mockSidelineConsumer, times(1)).removeConsumerState();
+        verify(mockSidelineConsumer, times(1)).close();
+
+        // But we never called flush consumer state.
+        verify(mockSidelineConsumer, never()).flushConsumerState();
+    }
+
+    /**
+     * This test does the following:
+     *
+     * 1. Call nextTuple() -
+     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
+     *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
+     * 2. Call fail() with the message previously returned from nextTuple().
+     * 2. Call nextTuple()
+     *  a. This time FailedMsgRetryManager should return the failed tuple
+     * 3. Call nextTuple()
+     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
+     *  b. sideline consumer should return a new consumer record.
+     */
+    @Test
+    public void testCallingFailCallsAckOnWhenItShouldNotBeRetried() {
+        // This is the record coming from the consumer.
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 3;
+        final long expectedOffset = 434323L;
+        final String expectedConsumerId = "MyConsumerId";
+        final String expectedKey = "MyKey";
+        final String expectedValue = "MyValue";
+        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
+        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
+        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
+
+        // Define expected result
+        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create mock topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create a mock RetryManager
+        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+
+        // Create spout & open
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                mockFactoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.open();
+
+        // Now call fail on this
+        final TupleMessageId failedMessageId = expectedKafkaMessage.getTupleMessageId();
+
+        // Retry manager should retry this tuple.
+        when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
+
+        // call fail on our message id
+        virtualSidelineSpout.fail(failedMessageId);
+
+        // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
+        verify(mockRetryManager, times(1)).acked(failedMessageId);
+        verify(mockSidelineConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
+    }
+
+    /**
+     * Tests that calling getCurrentState() is based down to the
+     * sidelineConsumer appropriately.
+     */
+    @Test
+    public void testGetCurrentState() {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+
+        // Create spout & open
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                mockFactoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.open();
+
+        final ConsumerState expectedConsumerState = new ConsumerState();
+        expectedConsumerState.setOffset(new TopicPartition("myTopic", 0), 200L);
+
+        // Setup our mock to return exepected value
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
+
+        // Call get current state.
+        final ConsumerState result = virtualSidelineSpout.getCurrentState();
+
+        // Verify mock interactions
+        verify(mockSidelineConsumer, times(1)).getCurrentState();
+
+        // Verify result
+        assertNotNull("result should not be null", result);
+        assertEquals("Should be our expected instance", expectedConsumerState, result);
+    }
+
+    /**
+     * Utility method to generate a standard config map.
+     */
     private Map getDefaultConfig() {
         final Map defaultConfig = Maps.newHashMap();
         defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
