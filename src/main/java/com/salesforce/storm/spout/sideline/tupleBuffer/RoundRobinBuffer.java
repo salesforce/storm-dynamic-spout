@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.slf4j.Logger;
@@ -36,6 +37,19 @@ public class RoundRobinBuffer implements TupleBuffer {
     private Iterator<String> consumerIdIterator = null;
 
     public RoundRobinBuffer() {
+    }
+
+    /**
+     * Helper method for creating a default instance.
+     */
+    public static RoundRobinBuffer createDefaultInstance() {
+        Map<String, Object> map = Maps.newHashMap();
+        map.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+
+        RoundRobinBuffer buffer = new RoundRobinBuffer();
+        buffer.open(map);
+
+        return buffer;
     }
 
     @Override

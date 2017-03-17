@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  *

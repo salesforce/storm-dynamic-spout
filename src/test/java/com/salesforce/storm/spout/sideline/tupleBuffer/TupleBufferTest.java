@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
 
 @RunWith(DataProviderRunner.class)
 public class TupleBufferTest {

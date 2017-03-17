@@ -2,7 +2,8 @@ package com.salesforce.storm.spout.sideline;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Simple test over TupleMessageId.

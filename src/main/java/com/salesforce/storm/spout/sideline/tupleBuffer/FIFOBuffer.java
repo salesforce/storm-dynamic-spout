@@ -1,6 +1,8 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 
 import java.util.Map;
@@ -19,6 +21,19 @@ public class FIFOBuffer implements TupleBuffer {
     private BlockingQueue<KafkaMessage> tupleBuffer;
 
     public FIFOBuffer() {
+    }
+
+    /**
+     * Helper method for creating a default instance.
+     */
+    public static FIFOBuffer createDefaultInstance() {
+        Map<String, Object> map = Maps.newHashMap();
+        map.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+
+        FIFOBuffer buffer = new FIFOBuffer();
+        buffer.open(map);
+
+        return buffer;
     }
 
     @Override
