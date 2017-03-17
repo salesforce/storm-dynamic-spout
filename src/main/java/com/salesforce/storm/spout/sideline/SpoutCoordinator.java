@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobbinBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.slf4j.Logger;
@@ -11,14 +10,12 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
