@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline.tupleBuffer;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 
 import java.util.Map;
