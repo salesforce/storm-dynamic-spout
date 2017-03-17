@@ -2,6 +2,9 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobbinBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +74,8 @@ public class SpoutCoordinator {
     /**
      * Queue for tuples that are ready to be emitted out into the topology.
      */
-    private final BlockingQueue<KafkaMessage> tupleOutputQueue = new LinkedBlockingQueue<>(QUEUE_MAX_SIZE);
+    //private final BlockingQueue<KafkaMessage> tupleOutputQueue = new LinkedBlockingQueue<>(QUEUE_MAX_SIZE);
+    private final TupleBuffer tupleOutputQueue = new RoundRobbinBuffer();
 
     /**
      * Buffer by spout consumer id of messages that have been acked.
@@ -223,7 +227,7 @@ public class SpoutCoordinator {
 
         private final ExecutorService executor;
         private final Queue<DelegateSidelineSpout> newSpoutQueue;
-        private final BlockingQueue tupleOutputQueue;
+        private final TupleBuffer tupleOutputQueue;
         private final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue;
         private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue;
         private final CountDownLatch latch;
@@ -236,7 +240,7 @@ public class SpoutCoordinator {
         SpoutMonitor(
             final ExecutorService executor,
             final Queue<DelegateSidelineSpout> newSpoutQueue,
-            final BlockingQueue tupleOutputQueue,
+            final TupleBuffer tupleOutputQueue,
             final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue,
             final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue,
             final CountDownLatch latch,
@@ -318,7 +322,7 @@ public class SpoutCoordinator {
         private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
         private final DelegateSidelineSpout spout;
-        private final BlockingQueue tupleOutputQueue;
+        private final TupleBuffer tupleOutputQueue;
         private final Map<String,Queue<TupleMessageId>> ackedTupleInputQueue;
         private final Map<String,Queue<TupleMessageId>> failedTupleInputQueue;
         private final CountDownLatch latch;
@@ -326,7 +330,7 @@ public class SpoutCoordinator {
 
         SpoutRunner(
             final DelegateSidelineSpout spout,
-            final BlockingQueue tupleOutputQueue,
+            final TupleBuffer tupleOutputQueue,
             final Map<String,Queue<TupleMessageId>> ackedTupleInputQueue,
             final Map<String,Queue<TupleMessageId>> failedTupleInputQueue,
             final CountDownLatch latch,
@@ -350,6 +354,7 @@ public class SpoutCoordinator {
 
                 spout.open();
 
+                tupleOutputQueue.addConsumerId(spout.getConsumerId());
                 ackedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
                 failedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
 
@@ -366,7 +371,7 @@ public class SpoutCoordinator {
 
                     if (message != null) {
                         try {
-                            tupleOutputQueue.put(message);
+                            tupleOutputQueue.put(spout.getConsumerId(), message);
                         } catch (InterruptedException ex) {
                             // TODO: Revisit this
                             logger.error("{}", ex);
@@ -402,6 +407,7 @@ public class SpoutCoordinator {
                 spout.close();
 
                 // Remove our entries from the acked and failed queue.
+                tupleOutputQueue.removeConsumerId(spout.getConsumerId());
                 ackedTupleInputQueue.remove(spout.getConsumerId());
                 failedTupleInputQueue.remove(spout.getConsumerId());
             } catch (Exception ex) {
