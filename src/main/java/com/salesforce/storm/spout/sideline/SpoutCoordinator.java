@@ -50,12 +50,6 @@ public class SpoutCoordinator {
     public static final int SPOUT_RUNNER_THREAD_POOL_SIZE = 10;
 
     /**
-     * The size of our tuple output queue.  This is the maximum number of entries we will
-     * internally queue up for being emitted into the topology.
-     */
-    private static final int QUEUE_MAX_SIZE = 10000;
-
-    /**
      * Which Clock instance to get reference to the system time.
      * We use this to allow injecting a fake System clock in tests.
      *
