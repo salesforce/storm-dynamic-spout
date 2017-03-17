@@ -16,7 +16,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
-import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobbinBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Skeleton implementation for now.
@@ -254,7 +252,8 @@ public class SidelineSpout extends BaseRichSpout {
             // Our metrics recorder.
             metricsRecorder,
 
-            new RoundRobbinBuffer()
+            // Our TupleBuffer/Queue Implementation.
+            new RoundRobinBuffer()
         );
 
         // Call open on coordinator.
