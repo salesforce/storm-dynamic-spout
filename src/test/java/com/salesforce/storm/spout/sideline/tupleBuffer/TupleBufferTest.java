@@ -1,8 +1,10 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -13,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -34,11 +37,24 @@ public class TupleBufferTest {
      * Provides various tuple buffer implementation.
      */
     @DataProvider
-    public static Object[][] provideTupleBuffers() {
+    public static Object[][] provideTupleBuffers() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
-                { new FIFOBuffer() },
-                { new RoundRobinBuffer() }
+                { createInstance(FIFOBuffer.class, 10000) },
+                { createInstance(RoundRobinBuffer.class, 1000 ) },
         };
+    }
+
+    /**
+     * Helper method for creating instances and configuring them.
+     */
+    private static TupleBuffer createInstance(Class clazz, int bufferSize) throws IllegalAccessException, InstantiationException {
+        Map<String, Object> topologyConfig = Maps.newHashMap();
+        topologyConfig.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
+
+        TupleBuffer tupleBuffer = (TupleBuffer) clazz.newInstance();
+        tupleBuffer.open(topologyConfig);
+
+        return tupleBuffer;
     }
 
     /**

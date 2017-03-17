@@ -1,7 +1,9 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -12,16 +14,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class FIFOBuffer implements TupleBuffer {
 
     /**
-     * Defines the bounded size of our buffer.  Ideally this would be configurable.
-     */
-    private static final int MAX_BUFFER_SIZE = 10000;
-
-    /**
      * This implementation uses a simple Blocking Queue in a FIFO manner.
      */
-    private final BlockingQueue<KafkaMessage> tupleBuffer = new LinkedBlockingQueue<>(MAX_BUFFER_SIZE);
+    private BlockingQueue<KafkaMessage> tupleBuffer;
 
     public FIFOBuffer() {
+    }
+
+    @Override
+    public void open(Map topologyConfig) {
+        // Defines the bounded size of our buffer.  Ideally this would be configurable.
+        final int maxBufferSize = (int) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+
+        // Create buffer.
+        tupleBuffer = new LinkedBlockingQueue<>(maxBufferSize);
     }
 
     /**

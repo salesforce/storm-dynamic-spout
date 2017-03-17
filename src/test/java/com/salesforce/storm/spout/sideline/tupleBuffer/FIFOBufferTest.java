@@ -1,12 +1,15 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import static org.junit.Assert.*;
 
@@ -24,9 +27,15 @@ public class FIFOBufferTest {
         // max buffer size.
         final int numberOfVSpoutIds = 5;
         final int numberOfMessagesPer = 1500;
+        final int maxBufferSize = (numberOfMessagesPer * numberOfVSpoutIds) + 1;
 
-        // Create buffer
+        // Create config
+        Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+
+        // Create buffer & open
         TupleBuffer tupleBuffer = new FIFOBuffer();
+        tupleBuffer.open(config);
 
         // Keep track of our order
         final List<KafkaMessage> submittedOrder = Lists.newArrayList();

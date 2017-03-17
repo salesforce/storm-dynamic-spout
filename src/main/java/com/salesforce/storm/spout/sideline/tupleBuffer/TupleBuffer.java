@@ -2,12 +2,21 @@ package com.salesforce.storm.spout.sideline.tupleBuffer;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 
+import java.util.Map;
+
 /**
  * This interface defines an abstraction around essentially a concurrent queue.
  * Abstracting this instead of using a simple queue object allows us to do things like
  * implement a "fairness" algorithm on the poll() method for pulling off of the queue instead of a simple FIFO.
  */
 public interface TupleBuffer {
+
+    /**
+     * Called prior to utilizing the instance.
+     * @param topologyConfig - a copy of the storm topology config.
+     */
+    void open(Map topologyConfig);
+
     /**
      * Let the Implementation know that we're adding a new VirtualSpoutId.
      * @param virtualSpoutId - Identifier of new Virtual Spout.

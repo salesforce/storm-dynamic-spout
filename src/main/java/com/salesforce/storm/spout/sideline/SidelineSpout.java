@@ -16,6 +16,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
+import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -234,6 +235,10 @@ public class SidelineSpout extends BaseRichSpout {
         fireHoseSpout = new VirtualSidelineSpout(getTopologyConfig(), getTopologyContext(), factoryManager.createNewDeserializerInstance(), factoryManager.createNewFailedMsgRetryManagerInstance(), metricsRecorder);
         fireHoseSpout.setConsumerId(cfgConsumerIdPrefix);
 
+        // Create TupleBuffer
+        final TupleBuffer tupleBuffer = factoryManager.createNewTupleBufferInstance();
+        tupleBuffer.open(getTopologyConfig());
+
         // Setting up thread to call nextTuple
 
         // Fire up thread/instance/class that watches for any sideline consumers that should be running
@@ -253,7 +258,7 @@ public class SidelineSpout extends BaseRichSpout {
             metricsRecorder,
 
             // Our TupleBuffer/Queue Implementation.
-            factoryManager.createNewTupleBufferInstance()
+            tupleBuffer
         );
 
         // Call open on coordinator.

@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -27,9 +28,15 @@ public class RoundRobinBufferTest {
         // max buffer size.
         final int numberOfVSpoutIds = 5;
         final int numberOfMessagesPer = 1500;
+        final int maxBufferSize = (numberOfMessagesPer * numberOfVSpoutIds) + 1;
+
+        // Create config
+        Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer
         TupleBuffer tupleBuffer = new RoundRobinBuffer();
+        tupleBuffer.open(config);
 
         // Keep track of our order per spoutId
         final Map<String, Queue<KafkaMessage>> submittedOrder = Maps.newHashMap();

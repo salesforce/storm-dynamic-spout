@@ -132,7 +132,7 @@ public class SidelineSpoutConfig {
     /**
      * (int) Defines maximum size of the tuple buffer.  After the buffer reaches this size
      * the internal kafka consumers will be blocked from consuming.
-     * Default Value: 10000
+     * Default Value: 2000
      */
     public static final String TUPLE_BUFFER_MAX_SIZE = "sideline_spout.coordinator.tuple_buffer.max_size";
 
@@ -215,7 +215,7 @@ public class SidelineSpoutConfig {
             logger.info("Missing configuration {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
-            clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 10000);
+            clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 2000);
             logger.info("Missing configuration {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
         }
 

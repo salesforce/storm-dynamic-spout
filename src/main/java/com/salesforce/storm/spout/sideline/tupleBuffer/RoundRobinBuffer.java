@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.tupleBuffer;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,14 +21,14 @@ public class RoundRobinBuffer implements TupleBuffer {
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinBuffer.class);
 
     /**
-     * Defines the bounded size of our buffer PER VirtualSpout.  Ideally this would be configurable.
-     */
-    private static final int MAX_BUFFER_PER_VIRTUAL_SPOUT = 2000;
-
-    /**
      * A Map of VirtualSpoutIds => Its own Blocking Queue.
      */
     private final Map<String, BlockingQueue<KafkaMessage>> tupleBuffer = new ConcurrentHashMap<>();
+
+    /**
+     * Defines the bounded size of our buffer PER VirtualSpout.
+     */
+    private int maxBufferSizePerVirtualSpout = 2000;
 
     /**
      * An iterator over the Keys in tupleBuffer.  Used to Round Robin thru the VirtualSpouts.
@@ -35,6 +36,11 @@ public class RoundRobinBuffer implements TupleBuffer {
     private Iterator<String> consumerIdIterator = null;
 
     public RoundRobinBuffer() {
+    }
+
+    @Override
+    public void open(Map topologyConfig) {
+        maxBufferSizePerVirtualSpout = (int) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
     }
 
     /**
@@ -116,6 +122,6 @@ public class RoundRobinBuffer implements TupleBuffer {
     }
 
     private BlockingQueue<KafkaMessage> createNewEmptyQueue() {
-        return new LinkedBlockingQueue<>(MAX_BUFFER_PER_VIRTUAL_SPOUT);
+        return new LinkedBlockingQueue<>(maxBufferSizePerVirtualSpout);
     }
 }
