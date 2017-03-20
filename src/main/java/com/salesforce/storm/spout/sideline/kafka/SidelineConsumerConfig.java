@@ -45,6 +45,33 @@ public class SidelineConsumerConfig {
         setKafkaConsumerProperty("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         setKafkaConsumerProperty("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
 
+        // TODO: Decide how we want to handle this. For now use smallest.
+        /**
+         * If an offset is deemed too old and not available how should we handle it?
+         * Values:
+         * "smallest" - Use the smallest value available (start from head).
+         *              Using this value means we missed some messages... but we'll start from
+         *              the oldest message available.
+         *
+         * "largest" - Use the largest offset available (start from tail).
+         *             Using this value means we'll miss A LOT of messages... not likely what we want.
+         *
+         * "other" - Throw an exception if we are unable to get an offset.
+         *           Using this value means we'll bubble up an exception... its now the users issue to deal with
+         *           and resolve.
+         *
+         * Note: If we use largest we miss too many messages.
+         *
+         * Note: If we use smallest the following problem arises:
+         * We're acking along at 1,2,3,4,5 so our last completed offset is 5.  Then we determine offset 6
+         * is out of range, and jump to offset 10 and start acking 10,11,12,13.  Our largest completed
+         * offset will still be 5 because of the hole.  So we'll have issues using smallest.
+         *
+         * We probably need to bubble up an exception, catch it, log a scary error about
+         * missing messages, reset our partition managers acked offset list back to zero.
+         */
+        setKafkaConsumerProperty("auto.offset.reset", "smallest");
+
         // Passed in values
         setKafkaConsumerProperty("bootstrap.servers", brokerHostsStr);
         setKafkaConsumerProperty("group.id", this.consumerId);
