@@ -8,6 +8,7 @@ import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -174,23 +176,23 @@ public class SidelineConsumer {
             final TopicPartition availableTopicPartition = new TopicPartition(partition.topic(), partition.partition());
             Long offset = initialState.getOffsetForTopicAndPartition(availableTopicPartition);
             if (offset == null) {
-                // Unstarted partitions should "begin" at -1
+                // Unstarted partitions should "begin" at the earliest available offset
+                // We determine this in the resetPartitionsToEarliest() method.
                 noStatePartitions.add(availableTopicPartition);
-                offset = -1L;
             } else {
                 // We start consuming at our offset + 1, otherwise we'd replay a previously "finished" offset.
                 logger.info("Resuming topic {} partition {} at offset {}", availableTopicPartition.topic(), availableTopicPartition.partition(), (offset + 1));
-                kafkaConsumer.seek(availableTopicPartition, offset + 1);
+                getKafkaConsumer().seek(availableTopicPartition, (offset + 1));
                 logger.info("Will resume at offset {}", kafkaConsumer.position(availableTopicPartition));
-            }
 
-            // Starting managing offsets for this partition
-            // Set our completed offset to our 'completed' offset, not it + 1, otherwise we could skip the next uncompleted offset.
-            partitionStateManagers.put(availableTopicPartition, new PartitionOffsetManager(availableTopicPartition.topic(), availableTopicPartition.partition(), offset));
+                // Starting managing offsets for this partition
+                // Set our completed offset to our 'completed' offset, not it + 1, otherwise we could skip the next uncompleted offset.
+                partitionStateManagers.put(availableTopicPartition, new PartitionOffsetManager(availableTopicPartition.topic(), availableTopicPartition.partition(), offset));
+            }
         }
         if (!noStatePartitions.isEmpty()) {
-            logger.info("Starting from head on TopicPartitions(s): {}", noStatePartitions);
-            kafkaConsumer.seekToBeginning(noStatePartitions);
+            logger.info("Starting from earliest on TopicPartitions(s): {}", noStatePartitions);
+            resetPartitionsToEarliest(noStatePartitions);
         }
     }
 
@@ -299,13 +301,91 @@ public class SidelineConsumer {
         // If our buffer is null, or our iterator is at the end
         if (buffer == null || !bufferIterator.hasNext()) {
             // Time to refill the buffer
-            buffer = kafkaConsumer.poll(3000);
+            try {
+                buffer = kafkaConsumer.poll(3000);
+            } catch (OffsetOutOfRangeException outOfRangeException) {
+                // Handle it
+                handleOffsetOutOfRange(outOfRangeException);
+
+                // Clear out so we can attempt next time.
+                buffer = null;
+                bufferIterator = null;
+
+                // TODO: heh... this should be bounded most likely...
+                fillBuffer();
+                return;
+            }
 
             // Create new iterator
             bufferIterator = buffer.iterator();
+        }
+    }
 
-            // Count is potentially expensive, remove the call from the info line.
-            //logger.debug("Done filling buffer with {} entries", buffer.count());
+    /**
+     * This method handles when a partition seek/retrieve request was out of bounds.
+     * This happens in two scenarios:
+     *  1 - The offset is too old and was cleaned up / removed by the broker.
+     *  2 - The offset just plain does not exist.
+     *
+     * This is particularly nasty in that if the poll() was able to pull SOME messages from
+     * SOME partitions before the exception was thrown, those messages are considered "consumed"
+     * by KafkaClient, and there's no way to get them w/o seeking back to them for those partitions.
+     *
+     * @param outOfRangeException - the exception that was raised by the consumer.
+     */
+    private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
+        // Grab the partitions that had errors
+        final Set outOfRangePartitions = outOfRangeException.partitions();
+
+        // Grab all partitions our consumer is subscribed too.
+        Set<TopicPartition> allAssignedPartitions = getKafkaConsumer().assignment();
+
+        // Loop over all subscribed partitions
+        for (TopicPartition assignedTopicPartition : allAssignedPartitions) {
+            // If this partition was out of range
+            // we simply log an error about data loss, and skip them for now.
+            if (outOfRangePartitions.contains(assignedTopicPartition)) {
+                final long offset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
+                logger.error("DATA LOSS ERROR - offset {} for partition {} was out of range", offset, assignedTopicPartition);
+                continue;
+            }
+
+            // This partition did NOT have any errors, but its possible that we "lost" some messages
+            // during the poll() call.  This partition needs to be seeked back to its previous position
+            // before the exception was thrown.
+            final long offset = partitionStateManagers.get(assignedTopicPartition).lastStartedOffset();
+            logger.info("Backtracking {} offset to {}", assignedTopicPartition, offset);
+            getKafkaConsumer().seek(assignedTopicPartition, offset);
+        }
+
+        // All of the error'd partitions we need to seek to earliest available position.
+        resetPartitionsToEarliest(outOfRangePartitions);
+    }
+
+    /**
+     * Internal method that given a collection of topic partitions will find the earliest
+     * offset for that partition, seek the underlying consumer to it, and reset its internal
+     * offset tracking to that new position.
+     *
+     * This should be used when no state exists for a given partition, OR if the offset
+     * requested was too old.
+     * @param topicPartitions - the collection of offsets to reset offsets for to the earliest position.
+     */
+    private void resetPartitionsToEarliest(Collection<TopicPartition> topicPartitions) {
+        // Seek to earliest for each
+        logger.info("Seeking to head of partitions {}", topicPartitions);
+        getKafkaConsumer().seekToBeginning(topicPartitions);
+
+        // Now for each partition
+        for (TopicPartition topicPartition: topicPartitions) {
+            // Determine the current offset now that we've seeked to earliest
+            // We subtract one from this offset and set that as the last "committed" offset.
+            final long newOffset = getKafkaConsumer().position(topicPartition) - 1;
+
+            // We need to reset the saved offset to the current value
+            // Replace PartitionOffsetManager with new instance from new position.
+            logger.info("Partition {} using new earliest offset {}", topicPartition, newOffset);
+            partitionStateManagers.put(topicPartition, new PartitionOffsetManager(topicPartition.topic(), topicPartition.partition(), newOffset));
         }
     }
 

@@ -2,6 +2,8 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
@@ -32,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
@@ -94,10 +97,8 @@ public class SidelineConsumerTest {
      */
     @Test
     public void testConstructor() {
-        // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
+        // Create config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -116,7 +117,6 @@ public class SidelineConsumerTest {
     // TODO: these test cases
     // test calling connect twice throws exception.
     // test calling connect w/ a starting state.
-    // test calling getCurrentState().
 
     /**
      * Tests that our logic for flushing consumer state works if auto commit is enabled.
@@ -195,11 +195,8 @@ public class SidelineConsumerTest {
      */
     @Test
     public void testTimedFlushConsumerStateWhenAutoCommitIsDisabled() throws InterruptedException {
-        final String expectedConsumerId = "MyConsumerId";
-
-        // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
+        // Create config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
         // Disable and set interval to 1 second.
         config.setConsumerStateAutoCommit(false);
@@ -273,10 +270,15 @@ public class SidelineConsumerTest {
         // Define our ConsumerId
         final String consumerId = "MyConsumerId";
 
+        // Create re-usable TopicPartition instance
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+
+        // Define partition 0's earliest position at 1000L
+        final long earliestPosition = 1000L;
+
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -284,6 +286,9 @@ public class SidelineConsumerTest {
         // When we call partitionsFor(), we should return a single partition number 0 for our topic.
         List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
+
+        // When we ask for the position of partition 0, we should return 1000L
+        when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPosition);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
@@ -299,10 +304,23 @@ public class SidelineConsumerTest {
         sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
-        verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
+        verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
 
         // Since ConsumerStateManager has no state for partition 0, we should call seekToBeginning on that partition
-        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(partition0)));
+
+        // Verify position was asked for
+        verify(mockKafkaConsumer, times(1)).position(partition0);
+
+        // Verify ConsumerStateManager returns the correct values
+        final ConsumerState currentState = sidelineConsumer.getCurrentState();
+        assertNotNull("Should be non-null", currentState);
+
+        // State should have one entry
+        assertEquals("Should have 1 entry", 1, currentState.getState().size());
+
+        // Offset should have offset 1000L - 1 for completed offset.
+        assertEquals("Expected value should be 999", (earliestPosition - 1), (long) currentState.getOffsetForTopicAndPartition(partition0));
     }
 
     /**
@@ -318,10 +336,19 @@ public class SidelineConsumerTest {
         // Define our ConsumerId
         final String consumerId = "MyConsumerId";
 
+        // Some re-usable TopicPartition objects
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+
+        // Define earliest positions for each partition
+        final long earliestPositionPartition0 = 1000L;
+        final long earliestPositionPartition1 = 0L;
+        final long earliestPositionPartition2 = 2324L;
+
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -341,6 +368,11 @@ public class SidelineConsumerTest {
         ConsumerState emptyConsumerState = new ConsumerState();
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
 
+        // When we ask for the positions for each partition return mocked values
+        when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPositionPartition0);
+        when(mockKafkaConsumer.position(partition1)).thenReturn(earliestPositionPartition1);
+        when(mockKafkaConsumer.position(partition2)).thenReturn(earliestPositionPartition2);
+
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
@@ -358,6 +390,23 @@ public class SidelineConsumerTest {
                 new TopicPartition(topicName, 0),
                 new TopicPartition(topicName, 1),
                 new TopicPartition(topicName, 2))));
+
+        // Validate we got our calls for the current position
+        verify(mockKafkaConsumer, times(1)).position(partition0);
+        verify(mockKafkaConsumer, times(1)).position(partition1);
+        verify(mockKafkaConsumer, times(1)).position(partition2);
+
+        // Verify ConsumerStateManager returns the correct values
+        final ConsumerState currentState = sidelineConsumer.getCurrentState();
+        assertNotNull("Should be non-null", currentState);
+
+        // State should have one entry
+        assertEquals("Should have 3 entries", 3, currentState.getState().size());
+
+        // Offsets should be the earliest position - 1
+        assertEquals("Expected value for partition0", (earliestPositionPartition0 - 1), (long) currentState.getOffsetForTopicAndPartition(partition0));
+        assertEquals("Expected value for partition1", (earliestPositionPartition1 - 1), (long) currentState.getOffsetForTopicAndPartition(partition1));
+        assertEquals("Expected value for partition2", (earliestPositionPartition2 - 1), (long) currentState.getOffsetForTopicAndPartition(partition2));
     }
 
     /**
@@ -373,6 +422,9 @@ public class SidelineConsumerTest {
         // Define our ConsumerId and expected offset.
         final String consumerId = "MyConsumerId";
 
+        // Some re-usable TopicPartition objects
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+
         // This defines the last offset that was committed.
         final long lastCommittedOffset = 12345L;
 
@@ -382,7 +434,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -406,10 +457,11 @@ public class SidelineConsumerTest {
         sidelineConsumer.open(null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
-        verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
+        verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
 
         // Since ConsumerStateManager has state for partition 0, we should NEVER call seekToBeginning on that partition
-        verify(mockKafkaConsumer, never()).seekToBeginning(eq(Lists.newArrayList(new TopicPartition(topicName, 0))));
+        // Or any partition really.
+        verify(mockKafkaConsumer, never()).seekToBeginning(anyCollection());
 
         // Instead since there is state, we should call seek on that partition
         verify(mockKafkaConsumer, times(1)).seek(eq(new TopicPartition(topicName, 0)), eq(expectedOffsetToStartConsumeFrom));
@@ -447,7 +499,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -519,10 +570,19 @@ public class SidelineConsumerTest {
         final long expectedPartition0Offset = lastCommittedOffsetPartition0 + 1;
         final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
+        // Define earliest positions for partitions 1 and 3
+        final long earliestOffsetPartition1 = 444L;
+        final long earliestOffsetPartition3 = 0L;
+
+        // And the offsets we expect to see in our consumerState
+        final long expectedStateOffsetPartition0 = lastCommittedOffsetPartition0;
+        final long expectedStateOffsetPartition1 = earliestOffsetPartition1 - 1;
+        final long expectedStateOffsetPartition2 = lastCommittedOffsetPartition2;
+        final long expectedStateOffsetPartition3 = earliestOffsetPartition3 - 1;
+
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -545,6 +605,10 @@ public class SidelineConsumerTest {
         consumerState.setOffset(partition2, lastCommittedOffsetPartition2);
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
+        // Define values returned for partitions without state
+        when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);
+        when(mockKafkaConsumer.position(partition3)).thenReturn(earliestOffsetPartition3);
+
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
@@ -563,6 +627,10 @@ public class SidelineConsumerTest {
                 partition1, partition3
         )));
 
+        // Verify we asked for the positions for 2 unknown state partitions
+        verify(mockKafkaConsumer, times(1)).position(partition1);
+        verify(mockKafkaConsumer, times(1)).position(partition3);
+
         // For the partitions with state, we should call seek on each partition
         InOrder inOrderVerification = inOrder(mockKafkaConsumer);
         inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(partition0), eq(expectedPartition0Offset));
@@ -571,6 +639,20 @@ public class SidelineConsumerTest {
         // Never seeked for partitions without any state
         verify(mockKafkaConsumer, never()).seek(eq(partition1), anyLong());
         verify(mockKafkaConsumer, never()).seek(eq(partition3), anyLong());
+
+        // Now validate the consumer state
+        final ConsumerState resultingConsumerState = sidelineConsumer.getCurrentState();
+
+        assertNotNull("Should be non-null", resultingConsumerState);
+
+        // State should have one entry
+        assertEquals("Should have 4 entries", 4, resultingConsumerState.getState().size());
+
+        // Offsets should be set to what we expected.
+        assertEquals("Expected value for partition0", expectedStateOffsetPartition0, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition0));
+        assertEquals("Expected value for partition1", expectedStateOffsetPartition1, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition1));
+        assertEquals("Expected value for partition2", expectedStateOffsetPartition2, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition2));
+        assertEquals("Expected value for partition2", expectedStateOffsetPartition3, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition3));
     }
 
     /**
@@ -821,7 +903,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -872,7 +953,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -934,7 +1014,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -1265,7 +1344,7 @@ public class SidelineConsumerTest {
      * 6. Attempt to consume more msgs, verify only those from partition 1 come thru.
      */
     @Test
-    public void testConsumeFromTopicAfterUnsubscribingFromMultipePartitions() {
+    public void testConsumeFromTopicAfterUnsubscribingFromMultiplePartitions() {
         this.topicName = "MyMultiPartitionTopic";
         final int expectedNumberOfPartitions = 2;
 
@@ -1367,6 +1446,103 @@ public class SidelineConsumerTest {
     }
 
     /**
+     * This tests what happens if we ask to consume from an offset that is invalid (does not exist).
+     * Here's what we setup:
+     *
+     * 2 partitions, produce 4 messages into each.
+     *
+     * Start a consumer, asking to start at:
+     *   offset 2 for partition 1, (recorded completed offset = 1)
+     *   offset 21 for partition 2. (recorded completed offset = 20)
+     *
+     * Offset 20 does not exist for partition 2, this will raise an exception which
+     * by the underlying kafka consumer.  This exception should be handled internally
+     * resetting the offset on partition 2 to the earliest available (which happens to be 0).
+     *
+     * We then consume and expect to receive messages:
+     *   partition 0 -> messages 2,3      (because we started at offset 2)
+     *   partition 1 -> messages 0,1,2,3  (because we got reset to earliest)
+     *
+     * This test also validates that for non-reset partitions, that it does not lose
+     * any messages.
+     */
+    @Test
+    public void testWhatHappensIfOffsetIsInvalidShouldResetSmallest() {
+        // Kafka topic setup
+        this.topicName = "MyMultiPartitionTopic";
+        final int numberOfPartitions = 2;
+        final int numberOfMsgsPerPartition = 4;
+
+        // How many msgs we should expect, 2 for partition 0, 4 from partition1
+        final int numberOfExpectedMessages = 6;
+
+        // Define starting offsets for partitions
+        final long partition0StartingOffset = 1L;
+        final long partition1StartingOffset = 20L;
+
+        // Create our multi-partition topic.
+        kafkaTestServer.createTopic(topicName, numberOfPartitions);
+
+        // Define our expected topic/partitions
+        final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition expectedTopicPartition1 = new TopicPartition(topicName, 1);
+
+        // Produce messages into both topics
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition, 1);
+
+        // Setup our config set to reset to none
+        // We should handle this internally now.
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        // Create starting state
+        ConsumerState startingState = new ConsumerState();
+        startingState.setOffset(expectedTopicPartition0, partition0StartingOffset);
+        startingState.setOffset(expectedTopicPartition1, partition1StartingOffset);
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
+        sidelineConsumer.open(startingState);
+
+        // Define the values we expect to get
+        // Ugh this is hacky, whatever
+        final Set<String> expectedValues = Sets.newHashSet(
+            // Partition 0 should not skip any messages!
+            "partition0-offset2", "partition0-offset3",
+
+            // Partition 1 should get reset to offset 0
+            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
+        );
+
+        List<ConsumerRecord> records = Lists.newArrayList();
+        ConsumerRecord consumerRecord;
+        do {
+            consumerRecord = sidelineConsumer.nextRecord();
+            if (consumerRecord != null) {
+                logger.info("Found offset {} on {}", consumerRecord.offset(), consumerRecord.partition());
+                records.add(consumerRecord);
+
+                // Remove from our expected set
+                expectedValues.remove("partition" + consumerRecord.partition() + "-offset" + consumerRecord.offset());
+            }
+        } while (consumerRecord != null);
+
+        // Now do validation
+        logger.info("Found {} msgs", records.size());
+        assertEquals("Should have 6 messages from kafka", numberOfExpectedMessages, records.size());
+        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+
+        // Call nextRecord 2 more times, both should be null
+        for (int x=0; x<2; x++) {
+            assertNull("Should be null", sidelineConsumer.nextRecord());
+        }
+    }
+
+    /**
      * Helper method
      * @param consumerState - the consumer state we want to validate
      * @param topicPartition - the topic/partition we want to validate
@@ -1413,7 +1589,6 @@ public class SidelineConsumerTest {
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
         return config;
     }
 }
