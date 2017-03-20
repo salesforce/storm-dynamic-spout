@@ -70,7 +70,7 @@ public class SidelineConsumerConfig {
          * We probably need to bubble up an exception, catch it, log a scary error about
          * missing messages, reset our partition managers acked offset list back to zero.
          */
-        setKafkaConsumerProperty("auto.offset.reset", "earliest");
+        setKafkaConsumerProperty("auto.offset.reset", "none");
 
         // Passed in values
         setKafkaConsumerProperty("bootstrap.servers", brokerHostsStr);

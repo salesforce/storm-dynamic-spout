@@ -47,10 +47,10 @@ public class PartitionOffsetManager {
     public void startOffset(long offset) {
         trackedOffsets.add(offset);
 
-        if (offset > lastStartedOffset) {
+        if (offset >= lastStartedOffset) {
             lastStartedOffset = offset;
         } else {
-            logger.warn("Starting offsets out of order? {} > {}", lastStartedOffset, offset);
+            logger.warn("Starting offsets out of order? {} >= {}", lastStartedOffset, offset);
         }
     }
 

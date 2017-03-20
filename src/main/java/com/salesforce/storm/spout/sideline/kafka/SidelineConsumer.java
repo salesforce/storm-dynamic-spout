@@ -379,7 +379,8 @@ public class SidelineConsumer {
         // Now for each partition
         for (TopicPartition topicPartition: topicPartitions) {
             // Determine the current offset now that we've seeked to earliest
-            final long newOffset = getKafkaConsumer().position(topicPartition);
+            // We subtract one from this offset and set that as the last "committed" offset.
+            final long newOffset = getKafkaConsumer().position(topicPartition) - 1;
 
             // We need to reset the saved offset to the current value
             // Replace PartitionOffsetManager with new instance from new position.

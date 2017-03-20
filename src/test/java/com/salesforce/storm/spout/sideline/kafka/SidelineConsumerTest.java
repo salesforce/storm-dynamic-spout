@@ -96,10 +96,8 @@ public class SidelineConsumerTest {
      */
     @Test
     public void testConstructor() {
-        // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
+        // Create config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -118,7 +116,6 @@ public class SidelineConsumerTest {
     // TODO: these test cases
     // test calling connect twice throws exception.
     // test calling connect w/ a starting state.
-    // test calling getCurrentState().
 
     /**
      * Tests that our logic for flushing consumer state works if auto commit is enabled.
@@ -197,11 +194,8 @@ public class SidelineConsumerTest {
      */
     @Test
     public void testTimedFlushConsumerStateWhenAutoCommitIsDisabled() throws InterruptedException {
-        final String expectedConsumerId = "MyConsumerId";
-
-        // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
+        // Create config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
         // Disable and set interval to 1 second.
         config.setConsumerStateAutoCommit(false);
@@ -278,7 +272,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -323,7 +316,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -384,7 +376,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -449,7 +440,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -524,7 +514,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -823,7 +812,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -874,7 +862,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -936,7 +923,6 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -1417,7 +1403,6 @@ public class SidelineConsumerTest {
         // Setup our config set to reset to none
         // We should handle this internally now.
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "none");
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -1513,7 +1498,6 @@ public class SidelineConsumerTest {
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        config.setKafkaConsumerProperty("auto.offset.reset", "earliest");
         return config;
     }
 }
