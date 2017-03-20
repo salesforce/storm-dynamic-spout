@@ -182,7 +182,7 @@ public class SidelineConsumer {
             } else {
                 // We start consuming at our offset + 1, otherwise we'd replay a previously "finished" offset.
                 logger.info("Resuming topic {} partition {} at offset {}", availableTopicPartition.topic(), availableTopicPartition.partition(), (offset + 1));
-                getKafkaConsumer().seek(availableTopicPartition, offset + 1);
+                getKafkaConsumer().seek(availableTopicPartition, (offset + 1));
                 logger.info("Will resume at offset {}", kafkaConsumer.position(availableTopicPartition));
 
                 // Starting managing offsets for this partition
@@ -387,7 +387,6 @@ public class SidelineConsumer {
             logger.info("Partition {} using new earliest offset {}", topicPartition, newOffset);
             partitionStateManagers.put(topicPartition, new PartitionOffsetManager(topicPartition.topic(), topicPartition.partition(), newOffset));
         }
-        logger.info("Assignment {}", getKafkaConsumer().assignment());
     }
 
     /**
