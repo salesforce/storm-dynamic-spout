@@ -15,6 +15,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,6 +33,12 @@ public class SpoutCoordinator {
      * if new VirtualSpouts need to be started up, in Milliseconds.
      */
     public static final int MONITOR_THREAD_SLEEP_MS = 2000;
+
+    /**
+     * How often our monitor thread will output a status report, in milliseconds
+     * as well as do other maintenance logic.
+     */
+    private static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 60000;
 
     /**
      * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
@@ -217,17 +225,56 @@ public class SpoutCoordinator {
 
         private static final Logger logger = LoggerFactory.getLogger(SpoutMonitor.class);
 
-        private final ExecutorService executor;
+        /**
+         * The executor service that we submit VirtualSidelineSpouts to run within.
+         */
+        private final ThreadPoolExecutor executor;
+
+        /**
+         * This Queue contains requests to our thread to fire up new VirtualSidelineSpouts.
+         * Instances are taken off of this queue and put into the ExecutorService's task queue.
+         */
         private final Queue<DelegateSidelineSpout> newSpoutQueue;
+
+        /**
+         * This buffer/queue holds tuples that are ready to be sent out to the topology.
+         * It is filled by VirtualSidelineSpout instances, and drained by SidelineSpout.
+         */
         private final TupleBuffer tupleOutputQueue;
+
+        /**
+         * This buffer/queue holds tuples that are ready to be acked by VirtualSidelineSpouts.
+         * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be acked.
+         * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
+         */
         private final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue;
+
+        /**
+         * This buffer/queue holds tuples that are ready to be failed by VirtualSidelineSpouts.
+         * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be failed.
+         * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
+         */
         private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue;
+
+        /**
+         * This latch allows the SpoutCoordinator to block on start up until its initial
+         * set of VirtualSidelineSpout instances have started.
+         */
         private final CountDownLatch latch;
+
+        /**
+         * Used to get the System time, allows easy mocking of System clock in tests.
+         */
         private final Clock clock;
 
         private final Map<String,SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
         private final Map<String,Future> spoutThreads = new ConcurrentHashMap<>();
         private boolean isOpen = true;
+
+        /**
+         * The last timestamp of a status report.
+         */
+        private long lastStatusReport = 0;
 
         SpoutMonitor(
             final Queue<DelegateSidelineSpout> newSpoutQueue,
@@ -244,7 +291,8 @@ public class SpoutCoordinator {
             this.latch = latch;
             this.clock = clock;
 
-            this.executor = Executors.newFixedThreadPool(SPOUT_RUNNER_THREAD_POOL_SIZE);
+            // Create executor and cast to the correct type.
+            this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(SPOUT_RUNNER_THREAD_POOL_SIZE);
         }
 
         @Override
@@ -255,8 +303,10 @@ public class SpoutCoordinator {
 
                 // Start monitoring loop.
                 while (isOpen) {
-                    logger.debug("Still here.. my input queue is {}", newSpoutQueue.size());
+                    // Periodically do a status report + Maintenance
+                    doMaintenanceLoop();
 
+                    // Look for new spouts to start.
                     for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
                         logger.info("Preparing thread for spout {}", spout.getConsumerId());
 
@@ -284,11 +334,59 @@ public class SpoutCoordinator {
                         return;
                     }
                 }
-                logger.warn("!!!!!! Spout coordinator is ceasing to run...");
+                logger.warn("Spout coordinator is ceasing to run due to shutdown request...");
             } catch (Exception ex) {
                 // TODO: Should we restart the monitor?
-                logger.error("SpoutMonitor threw an exception {}", ex);
+                logger.error("!!!!!! SpoutMonitor threw an exception {}", ex);
             }
+        }
+
+        /**
+         * This method will periodically show a status report to our logger interface.
+         */
+        private void doMaintenanceLoop() {
+            // Set initial value if none set.
+            if (lastStatusReport == 0) {
+                lastStatusReport = clock.millis();
+                return;
+            }
+
+            // If we've reported recently
+            if (clock.millis() - lastStatusReport <= MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS) {
+                // Do nothing.
+                return;
+            }
+
+            // Cleanup loop
+            // TODO: Is this the best place to do this?
+            for (String virtualSpoutId: spoutThreads.keySet()) {
+                final Future future = spoutThreads.get(virtualSpoutId);
+                final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
+
+                if (future.isDone()) {
+                    // TODO We have no idea if it failed or was successful here.
+                    // Was this a successful finish?
+                    // Remove from spoutThreads?
+                    // Remove from spoutInstances?
+                    logger.info("{} seems to have finished, cleaning up", virtualSpoutId);
+                    spoutRunners.remove(virtualSpoutId);
+                    spoutThreads.remove(virtualSpoutId);
+                }
+            }
+
+            // Show a status report
+            logger.info("Active Tasks: {}, Queued Tasks: {}, ThreadPool Size: {}/{}, Completed Tasks: {}, Total Tasks Submitted: {}",
+                executor.getActiveCount(),
+                executor.getQueue().size(),
+                executor.getPoolSize(),
+                executor.getMaximumPoolSize(),
+                executor.getCompletedTaskCount(),
+                executor.getTaskCount()
+            );
+            logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
+
+            // Update timestamp
+            lastStatusReport = clock.millis();
         }
 
         public void close() {

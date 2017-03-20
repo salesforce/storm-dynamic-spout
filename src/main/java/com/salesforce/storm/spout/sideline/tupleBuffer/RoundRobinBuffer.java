@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -102,6 +103,18 @@ public class RoundRobinBuffer implements TupleBuffer {
         }
         // Put it.
         virtualSpoutQueue.put(kafkaMessage);
+    }
+
+    @Override
+    public int size() {
+        int total = 0;
+        for (String key: tupleBuffer.keySet()) {
+            Queue queue = tupleBuffer.get(key);
+            if (queue != null) {
+                total += queue.size();
+            }
+        }
+        return total;
     }
 
     /**

@@ -37,6 +37,11 @@ public interface TupleBuffer {
     void put(final KafkaMessage kafkaMessage) throws InterruptedException;
 
     /**
+     * @return - return the size of the buffer.
+     */
+    int size();
+
+    /**
      * @return - returns the next KafkaMessage to be processed out of the queue.
      */
     KafkaMessage poll();

@@ -67,6 +67,9 @@ public class RoundRobinBufferTest {
             tupleBuffer.put(kafkaMessage);
         }
 
+        // Validate size
+        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), tupleBuffer.size());
+
         // Now ask for the messages back, they should get round robin'd
         Iterator<String> keyIterator = Iterators.cycle(submittedOrder.keySet());
         for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {

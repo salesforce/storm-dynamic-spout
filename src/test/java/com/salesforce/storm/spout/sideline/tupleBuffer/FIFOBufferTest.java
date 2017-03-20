@@ -64,6 +64,9 @@ public class FIFOBufferTest {
             tupleBuffer.put(kafkaMessage);
         }
 
+        // Validate size
+        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), tupleBuffer.size());
+
         // Now pop them, order should be maintained
         for (KafkaMessage originalKafkaMsg: submittedOrder) {
             final KafkaMessage bufferedMsg = tupleBuffer.poll();

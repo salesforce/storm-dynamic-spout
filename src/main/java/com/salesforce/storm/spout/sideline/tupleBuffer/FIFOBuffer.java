@@ -72,6 +72,11 @@ public class FIFOBuffer implements TupleBuffer {
         tupleBuffer.put(kafkaMessage);
     }
 
+    @Override
+    public int size() {
+        return tupleBuffer.size();
+    }
+
     /**
      * @return - returns the next KafkaMessage to be processed out of the queue.
      */
