@@ -21,6 +21,7 @@ public class PartitionOffsetManager {
     private final TreeSet<Long> finishedOffsets = new TreeSet<>();
 
     private long lastFinishedOffset = 0;
+    private long lastStartedOffset = 0;
 
     public PartitionOffsetManager(final String topic, final int partitionId, final long lastFinishedOffset) {
         this.topic = topic;
@@ -45,6 +46,12 @@ public class PartitionOffsetManager {
      */
     public void startOffset(long offset) {
         trackedOffsets.add(offset);
+
+        if (offset > lastStartedOffset) {
+            lastStartedOffset = offset;
+        } else {
+            logger.warn("Starting offsets out of order? {} > {}", lastStartedOffset, offset);
+        }
     }
 
     /**
@@ -62,7 +69,7 @@ public class PartitionOffsetManager {
 
         final Long earliestOffset = trackedOffsets.first();
 
-        logger.debug("[{}-{}] Finishing offset {}", getTopic(), getPartitionId(), offset);
+        logger.info("[{}-{}] Finishing offset {}", getTopic(), getPartitionId(), offset);
 
         // If our set is empty
         if (earliestOffset.equals(offset)) {
@@ -114,15 +121,13 @@ public class PartitionOffsetManager {
      * @return - return the largest offset we have started tracking.
      * This is NOT the same as the "Last Finished Offset"
      */
-    public long lastTrackedOffset() {
-        try {
-            return trackedOffsets.last();
-        } catch (NoSuchElementException e) {
-            // This is thrown if there's nothing being tracked,
-            // in which case use the last finished offset
-            final long lastFinishedOffset = lastFinishedOffset();
-            logger.info("Unable to find last tracked offset, using last finished offset {}", lastFinishedOffset);
-            return lastFinishedOffset;
+    public long lastStartedOffset() {
+        // If the last finished offset happens to be higher, which is the case
+        // if we haven't started tracking anything yet.
+        if ((lastFinishedOffset + 1) > lastStartedOffset) {
+            // return last finished offset + 1,
+            return (lastFinishedOffset + 1);
         }
+        return lastStartedOffset;
     }
 }

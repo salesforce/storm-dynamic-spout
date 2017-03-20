@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
@@ -1382,17 +1383,20 @@ public class SidelineConsumerTest {
      * resetting the offset on partition 2 to the earliest available (which happens to be 0).
      *
      * We then consume and expect to receive messages:
-     *   partition 0 -> messages 3,4      (because we started at offset 2)
-     *   partition 1 -> messages 1,2,3,4  (because we got reset to earliest)
+     *   partition 0 -> messages 2,3      (because we started at offset 2)
+     *   partition 1 -> messages 0,1,2,3  (because we got reset to earliest)
+     *
+     * This test also validates that for non-reset partitions, that it does not lose
+     * any messages.
      */
     @Test
-    public void testWhatHappensIfOffsetTooOldWithOffsetResetSmallest() {
+    public void testWhatHappensIfOffsetIsInvalidShouldResetSmallest() {
         // Kafka topic setup
         this.topicName = "MyMultiPartitionTopic";
-        final int expectedNumberOfPartitions = 2;
+        final int numberOfPartitions = 2;
         final int numberOfMsgsPerPartition = 4;
 
-        // How many msgs we should expect
+        // How many msgs we should expect, 2 for partition 0, 4 from partition1
         final int numberOfExpectedMessages = 6;
 
         // Define starting offsets for partitions
@@ -1400,7 +1404,7 @@ public class SidelineConsumerTest {
         final long partition1StartingOffset = 20L;
 
         // Create our multi-partition topic.
-        kafkaTestServer.createTopic(topicName, expectedNumberOfPartitions);
+        kafkaTestServer.createTopic(topicName, numberOfPartitions);
 
         // Define our expected topic/partitions
         final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
@@ -1428,26 +1432,38 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.open(startingState);
 
+        // Define the values we expect to get
+        // Ugh this is hacky, whatever
+        final Set<String> expectedValues = Sets.newHashSet(
+            // Partition 0 should not skip any messages!
+            "partition0-offset2", "partition0-offset3",
+
+            // Partition 1 should get reset to offset 0
+            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
+        );
+
         List<ConsumerRecord> records = Lists.newArrayList();
         ConsumerRecord consumerRecord;
-        int x = 0;
         do {
-            logger.info("Loop {}", x);
-            x++;
             consumerRecord = sidelineConsumer.nextRecord();
-//            //assertNotNull("Should be non-null", consumerRecord);
             if (consumerRecord != null) {
                 logger.info("Found offset {} on {}", consumerRecord.offset(), consumerRecord.partition());
                 records.add(consumerRecord);
+
+                // Remove from our expected set
+                expectedValues.remove("partition" + consumerRecord.partition() + "-offset" + consumerRecord.offset());
             }
         } while (consumerRecord != null);
 
-        // Call nextRecord 2 more times, both should be null
-//        for (int x=0; x<2; x++) {
-//          //  assertNull("Should be null", sidelineConsumer.nextRecord());
-//        }
+        // Now do validation
         logger.info("Found {} msgs", records.size());
-        // Now validate what we got returned.
+        assertEquals("Should have 6 messages from kafka", numberOfExpectedMessages, records.size());
+        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+
+        // Call nextRecord 2 more times, both should be null
+        for (int x=0; x<2; x++) {
+            assertNull("Should be null", sidelineConsumer.nextRecord());
+        }
     }
 
     /**

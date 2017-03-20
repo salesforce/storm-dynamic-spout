@@ -353,7 +353,7 @@ public class SidelineConsumer {
             // This partition did NOT have any errors, but its possible that we "lost" some messages
             // during the poll() call.  This partition needs to be seeked back to its previous position
             // before the exception was thrown.
-            final long offset = partitionStateManagers.get(assignedTopicPartition).lastTrackedOffset();
+            final long offset = partitionStateManagers.get(assignedTopicPartition).lastStartedOffset();
             logger.info("Backtracking {} offset to {}", assignedTopicPartition, offset);
             getKafkaConsumer().seek(assignedTopicPartition, offset);
         }

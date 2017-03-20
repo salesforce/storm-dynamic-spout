@@ -4,9 +4,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- *
- */
 public class PartitionOffsetManagerTest {
 
     /**
@@ -119,6 +116,59 @@ public class PartitionOffsetManagerTest {
         // Finish offset 7,  last finished offset should be 8
         offsetManager.finishOffset(7L);
         assertEquals("[S]  last finished offset should be 8", 8L, offsetManager.lastFinishedOffset());
+    }
 
+    /**
+     * This test verifies what happens if you call lastTrackedOffset() when we have nothing being tracked.
+     * It should return the last finished offset + 1.
+     */
+    @Test
+    public void testLastStartedOffsetWhenHasNone() {
+        // Create our manager we want to test with starting offset set to 0
+        long startingOffset = 0L;
+        PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, startingOffset);
+        assertEquals("Should be startingOffset + 1", (startingOffset + 1), offsetManager.lastStartedOffset());
+
+        // Create our manager we want to test with starting offset set to 100
+        startingOffset = 100L;
+        offsetManager = new PartitionOffsetManager("Test Topic", 1, startingOffset);
+        assertEquals("Should be startingOffset + 1", (startingOffset + 1), offsetManager.lastStartedOffset());
+    }
+
+    /**
+     * This test verifies what happens if you call lastTrackedOffset() when we have been tracking some offsets.
+     * It should return the largest value tracked.
+     */
+    @Test
+    public void testLastStartedOffset() {
+        // Create our manager we want to test with starting offset set to 0
+        long startingOffset = 0L;
+        PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, startingOffset);
+
+        // Start some offsets
+        offsetManager.startOffset(1L);
+        offsetManager.startOffset(2L);
+        offsetManager.startOffset(3L);
+        offsetManager.startOffset(4L);
+
+        // Validate its 4L
+        assertEquals("Should be 4L", 4L, offsetManager.lastStartedOffset());
+
+        // Now finish some offsets
+        offsetManager.finishOffset(1L);
+        long result = offsetManager.lastStartedOffset();
+        assertEquals("Should be 4L", 4L, result);
+
+        offsetManager.finishOffset(3L);
+        result = offsetManager.lastStartedOffset();
+        assertEquals("Should be 4L", 4L, result);
+
+        offsetManager.finishOffset(4L);
+        result = offsetManager.lastStartedOffset();
+        assertEquals("Should be 4L", 4L, result);
+
+        offsetManager.finishOffset(2L);
+        result = offsetManager.lastStartedOffset();
+        assertEquals("Should be 4L + 1 => 5L", 5L, result);
     }
 }
