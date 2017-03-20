@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
@@ -1265,7 +1266,7 @@ public class SidelineConsumerTest {
      * 6. Attempt to consume more msgs, verify only those from partition 1 come thru.
      */
     @Test
-    public void testConsumeFromTopicAfterUnsubscribingFromMultipePartitions() {
+    public void testConsumeFromTopicAfterUnsubscribingFromMultiplePartitions() {
         this.topicName = "MyMultiPartitionTopic";
         final int expectedNumberOfPartitions = 2;
 
@@ -1364,6 +1365,89 @@ public class SidelineConsumerTest {
 
         // Close out consumer
         sidelineConsumer.close();
+    }
+
+    /**
+     * This tests what happens if we ask to consume from an offset that is invalid (does not exist).
+     * Here's what we setup:
+     *
+     * 2 partitions, produce 4 messages into each.
+     *
+     * Start a consumer, asking to start at:
+     *   offset 2 for partition 1, (recorded completed offset = 1)
+     *   offset 21 for partition 2. (recorded completed offset = 20)
+     *
+     * Offset 20 does not exist for partition 2, this will raise an exception which
+     * by the underlying kafka consumer.  This exception should be handled internally
+     * resetting the offset on partition 2 to the earliest available (which happens to be 0).
+     *
+     * We then consume and expect to receive messages:
+     *   partition 0 -> messages 3,4      (because we started at offset 2)
+     *   partition 1 -> messages 1,2,3,4  (because we got reset to earliest)
+     */
+    @Test
+    public void testWhatHappensIfOffsetTooOldWithOffsetResetSmallest() {
+        // Kafka topic setup
+        this.topicName = "MyMultiPartitionTopic";
+        final int expectedNumberOfPartitions = 2;
+        final int numberOfMsgsPerPartition = 4;
+
+        // How many msgs we should expect
+        final int numberOfExpectedMessages = 6;
+
+        // Define starting offsets for partitions
+        final long partition0StartingOffset = 1L;
+        final long partition1StartingOffset = 20L;
+
+        // Create our multi-partition topic.
+        kafkaTestServer.createTopic(topicName, expectedNumberOfPartitions);
+
+        // Define our expected topic/partitions
+        final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition expectedTopicPartition1 = new TopicPartition(topicName, 1);
+
+        // Produce messages into both topics
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition, 1);
+
+        // Setup our config set to reset to none
+        // We should handle this internally now.
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        config.setKafkaConsumerProperty("auto.offset.reset", "none");
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        // Create starting state
+        ConsumerState startingState = new ConsumerState();
+        startingState.setOffset(expectedTopicPartition0, partition0StartingOffset);
+        startingState.setOffset(expectedTopicPartition1, partition1StartingOffset);
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
+        sidelineConsumer.open(startingState);
+
+        List<ConsumerRecord> records = Lists.newArrayList();
+        ConsumerRecord consumerRecord;
+        int x = 0;
+        do {
+            logger.info("Loop {}", x);
+            x++;
+            consumerRecord = sidelineConsumer.nextRecord();
+//            //assertNotNull("Should be non-null", consumerRecord);
+            if (consumerRecord != null) {
+                logger.info("Found offset {} on {}", consumerRecord.offset(), consumerRecord.partition());
+                records.add(consumerRecord);
+            }
+        } while (consumerRecord != null);
+
+        // Call nextRecord 2 more times, both should be null
+//        for (int x=0; x<2; x++) {
+//          //  assertNull("Should be null", sidelineConsumer.nextRecord());
+//        }
+        logger.info("Found {} msgs", records.size());
+        // Now validate what we got returned.
     }
 
     /**

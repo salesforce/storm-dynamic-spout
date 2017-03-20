@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.NoSuchElementException;
 import java.util.TreeSet;
 
 /**
@@ -102,10 +103,26 @@ public class PartitionOffsetManager {
 
     /**
      * Not thread safe.
-     *
-     * @return
+     * @return - return the last offset considered "finished".
+     * Here a "finished" offset is the highest continuous offset.
      */
     public long lastFinishedOffset() {
         return lastFinishedOffset;
+    }
+
+    /**
+     * @return - return the largest offset we have started tracking.
+     * This is NOT the same as the "Last Finished Offset"
+     */
+    public long lastTrackedOffset() {
+        try {
+            return trackedOffsets.last();
+        } catch (NoSuchElementException e) {
+            // This is thrown if there's nothing being tracked,
+            // in which case use the last finished offset
+            final long lastFinishedOffset = lastFinishedOffset();
+            logger.info("Unable to find last tracked offset, using last finished offset {}", lastFinishedOffset);
+            return lastFinishedOffset;
+        }
     }
 }

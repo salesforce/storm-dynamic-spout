@@ -81,7 +81,6 @@ public class KafkaTestServer implements AutoCloseable {
 
         Properties p = new Properties();
         p.setProperty("zookeeper.connect", connectionString);
-        p.setProperty("broker.id", String.valueOf(new Random().nextInt(Integer.MAX_VALUE)));
         p.setProperty("port", kafkaPort);
         p.setProperty("log.dir", logDir.getAbsolutePath());
         p.setProperty("host.name", "127.0.0.1");
