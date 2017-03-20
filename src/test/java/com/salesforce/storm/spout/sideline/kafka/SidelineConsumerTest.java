@@ -34,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
@@ -459,8 +460,8 @@ public class SidelineConsumerTest {
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
 
         // Since ConsumerStateManager has state for partition 0, we should NEVER call seekToBeginning on that partition
-        verify(mockKafkaConsumer, never()).seekToBeginning(eq(Lists.newArrayList(partition0)));
-        verify(mockKafkaConsumer, never()).position(eq(partition0));
+        // Or any partition really.
+        verify(mockKafkaConsumer, never()).seekToBeginning(anyCollection());
 
         // Instead since there is state, we should call seek on that partition
         verify(mockKafkaConsumer, times(1)).seek(eq(new TopicPartition(topicName, 0)), eq(expectedOffsetToStartConsumeFrom));
