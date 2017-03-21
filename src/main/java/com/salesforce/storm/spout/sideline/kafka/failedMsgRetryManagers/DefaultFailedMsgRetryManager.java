@@ -1,16 +1,16 @@
 package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * This Retry Manager implementation does 2 things.
@@ -21,21 +21,27 @@ import java.util.Set;
  * after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
  *
  * Note: Super naive implementation of a retry manager.
- * @TODO: Refactor this to use more efficient sorted data structures.
  */
 public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
-    // Logging
-    private static final Logger logger = LoggerFactory.getLogger(DefaultFailedMsgRetryManager.class);
-
     // Configuration
     private int maxRetries = 25;
     private long minRetryTimeMs = 1000;
 
     /**
-     * Where we track failed messageIds.
+     * This Set holds which Tuples are in flight.
      */
-    private Map<TupleMessageId, FailedMessage> failedTuples;
     private Set<TupleMessageId> retriesInFlight;
+
+    /**
+     * This map hows how many times each messageId has failed.
+     */
+    private Map<TupleMessageId, Integer> numberOfTimesFailed;
+
+    /**
+     * This is a sorted Tree of timestamps, where each timestamp points to a queue of
+     * failed messageIds.
+     */
+    private TreeMap<Long, Queue<TupleMessageId>> failedMessageIds;
 
     /**
      * Used to control timing around retries.
@@ -56,9 +62,10 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
             minRetryTimeMs = (long) stormConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS);
         }
 
-        // Init datastructures.
-        failedTuples = Maps.newHashMap();
+        // Init data structures.
         retriesInFlight = Sets.newHashSet();
+        numberOfTimesFailed = Maps.newHashMap();
+        failedMessageIds = Maps.newTreeMap();
     }
 
     /**
@@ -67,82 +74,80 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
      */
     @Override
     public void failed(TupleMessageId messageId) {
-        // If we haven't tracked it yet
-        if (!failedTuples.containsKey(messageId)) {
-            // Determine when we should retry this msg
-            final long retryTime = getClock().millis() + minRetryTimeMs;
+        final int failCount = numberOfTimesFailed.getOrDefault(messageId, 0) + 1;
+        numberOfTimesFailed.put(messageId, failCount);
 
-            // Track new failed message.
-            failedTuples.put(messageId, new FailedMessage(1, retryTime));
+        // Determine when we should retry this msg next
+        final long retryTime = getClock().millis() + (minRetryTimeMs * failCount);
 
-            // Mark it as no longer in flight to be safe.
-            retriesInFlight.remove(messageId);
-
-            // Done!
-            return;
+        // If we had previous fails
+        if (failCount > 1) {
+            // Make sure they're removed.  This kind of sucks.
+            // This may not be needed in reality...just because of how we've setup our tests :/
+            for (Long key: failedMessageIds.keySet()) {
+                Queue queue = failedMessageIds.get(key);
+                if (queue.remove(messageId)) {
+                    break;
+                }
+            }
         }
 
-        // If its already tracked, we should increment some stuff
-        final FailedMessage previousEntry = failedTuples.get(messageId);
-        final int newFailCount = previousEntry.getFailCount() + 1;
-        final long newRetry = getClock().millis() + (minRetryTimeMs * newFailCount);
+        // Grab the queue for this timestamp,
+        // If it doesn't exist, create a new queue and return it.
+        Queue<TupleMessageId> queue = failedMessageIds.computeIfAbsent(retryTime, k -> Lists.newLinkedList());
 
-        // Update entry.
-        failedTuples.put(messageId, new FailedMessage(newFailCount, newRetry));
+        // Add our message to the queue.
+        queue.add(messageId);
 
-        // Mark it as no longer in flight
+        // Mark it as no longer in flight to be safe.
         retriesInFlight.remove(messageId);
+
+        // Done!
     }
 
     @Override
     public void acked(TupleMessageId messageId) {
-        // Remove it
-        failedTuples.remove(messageId);
-
         // Remove from in flight
         retriesInFlight.remove(messageId);
-    }
 
-    @Override
-    public void retryStarted(TupleMessageId messageId) {
-        retriesInFlight.add(messageId);
+        // Remove fail count tracking
+        numberOfTimesFailed.remove(messageId);
     }
 
     @Override
     public TupleMessageId nextFailedMessageToRetry() {
-        // Naive implementation for now.  We should use a sorted set to remove the need to
-        // search for the next entry.
-
-        // Get now timestamp
         final long now = getClock().millis();
-
-        // Loop thru fails
-        for (TupleMessageId messageId : failedTuples.keySet()) {
-            // If its expired and not already in flight
-            if (!retriesInFlight.contains(messageId) && failedTuples.get(messageId).getNextRetry() <= now ) {
-                // return msg id.
-                return messageId;
-            }
+        final Long lowestKey = failedMessageIds.floorKey(now);
+        if (lowestKey == null) {
+            // Nothing has expired
+            return null;
         }
-        return null;
+        Queue<TupleMessageId> queue = failedMessageIds.get(lowestKey);
+        final TupleMessageId messageId = queue.poll();
+
+        // If our queue is now empty
+        if (queue.isEmpty()) {
+            // remove it
+            failedMessageIds.remove(lowestKey);
+        }
+
+        // Mark it as in flight.
+        retriesInFlight.add(messageId);
+        return messageId;
     }
 
     @Override
     public boolean retryFurther(TupleMessageId messageId) {
         // If max retries is set to 0, we will never retry any tuple.
         if (getMaxRetries() == 0) {
-           return false;
+            return false;
         }
 
         // If we haven't tracked it yet
-        if (!failedTuples.containsKey(messageId)) {
-            // Then we should.
-            return true;
-        }
+        final int numberOfTimesHasFailed = numberOfTimesFailed.getOrDefault(messageId, 0);
 
         // If we have exceeded our max retry limit
-        final FailedMessage failedMessage = failedTuples.get(messageId);
-        if (failedMessage.getFailCount() >= maxRetries) {
+        if (numberOfTimesHasFailed >= maxRetries) {
             // Then we shouldn't retry
             return false;
         }
@@ -165,18 +170,18 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
 
     /**
      * Used internally and in tests.
-     * @return - returns all the failed tuple message Ids that are being tracked.
-     */
-    protected Map<TupleMessageId, FailedMessage> getFailedTuples() {
-        return failedTuples;
-    }
-
-    /**
-     * Used internally and in tests.
      * @return - returns all of the message Ids in flight / being processed by the topology currently.
      */
     protected Set<TupleMessageId> getRetriesInFlight() {
         return retriesInFlight;
+    }
+
+    protected Map<TupleMessageId, Integer> getNumberOfTimesFailed() {
+        return numberOfTimesFailed;
+    }
+
+    protected TreeMap<Long, Queue<TupleMessageId>> getFailedMessageIds() {
+        return failedMessageIds;
     }
 
     /**
@@ -192,26 +197,5 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
      */
     protected void setClock(Clock clock) {
         this.clock = clock;
-    }
-
-    /**
-     * Internal helper class.
-     */
-    protected static class FailedMessage {
-        private final int failCount;
-        private final long nextRetry;
-
-        public FailedMessage(int failCount, long nextRetry) {
-            this.failCount = failCount;
-            this.nextRetry = nextRetry;
-        }
-
-        public int getFailCount() {
-            return failCount;
-        }
-
-        public long getNextRetry() {
-            return nextRetry;
-        }
     }
 }

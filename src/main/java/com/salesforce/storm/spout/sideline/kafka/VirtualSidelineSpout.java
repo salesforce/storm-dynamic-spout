@@ -270,9 +270,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         final TupleMessageId nextFailedMessageId = failedMsgRetryManager.nextFailedMessageToRetry();
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
-                // Mark this as having a retry started
-                failedMsgRetryManager.retryStarted(nextFailedMessageId);
-
                 // Emit the tuple.
                 logger.debug("Emitting previously failed tuple with msgId {}", nextFailedMessageId);
                 return trackedMessages.get(nextFailedMessageId);

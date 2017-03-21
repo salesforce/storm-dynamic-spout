@@ -18,7 +18,7 @@ public class NoRetryFailedMsgRetryManagerTest {
     @Test
     public void testShouldReEmitMsg() {
         // Create instance.
-        FailedMsgRetryManager retryManager = new NoRetryFailedMsgRetryManager();
+        NoRetryFailedMsgRetryManager retryManager = new NoRetryFailedMsgRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // retryFurther always returns false
@@ -38,12 +38,6 @@ public class NoRetryFailedMsgRetryManagerTest {
         assertNull(retryManager.nextFailedMessageToRetry());
         assertNull(retryManager.nextFailedMessageToRetry());
         assertNull(retryManager.nextFailedMessageToRetry());
-
-        // Call retry started
-        retryManager.retryStarted(new TupleMessageId("MyTopic1", 1, 1L, "ConsumerId1"));
-        retryManager.retryStarted(new TupleMessageId("MyTopic2", 2, 2L, "ConsumerId2"));
-        retryManager.retryStarted(new TupleMessageId("MyTopic3", 3, 3L, "ConsumerId3"));
-        retryManager.retryStarted(new TupleMessageId("MyTopic4", 4, 4L, "ConsumerId4"));
 
         // Call acked started
         retryManager.acked(new TupleMessageId("MyTopic1", 1, 1L, "ConsumerId1"));

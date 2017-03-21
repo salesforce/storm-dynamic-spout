@@ -15,7 +15,9 @@ import java.util.List;
 public class FailedMsgRetryManagerPerformanceTest {
     private static final Logger logger = LoggerFactory.getLogger(FailedMsgRetryManagerPerformanceTest.class);
 
-    @Test
+    /**
+     * Disabled for now.
+     */
     public void runTest() throws InterruptedException {
         // Create instance with default settings
         FailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
@@ -23,16 +25,16 @@ public class FailedMsgRetryManagerPerformanceTest {
 
         // Do warm up
         logger.info("WARMING UP");
-        doTest(retryManager);
+        doTest2(retryManager);
 
         // Now start test
         logger.info("STARTING TEST");
         retryManager = new DefaultFailedMsgRetryManager();
         retryManager.open(Maps.newHashMap());
-        doTest(retryManager);
+        doTest2(retryManager);
     }
 
-    public void doTest(FailedMsgRetryManager retryManager) throws InterruptedException {
+    public void doTest2(FailedMsgRetryManager retryManager) throws InterruptedException {
         logger.info("Starting to test {}", retryManager.getClass().getSimpleName());
 
         // Define test parameters
@@ -44,6 +46,11 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Add msgs
         logger.info("Starting to add {} failed msgs", numberOfTuples);
         final long startTupleAddTime = System.currentTimeMillis();
+        for (long x=0; x<numberOfTuples; x++) {
+            // Create TupleMessageId
+            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
+            retryManager.failed(tupleMessageId);
+        }
         for (long x=0; x<numberOfTuples; x++) {
             // Create TupleMessageId
             final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
@@ -63,11 +70,8 @@ public class FailedMsgRetryManagerPerformanceTest {
             if (tupleMessageId == null) {
                 continue;
             }
-            retryManager.retryStarted(tupleMessageId);
             returnedTuples.add(tupleMessageId);
         } while (returnedTuples.size() < numberOfTuples);
         logger.info("Finished in {} ms", (System.currentTimeMillis() - startNextFailedTime));
-
-
     }
 }
