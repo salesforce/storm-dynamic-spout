@@ -38,7 +38,6 @@ public class LogRecorder implements MetricsRecorder {
         synchronized (counters) {
             final long newValue = counters.getOrDefault(key, 0L) + incrementBy;
             counters.put(key, newValue);
-
             logger.debug("[COUNTER] {} = {}", key, newValue);
         }
     }

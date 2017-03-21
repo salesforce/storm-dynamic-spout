@@ -69,8 +69,6 @@ public class PartitionOffsetManager {
 
         final Long earliestOffset = trackedOffsets.first();
 
-        logger.debug("[{}-{}] Finishing offset {}", getTopic(), getPartitionId(), offset);
-
         // If our set is empty
         if (earliestOffset.equals(offset)) {
             // No longer track this offset
@@ -98,8 +96,6 @@ public class PartitionOffsetManager {
                     }
                 }
             }
-
-            logger.debug("[{}-{}] Setting last finished offset to {}", getTopic(), getPartitionId(), lastFinishedOffset);
         } else {
             // Since it is finished we no longer need to track it
             trackedOffsets.remove(offset);

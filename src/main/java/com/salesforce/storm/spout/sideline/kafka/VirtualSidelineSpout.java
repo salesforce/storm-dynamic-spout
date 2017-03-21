@@ -280,7 +280,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
                 // Emit the tuple.
-                logger.debug("Emitting previously failed tuple with msgId {}", nextFailedMessageId);
                 return trackedMessages.get(nextFailedMessageId);
             } else {
                 logger.warn("Unable to find tuple that should be replayed due to a fail {}", nextFailedMessageId);
@@ -341,7 +340,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
-            logger.debug("Tuple {} is filtered, acking", message.getTupleMessageId());
             // Ack
             ack(tupleMessageId);
 
@@ -392,7 +390,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If its > the ending offset
-        logger.debug("Current Offset: {} EndingOffset: {}", currentOffset, endingOffset);
         if (currentOffset > endingOffset) {
             // Then
             return true;

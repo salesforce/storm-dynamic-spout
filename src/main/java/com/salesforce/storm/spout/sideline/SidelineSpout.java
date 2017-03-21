@@ -326,9 +326,6 @@ public class SidelineSpout extends BaseRichSpout {
             return;
         }
 
-        // Debug logging
-        logger.debug("Emitting MsgId[{}]", kafkaMessage.getTupleMessageId());
-
         // Update / Display emit metrics
         final String srcId = kafkaMessage.getTupleMessageId().getSrcConsumerId();
         if (!emitCountMetrics.containsKey(srcId)) {

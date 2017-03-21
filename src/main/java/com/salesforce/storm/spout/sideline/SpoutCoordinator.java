@@ -515,10 +515,7 @@ public class SpoutCoordinator {
                 // Loop forever until someone requests the spout to stop
                 while (!spout.isStopRequested()) {
                     // First look for any new tuples to be emitted.
-                    logger.debug("Requesting next tuple for spout {}", spout.getConsumerId());
-
                     final KafkaMessage message = spout.nextTuple();
-
                     if (message != null) {
                         try {
                             tupleOutputQueue.put(message);
