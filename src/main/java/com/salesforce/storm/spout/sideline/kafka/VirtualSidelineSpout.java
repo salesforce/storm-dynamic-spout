@@ -99,6 +99,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private FailedMsgRetryManager failedMsgRetryManager;
     private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
+    // TEMP
+    private final Map<String, Long> timeBuckets = Maps.newHashMap();
+
     /**
      * Constructor.
      * Use this constructor for your "FireHose" instance.  IE an instance that has no starting or ending state.
@@ -197,6 +200,17 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             // Update our metrics
             updateMetrics(endingState, "endingOffset");
         }
+
+        // TEMP
+        timeBuckets.put("failedRetry", 0L);
+        timeBuckets.put("isFiltered", 0L);
+        timeBuckets.put("nextRecord", 0L);
+        timeBuckets.put("tupleMessageId", 0L);
+        timeBuckets.put("doesExceedEndOffset", 0L);
+        timeBuckets.put("deserialize", 0L);
+        timeBuckets.put("kafkaMessage", 0L);
+        timeBuckets.put("totalTime", 0L);
+        timeBuckets.put("totalCalls", 0L);
     }
 
     /**
@@ -244,12 +258,15 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      */
     @Override
     public KafkaMessage nextTuple() {
+        long totalTime = System.currentTimeMillis();
+
         // Talk to a "failed tuple manager interface" object to see if any tuples
         // that failed previously are ready to be replayed.  This is an interface
         // meaning you can implement your own behavior here.  Maybe failed tuples never get replayed,
         // Maybe they get replayed a maximum number of times?  Maybe they get replayed forever but have
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
         // If so, emit that and return.
+        long startTime = System.currentTimeMillis();
         final TupleMessageId nextFailedMessageId = failedMsgRetryManager.nextFailedMessageToRetry();
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
@@ -264,18 +281,24 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
                 failedMsgRetryManager.acked(nextFailedMessageId);
             }
         }
+        timeBuckets.put("failedRetry", timeBuckets.get("failedRetry") + (System.currentTimeMillis() - startTime));
 
         // Grab the next message from kafka
+        startTime = System.currentTimeMillis();
         ConsumerRecord<byte[], byte[]> record = sidelineConsumer.nextRecord();
         if (record == null) {
             logger.warn("Unable to find any new messages from consumer");
             return null;
         }
+        timeBuckets.put("nextRecord", timeBuckets.get("nextRecord") + (System.currentTimeMillis() - startTime));
 
         // Create a Tuple Message Id
+        startTime = System.currentTimeMillis();
         final TupleMessageId tupleMessageId = new TupleMessageId(record.topic(), record.partition(), record.offset(), getConsumerId());
+        timeBuckets.put("tupleMessageId", timeBuckets.get("tupleMessageId") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple exceeds our ending offset
+        startTime = System.currentTimeMillis();
         if (doesMessageExceedEndingOffset(tupleMessageId)) {
             logger.debug("Tuple {} exceeds max offset, acking", tupleMessageId);
 
@@ -286,8 +309,10 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             // Simply return null.
             return null;
         }
+        timeBuckets.put("doesExceedEndOffset", timeBuckets.get("doesExceedEndOffset") + (System.currentTimeMillis() - startTime));
 
         // Attempt to deserialize.
+        startTime = System.currentTimeMillis();
         final Values deserializedValues = deserializer.deserialize(record.topic(), record.partition(), record.offset(), record.key(), record.value());
         if (deserializedValues == null) {
             // Failed to deserialize, just ack and return null?
@@ -295,13 +320,18 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             ack(tupleMessageId);
             return null;
         }
+        timeBuckets.put("deserialize", timeBuckets.get("deserialize") + (System.currentTimeMillis() - startTime));
 
         // Create KafkaMessage
+        startTime = System.currentTimeMillis();
         final KafkaMessage message = new KafkaMessage(tupleMessageId, deserializedValues);
+        timeBuckets.put("kafkaMessage", timeBuckets.get("kafkaMessage") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?
         // Loops through each step in the chain to filter a filter before emitting
+        startTime = System.currentTimeMillis();
         final boolean isFiltered  = this.filterChain.filter(message);
+        timeBuckets.put("isFiltered", timeBuckets.get("isFiltered") + (System.currentTimeMillis() - startTime));
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
@@ -315,6 +345,22 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Track it message for potential retries.
         trackedMessages.put(tupleMessageId, message);
+
+        timeBuckets.put("totalTime", timeBuckets.get("totalTime") + (System.currentTimeMillis() - totalTime));
+        timeBuckets.put("totalCalls", timeBuckets.get("totalCalls") + 1);
+
+        // TEMP Every so often display stats
+        if (timeBuckets.get("totalCalls") % 10000 == 0) {
+            logger.info("==== Totals after {} calls ====", timeBuckets.get("totalCalls"));
+            for (String key : timeBuckets.keySet()) {
+                logger.info("{} => {} ms", key, timeBuckets.get(key));
+            }
+
+            logger.info("==== Average time Per call after {} calls ====", timeBuckets.get("totalCalls"));
+            for (String key : timeBuckets.keySet()) {
+                logger.info("{} => {} ms", key, (timeBuckets.get(key) / timeBuckets.get("totalCalls")));
+            }
+        }
 
         // Return it.
         return message;
