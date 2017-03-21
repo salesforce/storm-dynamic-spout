@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -278,7 +279,7 @@ public class SpoutCoordinator {
         private final Clock clock;
 
         private final Map<String,SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
-        private final Map<String,Future> spoutThreads = new ConcurrentHashMap<>();
+        private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
         private boolean isOpen = true;
 
         /**
@@ -347,7 +348,12 @@ public class SpoutCoordinator {
 
                         spoutRunners.put(spout.getConsumerId(), spoutRunner);
 
-                        final Future spoutInstance = executor.submit(spoutRunner);
+                        // Run as a CompletableFuture
+                        final CompletableFuture spoutInstance = CompletableFuture.runAsync(spoutRunner, this.executor);
+
+                        // Is there an advantage/disavantage vs this?
+                        //final Future spoutInstance = executor.submit(spoutRunner);
+
 
                         spoutThreads.put(spout.getConsumerId(), spoutInstance);
                     }
@@ -386,15 +392,21 @@ public class SpoutCoordinator {
             // Cleanup loop
             // TODO: Is this the best place to do this?
             for (String virtualSpoutId: spoutThreads.keySet()) {
-                final Future future = spoutThreads.get(virtualSpoutId);
+                final CompletableFuture future = spoutThreads.get(virtualSpoutId);
                 final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
 
                 if (future.isDone()) {
                     // TODO We have no idea if it failed or was successful here.
-                    // Was this a successful finish?
+                    if (future.isCompletedExceptionally()) {
+                        // This threw an exception.  We need to handle the error case.
+                        logger.error("{} seems to have errored", virtualSpoutId);
+                    } else {
+                        // Successfully finished?
+                        logger.info("{} seems to have finished, cleaning up", virtualSpoutId);
+                    }
+
                     // Remove from spoutThreads?
                     // Remove from spoutInstances?
-                    logger.info("{} seems to have finished, cleaning up", virtualSpoutId);
                     spoutRunners.remove(virtualSpoutId);
                     spoutThreads.remove(virtualSpoutId);
                 }
@@ -418,22 +430,38 @@ public class SpoutCoordinator {
         public void close() {
             isOpen = false;
 
+            // Ask the executor to shut down
+            executor.shutdown();
+
+            // Loop thru our runners and request stop on each
             for (SpoutRunner spoutRunner : spoutRunners.values()) {
                 spoutRunner.requestStop();
             }
 
             try {
+                logger.info("Waiting a maximum of {} ms for threadpool to shutdown", MAX_SPOUT_STOP_TIME_MS);
+                // Wait for the executor to cleanly shut down
                 executor.awaitTermination(MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ex) {
-                logger.error("Caught Exception while stopping: {}", ex);
+                logger.error("Interrupted while stopping: {}", ex);
             }
 
-            executor.shutdownNow();
+            // If we didn't shut down cleanly
+            if (!executor.isShutdown()) {
+                // Force a shut down
+                logger.warn("Forcing unclean shutdown of threadpool");
+                executor.shutdownNow();
+            }
 
+            // Clear our our internal state.
             spoutRunners.clear();
             spoutThreads.clear();
         }
 
+        /**
+         * @return - return the number of spout runner instances.
+         *           *note* - it doesn't mean all of these are actually running.
+         */
         public int getTotalSpouts() {
             return spoutRunners.size();
         }
@@ -536,6 +564,11 @@ public class SpoutCoordinator {
                 // TODO: Should we restart the SpoutRunner?
                 logger.error("SpoutRunner for {} threw an exception {}", spout.getConsumerId(), ex);
                 ex.printStackTrace();
+
+                // We re-throw the exception
+                // SpoutMonitor should detect this failed.
+                // TODO: DO we even want to bother catching this here?
+                throw ex;
             }
         }
 
