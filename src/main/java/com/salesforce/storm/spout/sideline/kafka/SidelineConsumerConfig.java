@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.util.List;
 import java.util.Properties;
@@ -37,15 +38,35 @@ public class SidelineConsumerConfig {
                 .map(String::toString)
                 .collect(Collectors.joining(","));
 
-        // Default settings
-        setKafkaConsumerProperty("session.timeout.ms", "1000");
-        setKafkaConsumerProperty("enable.auto.commit", "false");
-        setKafkaConsumerProperty("auto.commit.interval.ms", "10000");
-        setKafkaConsumerProperty("session.timeout.ms", "30000");
-        setKafkaConsumerProperty("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-        setKafkaConsumerProperty("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        // Autocommit is disabled, we handle offset tracking.
+        setKafkaConsumerProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        setKafkaConsumerProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "10000");
 
-        // TODO: Decide how we want to handle this. For now use smallest.
+        // We use our own deserializer interface, so force ByteArray deserialization.
+        setKafkaConsumerProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        setKafkaConsumerProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+
+        // Other random tunings
+        // Default is 65536 bytes, we 4x'd it
+        setKafkaConsumerProperty(ConsumerConfig.RECEIVE_BUFFER_CONFIG, "262144");
+
+        // Default value: 2147483647
+        setKafkaConsumerProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "2147483647");
+
+        // Default value: true, "This check adds some overhead, so it may be disabled in cases seeking extreme performance."
+        setKafkaConsumerProperty(ConsumerConfig.CHECK_CRCS_CONFIG, "true");
+        
+        /**
+         * Defines how quickly a session will time out.
+         * If this is set too low, and we are unable to process the returned results fast enough
+         * this will cause the client to become disconnected.
+         * Setting it too high means that the kafka cluster will take longer to determine if the client
+         * has disconnected because of some unannounced error.
+         *
+         * We default this to 2 minutes.
+         */
+        setKafkaConsumerProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "120000");
+
         /**
          * If an offset is deemed too old and not available how should we handle it?
          * Values:
@@ -70,11 +91,11 @@ public class SidelineConsumerConfig {
          * We probably need to bubble up an exception, catch it, log a scary error about
          * missing messages, reset our partition managers acked offset list back to zero.
          */
-        setKafkaConsumerProperty("auto.offset.reset", "none");
+        setKafkaConsumerProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "none");
 
         // Passed in values
-        setKafkaConsumerProperty("bootstrap.servers", brokerHostsStr);
-        setKafkaConsumerProperty("group.id", this.consumerId);
+        setKafkaConsumerProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerHostsStr);
+        setKafkaConsumerProperty(ConsumerConfig.GROUP_ID_CONFIG, this.consumerId);
     }
 
     public String getConsumerId() {
