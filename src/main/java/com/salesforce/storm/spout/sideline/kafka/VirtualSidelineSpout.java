@@ -343,15 +343,16 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Track it message for potential retries.
         trackedMessages.put(tupleMessageId, message);
 
+        // record total time and total calls
         timeBuckets.put("totalTime", timeBuckets.get("totalTime") + (System.currentTimeMillis() - totalTime));
         timeBuckets.put("totalCalls", timeBuckets.get("totalCalls") + 1);
 
         // TEMP Every so often display stats
-        final long totalCalls = timeBuckets.get("totalCalls");
-        if (totalCalls % 100000 == 0) {
-            logger.info("==== Totals after {} calls ====", totalCalls);
+        if (timeBuckets.get("totalCalls") % 100000 == 0) {
+            totalTime = timeBuckets.get("totalTime");
+            logger.info("==== Totals after {} calls ====", timeBuckets.get("totalCalls"));
             for (String key : timeBuckets.keySet()) {
-                logger.info("{} => {} ms ({}%)", key, timeBuckets.get(key), (timeBuckets.get(key) / totalCalls));
+                logger.info("{} => {} ms ({}%)", key, timeBuckets.get(key), ((float)timeBuckets.get(key) / totalTime) * 100);
             }
         }
 
