@@ -337,7 +337,7 @@ public class SidelineSpout extends BaseRichSpout {
             emitCountMetrics.put(srcId, emitCountMetrics.get(srcId) + 1L);
         }
         emitCounter++;
-        if (emitCounter >= 500_000L) {
+        if (emitCounter >= 5_000_000L) {
             for (String key : emitCountMetrics.keySet()) {
                 logger.info("Emit Count on {} => {}", key, emitCountMetrics.get(key));
             }
