@@ -18,7 +18,7 @@ public class NoRetryFailedMsgRetryManagerTest {
     @Test
     public void testShouldReEmitMsg() {
         // Create instance.
-        FailedMsgRetryManager retryManager = new NoRetryFailedMsgRetryManager();
+        NoRetryFailedMsgRetryManager retryManager = new NoRetryFailedMsgRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // retryFurther always returns false

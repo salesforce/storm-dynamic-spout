@@ -26,13 +26,7 @@ public interface FailedMsgRetryManager extends Serializable {
      * @param messageId
      */
     void acked(TupleMessageId messageId);
-
-    /**
-     * Message corresponding to the offset, has been re-emitted and under transit.
-     * @param messageId
-     */
-    void retryStarted(TupleMessageId messageId);
-
+    
     /**
      * The offset of message, which is to be re-emitted. Spout will fetch messages starting from this offset
      * and resend them, except completed messages.

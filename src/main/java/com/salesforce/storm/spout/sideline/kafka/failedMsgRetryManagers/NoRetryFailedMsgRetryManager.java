@@ -23,7 +23,6 @@ public class NoRetryFailedMsgRetryManager implements FailedMsgRetryManager {
         // Nothing to do
     }
 
-    @Override
     public void retryStarted(TupleMessageId messageId) {
         // Nothing to do
     }

@@ -103,7 +103,6 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         retriesInFlight.remove(messageId);
     }
 
-    @Override
     public void retryStarted(TupleMessageId messageId) {
         retriesInFlight.add(messageId);
     }
