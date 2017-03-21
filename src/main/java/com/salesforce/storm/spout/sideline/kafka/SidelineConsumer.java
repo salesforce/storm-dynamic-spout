@@ -214,11 +214,8 @@ public class SidelineConsumer {
         ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
 
         // Track this new message's state
-        // TODO: Remove this
-        final long start = System.currentTimeMillis();
         TopicPartition topicPartition = new TopicPartition(nextRecord.topic(), nextRecord.partition());
         partitionStateManagers.get(topicPartition).startOffset(nextRecord.offset());
-        logger.info("TIMER: state tracking {} ms", (System.currentTimeMillis() - start));
 
         // Return the record
         return nextRecord;
@@ -304,11 +301,7 @@ public class SidelineConsumer {
         if (buffer == null || !bufferIterator.hasNext()) {
             // Time to refill the buffer
             try {
-                // TODO: REMOVE TIMING
-                final long start = System.currentTimeMillis();
                 buffer = kafkaConsumer.poll(3000);
-                final long stop = System.currentTimeMillis();
-                logger.info("TIMER: poll time {} for {} records", (stop - start), buffer.count());
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
                 handleOffsetOutOfRange(outOfRangeException);
