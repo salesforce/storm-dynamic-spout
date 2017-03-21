@@ -37,8 +37,9 @@ public class SpoutCoordinator {
     /**
      * How often our monitor thread will output a status report, in milliseconds
      * as well as do other maintenance logic.
+     * TODO: set this back to 60 secs.
      */
-    private static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 60000;
+    private static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 30000;
 
     /**
      * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
@@ -299,7 +300,7 @@ public class SpoutCoordinator {
         public void run() {
             try {
                 // Rename our thread.
-                Thread.currentThread().setName("SidelineSpout-NewSpoutMonitor");
+                Thread.currentThread().setName("VirtualSpoutMonitor");
 
                 // Start monitoring loop.
                 while (isOpen) {

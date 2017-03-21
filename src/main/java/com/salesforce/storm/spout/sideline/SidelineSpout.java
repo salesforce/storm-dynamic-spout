@@ -169,8 +169,9 @@ public class SidelineSpout extends BaseRichSpout {
             endingState
         );
 
-        logger.info("Starting VirtualSidelineSpout with starting state {}", startingState);
-        logger.info("Starting VirtualSidelineSpout with ending state {}", endingState);
+        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
+        logger.debug("Starting VirtualSidelineSpout with starting state {}", startingState);
+        logger.debug("Starting VirtualSidelineSpout with ending state {}", endingState);
 
         final VirtualSidelineSpout spout = new VirtualSidelineSpout(
             topologyConfig,

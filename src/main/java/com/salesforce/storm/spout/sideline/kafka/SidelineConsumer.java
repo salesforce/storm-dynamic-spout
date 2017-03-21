@@ -183,7 +183,6 @@ public class SidelineConsumer {
                 // We start consuming at our offset + 1, otherwise we'd replay a previously "finished" offset.
                 logger.info("Resuming topic {} partition {} at offset {}", availableTopicPartition.topic(), availableTopicPartition.partition(), (offset + 1));
                 getKafkaConsumer().seek(availableTopicPartition, (offset + 1));
-                logger.info("Will resume at offset {}", kafkaConsumer.position(availableTopicPartition));
 
                 // Starting managing offsets for this partition
                 // Set our completed offset to our 'completed' offset, not it + 1, otherwise we could skip the next uncompleted offset.
@@ -373,7 +372,7 @@ public class SidelineConsumer {
      */
     private void resetPartitionsToEarliest(Collection<TopicPartition> topicPartitions) {
         // Seek to earliest for each
-        logger.info("Seeking to head of partitions {}", topicPartitions);
+        logger.info("Seeking to earliest offset on partitions {}", topicPartitions);
         getKafkaConsumer().seekToBeginning(topicPartitions);
 
         // Now for each partition
