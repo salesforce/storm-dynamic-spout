@@ -70,7 +70,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         // If we haven't tracked it yet
         if (!failedTuples.containsKey(messageId)) {
             // Determine when we should retry this msg
-            final long retryTime = Instant.now(getClock()).toEpochMilli() + minRetryTimeMs;
+            final long retryTime = getClock().millis() + minRetryTimeMs;
 
             // Track new failed message.
             failedTuples.put(messageId, new FailedMessage(1, retryTime));
@@ -85,7 +85,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         // If its already tracked, we should increment some stuff
         final FailedMessage previousEntry = failedTuples.get(messageId);
         final int newFailCount = previousEntry.getFailCount() + 1;
-        final long newRetry = Instant.now(getClock()).toEpochMilli() + (minRetryTimeMs * newFailCount);
+        final long newRetry = getClock().millis() + (minRetryTimeMs * newFailCount);
 
         // Update entry.
         failedTuples.put(messageId, new FailedMessage(newFailCount, newRetry));
@@ -114,13 +114,12 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         // search for the next entry.
 
         // Get now timestamp
-        final long now = Instant.now(getClock()).toEpochMilli();
+        final long now = getClock().millis();
 
         // Loop thru fails
         for (TupleMessageId messageId : failedTuples.keySet()) {
             // If its expired and not already in flight
-            logger.debug("{} <= {} for {} => Replaying it!", failedTuples.get(messageId).getNextRetry(), now, messageId);
-            if (failedTuples.get(messageId).getNextRetry() <= now && !retriesInFlight.contains(messageId)) {
+            if (!retriesInFlight.contains(messageId) && failedTuples.get(messageId).getNextRetry() <= now ) {
                 // return msg id.
                 return messageId;
             }
