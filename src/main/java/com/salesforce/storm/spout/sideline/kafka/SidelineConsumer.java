@@ -320,9 +320,7 @@ public class SidelineConsumer {
             }
 
             // Create new iterator
-            final long start = System.currentTimeMillis();
             bufferIterator = buffer.iterator();
-            logger.info("TIMER: iterator time {}", (System.currentTimeMillis() - start));
         }
     }
 

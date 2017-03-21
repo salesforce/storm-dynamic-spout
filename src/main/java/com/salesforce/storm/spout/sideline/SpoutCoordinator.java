@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -292,8 +293,23 @@ public class SpoutCoordinator {
             this.latch = latch;
             this.clock = clock;
 
-            // Create executor and cast to the correct type.
-            this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(SPOUT_RUNNER_THREAD_POOL_SIZE);
+            /**
+             * Create our executor service with a fixed thread size.
+             * Its configured to:
+             *   - Time out idle threads after 1 minute
+             *   - Keep at most 0 idle threads alive (after timing out).
+             *   - Maximum of SPOUT_RUNNER_THREAD_POOL_SIZE threads running concurrently.
+             *   - Use essentially an unbounded task queue.
+             */
+            this.executor = new ThreadPoolExecutor(
+                    // Number of idle threads to keep around
+                    0,
+                    // Maximum number of threads to utilize
+                    SPOUT_RUNNER_THREAD_POOL_SIZE,
+                    // How long to keep idle threads around for before closing them
+                    1L, TimeUnit.MINUTES,
+                    // Task input queue
+                    new LinkedBlockingQueue<Runnable>());
         }
 
         @Override
