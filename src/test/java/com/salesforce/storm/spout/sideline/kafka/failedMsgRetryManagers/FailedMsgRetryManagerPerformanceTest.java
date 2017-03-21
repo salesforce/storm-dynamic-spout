@@ -15,69 +15,12 @@ import java.util.List;
 public class FailedMsgRetryManagerPerformanceTest {
     private static final Logger logger = LoggerFactory.getLogger(FailedMsgRetryManagerPerformanceTest.class);
 
-    @Test
+    /**
+     * Disabled for now.
+     */
     public void runTest() throws InterruptedException {
         // Create instance with default settings
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
-        retryManager.open(Maps.newHashMap());
-
-        // Do warm up
-        logger.info("WARMING UP");
-        doTest(retryManager);
-
-        // Now start test
-        logger.info("STARTING TEST");
-        retryManager = new DefaultFailedMsgRetryManager();
-        retryManager.open(Maps.newHashMap());
-        doTest(retryManager);
-    }
-
-    public void doTest(DefaultFailedMsgRetryManager retryManager) throws InterruptedException {
-        logger.info("Starting to test {}", retryManager.getClass().getSimpleName());
-
-        // Define test parameters
-        final long numberOfTuples = 30000;
-        final String topicName = "MyTopic";
-        final int partition = 0;
-        final String consumerId = "MyConsumer";
-
-        // Add msgs
-        logger.info("Starting to add {} failed msgs", numberOfTuples);
-        final long startTupleAddTime = System.currentTimeMillis();
-        for (long x=0; x<numberOfTuples; x++) {
-            // Create TupleMessageId
-            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
-            retryManager.failed(tupleMessageId);
-        }
-        for (long x=0; x<numberOfTuples; x++) {
-            // Create TupleMessageId
-            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
-            retryManager.failed(tupleMessageId);
-        }
-        logger.info("Finished in {} ms", (System.currentTimeMillis() - startTupleAddTime));
-
-        // Sleep for 1 sec
-        Thread.sleep(1000);
-
-        // Now ask for next failed
-        logger.info("Trying to get tuples back");
-        final long startNextFailedTime = System.currentTimeMillis();
-        final List<TupleMessageId> returnedTuples = Lists.newArrayList();
-        do {
-            final TupleMessageId tupleMessageId = retryManager.nextFailedMessageToRetry();
-            if (tupleMessageId == null) {
-                continue;
-            }
-            retryManager.retryStarted(tupleMessageId);
-            returnedTuples.add(tupleMessageId);
-        } while (returnedTuples.size() < numberOfTuples);
-        logger.info("Finished in {} ms", (System.currentTimeMillis() - startNextFailedTime));
-    }
-
-    @Test
-    public void runTest2() throws InterruptedException {
-        // Create instance with default settings
-        FailedMsgRetryManager retryManager = new BetterFailedMsgRetryManager();
+        FailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // Do warm up
