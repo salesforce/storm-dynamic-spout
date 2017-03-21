@@ -29,7 +29,22 @@ import java.util.Set;
  * un-processed messages.  This means there exists certain scenarios where it could replay previously processed
  * messages.
  *
- * TODO: Add clear example of how this can happen for those that care.
+ * How does this Consumer track completed offsets?  This consumer will emit messages out the same sequential order
+ * as it consumes it from Kafka.  However there is no guarantee what order those messages will get processed by a storm
+ * topology.  The topology could process and ack those messages in any order.
+ * So lets imagine the following scenario:
+ *   Emit Offsets: 0,1,2,3,4,5
+ * For whatever reason offset #3 takes longer to process, so we get acks in the following order back from storm:
+ *   Ack Offsets: 0,1,4,5,2
+ * At this point internally this consumer knows it has processed the above offsets, but is missing offset #3.
+ * This consumer tracks completed offsets sequentially, meaning it will mark offset #2 as being the last finished offset
+ * because it is the largest offset that we know we have acked every offset preceding it.  If at this point the topology
+ * was stopped, and the consumer shut down, when the topology was redeployed, this consumer would resume consuming at
+ * offset #3, re-emitting the following:
+ *   Emit Offsets: 3,4,5
+ * Now imagine the following acks come in:
+ *   Ack Offsets: 4,5,3
+ * Internally the consumer will recognize that 3 -> 5 are all complete, and now mark offset #5 as the last finished offset.
  */
 public class SidelineConsumer {
     // For logging.
@@ -149,9 +164,8 @@ public class SidelineConsumer {
 
         // If we have a starting offset, lets persist it
         if (startingState != null) {
-            // If we persist it here, when sideline consumer starts up, it should start from this position.
-            // Maybe this is a bit dirty and we should interact w/ SidelineConsumer instead?
-            // TODO - If resuming a topology, will this overwrite existing state?
+            // If we persist it here, when sideline consumer starts up, it should start from this position
+            // when it reads out its state from persistenceManager.
             persistenceManager.persistConsumerState(getConsumerId(), startingState);
         }
 

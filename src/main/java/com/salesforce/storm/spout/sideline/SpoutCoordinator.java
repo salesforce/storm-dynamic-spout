@@ -39,9 +39,8 @@ public class SpoutCoordinator {
     /**
      * How often our monitor thread will output a status report, in milliseconds
      * as well as do other maintenance logic.
-     * TODO: set this back to 60 secs.
      */
-    private static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 30000;
+    private static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 60000;
 
     /**
      * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
@@ -390,15 +389,14 @@ public class SpoutCoordinator {
             }
 
             // Cleanup loop
-            // TODO: Is this the best place to do this?
             for (String virtualSpoutId: spoutThreads.keySet()) {
                 final CompletableFuture future = spoutThreads.get(virtualSpoutId);
                 final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
 
                 if (future.isDone()) {
-                    // TODO We have no idea if it failed or was successful here.
                     if (future.isCompletedExceptionally()) {
                         // This threw an exception.  We need to handle the error case.
+                        // TODO: Handle errors here.
                         logger.error("{} seems to have errored", virtualSpoutId);
                     } else {
                         // Successfully finished?

@@ -198,6 +198,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         );
     }
 
+    // TODO: this needs a test
     public List<SidelineIdentifier> listSidelineRequests() {
         verifyHasBeenOpened();
 

@@ -314,7 +314,7 @@ public class SidelineSpoutTest {
         // Produce another 3 records into kafka.
         producedRecords = produceRecords(expectedOriginalRecordCount);
 
-        // TODO: It would be nice to await here, we basically want the time that would normally pass before we check that there are no new tuples
+        // We basically want the time that would normally pass before we check that there are no new tuples
         // Call next tuple, it should NOT receive any tuples because
         // all tuples are filtered.
         for (int x=0; x<expectedOriginalRecordCount; x++) {
