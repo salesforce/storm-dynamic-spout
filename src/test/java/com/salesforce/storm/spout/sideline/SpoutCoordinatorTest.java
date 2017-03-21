@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SpoutCoordinatorTest {
+    private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
 
     @Test
     public void testCoordinator() throws Exception {
@@ -55,10 +56,12 @@ public class SpoutCoordinatorTest {
         coordinator.addSidelineSpout(sidelineSpout1);
         coordinator.addSidelineSpout(sidelineSpout2);
 
+        logger.info("Waiting for Coordinator to detect and open() our spout instances");
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> coordinator.getTotalSpouts(), equalTo(3));
-
         assertEquals(3, coordinator.getTotalSpouts());
+        logger.info("Coordinator now has {} spout instances", coordinator.getTotalSpouts());
 
+        // Add 1 message to each spout
         fireHoseSpout.addMessage(message1);
         expected.add(message1);
 
@@ -68,12 +71,17 @@ public class SpoutCoordinatorTest {
         fireHoseSpout.addMessage(message3);
         expected.add(message3);
 
+        // The SpoutRunner threads should pop these messages off.
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> actual.getUnderlyingQueue().size(), equalTo(3));
 
+        // Ack the first two messages
         coordinator.ack(message1.getTupleMessageId());
         coordinator.ack(message2.getTupleMessageId());
+
+        // Fail the third
         coordinator.fail(message3.getTupleMessageId());
 
+        // Wait for those to come thru to the correct VirtualSpouts.
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.acks.size(), equalTo(1));
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.fails.size(), equalTo(1));
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.acks.size(), equalTo(1));
@@ -92,8 +100,8 @@ public class SpoutCoordinatorTest {
 
         coordinator.close();
 
-        System.out.println("Expected = " + expected);
-        System.out.println("Actual = " + actual);
+        logger.info("Expected = " + expected);
+        logger.info("Actual = " + actual);
 
         for (KafkaMessage a : expected) {
             boolean found = false;
@@ -137,7 +145,7 @@ public class SpoutCoordinatorTest {
 
         @Override
         public void close() {
-
+            logger.info("Closing spout {}", getConsumerId());
         }
 
         @Override

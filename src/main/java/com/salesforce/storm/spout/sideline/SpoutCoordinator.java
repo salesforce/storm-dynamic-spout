@@ -201,12 +201,20 @@ public class SpoutCoordinator {
         spoutMonitor.close();
 
         try {
+            // Call shutdown, which starts a clean shutdown process.
+            executor.shutdown();
+
+            // Wait for clean termination
             executor.awaitTermination(MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
-            logger.error("Caught Exception while stopping: {}", ex);
+            logger.error("Interupted clean shutdown, forcing stop: {}", ex);
         }
 
-        executor.shutdownNow();
+        // If we haven't shut down yet..
+        if (!executor.isShutdown()) {
+            logger.warn("Shutdown was not completed within {} ms, forcing stop now", MAX_SPOUT_STOP_TIME_MS);
+            executor.shutdownNow();
+        }
 
         // Will trigger the monitor thread to stop running, which should be the end of it
         isOpen = false;
@@ -303,7 +311,7 @@ public class SpoutCoordinator {
              */
             this.executor = new ThreadPoolExecutor(
                 // Number of idle threads to keep around
-                0,
+                SPOUT_RUNNER_THREAD_POOL_SIZE,
                 // Maximum number of threads to utilize
                 SPOUT_RUNNER_THREAD_POOL_SIZE,
                 // How long to keep idle threads around for before closing them
@@ -487,8 +495,8 @@ public class SpoutCoordinator {
                         try {
                             tupleOutputQueue.put(message);
                         } catch (InterruptedException ex) {
-                            // TODO: Revisit this
-                            logger.error("{}", ex);
+                            logger.error("Shutting down due to interruption {}", ex);
+                            spout.requestStop();
                         }
                     }
 
