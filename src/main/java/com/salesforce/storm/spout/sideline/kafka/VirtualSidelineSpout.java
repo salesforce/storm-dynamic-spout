@@ -358,7 +358,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         nextTupleTimeBuckets.put("totalCalls", nextTupleTimeBuckets.get("totalCalls") + 1);
 
         // TEMP Every so often display stats
-        if (nextTupleTimeBuckets.get("totalCalls") % 1000000 == 0) {
+        if (nextTupleTimeBuckets.get("totalCalls") % 10_000_000 == 0) {
             totalTime = nextTupleTimeBuckets.get("totalTime");
             logger.info("==== nextTuple() Totals after {} calls ====", nextTupleTimeBuckets.get("totalCalls"));
             for (String key : nextTupleTimeBuckets.keySet()) {
@@ -445,7 +445,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         ackTimeBuckets.put("TotalCalls", ackTimeBuckets.get("TotalCalls") + 1);
 
         // TEMP Every so often display stats
-        if (ackTimeBuckets.get("TotalCalls") % 1000000 == 0) {
+        if (ackTimeBuckets.get("TotalCalls") % 10_000_000 == 0) {
             totalTime = ackTimeBuckets.get("TotalTime");
             logger.info("==== ack() Totals after {} calls ====", ackTimeBuckets.get("TotalCalls"));
             for (String key : ackTimeBuckets.keySet()) {
