@@ -348,7 +348,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         timeBuckets.put("totalCalls", timeBuckets.get("totalCalls") + 1);
 
         // TEMP Every so often display stats
-        if (timeBuckets.get("totalCalls") % 100000 == 0) {
+        if (timeBuckets.get("totalCalls") % 1000000 == 0) {
             totalTime = timeBuckets.get("totalTime");
             logger.info("==== Totals after {} calls ====", timeBuckets.get("totalCalls"));
             for (String key : timeBuckets.keySet()) {
