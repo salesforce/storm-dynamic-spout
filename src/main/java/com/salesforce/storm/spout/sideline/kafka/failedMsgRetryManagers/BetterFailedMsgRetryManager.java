@@ -72,14 +72,25 @@ public class BetterFailedMsgRetryManager implements FailedMsgRetryManager {
         final int failCount = numberOfTimesFailed.getOrDefault(messageId, 0) + 1;
         numberOfTimesFailed.put(messageId, failCount);
 
-        // Determine when we should retry this msg
+        // Determine when we should retry this msg next
         final long retryTime = getClock().millis() + (minRetryTimeMs * failCount);
 
-        Queue<TupleMessageId> queue = failedMessageIds.get(retryTime);
-        if (queue == null) {
-            queue = Lists.newLinkedList();
-            failedMessageIds.put(retryTime, queue);
+        // If we had previous fails
+        if (failCount > 1) {
+            // Make sure they're removed.  This kind of sucks.
+            // This may not be needed in reality...just because of how we've setup our tests :/
+            for (Long key: failedMessageIds.keySet()) {
+                Queue queue = failedMessageIds.get(key);
+                if (queue.remove(messageId)) {
+                    break;
+                }
+            }
         }
+
+        // Grab the queue for this timestamp,
+        // If it doesn't exist, create a new queue and return it.
+        Queue<TupleMessageId> queue = failedMessageIds.computeIfAbsent(retryTime, k -> Lists.newLinkedList());
+
         // Add our message to the queue.
         queue.add(messageId);
 
@@ -114,6 +125,8 @@ public class BetterFailedMsgRetryManager implements FailedMsgRetryManager {
             // remove it
             failedMessageIds.remove(lowestKey);
         }
+
+        // Mark it as in flight.
         retriesInFlight.add(messageId);
         return messageId;
     }

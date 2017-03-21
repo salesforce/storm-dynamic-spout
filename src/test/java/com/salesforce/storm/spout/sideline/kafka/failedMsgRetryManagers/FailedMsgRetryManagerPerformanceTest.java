@@ -49,6 +49,11 @@ public class FailedMsgRetryManagerPerformanceTest {
             final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
             retryManager.failed(tupleMessageId);
         }
+        for (long x=0; x<numberOfTuples; x++) {
+            // Create TupleMessageId
+            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
+            retryManager.failed(tupleMessageId);
+        }
         logger.info("Finished in {} ms", (System.currentTimeMillis() - startTupleAddTime));
 
         // Sleep for 1 sec
@@ -98,6 +103,11 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Add msgs
         logger.info("Starting to add {} failed msgs", numberOfTuples);
         final long startTupleAddTime = System.currentTimeMillis();
+        for (long x=0; x<numberOfTuples; x++) {
+            // Create TupleMessageId
+            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
+            retryManager.failed(tupleMessageId);
+        }
         for (long x=0; x<numberOfTuples; x++) {
             // Create TupleMessageId
             final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
