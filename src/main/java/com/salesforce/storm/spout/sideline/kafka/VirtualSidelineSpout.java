@@ -216,7 +216,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         ackTimeBuckets.put("TotalTime", 0L);
         ackTimeBuckets.put("TotalCalls", 0L);
-        ackTimeBuckets.put("UpdateMetrics", 0L);
         ackTimeBuckets.put("FailedMsgAck", 0L);
         ackTimeBuckets.put("RemoveTracked", 0L);
         ackTimeBuckets.put("CommitOffset", 0L);
