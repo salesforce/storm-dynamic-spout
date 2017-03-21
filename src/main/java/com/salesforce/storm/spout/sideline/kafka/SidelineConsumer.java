@@ -214,10 +214,13 @@ public class SidelineConsumer {
         ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
 
         // Track this new message's state
+        // TODO: Remove this
+        final long start = System.currentTimeMillis();
         TopicPartition topicPartition = new TopicPartition(nextRecord.topic(), nextRecord.partition());
         partitionStateManagers.get(topicPartition).startOffset(nextRecord.offset());
+        logger.info("TIMER: state tracking {} ms", (System.currentTimeMillis() - start));
 
-        // Return the filter
+        // Return the record
         return nextRecord;
     }
 
