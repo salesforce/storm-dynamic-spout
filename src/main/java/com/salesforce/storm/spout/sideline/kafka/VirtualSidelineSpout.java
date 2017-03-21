@@ -102,7 +102,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     // TEMP
     private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
     private final Map<String, Long> ackTimeBuckets = Maps.newHashMap();
-    private final Map<String, Long> failTimeBuckets = Maps.newHashMap();
 
     /**
      * Constructor.
@@ -199,8 +198,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // If we have an ending state, we set some metrics.
         if (endingState != null) {
+            // TODO: commented out for now.
             // Update our metrics
-            updateMetrics(endingState, "endingOffset");
+            //updateMetrics(endingState, "endingOffset");
         }
 
         // TEMP
@@ -221,13 +221,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         ackTimeBuckets.put("RemoveTracked", 0L);
         ackTimeBuckets.put("CommitOffset", 0L);
         ackTimeBuckets.put("TupleMessageId", 0L);
-
-        failTimeBuckets.put("TotalTime", 0L);
-        failTimeBuckets.put("TotalCalls", 0L);
-        failTimeBuckets.put("Failed", 0L);
-        failTimeBuckets.put("TupleMessageId", 0L);
-        failTimeBuckets.put("RetryFurther", 0L);
-        failTimeBuckets.put("FailedAck", 0L);
     }
 
     /**
@@ -470,60 +463,35 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public void fail(Object msgId) {
-        long totalTime = System.currentTimeMillis();
-
         if (msgId == null) {
             logger.warn("Null msg id passed, ignoring");
             return;
         }
 
         // Convert to TupleMessageId
-        long start = System.currentTimeMillis();
         final TupleMessageId tupleMessageId;
         try {
             tupleMessageId = (TupleMessageId) msgId;
         } catch (ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
-        failTimeBuckets.put("TupleMessageId", failTimeBuckets.get("TupleMessageId") + (System.currentTimeMillis() - start));
 
-        // Add this tuple to a "failed tuple manager interface" object
-        start = System.currentTimeMillis();
-        final boolean retryFurther = failedMsgRetryManager.retryFurther(tupleMessageId);
-        failTimeBuckets.put("RetryFurther", failTimeBuckets.get("RetryFurther") + (System.currentTimeMillis() - start));
-
-        if (!retryFurther) {
-            logger.info("Not retrying failed msgId any further {}", tupleMessageId);
+        // If this tuple shouldn't be replayed again
+        if (!failedMsgRetryManager.retryFurther(tupleMessageId)) {
+            logger.warn("Not retrying failed msgId any further {}", tupleMessageId);
 
             // Mark it as acked in failedMsgRetryManager
-            start = System.currentTimeMillis();
             failedMsgRetryManager.acked(tupleMessageId);
 
             // Ack it in the consumer
             sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
-            failTimeBuckets.put("FailedAck", failTimeBuckets.get("FailedAck") + (System.currentTimeMillis() - start));
-        } else {
-            // Otherwise mark it as failed.
-            start = System.currentTimeMillis();
-            failedMsgRetryManager.failed(tupleMessageId);
-            failTimeBuckets.put("Failed", failTimeBuckets.get("Failed") + (System.currentTimeMillis() - start));
+
+            // Done.
+            return;
         }
 
-        // Increment totals
-        failTimeBuckets.put("TotalTime", failTimeBuckets.get("TotalTime") + (System.currentTimeMillis() - totalTime));
-        failTimeBuckets.put("TotalCalls", failTimeBuckets.get("TotalCalls") + 1);
-
-        // TEMP Every so often display stats
-        if (failTimeBuckets.get("TotalCalls") % 100000 == 0) {
-            totalTime = failTimeBuckets.get("TotalTime");
-            logger.info("==== fail() Totals after {} calls ====", failTimeBuckets.get("TotalCalls"));
-            for (String key : failTimeBuckets.keySet()) {
-                logger.info("fail() {} => {} ms ({}%)", key, failTimeBuckets.get(key), ((float) failTimeBuckets.get(key) / totalTime) * 100);
-            }
-        }
-
-        // Done.
-        return;
+        // Otherwise mark it as failed.
+        failedMsgRetryManager.failed(tupleMessageId);
     }
 
     /**
