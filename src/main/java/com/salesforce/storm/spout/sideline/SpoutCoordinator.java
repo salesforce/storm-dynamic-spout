@@ -302,14 +302,15 @@ public class SpoutCoordinator {
              *   - Use essentially an unbounded task queue.
              */
             this.executor = new ThreadPoolExecutor(
-                    // Number of idle threads to keep around
-                    0,
-                    // Maximum number of threads to utilize
-                    SPOUT_RUNNER_THREAD_POOL_SIZE,
-                    // How long to keep idle threads around for before closing them
-                    1L, TimeUnit.MINUTES,
-                    // Task input queue
-                    new LinkedBlockingQueue<Runnable>());
+                // Number of idle threads to keep around
+                0,
+                // Maximum number of threads to utilize
+                SPOUT_RUNNER_THREAD_POOL_SIZE,
+                // How long to keep idle threads around for before closing them
+                1L, TimeUnit.MINUTES,
+                // Task input queue
+                new LinkedBlockingQueue<Runnable>()
+            );
         }
 
         @Override
