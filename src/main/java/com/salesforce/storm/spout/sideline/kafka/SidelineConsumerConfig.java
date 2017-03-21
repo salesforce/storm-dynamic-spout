@@ -55,7 +55,7 @@ public class SidelineConsumerConfig {
 
         // Default value: true, "This check adds some overhead, so it may be disabled in cases seeking extreme performance."
         setKafkaConsumerProperty(ConsumerConfig.CHECK_CRCS_CONFIG, "true");
-        
+
         /**
          * Defines how quickly a session will time out.
          * If this is set too low, and we are unable to process the returned results fast enough
@@ -63,9 +63,9 @@ public class SidelineConsumerConfig {
          * Setting it too high means that the kafka cluster will take longer to determine if the client
          * has disconnected because of some unannounced error.
          *
-         * We default this to 2 minutes.
+         * We default this to 30 seconds.
          */
-        setKafkaConsumerProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "120000");
+        setKafkaConsumerProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
 
         /**
          * If an offset is deemed too old and not available how should we handle it?
