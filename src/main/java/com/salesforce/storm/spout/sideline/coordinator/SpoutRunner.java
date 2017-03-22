@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * This Runnable handles running a SidelineVirtualSpout within a separate thread.
+ * Manages running a VirtualSpout instance.
  * It handles all of the cross-thread communication via its Concurrent Queues data structures.
  */
 public class SpoutRunner implements Runnable {
