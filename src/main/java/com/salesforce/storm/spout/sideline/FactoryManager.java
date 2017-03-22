@@ -9,7 +9,6 @@ import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -52,8 +51,8 @@ public class FactoryManager implements Serializable {
     private transient Class<? extends TupleBuffer> tupleBufferClass;
 
     public FactoryManager(Map topologyConfig) {
-        // Create immutable clone of configuration.
-        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+        // Create immutable copy of configuration.
+        this.topologyConfig = Tools.immutableCopy(topologyConfig);
     }
 
     /**

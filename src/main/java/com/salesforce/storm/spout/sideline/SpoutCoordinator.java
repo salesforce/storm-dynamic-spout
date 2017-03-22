@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,7 +99,7 @@ public class SpoutCoordinator {
      */
     public void open(Map<String, Object> topologyConfig) {
         // Create copy of topology config
-        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+        this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
         // Create a countdown latch
         final CountDownLatch latch = new CountDownLatch(getNewSpoutQueue().size());

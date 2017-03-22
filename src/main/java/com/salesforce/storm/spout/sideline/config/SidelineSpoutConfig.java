@@ -171,7 +171,7 @@ public class SidelineSpoutConfig {
      * @param config - the config to update.
      * @return - a cloned copy of the config that is updated.
      */
-    public static Map setDefaults(Map config) {
+    public static Map<String, Object> setDefaults(Map config) {
         // Clone the map
         Map<String, Object> clonedConfig = Maps.newHashMap();
         clonedConfig.putAll(config);

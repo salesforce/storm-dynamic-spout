@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
@@ -10,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -79,7 +79,7 @@ public class SpoutRunner implements Runnable {
         this.failedTupleQueue = failedTupleInputQueue;
         this.latch = latch;
         this.clock = clock;
-        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+        this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
         // Record start time.
         this.startTime = getClock().millis();
@@ -145,7 +145,7 @@ public class SpoutRunner implements Runnable {
             // Looks like someone requested that we stop this instance.
             // So we call close on it, and log our run time.
             final Duration runtime = Duration.ofMillis(getClock().millis() - startTime);
-            logger.info("Closing {} spout, total run time was {} days {} hrs {} min {} sec", spout.getConsumerId(), runtime.toDays(), runtime.toHours() % 24, runtime.toMinutes() % 60, runtime.getSeconds() % 60);
+            logger.info("Closing {} spout, total run time was {}", spout.getConsumerId(), Tools.prettyDuration(runtime));
             spout.close();
 
             // Remove our entries from our queues.

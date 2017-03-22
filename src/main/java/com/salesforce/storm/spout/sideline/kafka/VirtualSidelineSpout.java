@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
@@ -21,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -138,7 +138,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         this.topologyContext = topologyContext;
 
         // Save an immutable clone of the config
-        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+        this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
         // Save factory manager instance
         this.factoryManager = factoryManager;
