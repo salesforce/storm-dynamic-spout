@@ -49,7 +49,7 @@ public class SpoutCoordinatorTest {
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder, actual);
-        coordinator.open();
+        coordinator.open(Maps.newHashMap());
 
         assertEquals(1, coordinator.getTotalSpouts());
 

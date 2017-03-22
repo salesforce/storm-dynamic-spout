@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -38,7 +40,7 @@ public class SpoutCoordinator {
      * How often our monitor thread will output a status report, in milliseconds
      * as well as do other maintenance logic.
      */
-    private static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 60000;
+    public static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 60000;
 
     /**
      * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
@@ -77,12 +79,12 @@ public class SpoutCoordinator {
     /**
      * Buffer by spout consumer id of messages that have been acked.
      */
-    private final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue = new ConcurrentHashMap<>();
+    private final Map<String,Queue<TupleMessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
      * Buffer by spout consumer id of messages that have been failed.
      */
-    private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue = new ConcurrentHashMap<>();
+    private final Map<String,Queue<TupleMessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
      * For capturing metrics.
@@ -100,23 +102,17 @@ public class SpoutCoordinator {
     private SpoutMonitor spoutMonitor;
 
     /**
-     * Flag that gets set to false on shutdown, to signal to close up shop.
-     * This probably should be renamed at some point.
+     * Copy of the Storm topology configuration.
      */
-    private boolean isOpen = false;
+    private Map<String, Object> topologyConfig;
 
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
      * @param spout Fire hose spout
      */
-    public SpoutCoordinator(
-        final DelegateSidelineSpout spout,
-        final MetricsRecorder metricsRecorder,
-        final TupleBuffer tupleBuffer
-    ) {
+    public SpoutCoordinator(DelegateSidelineSpout spout, MetricsRecorder metricsRecorder, TupleBuffer tupleBuffer) {
         this.metricsRecorder = metricsRecorder;
         this.tupleBuffer = tupleBuffer;
-
         addSidelineSpout(spout);
     }
 
@@ -126,28 +122,28 @@ public class SpoutCoordinator {
      * @param spout New delegate spout
      */
     public void addSidelineSpout(final DelegateSidelineSpout spout) {
-        newSpoutQueue.add(spout);
+        getNewSpoutQueue().add(spout);
     }
 
     /**
      * Open the coordinator and begin spinning up virtual spout threads.
      */
-    public void open() {
-        // Mark us as being open
-        isOpen = true;
+    public void open(Map<String, Object> topologyConfig) {
+        // Create copy of topology config
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
 
         // Create a countdown latch
-        final CountDownLatch latch = new CountDownLatch(newSpoutQueue.size());
+        final CountDownLatch latch = new CountDownLatch(getNewSpoutQueue().size());
 
         this.executor = Executors.newSingleThreadExecutor();
 
         spoutMonitor = new SpoutMonitor(
-            newSpoutQueue,
-            tupleBuffer,
-            ackedTuplesInputQueue,
-            failedTuplesInputQueue,
+            getNewSpoutQueue(),
+            getTupleBuffer(),
+            getAckedTuplesQueue(),
+            getFailedTuplesQueue(),
             latch,
-            clock
+            getClock()
         );
 
         executor.submit(spoutMonitor);
@@ -164,12 +160,12 @@ public class SpoutCoordinator {
      * @param id Tuple message id to ack
      */
     public void ack(final TupleMessageId id) {
-        if (!ackedTuplesInputQueue.containsKey(id.getSrcVirtualSpoutId())) {
+        if (!getAckedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
         }
 
-        ackedTuplesInputQueue.get(id.getSrcVirtualSpoutId()).add(id);
+        getAckedTuplesQueue().get(id.getSrcVirtualSpoutId()).add(id);
     }
 
     /**
@@ -177,19 +173,19 @@ public class SpoutCoordinator {
      * @param id Tuple message id to fail
      */
     public void fail(final TupleMessageId id) {
-        if (!failedTuplesInputQueue.containsKey(id.getSrcVirtualSpoutId())) {
+        if (!getFailedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
         }
 
-        failedTuplesInputQueue.get(id.getSrcVirtualSpoutId()).add(id);
+        getFailedTuplesQueue().get(id.getSrcVirtualSpoutId()).add(id);
     }
 
     /**
      * @return - Returns the next available KafkaMessage to be emitted into the topology.
      */
     public KafkaMessage nextMessage() {
-        return tupleBuffer.poll();
+        return getTupleBuffer().poll();
     }
 
     /**
@@ -213,9 +209,6 @@ public class SpoutCoordinator {
             logger.warn("Shutdown was not completed within {} ms, forcing stop now", MAX_SPOUT_STOP_TIME_MS);
             executor.shutdownNow();
         }
-
-        // Will trigger the monitor thread to stop running, which should be the end of it
-        isOpen = false;
     }
 
     /**
@@ -224,6 +217,64 @@ public class SpoutCoordinator {
      */
     int getTotalSpouts() {
         return spoutMonitor.getTotalSpouts();
+    }
+
+    /**
+     * @return - TupleBuffer instance.
+     */
+    TupleBuffer getTupleBuffer() {
+        return tupleBuffer;
+    }
+
+    /**
+     * @return - The acked tuples queues.
+     */
+    Map<String, Queue<TupleMessageId>> getAckedTuplesQueue() {
+        return ackedTuplesQueue;
+    }
+
+    /**
+     * @return - The failed tuples queues.
+     */
+    Map<String, Queue<TupleMessageId>> getFailedTuplesQueue() {
+        return failedTuplesQueue;
+    }
+
+    /**
+     * @return - The new virtual spout instance queue.
+     */
+    Queue<DelegateSidelineSpout> getNewSpoutQueue() {
+        return newSpoutQueue;
+    }
+
+    /**
+     * @return - Clock instance, used for get local system time.
+     */
+    Clock getClock() {
+        return clock;
+    }
+
+    /**
+     * @return - The topology configuration map.
+     */
+    private Map<String, Object> getTopologyConfig() {
+        return topologyConfig;
+    }
+
+    /**
+     * Utility method to get a specific entry in the Storm topology config map.
+     * @param key - the configuration item to retrieve
+     * @return - the configuration item's value.
+     */
+    private Object getTopologyConfigItem(final String key) {
+        return getTopologyConfig().get(key);
+    }
+
+    /**
+     * @return - The configured Monitor thread internal timing, in milliseconds.
+     */
+    long getMonitorThreadIntervalMs() {
+        return (long) getTopologyConfigItem(SidelineSpoutConfig.MONITOR_THREAD_SLEEP_MS);
     }
 
     /**
@@ -255,14 +306,14 @@ public class SpoutCoordinator {
          * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be acked.
          * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
          */
-        private final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue;
+        private final Map<String,Queue<TupleMessageId>> ackedTuplesQueue;
 
         /**
          * This buffer/queue holds tuples that are ready to be failed by VirtualSidelineSpouts.
          * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be failed.
          * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
          */
-        private final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue;
+        private final Map<String,Queue<TupleMessageId>> failedTuplesQueue;
 
         /**
          * This latch allows the SpoutCoordinator to block on start up until its initial
@@ -284,18 +335,22 @@ public class SpoutCoordinator {
          */
         private long lastStatusReport = 0;
 
+        SpoutMonitor(SpoutCoordinator coordinator, final CountDownLatch latch) {
+            this(coordinator.getNewSpoutQueue(), coordinator.getTupleBuffer(), coordinator.getAckedTuplesQueue(), coordinator.getFailedTuplesQueue(), latch, coordinator.getClock());
+        }
+
         SpoutMonitor(
             final Queue<DelegateSidelineSpout> newSpoutQueue,
             final TupleBuffer tupleOutputQueue,
-            final Map<String,Queue<TupleMessageId>> ackedTuplesInputQueue,
-            final Map<String,Queue<TupleMessageId>> failedTuplesInputQueue,
+            final Map<String,Queue<TupleMessageId>> ackedTuplesQueue,
+            final Map<String,Queue<TupleMessageId>> failedTuplesQueue,
             final CountDownLatch latch,
             final Clock clock
         ) {
             this.newSpoutQueue = newSpoutQueue;
             this.tupleOutputQueue = tupleOutputQueue;
-            this.ackedTuplesInputQueue = ackedTuplesInputQueue;
-            this.failedTuplesInputQueue = failedTuplesInputQueue;
+            this.ackedTuplesQueue = ackedTuplesQueue;
+            this.failedTuplesQueue = failedTuplesQueue;
             this.latch = latch;
             this.clock = clock;
 
@@ -337,8 +392,8 @@ public class SpoutCoordinator {
                         final SpoutRunner spoutRunner = new SpoutRunner(
                             spout,
                             tupleOutputQueue,
-                            ackedTuplesInputQueue,
-                            failedTuplesInputQueue,
+                                ackedTuplesQueue,
+                                failedTuplesQueue,
                             latch,
                             clock
                         );

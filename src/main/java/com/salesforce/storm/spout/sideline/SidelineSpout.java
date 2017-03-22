@@ -211,7 +211,7 @@ public class SidelineSpout extends BaseRichSpout {
         spout.setConsumerId(fireHoseSpout.getConsumerId() + "_" + id.toString());
         spout.getFilterChain().addSteps(id, negatedSteps);
 
-        coordinator.addSidelineSpout(spout);
+        getCoordinator().addSidelineSpout(spout);
 
         // Update stop count metric
         metricsRecorder.count(getClass(), "stop-sideline", 1L);
@@ -288,7 +288,7 @@ public class SidelineSpout extends BaseRichSpout {
         );
 
         // Call open on coordinator.
-        coordinator.open();
+        getCoordinator().open(getTopologyConfig());
 
         // TODO: LEMON - We should build the full payload here rather than individual requests later on
         final List<SidelineIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
@@ -324,7 +324,7 @@ public class SidelineSpout extends BaseRichSpout {
                 spout.getFilterChain().addSteps(payload.id, payload.request.steps);
 
                 // Now pass the new "resumed" spout over to the coordinator to open and run
-                coordinator.addSidelineSpout(spout);
+                getCoordinator().addSidelineSpout(spout);
             }
         }
 
@@ -350,7 +350,7 @@ public class SidelineSpout extends BaseRichSpout {
          * If a KafkaMessage object is returned, it contains the appropriately
          * mapped MessageId and Values for the tuple that should be emitted.
          */
-        final KafkaMessage kafkaMessage = coordinator.nextMessage();
+        final KafkaMessage kafkaMessage = getCoordinator().nextMessage();
         if (kafkaMessage == null) {
             // Nothing new to emit!
             return;
@@ -403,8 +403,8 @@ public class SidelineSpout extends BaseRichSpout {
     public void close() {
         logger.info("Stopping the coordinator and closing all spouts");
 
-        if (coordinator != null) {
-            coordinator.close();
+        if (getCoordinator() != null) {
+            getCoordinator().close();
             coordinator = null;
         }
 
@@ -443,7 +443,7 @@ public class SidelineSpout extends BaseRichSpout {
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
         // Ack the tuple via the coordinator
-        coordinator.ack(tupleMessageId);
+        getCoordinator().ack(tupleMessageId);
 
         // Update ack count metric
         metricsRecorder.count(getClass(), "ack", 1L);
@@ -462,7 +462,7 @@ public class SidelineSpout extends BaseRichSpout {
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
         // Fail the tuple via the coordinator
-        coordinator.fail(tupleMessageId);
+        getCoordinator().fail(tupleMessageId);
 
         // Update fail count metric
         metricsRecorder.count(getClass(), "fail", 1L);
@@ -506,6 +506,13 @@ public class SidelineSpout extends BaseRichSpout {
      */
     private SpoutOutputCollector getOutputCollector() {
         return outputCollector;
+    }
+
+    /**
+     * @return - The virtual spout coordinator.
+     */
+    SpoutCoordinator getCoordinator() {
+        return coordinator;
     }
 
     /**

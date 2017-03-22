@@ -24,7 +24,9 @@ import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +35,11 @@ import java.time.Clock;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -47,7 +51,6 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(DataProviderRunner.class)
 public class SidelineSpoutTest {
-
     // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutTest.class);
 
@@ -56,6 +59,12 @@ public class SidelineSpoutTest {
 
     // Gets set to our randomly generated topic created for the test.
     private String topicName;
+
+    /**
+     * By default, no exceptions should be thrown.
+     */
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Here we stand up an internal test kafka and zookeeper service.
@@ -91,6 +100,30 @@ public class SidelineSpoutTest {
             e.printStackTrace();
         }
         kafkaTestServer = null;
+    }
+
+    /**
+     * Validates that we require the ConsumerIdPrefix configuration value.
+     */
+    @Test
+    public void testMissingRequiredConfigurationConsumerIdPrefix() {
+        // Create our config missing the consumerIdPrefix
+        final Map<String, Object> config = getDefaultConfig(null, null);
+        config.remove(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+
+        // Some mock stuff to get going
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        // When we call open, we expect illegal state exception about our missing configuration item
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage(containsString(SidelineSpoutConfig.CONSUMER_ID_PREFIX));
+
+        // Call open
+        spout.open(config, topologyContext, spoutOutputCollector);
     }
 
     /**
@@ -301,6 +334,9 @@ public class SidelineSpoutTest {
         // Sanity test, should be 0 again
         assertEquals(0, spoutOutputCollector.getEmissions().size());
 
+        // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
+        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
+
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
         final StaticMessageFilter staticMessageFilter = new StaticMessageFilter(true);
@@ -365,7 +401,9 @@ public class SidelineSpoutTest {
             expectedMessageOffset++;
         }
 
-        // TODO - Validate that virtualsideline spouts are NOT closed out, but still waiting for unacked tuples.
+        // Validate that virtualsideline spouts are NOT closed out, but still waiting for unacked tuples.
+        // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
+        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
 
         // Lets ack our messages.
         ackTuples(spout, spoutEmissions);
@@ -373,7 +411,14 @@ public class SidelineSpoutTest {
         // Reset our mock SpoutOutputCollector
         spoutOutputCollector.reset();
 
-        // TODO - Validate that virtual sideline spouts ARE closed out.
+        // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
+        // TODO: configure this timeout to something less than 60 secs
+//        await()
+//            .atMost(3, TimeUnit.SECONDS)
+//            .until(() -> {
+//                return spout.getCoordinator().getTotalSpouts();
+//            }, equalTo(1));
+//        assertEquals("We should have only 1 virtual spouts running", 1, spout.getCoordinator().getTotalSpouts());
 
         // Produce some more records, verify they come in the firehose.
         producedRecords = produceRecords(expectedOriginalRecordCount);
@@ -445,15 +490,64 @@ public class SidelineSpoutTest {
         assertEquals("Got expected taskId", expectedTaskId, spoutEmission.getTaskId());
     }
 
-    private void ackTuples(final IRichSpout spout, List<SpoutEmission> spoutEmissions) throws InterruptedException {
+    /**
+     * Utility method to ack tuples on a spout.  This will wait for the underlying VirtualSpout instance
+     * to actually ack them before returning.
+     *
+     * @param spout - the Spout instance to ack tuples on.
+     * @param spoutEmissions - The SpoutEmissions we want to ack.
+     */
+    private void ackTuples(final SidelineSpout spout, List<SpoutEmission> spoutEmissions) {
         // Ack each one.
         for (SpoutEmission emission: spoutEmissions) {
             spout.ack(emission.getMessageId());
         }
         // Acking tuples is an async process, so we need to make sure they get picked up
         // and processed before continuing.
-        // TODO - How do we async wait for this?
-        Thread.sleep(3000);
+        await()
+            .atMost(3, TimeUnit.SECONDS)
+            .until(() -> {
+                // Wait for our tuples to get popped off the acked queue.
+                Map<String, Queue<TupleMessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
+                for (String key : queueMap.keySet()) {
+                    // If any queue has entries, return false
+                    if (!queueMap.get(key).isEmpty()) {
+                        return false;
+                    }
+                }
+                // If all entries are empty, return true
+                return true;
+            }, equalTo(true));
+    }
+
+    /**
+     * Utility method to fail tuples on a spout.  This will wait for the underlying VirtualSpout instance
+     * to actually fail them before returning.
+     *
+     * @param spout - the Spout instance to ack tuples on.
+     * @param spoutEmissions - The SpoutEmissions we want to ack.
+     */
+    private void failTuples(final SidelineSpout spout, List<SpoutEmission> spoutEmissions) {
+        // Fail each one.
+        for (SpoutEmission emission: spoutEmissions) {
+            spout.fail(emission.getMessageId());
+        }
+        // Failing tuples is an async process, so we need to make sure they get picked up
+        // and processed before continuing.
+        await()
+            .atMost(3, TimeUnit.SECONDS)
+            .until(() -> {
+                // Wait for our tuples to get popped off the acked queue.
+                Map<String, Queue<TupleMessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
+                for (String key : queueMap.keySet()) {
+                    // If any queue has entries, return false
+                    if (!queueMap.get(key).isEmpty()) {
+                        return false;
+                    }
+                }
+                // If all entries are empty, return true
+                return true;
+            }, equalTo(true));
     }
 
     /**
@@ -514,7 +608,8 @@ public class SidelineSpoutTest {
     }
 
     /**
-     * Noop, just doing coverage!
+     * Noop, just doing coverage!  These methods don't actually
+     * do anything right now anyways.
      */
     @Test
     public void testActivate() {
@@ -523,7 +618,8 @@ public class SidelineSpoutTest {
     }
 
     /**
-     * Noop, just doing coverage!
+     * Noop, just doing coverage!  These methods don't actually
+     * do anything right now anyways.
      */
     @Test
     public void testDeactivate() {
@@ -578,6 +674,4 @@ public class SidelineSpoutTest {
 
         return config;
     }
-
-    // TODO: Add test over fail() method.
 }
