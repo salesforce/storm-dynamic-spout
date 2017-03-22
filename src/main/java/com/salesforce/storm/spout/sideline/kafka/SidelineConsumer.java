@@ -272,17 +272,19 @@ public class SidelineConsumer {
             return false;
         }
 
+        // Get current system time.
+        final long now = getClock().millis();
+
         // Set initial state if not defined
         if (lastFlushTime == 0) {
-            lastFlushTime = Instant.now(getClock()).toEpochMilli();
+            lastFlushTime = now;
             return false;
         }
 
         // Determine if we should flush.
-        final long currentTime = Instant.now(getClock()).toEpochMilli();
-        if (currentTime - lastFlushTime > getConsumerConfig().getConsumerStateAutoCommitIntervalMs()) {
+        if ((now - lastFlushTime) > getConsumerConfig().getConsumerStateAutoCommitIntervalMs()) {
             flushConsumerState();
-            lastFlushTime = currentTime;
+            lastFlushTime = now;
             return true;
         }
         return false;
@@ -302,8 +304,7 @@ public class SidelineConsumer {
             consumerState.setOffset(entry.getKey(), entry.getValue().lastFinishedOffset());
         }
 
-        // Persist this state.
-        logger.debug("Flushing consumer state {}", consumerState);
+        // Persist state.
         persistenceManager.persistConsumerState(getConsumerId(), consumerState);
 
         // Return the state that was persisted.
