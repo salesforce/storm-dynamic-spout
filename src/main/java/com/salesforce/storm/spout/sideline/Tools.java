@@ -13,25 +13,23 @@ import java.util.Map;
 public class Tools {
 
     /**
-     * Creates a shallow copy of the source map and wraps it in an UnmodifiedMap wrapper.
+     * Creates a shallow copy of a map and wraps it in an UnmodifiableMap.
      *
      * @param sourceMap - the map we want to shallow clone and make immutable.
      * @return - A shallow cloned map thats immutable.
      */
     public static <K,V> Map<K,V> immutableCopy(Map<K,V> sourceMap) {
-        // If we're already dealing with a cloned & immutable map
+        // If we're already dealing with an UnmodifiableMap
         if (sourceMap instanceof UnmodifiableMap) {
             // just return it.
             return sourceMap;
         }
 
-        // Create a new map
+        // Create a new map and add all entries from the source map
         Map<K,V> copy = Maps.newHashMap();
-
-        // Add all entries from the source map
         copy.putAll(sourceMap);
 
-        // Wrap it in an unmodified map.
+        // Wrap it in an unmodifiable map.
         return Collections.unmodifiableMap(copy);
     }
 
