@@ -166,11 +166,12 @@ public class SpoutCoordinator {
      * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts.
      */
     public void close() {
-        spoutMonitor.close();
-
         try {
-            // Call shutdown, which starts a clean shutdown process.
+            // Call shutdown, which prevents the executor from starting any new tasks.
             executor.shutdown();
+
+            // Call close on the spout monitor
+            spoutMonitor.close();
 
             // Wait for clean termination
             executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
@@ -180,7 +181,7 @@ public class SpoutCoordinator {
 
         // If we haven't shut down yet..
         if (!executor.isShutdown()) {
-            logger.warn("Shutdown was not completed within {} ms, forcing stop now", getMaxTerminationWaitTimeMs());
+            logger.warn("Shutdown was not completed within {} ms, forcing stop of executor now", getMaxTerminationWaitTimeMs());
             executor.shutdownNow();
         }
     }
