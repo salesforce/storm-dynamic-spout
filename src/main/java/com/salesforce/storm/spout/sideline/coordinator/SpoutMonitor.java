@@ -25,6 +25,11 @@ public class SpoutMonitor implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(SpoutMonitor.class);
 
     /**
+     * How often our monitor thread will output a status report, in milliseconds.
+     */
+    public static final long REPORT_STATUS_INTERVAL_MS = 60_000;
+
+    /**
      * The executor service that we submit VirtualSidelineSpouts to run within.
      */
     private final ThreadPoolExecutor executor;
@@ -75,6 +80,11 @@ public class SpoutMonitor implements Runnable {
      */
     private long lastStatusReport = 0;
 
+    /**
+     * How often the monitor thread will run, in milliseconds.
+     */
+    private long monitorThreadIntervalMs = 2000L;
+
     public SpoutMonitor(
             final Queue<DelegateSidelineSpout> newSpoutQueue,
             final TupleBuffer tupleOutputQueue,
@@ -118,37 +128,18 @@ public class SpoutMonitor implements Runnable {
 
             // Start monitoring loop.
             while (isOpen) {
-                // Periodically do a status report + Maintenance
-                doMaintenanceLoop();
+                // Look for completed tasks
+                watchForCompletedTasks();
 
-                // Look for new spouts to start.
-                for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
-                    logger.info("Preparing thread for spout {}", spout.getConsumerId());
+                // Look for new VirtualSpouts that need to be started
+                startNewSpoutTasks();
 
-                    final SpoutRunner spoutRunner = new SpoutRunner(
-                        spout,
-                        tupleOutputQueue,
-                        ackedTuplesQueue,
-                        failedTuplesQueue,
-                        latch,
-                        getClock()
-                    );
-
-                    spoutRunners.put(spout.getConsumerId(), spoutRunner);
-
-                    // Run as a CompletableFuture
-                    final CompletableFuture spoutInstance = CompletableFuture.runAsync(spoutRunner, this.executor);
-
-                    // Is there an advantage/disavantage vs this?
-                    //final Future spoutInstance = executor.submit(spoutRunner);
-
-
-                    spoutThreads.put(spout.getConsumerId(), spoutInstance);
-                }
+                // Periodically report status
+                reportStatus();
 
                 // Pause for a period before checking for more spouts
                 try {
-                    Thread.sleep(SpoutCoordinator.MONITOR_THREAD_SLEEP_MS);
+                    Thread.sleep(getMonitorThreadIntervalMs());
                 } catch (InterruptedException ex) {
                     logger.warn("!!!!!! Thread interrupted, shutting down...");
                     return;
@@ -162,26 +153,34 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * This method will periodically show a status report to our logger interface.
+     * Submit any new spout tasks as they show up.
      */
-    private void doMaintenanceLoop() {
-        // Get current time
-        final long now = getClock().millis();
+    private void startNewSpoutTasks() {
+        // Look for new spouts to start.
+        for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
+            logger.info("Preparing thread for spout {}", spout.getConsumerId());
 
-        // Set initial value if none set.
-        if (lastStatusReport == 0) {
-            lastStatusReport = now;
-            return;
+            final SpoutRunner spoutRunner = new SpoutRunner(
+                    spout,
+                    tupleOutputQueue,
+                    ackedTuplesQueue,
+                    failedTuplesQueue,
+                    latch,
+                    getClock()
+            );
+
+            spoutRunners.put(spout.getConsumerId(), spoutRunner);
+
+            // Run as a CompletableFuture
+            final CompletableFuture spoutInstance = CompletableFuture.runAsync(spoutRunner, this.executor);
+            spoutThreads.put(spout.getConsumerId(), spoutInstance);
         }
+    }
 
-        // If we've reported recently
-        if ((now - lastStatusReport) <= SpoutCoordinator.MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS) {
-            // Do nothing.
-            return;
-        }
-        // Update timestamp
-        lastStatusReport = now;
-
+    /**
+     * Look for any tasks that have finished running and handle them appropriately.
+     */
+    private void watchForCompletedTasks() {
         // Cleanup loop
         for (String virtualSpoutId: spoutThreads.keySet()) {
             final CompletableFuture future = spoutThreads.get(virtualSpoutId);
@@ -203,6 +202,29 @@ public class SpoutMonitor implements Runnable {
                 spoutThreads.remove(virtualSpoutId);
             }
         }
+
+    }
+
+    /**
+     * This method will periodically show a status report to our logger interface.
+     */
+    private void reportStatus() {
+        // Get current time
+        final long now = getClock().millis();
+
+        // Set initial value if none set.
+        if (lastStatusReport == 0) {
+            lastStatusReport = now;
+            return;
+        }
+
+        // Only report once every 60 seconds.
+        if ((now - lastStatusReport) <= REPORT_STATUS_INTERVAL_MS) {
+            // Do nothing.
+            return;
+        }
+        // Update timestamp
+        lastStatusReport = now;
 
         // Show a status report
         logger.info("Active Tasks: {}, Queued Tasks: {}, ThreadPool Size: {}/{}, Completed Tasks: {}, Total Tasks Submitted: {}",
@@ -265,5 +287,22 @@ public class SpoutMonitor implements Runnable {
      */
     private Clock getClock() {
         return clock;
+    }
+
+    /**
+     * Configure how often our monitor thread should run thru its maintenance loop.
+     * @param duration - a duration
+     * @param timeUnit - the time unit of the duration.
+     */
+    public void setMonitorThreadInterval(long duration, TimeUnit timeUnit) {
+        this.monitorThreadIntervalMs = TimeUnit.MILLISECONDS.convert(duration, timeUnit);
+        logger.info("Monitor thread will run on a {} millisecond interval", getMonitorThreadIntervalMs());
+    }
+
+    /**
+     * @return - how often our monitor thread should run thru its maintenance loop.
+     */
+    private long getMonitorThreadIntervalMs() {
+        return monitorThreadIntervalMs;
     }
 }

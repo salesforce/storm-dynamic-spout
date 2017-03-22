@@ -412,13 +412,14 @@ public class SidelineSpoutTest {
         spoutOutputCollector.reset();
 
         // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
-        // TODO: configure this timeout to something less than 60 secs
-//        await()
-//            .atMost(3, TimeUnit.SECONDS)
-//            .until(() -> {
-//                return spout.getCoordinator().getTotalSpouts();
-//            }, equalTo(1));
-//        assertEquals("We should have only 1 virtual spouts running", 1, spout.getCoordinator().getTotalSpouts());
+        // We need to wait for the monitor thread to run to clean it up.
+        final long maxWaitTimeMs = (long) config.get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS) * 4;
+        await()
+            .atMost(maxWaitTimeMs, TimeUnit.MILLISECONDS)
+            .until(() -> {
+                return spout.getCoordinator().getTotalSpouts();
+            }, equalTo(1));
+        assertEquals("We should have only 1 virtual spouts running", 1, spout.getCoordinator().getTotalSpouts());
 
         // Produce some more records, verify they come in the firehose.
         producedRecords = produceRecords(expectedOriginalRecordCount);
@@ -662,6 +663,9 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager");
+
+        // Configure SpoutMonitor thread to run every 1 second
+        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
         config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, "com.salesforce.storm.spout.sideline.metrics.LogRecorder");

@@ -29,18 +29,6 @@ public class SpoutCoordinator {
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
     /**
-     * How long our monitor thread will sit around and sleep between monitoring
-     * if new VirtualSpouts need to be started up, in Milliseconds.
-     */
-    public static final int MONITOR_THREAD_SLEEP_MS = 2000;
-
-    /**
-     * How often our monitor thread will output a status report, in milliseconds
-     * as well as do other maintenance logic.
-     */
-    public static final long MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS = 60000;
-
-    /**
      * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
      * them with force, in Milliseconds.
      */
@@ -133,8 +121,10 @@ public class SpoutCoordinator {
         // Create a countdown latch
         final CountDownLatch latch = new CountDownLatch(getNewSpoutQueue().size());
 
+        // Create new single threaded executor.
         this.executor = Executors.newSingleThreadExecutor();
 
+        // Create our spout monitor instance.
         spoutMonitor = new SpoutMonitor(
             getNewSpoutQueue(),
             getTupleBuffer(),
@@ -144,6 +134,12 @@ public class SpoutCoordinator {
             getClock()
         );
 
+        // Configure how often it runs
+        if (getTopologyConfig().containsKey(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS)) {
+            spoutMonitor.setMonitorThreadInterval((long) getTopologyConfigItem(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS), TimeUnit.MILLISECONDS);
+        }
+
+        // Start executing the spout monitor in a new thread.
         executor.submit(spoutMonitor);
 
         try {
@@ -267,12 +263,4 @@ public class SpoutCoordinator {
     private Object getTopologyConfigItem(final String key) {
         return getTopologyConfig().get(key);
     }
-
-    /**
-     * @return - The configured Monitor thread internal timing, in milliseconds.
-     */
-    long getMonitorThreadIntervalMs() {
-        return (long) getTopologyConfigItem(SidelineSpoutConfig.MONITOR_THREAD_SLEEP_MS);
-    }
-
 }
