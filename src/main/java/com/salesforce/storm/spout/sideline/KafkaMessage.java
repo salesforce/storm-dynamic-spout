@@ -2,6 +2,9 @@ package com.salesforce.storm.spout.sideline;
 
 import org.apache.storm.tuple.Values;
 
+/**
+ * Represents an abstracted view over MessageId and the Tuple values.
+ */
 public class KafkaMessage {
 
     /**

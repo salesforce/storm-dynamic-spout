@@ -9,13 +9,20 @@ public class TupleMessageId {
     private final String topic;
     private final int partition;
     private final long offset;
-    private final String srcConsumerId;
+    private final String srcVirtualSpoutId;
 
-    public TupleMessageId(final String topic, final int partition, final long offset, final String srcConsumerId) {
+    /**
+     * Constructor.
+     * @param topic - the topic this tuple came from.
+     * @param partition - the partition this tuple came from.
+     * @param offset - the offset this tuple came from.
+     * @param srcVirtualSpoutId - the VirtualSpout's identifier this tuple came from.
+     */
+    public TupleMessageId(final String topic, final int partition, final long offset, final String srcVirtualSpoutId) {
         this.topic = topic;
         this.partition = partition;
         this.offset = offset;
-        this.srcConsumerId = srcConsumerId;
+        this.srcVirtualSpoutId = srcVirtualSpoutId;
     }
     
     public String getTopic() {
@@ -30,8 +37,8 @@ public class TupleMessageId {
         return offset;
     }
 
-    public String getSrcConsumerId() {
-        return srcConsumerId;
+    public String getSrcVirtualSpoutId() {
+        return srcVirtualSpoutId;
     }
 
     @Override
@@ -54,7 +61,7 @@ public class TupleMessageId {
         if (!getTopic().equals(that.getTopic())) {
             return false;
         }
-        return getSrcConsumerId().equals(that.getSrcConsumerId());
+        return getSrcVirtualSpoutId().equals(that.getSrcVirtualSpoutId());
     }
 
     @Override
@@ -62,7 +69,7 @@ public class TupleMessageId {
         int result = getTopic().hashCode();
         result = 31 * result + getPartition();
         result = 31 * result + (int) (getOffset() ^ (getOffset() >>> 32));
-        result = 31 * result + getSrcConsumerId().hashCode();
+        result = 31 * result + getSrcVirtualSpoutId().hashCode();
         return result;
     }
 
@@ -72,7 +79,7 @@ public class TupleMessageId {
                 + "topic='" + topic + '\''
                 + ", partition=" + partition
                 + ", offset=" + offset
-                + ", srcConsumerId='" + srcConsumerId + '\''
+                + ", srcVirtualSpoutId='" + srcVirtualSpoutId + '\''
                 + '}';
     }
 

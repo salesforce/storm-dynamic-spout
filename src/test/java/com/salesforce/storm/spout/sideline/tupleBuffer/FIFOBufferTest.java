@@ -76,7 +76,7 @@ public class FIFOBufferTest {
             assertEquals("Objects should be the same", originalKafkaMsg, bufferedMsg);
 
             // Validate the contents are the same
-            assertEquals("Source Spout Id should be equal", originalKafkaMsg.getTupleMessageId().getSrcConsumerId(), bufferedMsg.getTupleMessageId().getSrcConsumerId());
+            assertEquals("Source Spout Id should be equal", originalKafkaMsg.getTupleMessageId().getSrcVirtualSpoutId(), bufferedMsg.getTupleMessageId().getSrcVirtualSpoutId());
             assertEquals("partitions should be equal", originalKafkaMsg.getPartition(), bufferedMsg.getPartition());
             assertEquals("offsets should be equal", originalKafkaMsg.getOffset(), bufferedMsg.getOffset());
             assertEquals("topic should be equal", originalKafkaMsg.getTopic(), bufferedMsg.getTopic());

@@ -3,7 +3,6 @@ package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

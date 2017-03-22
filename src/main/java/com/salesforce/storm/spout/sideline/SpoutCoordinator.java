@@ -15,8 +15,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -166,12 +164,12 @@ public class SpoutCoordinator {
      * @param id Tuple message id to ack
      */
     public void ack(final TupleMessageId id) {
-        if (!ackedTuplesInputQueue.containsKey(id.getSrcConsumerId())) {
+        if (!ackedTuplesInputQueue.containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
         }
 
-        ackedTuplesInputQueue.get(id.getSrcConsumerId()).add(id);
+        ackedTuplesInputQueue.get(id.getSrcVirtualSpoutId()).add(id);
     }
 
     /**
@@ -179,12 +177,12 @@ public class SpoutCoordinator {
      * @param id Tuple message id to fail
      */
     public void fail(final TupleMessageId id) {
-        if (!failedTuplesInputQueue.containsKey(id.getSrcConsumerId())) {
+        if (!failedTuplesInputQueue.containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
         }
 
-        failedTuplesInputQueue.get(id.getSrcConsumerId()).add(id);
+        failedTuplesInputQueue.get(id.getSrcVirtualSpoutId()).add(id);
     }
 
     /**

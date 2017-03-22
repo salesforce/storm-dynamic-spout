@@ -7,18 +7,19 @@ import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMs
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 
 /**
  * Handles creating instances of specific interface implementations, based off of
  * our configuration.
+ * Methods are marked Synchronized because the FactoryManager instance is shared between threads, but
+ * its methods are rarely invoked after the spout is initial started up, so it shouldn't present much of
+ * a problem w/ contention.
  */
 public class FactoryManager implements Serializable {
-    private static final Logger logger = LoggerFactory.getLogger(FactoryManager.class);
 
     /**
      * Holds our configuration so we know what classes to create instances of.
@@ -51,13 +52,14 @@ public class FactoryManager implements Serializable {
     private transient Class<? extends TupleBuffer> tupleBufferClass;
 
     public FactoryManager(Map topologyConfig) {
-        this.topologyConfig = topologyConfig;
+        // Create immutable clone of configuration.
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
     }
 
     /**
      * @return returns a new instance of the configured deserializer.
      */
-    synchronized public Deserializer createNewDeserializerInstance() {
+    public synchronized Deserializer createNewDeserializerInstance() {
         if (deserializerClass == null) {
             final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.DESERIALIZER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -80,7 +82,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured FailedMsgRetryManager.
      */
-    synchronized public FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
+    public synchronized FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -103,7 +105,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured persistence manager.
      */
-    synchronized public PersistenceManager createNewPersistenceManagerInstance() {
+    public synchronized PersistenceManager createNewPersistenceManagerInstance() {
         if (persistenceManagerClass == null) {
             final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -126,7 +128,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured Metrics Recorder manager.
      */
-    synchronized public MetricsRecorder createNewMetricsRecorder() {
+    public synchronized MetricsRecorder createNewMetricsRecorder() {
         if (metricsRecorderClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
@@ -149,7 +151,7 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured TupleBuffer interface.
      */
-    synchronized public TupleBuffer createNewTupleBufferInstance() {
+    public synchronized TupleBuffer createNewTupleBufferInstance() {
         if (tupleBufferClass == null) {
             String classStr = (String) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {

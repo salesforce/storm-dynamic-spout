@@ -86,7 +86,7 @@ public class RoundRobinBufferTest {
             }
 
             // Get which spout this was a source from
-            final String bufferedSrcSpoutId = bufferedMsg.getTupleMessageId().getSrcConsumerId();
+            final String bufferedSrcSpoutId = bufferedMsg.getTupleMessageId().getSrcVirtualSpoutId();
 
             // Get the next message from this
             KafkaMessage nextExpectedKafkaMsg = null;
@@ -107,7 +107,7 @@ public class RoundRobinBufferTest {
             assertEquals("Objects should be the same", nextExpectedKafkaMsg, bufferedMsg);
 
             // Should be from the source
-            assertEquals("Source Spout Id should be equal", nextSourceSpout, bufferedMsg.getTupleMessageId().getSrcConsumerId());
+            assertEquals("Source Spout Id should be equal", nextSourceSpout, bufferedMsg.getTupleMessageId().getSrcVirtualSpoutId());
 
 
             // Validate the contents are the same

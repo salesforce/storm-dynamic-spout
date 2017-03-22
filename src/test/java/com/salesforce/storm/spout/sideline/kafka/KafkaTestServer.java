@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 
 /**
  * This will spin up a ZooKeeper and Kafka server for use in integration tests. Simply

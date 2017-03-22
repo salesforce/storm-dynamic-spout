@@ -88,7 +88,7 @@ public class RoundRobinBuffer implements TupleBuffer {
     @Override
     public void put(final KafkaMessage kafkaMessage) throws InterruptedException {
         // Grab the source virtual spoutId
-        final String virtualSpoutId = kafkaMessage.getTupleMessageId().getSrcConsumerId();
+        final String virtualSpoutId = kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId();
 
         // Add to correct buffer
         BlockingQueue virtualSpoutQueue = tupleBuffer.get(virtualSpoutId);
