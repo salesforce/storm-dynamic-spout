@@ -3,8 +3,6 @@ package com.salesforce.storm.spout.sideline.filter;
 import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;

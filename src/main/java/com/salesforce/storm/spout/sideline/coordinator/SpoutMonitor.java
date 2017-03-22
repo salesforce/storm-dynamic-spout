@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.salesforce.storm.spout.sideline.SpoutCoordinator;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
@@ -20,7 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Monitors the lifecycle of spinning up virtual spouts.
+ * Monitors and manages the lifecycle of virtual spouts.
  */
 public class SpoutMonitor implements Runnable {
 

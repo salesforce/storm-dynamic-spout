@@ -19,7 +19,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichSpout;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.junit.After;
