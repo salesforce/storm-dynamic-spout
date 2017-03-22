@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.mocks.output;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.storm.spout.ISpoutOutputCollector;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -69,7 +70,7 @@ public class MockSpoutOutputCollector extends SpoutOutputCollector {
      * @return - Return a clone of our Emissions in an unmodifiable list.
      */
     public List<SpoutEmission> getEmissions() {
-        return Collections.unmodifiableList(emissions);
+        return ImmutableList.copyOf(emissions);
     }
 
     /**
