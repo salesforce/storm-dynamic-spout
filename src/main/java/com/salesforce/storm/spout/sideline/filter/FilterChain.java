@@ -16,7 +16,6 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    private static final Logger logger = LoggerFactory.getLogger(FilterChain.class);
     private final Map<SidelineIdentifier,List<FilterChainStep>> steps = new HashMap<>();
 
     public FilterChain() {
@@ -27,7 +26,7 @@ public class FilterChain {
     }
 
     /**
-     * Fluent method for adding steps to the chain (must be done in order)
+     * Fluent method for adding steps to the chain (must be done in order).
      *
      * @param step A step for processing in the chain
      * @return The chain instance
@@ -46,7 +45,7 @@ public class FilterChain {
     }
 
     /**
-     * Process a filter through the chain, get the resulting filter
+     * Process a filter through the chain, get the resulting filter.
      *
      * @param message The filter to be processed by this step of the chain
      * @return The resulting filter after being processed
@@ -69,7 +68,7 @@ public class FilterChain {
     }
 
     /**
-     * Find the identifier for a set of steps
+     * Find the identifier for a set of steps.
      *
      * @param seek The list of steps to find
      * @return Identifier for the steps in the chain
@@ -87,7 +86,7 @@ public class FilterChain {
     }
 
     /**
-     * Find the identifier for a set that only had one step
+     * Find the identifier for a set that only had one step.
      *
      * @param seek The step to find
      * @return Identifier for the steps in the chain

@@ -6,8 +6,8 @@ import org.apache.storm.tuple.Values;
 import java.io.Serializable;
 
 /**
- * This interface allows you to deserialize whats coming from Kafka into what should
- * get emitted to the Storm Topology.
+ * This interface allows you to define how to deserialize messages coming from Kafka into values
+ * that get emitted as tuples into the topology.
  */
 public interface Deserializer extends Serializable {
 

@@ -74,6 +74,24 @@ public class ZookeeperPersistenceManagerTest {
     }
 
     /**
+     * Tests that if you're missing the configuration item for ZkRootNode it will throw
+     * an IllegalStateException.
+     */
+    @Test
+    public void testOpenMissingConfigForZkRootNode() {
+        final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
+
+        // Create our config
+        final Map topologyConfig = createDefaultConfig(inputHosts, null);
+
+        // Create instance and open it.
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.open(topologyConfig);
+    }
+
+    /**
      * Tests that the constructor does what we think.
      */
     @Test

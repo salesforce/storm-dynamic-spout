@@ -26,10 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A Rough outline of what this internal spout could look like.
- * This doesn't implement the Storm IRichSpout interface because its not a 'real' spout,
- * but sits within the larger "SideLineSpout"  Many instances of these can get created and destroyed
- * during the life time of the "real" "SideLineSpout"
+ * VirtualSidelineSpout is essentially a Spout instance within a Spout. It doesn't fully implement the
+ * Storm IRichSpout interface because its not a 'real' spout, but it follows it fairly closely.
+ * These instances are designed to live within a {@link com.salesforce.storm.spout.sideline.SidelineSpout}
+ * instance.  During the lifetime of a SidelineSpout, many VirtualSidelineSpouts can get created and destroyed.
+ *
+ * The VirtualSidelineSpout will consume from a configured topic and return {@link KafkaMessage} from its
+ * {@link #nextTuple()} method.  These will eventually get converted to the appropriate Tuples and emitted
+ * out by the SidelineSpout.
+ *
+ * As acks/fails come into SidelineSpout, they will be routed to the appropriate VirtualSidelineSpout instance
+ * and handled by the {@link #ack(Object)} and {@link #fail(Object)} methods.
  */
 public class VirtualSidelineSpout implements DelegateSidelineSpout {
     // Logging

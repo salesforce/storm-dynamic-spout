@@ -24,7 +24,7 @@ public class Serializer {
             List<FilterChainStep> steps = (List<FilterChainStep>) objectInputStream.readObject();
             objectInputStream.close();
             return steps;
-        } catch (Exception ex){
+        } catch (Exception ex) {
             // IOException or ClassNotFoundException most likely
             logger.error("{}", ex);
             return new ArrayList<>();
@@ -38,7 +38,7 @@ public class Serializer {
             objectOutputStream.writeObject(steps);
             objectOutputStream.close();
             return Base64.getEncoder().encodeToString(byteArrayOutputStream.toByteArray());
-        } catch (Exception ex){
+        } catch (Exception ex) {
             // IOException most likely
             logger.error("{}", ex);
             return "";

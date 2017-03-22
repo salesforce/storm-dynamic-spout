@@ -35,7 +35,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Kafka based Persistence adapter.  Currently this is not fully implemented.
+ * Kafka based Persistence adapter.
+ * This is NOT fully implemented.
  */
 public class KafkaPersistenceManager implements PersistenceManager {
     // Logger
@@ -43,7 +44,6 @@ public class KafkaPersistenceManager implements PersistenceManager {
 
     // Kafka client configuration
     private int readTimeoutMS = 5000;
-
 
     // Configuration
     private String topicName;

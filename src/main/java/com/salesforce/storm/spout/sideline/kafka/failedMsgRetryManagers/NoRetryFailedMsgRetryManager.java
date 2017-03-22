@@ -23,14 +23,16 @@ public class NoRetryFailedMsgRetryManager implements FailedMsgRetryManager {
         // Nothing to do
     }
 
+    /**
+     * @return - always null, never retry any messages.
+     */
     @Override
     public TupleMessageId nextFailedMessageToRetry() {
         return null;
     }
 
     /**
-     * @param messageId
-     * @return Always return false.
+     * @return Always return false.  Never want to replay messages.
      */
     @Override
     public boolean retryFurther(TupleMessageId messageId) {

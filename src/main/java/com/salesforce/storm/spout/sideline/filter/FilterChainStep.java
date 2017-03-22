@@ -11,7 +11,7 @@ import java.io.Serializable;
 public interface FilterChainStep extends Serializable {
 
     /**
-     * Inputs an object, performs some business logic on it and then returns the result
+     * Inputs an object, performs some business logic on it and then returns the result.
      *
      * @param message The filter to be processed by this step of the chain
      * @return The resulting filter after being processed

@@ -9,13 +9,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Interface that controls all persistence.
+ * Interface that controls persistence of state.
  */
 public interface PersistenceManager {
     /**
      * Performs any required initialization/connection/setup required for
      * the implementation.  By contract, this will be called once prior to calling
      * persistState() or getState().
+     * @param topologyConfig - The storm topology config map.
      */
     void open(Map topologyConfig);
 
@@ -26,6 +27,7 @@ public interface PersistenceManager {
 
     /**
      * Pass in the consumer state that you'd like persisted.
+     * @param consumerId - The consumer's id.
      * @param consumerState - ConsumerState to be persisted.
      */
     void persistConsumerState(final String consumerId, final ConsumerState consumerState);
@@ -38,7 +40,7 @@ public interface PersistenceManager {
 
     /**
      * Removes consumer state from the persistence layer.
-     * @param consumerId
+     * @param consumerId - the consumer's id you'd like cleared.
      */
     void clearConsumerState(String consumerId);
 
@@ -57,7 +59,7 @@ public interface PersistenceManager {
     SidelinePayload retrieveSidelineRequest(final SidelineIdentifier id);
 
     /**
-     * Lists existing sideline requests
+     * Lists existing sideline requests.
      * @return A list of identifiers for existing sideline requests
      */
     List<SidelineIdentifier> listSidelineRequests();

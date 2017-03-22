@@ -17,14 +17,14 @@ import java.util.Map;
  */
 public class InMemoryPersistenceManager implements PersistenceManager, Serializable {
     // "Persists" consumer state in memory.
-    private Map<String,ConsumerState> storedConsumerState;
+    private Map<String, ConsumerState> storedConsumerState;
 
     // "Persists" side line request states in memory.
     private Map<SidelineIdentifier, SidelinePayload> storedSidelineRequests;
 
     @Override
     public void open(Map topologyConfig) {
-        // Allow non-destructive re-initin
+        // Allow non-destructive re-initing
         if (storedConsumerState == null) {
             storedConsumerState = new HashMap<>();
         }

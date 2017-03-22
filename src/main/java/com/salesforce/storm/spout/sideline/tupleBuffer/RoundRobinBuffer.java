@@ -14,10 +14,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * A round-robbin implementation.  Each virtual spout has its own buffer that both gets added to individually, and thus chatty
- * virtual spouts will not block less chatty ones.  We RR thru all the available buffers to get the next msg.
+ * A round-robin implementation.  Each virtual spout has its own queue that gets added too.  A very chatty
+ * virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR thru all the available
+ * queues to get the next msg.
  *
- * I think there are some concurrency issues here that need to be addressed between add/remove consumerId, and poll().
+ * Internally we make use of BlockingQueues so that we can put an upper bound on the queue size.
+ * Once a queue is full, any producer attempting to put more messages onto the queue will block and wait
+ * for available space in the queue.  This acts to throttle producers of messages.
+ * Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
+ * This means consuming from the queue will always be fast.
+ *
+ * There may be some concurrency issues here that need to be addressed between add/remove virtualSpoutId, and poll().
  */
 public class RoundRobinBuffer implements TupleBuffer {
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinBuffer.class);
@@ -148,6 +155,9 @@ public class RoundRobinBuffer implements TupleBuffer {
         return returnMsg;
     }
 
+    /**
+     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     */
     private BlockingQueue<KafkaMessage> createNewEmptyQueue() {
         return new LinkedBlockingQueue<>(maxBufferSizePerVirtualSpout);
     }

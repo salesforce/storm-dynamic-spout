@@ -24,26 +24,30 @@ import java.util.Set;
 
 /**
  * A high level kafka consumer that handles state/log offset management in a way that supports
- * marking messages as being processed in no particular order.  On consumer restarts, this implementation errs on the side
- * of re-playing a previously processed message (at least once semantics) over accidentally skipping
+ * marking messages as being processed in non-sequential order.  On consumer restarts, this implementation
+ * errs on the side of re-playing a previously processed message (at least once semantics) over accidentally skipping
  * un-processed messages.  This means there exists certain scenarios where it could replay previously processed
  * messages.
  *
- * How does this Consumer track completed offsets?  This consumer will emit messages out the same sequential order
- * as it consumes it from Kafka.  However there is no guarantee what order those messages will get processed by a storm
- * topology.  The topology could process and ack those messages in any order.
- * So lets imagine the following scenario:
+ * How does this Consumer track completed offsets?
+ * This consumer will emit messages out the same sequential order as it consumes it from Kafka.  However there
+ * is no guarantee what order those messages will get processed by a storm topology.  The topology could process
+ * and ack those messages in any order.  So lets imagine the following scenario:
  *   Emit Offsets: 0,1,2,3,4,5
+ *
  * For whatever reason offset #3 takes longer to process, so we get acks in the following order back from storm:
  *   Ack Offsets: 0,1,4,5,2
+ *
  * At this point internally this consumer knows it has processed the above offsets, but is missing offset #3.
  * This consumer tracks completed offsets sequentially, meaning it will mark offset #2 as being the last finished offset
  * because it is the largest offset that we know we have acked every offset preceding it.  If at this point the topology
  * was stopped, and the consumer shut down, when the topology was redeployed, this consumer would resume consuming at
  * offset #3, re-emitting the following:
  *   Emit Offsets: 3,4,5
+ *
  * Now imagine the following acks come in:
  *   Ack Offsets: 4,5,3
+ *
  * Internally the consumer will recognize that 3 -> 5 are all complete, and now mark offset #5 as the last finished offset.
  */
 public class SidelineConsumer {

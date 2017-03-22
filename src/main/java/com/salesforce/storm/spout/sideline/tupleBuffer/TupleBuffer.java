@@ -6,8 +6,11 @@ import java.util.Map;
 
 /**
  * This interface defines an abstraction around essentially a concurrent queue.
- * Abstracting this instead of using a simple queue object allows us to do things like
- * implement a "fairness" algorithm on the poll() method for pulling off of the queue instead of a simple FIFO.
+ * Abstracting this instead of using directly a queue object allows us to do things like
+ * implement a "fairness" algorithm on the poll() method for pulling off of the queue.
+ * Using a straight ConcurrentQueue would give us FIFO semantics (see {@link FIFOBuffer})
+ * but with an abstraction we could implement round robin (see {@link RoundRobinBuffer}) across
+ * VirtualSpouts or any scheduling algorithm that we'd like.
  */
 public interface TupleBuffer {
 
