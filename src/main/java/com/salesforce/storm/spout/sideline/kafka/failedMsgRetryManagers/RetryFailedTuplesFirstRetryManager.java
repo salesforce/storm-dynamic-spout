@@ -56,4 +56,18 @@ public class RetryFailedTuplesFirstRetryManager implements FailedMsgRetryManager
         // We always retry.
         return true;
     }
+
+    /**
+     * @return - the messageIds currently in flight.
+     */
+    Set<TupleMessageId> getMessageIdsInFlight() {
+        return messageIdsInFlight;
+    }
+
+    /**
+     * @return - the messageIds currently marked as having failed, excluding those in flight.
+     */
+    Queue<TupleMessageId> getFailedMessageIds() {
+        return failedMessageIds;
+    }
 }
