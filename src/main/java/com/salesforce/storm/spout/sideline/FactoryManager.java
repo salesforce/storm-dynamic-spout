@@ -1,7 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
@@ -10,6 +9,7 @@ import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -53,7 +53,7 @@ public class FactoryManager implements Serializable {
 
     public FactoryManager(Map topologyConfig) {
         // Create immutable clone of configuration.
-        this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
     }
 
     /**

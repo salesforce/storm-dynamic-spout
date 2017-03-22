@@ -1,7 +1,6 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
@@ -22,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -138,7 +138,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         this.topologyContext = topologyContext;
 
         // Save an immutable clone of the config
-        this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
 
         // Save factory manager instance
         this.factoryManager = factoryManager;

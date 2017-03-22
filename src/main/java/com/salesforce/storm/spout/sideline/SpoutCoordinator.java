@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline;
 
-import com.google.common.collect.ImmutableMap;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.coordinator.SpoutMonitor;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
@@ -10,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,7 +100,7 @@ public class SpoutCoordinator {
      */
     public void open(Map<String, Object> topologyConfig) {
         // Create copy of topology config
-        this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
 
         // Create a countdown latch
         final CountDownLatch latch = new CountDownLatch(getNewSpoutQueue().size());

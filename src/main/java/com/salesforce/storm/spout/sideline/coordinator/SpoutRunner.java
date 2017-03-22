@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.google.common.collect.ImmutableMap;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -11,11 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Manages running a VirtualSpout instance.
@@ -80,7 +79,7 @@ public class SpoutRunner implements Runnable {
         this.failedTupleQueue = failedTupleInputQueue;
         this.latch = latch;
         this.clock = clock;
-        this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
 
         // Record start time.
         this.startTime = getClock().millis();
