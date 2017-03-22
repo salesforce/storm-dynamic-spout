@@ -5,7 +5,6 @@ import com.google.common.collect.Lists;
 import org.apache.storm.spout.ISpoutOutputCollector;
 import org.apache.storm.spout.SpoutOutputCollector;
 
-import java.util.Collections;
 import java.util.List;
 
 /**

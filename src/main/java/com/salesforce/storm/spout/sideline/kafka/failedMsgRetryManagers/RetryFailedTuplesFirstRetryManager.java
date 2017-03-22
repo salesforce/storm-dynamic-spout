@@ -2,8 +2,6 @@ package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
 
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -15,8 +13,6 @@ import java.util.Set;
  * No back-off strategy, no maximum times a tuple can fail.
  */
 public class RetryFailedTuplesFirstRetryManager implements FailedMsgRetryManager {
-    private static final Logger logger = LoggerFactory.getLogger(RetryFailedTuplesFirstRetryManager.class);
-
     /**
      * This Set holds which Tuples are in flight.
      */

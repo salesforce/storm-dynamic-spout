@@ -10,11 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.util.Collections;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Manages running a VirtualSpout instance.
@@ -59,6 +60,11 @@ public class SpoutRunner implements Runnable {
      */
     private final Map<String, Object> topologyConfig;
 
+    /**
+     * Records when this instance was started, so we can calculate total run time on close.
+     */
+    private final long startTime;
+
     SpoutRunner(
             final DelegateSidelineSpout spout,
             final TupleBuffer tupleOutputQueue,
@@ -75,6 +81,9 @@ public class SpoutRunner implements Runnable {
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
+
+        // Record start time.
+        this.startTime = getClock().millis();
     }
 
     @Override
@@ -135,8 +144,9 @@ public class SpoutRunner implements Runnable {
             }
 
             // Looks like someone requested that we stop this instance.
-            // So we call close on it.
-            logger.info("Closing {} spout", spout.getConsumerId());
+            // So we call close on it, and log our run time.
+            final Duration runtime = Duration.ofMillis(getClock().millis() - startTime);
+            logger.info("Closing {} spout, total run time was {} days {} hrs {} min {} sec", spout.getConsumerId(), runtime.toDays(), runtime.toHours() % 24, runtime.toMinutes() % 60, runtime.getSeconds() % 60);
             spout.close();
 
             // Remove our entries from our queues.

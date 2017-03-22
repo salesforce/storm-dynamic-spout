@@ -10,7 +10,6 @@ import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.Map;
 
 /**
