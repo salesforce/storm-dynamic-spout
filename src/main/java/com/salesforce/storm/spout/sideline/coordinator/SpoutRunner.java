@@ -3,12 +3,14 @@ package com.salesforce.storm.spout.sideline.coordinator;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.SpoutCoordinator;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,13 +54,19 @@ public class SpoutRunner implements Runnable {
      */
     private final CountDownLatch latch;
 
+    /**
+     * Storm topology configuration.
+     */
+    private final Map<String, Object> topologyConfig;
+
     SpoutRunner(
             final DelegateSidelineSpout spout,
             final TupleBuffer tupleOutputQueue,
             final Map<String, Queue<TupleMessageId>> ackedTupleQueue,
             final Map<String, Queue<TupleMessageId>> failedTupleInputQueue,
             final CountDownLatch latch,
-            final Clock clock
+            final Clock clock,
+            final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
         this.tupleOutputQueue = tupleOutputQueue;
@@ -66,6 +74,7 @@ public class SpoutRunner implements Runnable {
         this.failedTupleQueue = failedTupleInputQueue;
         this.latch = latch;
         this.clock = clock;
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
     }
 
     @Override
@@ -117,10 +126,11 @@ public class SpoutRunner implements Runnable {
                 }
 
                 // Periodically we flush the state of the spout to capture progress
-                if (lastFlush + SpoutCoordinator.FLUSH_INTERVAL_MS < getClock().millis()) {
+                final long now = getClock().millis();
+                if ((lastFlush + getConsumerStateFlushIntervalMs()) < now) {
                     logger.info("Flushing state for spout {}", spout.getConsumerId());
                     spout.flushState();
-                    lastFlush = getClock().millis();
+                    lastFlush = now;
                 }
             }
 
@@ -157,5 +167,19 @@ public class SpoutRunner implements Runnable {
      */
     private Clock getClock() {
         return clock;
+    }
+
+    /**
+     * @return - Storm topology configuration.
+     */
+    private Map<String, Object> getTopologyConfig() {
+        return topologyConfig;
+    }
+
+    /**
+     * @return - How frequently, in milliseconds, we should flush consumer state.
+     */
+    private long getConsumerStateFlushIntervalMs() {
+        return (long) getTopologyConfig().get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS);
     }
 }

@@ -31,10 +31,10 @@ public class SpoutCoordinatorTest {
     @Test
     public void testCoordinator() throws Exception {
         // How often we want the monitor thread to run
-        final long monitorRunIntervalMs = 2000;
+        final long internalOperationsIntervalMs = 2000;
 
-        // Define how long we'll wait for the monitor thread to operate.
-        final long waitTime = monitorRunIntervalMs * 2;
+        // Define how long we'll wait for internal operations to complete
+        final long waitTime = internalOperationsIntervalMs * 4;
 
         final List<KafkaMessage> expected = new ArrayList<>();
 
@@ -55,7 +55,10 @@ public class SpoutCoordinatorTest {
 
         // Define our configuration
         Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
-        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorRunIntervalMs);
+
+        // Configure our internal operations to run frequently for our test case.
+        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
+        config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder, actual);

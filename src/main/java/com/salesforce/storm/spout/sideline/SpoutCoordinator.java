@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline;
 
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.coordinator.SpoutMonitor;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -22,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Spout Coordinator.
  *
- * Manages X number of spouts and coordinates their nextTuple(), ack() and fail() calls across threads
+ * Manages X number of virtual spouts and coordinates their nextTuple(), ack() and fail() calls across threads
  */
 public class SpoutCoordinator {
     // Logging.
@@ -33,11 +32,6 @@ public class SpoutCoordinator {
      * them with force, in Milliseconds.
      */
     public static final int MAX_SPOUT_STOP_TIME_MS = 10000;
-
-    /**
-     * How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
-     */
-    public static final long FLUSH_INTERVAL_MS = 30000;
 
     /**
      * The size of the thread pool for running virtual spouts for sideline requests.
@@ -131,13 +125,9 @@ public class SpoutCoordinator {
             getAckedTuplesQueue(),
             getFailedTuplesQueue(),
             latch,
-            getClock()
+            getClock(),
+            getTopologyConfig()
         );
-
-        // Configure how often it runs
-        if (getTopologyConfig().containsKey(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS)) {
-            spoutMonitor.setMonitorThreadInterval((long) getTopologyConfigItem(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS), TimeUnit.MILLISECONDS);
-        }
 
         // Start executing the spout monitor in a new thread.
         executor.submit(spoutMonitor);
@@ -253,14 +243,5 @@ public class SpoutCoordinator {
      */
     private Map<String, Object> getTopologyConfig() {
         return topologyConfig;
-    }
-
-    /**
-     * Utility method to get a specific entry in the Storm topology config map.
-     * @param key - the configuration item to retrieve
-     * @return - the configuration item's value.
-     */
-    private Object getTopologyConfigItem(final String key) {
-        return getTopologyConfig().get(key);
     }
 }

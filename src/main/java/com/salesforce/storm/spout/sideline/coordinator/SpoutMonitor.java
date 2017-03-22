@@ -2,12 +2,14 @@ package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.salesforce.storm.spout.sideline.SpoutCoordinator;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -71,6 +73,11 @@ public class SpoutMonitor implements Runnable {
      */
     private final Clock clock;
 
+    /**
+     * Storm topology configuration.
+     */
+    private final Map<String, Object> topologyConfig;
+
     private final Map<String, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
     private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
     private boolean isOpen = true;
@@ -80,18 +87,14 @@ public class SpoutMonitor implements Runnable {
      */
     private long lastStatusReport = 0;
 
-    /**
-     * How often the monitor thread will run, in milliseconds.
-     */
-    private long monitorThreadIntervalMs = 2000L;
-
     public SpoutMonitor(
             final Queue<DelegateSidelineSpout> newSpoutQueue,
             final TupleBuffer tupleOutputQueue,
             final Map<String, Queue<TupleMessageId>> ackedTuplesQueue,
             final Map<String, Queue<TupleMessageId>> failedTuplesQueue,
             final CountDownLatch latch,
-            final Clock clock
+            final Clock clock,
+            final Map<String, Object> topologyConfig
     ) {
         this.newSpoutQueue = newSpoutQueue;
         this.tupleOutputQueue = tupleOutputQueue;
@@ -99,6 +102,7 @@ public class SpoutMonitor implements Runnable {
         this.failedTuplesQueue = failedTuplesQueue;
         this.latch = latch;
         this.clock = clock;
+        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
 
         /**
          * Create our executor service with a fixed thread size.
@@ -166,7 +170,8 @@ public class SpoutMonitor implements Runnable {
                     ackedTuplesQueue,
                     failedTuplesQueue,
                     latch,
-                    getClock()
+                    getClock(),
+                    getTopologyConfig()
             );
 
             spoutRunners.put(spout.getConsumerId(), spoutRunner);
@@ -290,19 +295,16 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * Configure how often our monitor thread should run thru its maintenance loop.
-     * @param duration - a duration
-     * @param timeUnit - the time unit of the duration.
+     * @return - Storm topology configuration.
      */
-    public void setMonitorThreadInterval(long duration, TimeUnit timeUnit) {
-        this.monitorThreadIntervalMs = TimeUnit.MILLISECONDS.convert(duration, timeUnit);
-        logger.info("Monitor thread will run on a {} millisecond interval", getMonitorThreadIntervalMs());
+    private Map<String, Object> getTopologyConfig() {
+        return topologyConfig;
     }
 
     /**
-     * @return - how often our monitor thread should run thru its maintenance loop.
+     * @return - how often our monitor thread should run thru its maintenance loop, in milliseconds.
      */
     private long getMonitorThreadIntervalMs() {
-        return monitorThreadIntervalMs;
+        return (long) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS);
     }
 }
