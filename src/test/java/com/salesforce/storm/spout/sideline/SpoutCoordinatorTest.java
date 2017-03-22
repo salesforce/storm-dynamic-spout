@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,7 +30,11 @@ public class SpoutCoordinatorTest {
 
     @Test
     public void testCoordinator() throws Exception {
-        final int waitTime = SpoutCoordinator.MONITOR_THREAD_SLEEP_MS + 200;
+        // How often we want the monitor thread to run
+        final long internalOperationsIntervalMs = 2000;
+
+        // Define how long we'll wait for internal operations to complete
+        final long waitTime = internalOperationsIntervalMs * 4;
 
         final List<KafkaMessage> expected = new ArrayList<>();
 
@@ -47,9 +53,16 @@ public class SpoutCoordinatorTest {
         final MetricsRecorder metricsRecorder = new LogRecorder();
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
+        // Define our configuration
+        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+
+        // Configure our internal operations to run frequently for our test case.
+        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
+        config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
+
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(fireHoseSpout, metricsRecorder, actual);
-        coordinator.open(Maps.newHashMap());
+        coordinator.open(config);
 
         assertEquals(1, coordinator.getTotalSpouts());
 

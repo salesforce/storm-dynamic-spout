@@ -137,11 +137,10 @@ public class SidelineSpoutConfig {
     public static final String TUPLE_BUFFER_MAX_SIZE = "sideline_spout.coordinator.tuple_buffer.max_size";
 
     /**
-     * (long) How long our monitor thread will sit around and sleep between monitoring
-     * if new VirtualSpouts need to be started up, in Milliseconds.
+     * (long) How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.
      * Default Value: 2000
      */
-    public static final String MONITOR_THREAD_SLEEP_MS = "sideline_spout.coordinator.monitor_thread_sleep_ms";
+    public static final String MONITOR_THREAD_INTERVAL_MS = "sideline_spout.coordinator.monitor_thread_interval_ms";
 
     /**
      * (long) How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
@@ -194,9 +193,9 @@ public class SidelineSpoutConfig {
             clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
             logger.info("Missing configuration {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
         }
-        if (!clonedConfig.containsKey(MONITOR_THREAD_SLEEP_MS)) {
-            clonedConfig.put(MONITOR_THREAD_SLEEP_MS, 2000L);
-            logger.info("Missing configuration {} using default value {}", MONITOR_THREAD_SLEEP_MS, clonedConfig.get(MONITOR_THREAD_SLEEP_MS));
+        if (!clonedConfig.containsKey(MONITOR_THREAD_INTERVAL_MS)) {
+            clonedConfig.put(MONITOR_THREAD_INTERVAL_MS, 2000L);
+            logger.info("Missing configuration {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
         }
         if (!clonedConfig.containsKey(MAX_SPOUT_STOP_TIME_MS)) {
             clonedConfig.put(MAX_SPOUT_STOP_TIME_MS, 10000L);

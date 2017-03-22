@@ -19,7 +19,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichSpout;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.junit.After;
@@ -270,6 +269,9 @@ public class SidelineSpoutTest {
             config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
+        // Configure how long we should wait for internal operations to complete.
+        final long waitTime = (long) config.get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS) * 4;
+
         // Create some stand-in mocks.
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
@@ -290,11 +292,11 @@ public class SidelineSpoutTest {
         final int expectedOriginalRecordCount = 3;
         List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(expectedOriginalRecordCount);
 
-        // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
+        // Wait for our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
         // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
         // take several calls to nextTuple() before the messages are pulled in from kafka behind the scenes and available
         // to be emitted.
-        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> {
             spout.nextTuple();
             return spoutOutputCollector.getEmissions().size();
         }, equalTo(expectedOriginalRecordCount));
@@ -353,8 +355,8 @@ public class SidelineSpoutTest {
         // We basically want the time that would normally pass before we check that there are no new tuples
         // Call next tuple, it should NOT receive any tuples because
         // all tuples are filtered.
+        Thread.sleep(waitTime);
         for (int x=0; x<expectedOriginalRecordCount; x++) {
-            Thread.sleep(1000);
             spout.nextTuple();
         }
 
@@ -367,7 +369,7 @@ public class SidelineSpoutTest {
 
         // We need to wait a bit for the sideline spout instance to spin up and start consuming
         // Call next tuple, it should get a tuple from our sidelined spout instance.
-        await().atMost(15, TimeUnit.SECONDS).until(() -> {
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> {
             spout.nextTuple();
             logger.info("Found emissions {}", spoutOutputCollector.getEmissions());
             return spoutOutputCollector.getEmissions().size();
@@ -412,19 +414,19 @@ public class SidelineSpoutTest {
         spoutOutputCollector.reset();
 
         // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
-        // TODO: configure this timeout to something less than 60 secs
-//        await()
-//            .atMost(3, TimeUnit.SECONDS)
-//            .until(() -> {
-//                return spout.getCoordinator().getTotalSpouts();
-//            }, equalTo(1));
-//        assertEquals("We should have only 1 virtual spouts running", 1, spout.getCoordinator().getTotalSpouts());
+        // We need to wait for the monitor thread to run to clean it up.
+        await()
+            .atMost(waitTime, TimeUnit.MILLISECONDS)
+            .until(() -> {
+                return spout.getCoordinator().getTotalSpouts();
+            }, equalTo(1));
+        assertEquals("We should have only 1 virtual spouts running", 1, spout.getCoordinator().getTotalSpouts());
 
         // Produce some more records, verify they come in the firehose.
         producedRecords = produceRecords(expectedOriginalRecordCount);
 
         // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
-        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> {
             spout.nextTuple();
             return spoutOutputCollector.getEmissions().size();
         }, equalTo(expectedOriginalRecordCount));
@@ -662,6 +664,12 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager");
+
+        // Configure SpoutMonitor thread to run every 1 second
+        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+
+        // Configure flushing consumer state every 1 second
+        config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
         config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, "com.salesforce.storm.spout.sideline.metrics.LogRecorder");
