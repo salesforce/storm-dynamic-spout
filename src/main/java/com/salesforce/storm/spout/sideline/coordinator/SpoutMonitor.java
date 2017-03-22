@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
+import com.google.common.collect.ImmutableMap;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
@@ -101,7 +102,7 @@ public class SpoutMonitor implements Runnable {
         this.failedTuplesQueue = failedTuplesQueue;
         this.latch = latch;
         this.clock = clock;
-        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+        this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
 
         /**
          * Create our executor service with a fixed thread size.

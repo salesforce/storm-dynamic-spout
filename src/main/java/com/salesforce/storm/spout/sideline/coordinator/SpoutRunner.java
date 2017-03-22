@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
+import com.google.common.collect.ImmutableMap;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -73,7 +74,7 @@ public class SpoutRunner implements Runnable {
         this.failedTupleQueue = failedTupleInputQueue;
         this.latch = latch;
         this.clock = clock;
-        this.topologyConfig = Collections.unmodifiableMap(topologyConfig);
+        this.topologyConfig = ImmutableMap.copyOf(topologyConfig);
     }
 
     @Override

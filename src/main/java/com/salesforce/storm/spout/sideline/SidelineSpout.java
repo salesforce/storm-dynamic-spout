@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
@@ -101,7 +102,7 @@ public class SidelineSpout extends BaseRichSpout {
      */
     public SidelineSpout(Map topologyConfig) {
         // Save off config, injectings appropriate default values for anything not explicitly configured.
-        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(topologyConfig));
+        this.topologyConfig = ImmutableMap.copyOf(SidelineSpoutConfig.setDefaults(topologyConfig));
 
         // Create our factory manager, which must be serializable.
         factoryManager = new FactoryManager(getTopologyConfig());
@@ -228,7 +229,7 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         // Save references.
-        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(topologyConfig));
+        this.topologyConfig = ImmutableMap.copyOf(SidelineSpoutConfig.setDefaults(topologyConfig));
         this.topologyContext = topologyContext;
         this.outputCollector = spoutOutputCollector;
 

@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -68,7 +69,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
         }
 
         // Grab our kafka broker list from our config
-        brokerHosts = Collections.unmodifiableList((List<String>)topologyConfig.get(SidelineSpoutConfig.KAFKA_BROKERS));
+        brokerHosts = ImmutableList.copyOf((List<String>)topologyConfig.get(SidelineSpoutConfig.KAFKA_BROKERS));
 
         // Validate configuration
         if (brokerHosts.isEmpty()) {
