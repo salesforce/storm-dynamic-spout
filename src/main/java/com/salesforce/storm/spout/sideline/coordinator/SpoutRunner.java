@@ -15,31 +15,55 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 /**
- *
+ * This Runnable handles running a SidelineVirtualSpout within a separate thread.
+ * It handles all of the cross-thread communication via its Concurrent Queues data structures.
  */
 public class SpoutRunner implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
+    /**
+     * This is the VirtualSideline Spout instance we are going to be managing.
+     */
     private final DelegateSidelineSpout spout;
+
+    /**
+     * This is the queue we put messages that need to be emitted out to the topology onto.
+     */
     private final TupleBuffer tupleOutputQueue;
-    private final Map<String, Queue<TupleMessageId>> ackedTupleInputQueue;
-    private final Map<String, Queue<TupleMessageId>> failedTupleInputQueue;
-    private final CountDownLatch latch;
+
+    /**
+     * This is the queue we read tuples that need to be acked off of.
+     */
+    private final Map<String, Queue<TupleMessageId>> ackedTupleQueue;
+
+    /**
+     * This is the queue we read tuples that need to be failed off of.
+     */
+    private final Map<String, Queue<TupleMessageId>> failedTupleQueue;
+
+    /**
+     * For access to the system clock.
+     */
     private final Clock clock;
+
+    /**
+     * For thread synchronization.
+     */
+    private final CountDownLatch latch;
 
     SpoutRunner(
             final DelegateSidelineSpout spout,
             final TupleBuffer tupleOutputQueue,
-            final Map<String, Queue<TupleMessageId>> ackedTupleInputQueue,
+            final Map<String, Queue<TupleMessageId>> ackedTupleQueue,
             final Map<String, Queue<TupleMessageId>> failedTupleInputQueue,
             final CountDownLatch latch,
             final Clock clock
     ) {
         this.spout = spout;
         this.tupleOutputQueue = tupleOutputQueue;
-        this.ackedTupleInputQueue = ackedTupleInputQueue;
-        this.failedTupleInputQueue = failedTupleInputQueue;
+        this.ackedTupleQueue = ackedTupleQueue;
+        this.failedTupleQueue = failedTupleInputQueue;
         this.latch = latch;
         this.clock = clock;
     }
@@ -47,20 +71,22 @@ public class SpoutRunner implements Runnable {
     @Override
     public void run() {
         try {
-            logger.info("Opening {} spout", spout.getConsumerId());
-
             // Rename thread to use the spout's consumer id
             Thread.currentThread().setName(spout.getConsumerId());
 
+            logger.info("Opening {} spout", spout.getConsumerId());
             spout.open();
 
+            // Let all of our queues know about our new instance.
             tupleOutputQueue.addVirtualSpoutId(spout.getConsumerId());
-            ackedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-            failedTupleInputQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+            ackedTupleQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+            failedTupleQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
 
+            // Count down our latch for thread synchronization.
             latch.countDown();
 
-            long lastFlush = clock.millis();
+            // Record the last time we flushed.
+            long lastFlush = getClock().millis();
 
             // Loop forever until someone requests the spout to stop
             while (!spout.isStopRequested()) {
@@ -79,36 +105,36 @@ public class SpoutRunner implements Runnable {
                 //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
                 // Ack anything that needs to be acked
-                while (!ackedTupleInputQueue.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = ackedTupleInputQueue.get(spout.getConsumerId()).poll();
+                while (!ackedTupleQueue.get(spout.getConsumerId()).isEmpty()) {
+                    TupleMessageId id = ackedTupleQueue.get(spout.getConsumerId()).poll();
                     spout.ack(id);
                 }
 
                 // Fail anything that needs to be failed
-                while (!failedTupleInputQueue.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = failedTupleInputQueue.get(spout.getConsumerId()).poll();
+                while (!failedTupleQueue.get(spout.getConsumerId()).isEmpty()) {
+                    TupleMessageId id = failedTupleQueue.get(spout.getConsumerId()).poll();
                     spout.fail(id);
                 }
 
                 // Periodically we flush the state of the spout to capture progress
-                if (lastFlush + SpoutCoordinator.FLUSH_INTERVAL_MS < clock.millis()) {
+                if (lastFlush + SpoutCoordinator.FLUSH_INTERVAL_MS < getClock().millis()) {
                     logger.info("Flushing state for spout {}", spout.getConsumerId());
                     spout.flushState();
-                    lastFlush = clock.millis();
+                    lastFlush = getClock().millis();
                 }
             }
 
             // Looks like someone requested that we stop this instance.
             // So we call close on it.
-            logger.info("Finishing {} spout", spout.getConsumerId());
+            logger.info("Closing {} spout", spout.getConsumerId());
             spout.close();
 
-            // Remove our entries from the acked and failed queue.
+            // Remove our entries from our queues.
             tupleOutputQueue.removeVirtualSpoutId(spout.getConsumerId());
-            ackedTupleInputQueue.remove(spout.getConsumerId());
-            failedTupleInputQueue.remove(spout.getConsumerId());
+            ackedTupleQueue.remove(spout.getConsumerId());
+            failedTupleQueue.remove(spout.getConsumerId());
         } catch (Exception ex) {
-            // TODO: Should we restart the SpoutRunner?
+            // TODO: Should we restart the SpoutRunner?  I'd guess that SpoutMonitor should handle re-starting
             logger.error("SpoutRunner for {} threw an exception {}", spout.getConsumerId(), ex);
             ex.printStackTrace();
 
@@ -119,7 +145,17 @@ public class SpoutRunner implements Runnable {
         }
     }
 
+    /**
+     * Request that our thread stop and shut down.
+     */
     public void requestStop() {
         this.spout.requestStop();
+    }
+
+    /**
+     * @return - our System clock instance.
+     */
+    private Clock getClock() {
+        return clock;
     }
 }

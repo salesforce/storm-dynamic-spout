@@ -128,10 +128,10 @@ public class SpoutMonitor implements Runnable {
                     final SpoutRunner spoutRunner = new SpoutRunner(
                         spout,
                         tupleOutputQueue,
-                            ackedTuplesQueue,
-                            failedTuplesQueue,
+                        ackedTuplesQueue,
+                        failedTuplesQueue,
                         latch,
-                        clock
+                        getClock()
                     );
 
                     spoutRunners.put(spout.getConsumerId(), spoutRunner);
@@ -165,17 +165,22 @@ public class SpoutMonitor implements Runnable {
      * This method will periodically show a status report to our logger interface.
      */
     private void doMaintenanceLoop() {
+        // Get current time
+        final long now = getClock().millis();
+
         // Set initial value if none set.
         if (lastStatusReport == 0) {
-            lastStatusReport = clock.millis();
+            lastStatusReport = now;
             return;
         }
 
         // If we've reported recently
-        if (clock.millis() - lastStatusReport <= SpoutCoordinator.MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS) {
+        if ((now - lastStatusReport) <= SpoutCoordinator.MONITOR_THREAD_MAINTENANCE_LOOP_INTERVAL_MS) {
             // Do nothing.
             return;
         }
+        // Update timestamp
+        lastStatusReport = now;
 
         // Cleanup loop
         for (String virtualSpoutId: spoutThreads.keySet()) {
@@ -209,15 +214,17 @@ public class SpoutMonitor implements Runnable {
             executor.getTaskCount()
         );
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
-
-        // Update timestamp
-        lastStatusReport = clock.millis();
     }
 
+    /**
+     * Call this method to indicate that we want to stop all running VirtualSideline Spout instances as well
+     * as finish running our monitor thread.
+     */
     public void close() {
         isOpen = false;
 
-        // Ask the executor to shut down
+        // Ask the executor to shut down, this will prevent it from
+        // accepting/starting new tasks.
         executor.shutdown();
 
         // Loop thru our runners and request stop on each
@@ -225,9 +232,9 @@ public class SpoutMonitor implements Runnable {
             spoutRunner.requestStop();
         }
 
+        // Wait for the executor to cleanly shut down
         try {
             logger.info("Waiting a maximum of {} ms for threadpool to shutdown", SpoutCoordinator.MAX_SPOUT_STOP_TIME_MS);
-            // Wait for the executor to cleanly shut down
             executor.awaitTermination(SpoutCoordinator.MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
             logger.error("Interrupted while stopping: {}", ex);
@@ -251,5 +258,12 @@ public class SpoutMonitor implements Runnable {
      */
     public int getTotalSpouts() {
         return spoutRunners.size();
+    }
+
+    /**
+     * @return - Our system clock instance.
+     */
+    private Clock getClock() {
+        return clock;
     }
 }
