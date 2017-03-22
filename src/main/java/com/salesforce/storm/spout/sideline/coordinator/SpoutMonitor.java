@@ -114,9 +114,9 @@ public class SpoutMonitor implements Runnable {
          */
         this.executor = new ThreadPoolExecutor(
             // Number of idle threads to keep around
-            SpoutCoordinator.SPOUT_RUNNER_THREAD_POOL_SIZE,
+            getMaxConcurrentVirtualSpouts(),
             // Maximum number of threads to utilize
-            SpoutCoordinator.SPOUT_RUNNER_THREAD_POOL_SIZE,
+            getMaxConcurrentVirtualSpouts(),
             // How long to keep idle threads around for before closing them
             1L, TimeUnit.MINUTES,
             // Task input queue
@@ -261,8 +261,8 @@ public class SpoutMonitor implements Runnable {
 
         // Wait for the executor to cleanly shut down
         try {
-            logger.info("Waiting a maximum of {} ms for threadpool to shutdown", SpoutCoordinator.MAX_SPOUT_STOP_TIME_MS);
-            executor.awaitTermination(SpoutCoordinator.MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
+            logger.info("Waiting a maximum of {} ms for threadpool to shutdown", getMaxTerminationWaitTimeMs());
+            executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
             logger.error("Interrupted while stopping: {}", ex);
         }
@@ -306,5 +306,19 @@ public class SpoutMonitor implements Runnable {
      */
     private long getMonitorThreadIntervalMs() {
         return (long) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS);
+    }
+
+    /**
+     * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
+     */
+    private long getMaxTerminationWaitTimeMs() {
+        return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_STOP_TIME_MS);
+    }
+
+    /**
+     * @return - the maximum amount of concurrently running VirtualSpouts we'll start.
+     */
+    private int getMaxConcurrentVirtualSpouts() {
+        return (int) getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
     }
 }

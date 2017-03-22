@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.coordinator.SpoutMonitor;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -26,17 +27,6 @@ import java.util.concurrent.TimeUnit;
 public class SpoutCoordinator {
     // Logging.
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
-
-    /**
-     * How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
-     * them with force, in Milliseconds.
-     */
-    public static final int MAX_SPOUT_STOP_TIME_MS = 10000;
-
-    /**
-     * The size of the thread pool for running virtual spouts for sideline requests.
-     */
-    public static final int SPOUT_RUNNER_THREAD_POOL_SIZE = 10;
 
     /**
      * Which Clock instance to get reference to the system time.
@@ -183,14 +173,14 @@ public class SpoutCoordinator {
             executor.shutdown();
 
             // Wait for clean termination
-            executor.awaitTermination(MAX_SPOUT_STOP_TIME_MS, TimeUnit.MILLISECONDS);
+            executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
             logger.error("Interupted clean shutdown, forcing stop: {}", ex);
         }
 
         // If we haven't shut down yet..
         if (!executor.isShutdown()) {
-            logger.warn("Shutdown was not completed within {} ms, forcing stop now", MAX_SPOUT_STOP_TIME_MS);
+            logger.warn("Shutdown was not completed within {} ms, forcing stop now", getMaxTerminationWaitTimeMs());
             executor.shutdownNow();
         }
     }
@@ -243,5 +233,12 @@ public class SpoutCoordinator {
      */
     private Map<String, Object> getTopologyConfig() {
         return topologyConfig;
+    }
+
+    /**
+     * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
+     */
+    private long getMaxTerminationWaitTimeMs() {
+        return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_STOP_TIME_MS);
     }
 }
