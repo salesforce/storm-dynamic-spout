@@ -2,14 +2,13 @@ package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
  * Interface for Tracking Failed messages.  By creating an implementation of this interface
  * you can control how SidelineSpout deals with tuples that have failed within the topology.
  */
-public interface RetryManager extends Serializable {
+public interface RetryManager {
 
     /**
      * Initialization.

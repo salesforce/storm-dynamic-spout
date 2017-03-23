@@ -19,8 +19,6 @@ import java.util.TreeMap;
  * Each retry is attempted using an exponential back-off time period.
  * The first retry will be attempted within MIN_RETRY_TIME_MS milliseconds.  Each attempt
  * after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
- *
- * Note: Super naive implementation of a retry manager.
  */
 public class DefaultRetryManager implements RetryManager {
     // Configuration
