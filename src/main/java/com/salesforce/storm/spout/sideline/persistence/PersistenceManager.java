@@ -45,9 +45,9 @@ public interface PersistenceManager {
     void clearConsumerState(String consumerId);
 
     /**
-     * @param type
+     * @param type - Sideline Type (Start/Stop)
      * @param id - unique identifier for the sideline request.
-     * @param endingState
+     * @param endingState - The consumer state we will stop at.
      */
     void persistSidelineRequestState(SidelineType type, final SidelineIdentifier id, final SidelineRequest request, final ConsumerState startingState, ConsumerState endingState);
 

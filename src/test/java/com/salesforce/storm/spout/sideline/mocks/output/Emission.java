@@ -2,9 +2,8 @@ package com.salesforce.storm.spout.sideline.mocks.output;
 
 import org.apache.storm.tuple.Tuple;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -50,7 +49,7 @@ public class Emission {
     }
 
     public static Collection<Tuple> makeAnchorCollection(Tuple anchor) {
-        return new ArrayList<>(Arrays.asList(anchor));
+        return Collections.singletonList(anchor);
     }
 
     @Override

@@ -4,11 +4,10 @@ import org.apache.storm.metric.api.AssignableMetric;
 import org.apache.storm.metric.api.IMetric;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
- *
+ * Simple implementation of a MultiAssignableMetric.
  */
 public class MultiAssignableMetric implements IMetric {
     private final Map<String, AssignableMetric> values = new HashMap();

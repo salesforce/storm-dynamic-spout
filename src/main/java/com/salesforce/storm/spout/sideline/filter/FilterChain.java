@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Process a filter through a chain of steps, giving the next step the result of the previous one
+ * Process a filter through a chain of steps, giving the next step the result of the previous one.
  */
 public class FilterChain {
 

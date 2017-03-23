@@ -42,15 +42,15 @@ public class TupleMessageId {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(Object other) {
+        if (this == other) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
 
-        TupleMessageId that = (TupleMessageId) o;
+        TupleMessageId that = (TupleMessageId) other;
 
         if (getPartition() != that.getPartition()) {
             return false;

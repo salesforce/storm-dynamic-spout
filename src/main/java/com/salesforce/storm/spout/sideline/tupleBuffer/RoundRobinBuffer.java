@@ -15,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * A round-robin implementation.  Each virtual spout has its own queue that gets added too.  A very chatty
- * virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR thru all the available
+ * virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR through all the available
  * queues to get the next msg.
  *
  * Internally we make use of BlockingQueues so that we can put an upper bound on the queue size.
@@ -40,7 +40,7 @@ public class RoundRobinBuffer implements TupleBuffer {
     private int maxBufferSizePerVirtualSpout = 2000;
 
     /**
-     * An iterator over the Keys in tupleBuffer.  Used to Round Robin thru the VirtualSpouts.
+     * An iterator over the Keys in tupleBuffer.  Used to Round Robin through the VirtualSpouts.
      */
     private Iterator<String> consumerIdIterator = null;
 
@@ -143,7 +143,7 @@ public class RoundRobinBuffer implements TupleBuffer {
 
             // We missed?
             if (queue == null) {
-                logger.info("Non-existant queue found, resetting iterator.");
+                logger.info("Non-existent queue found, resetting iterator.");
                 consumerIdIterator = tupleBuffer.keySet().iterator();
                 continue;
             }

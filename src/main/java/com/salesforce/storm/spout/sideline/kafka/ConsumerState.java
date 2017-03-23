@@ -36,7 +36,7 @@ public class ConsumerState {
     }
 
     /**
-     * @return - returns internal Hashmap representation.
+     * @return - returns internal hashmap representation.
      */
     public Map<TopicPartition, Long> getState() {
         return state;

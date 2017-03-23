@@ -254,7 +254,7 @@ public class SpoutMonitor implements Runnable {
         // accepting/starting new tasks.
         executor.shutdown();
 
-        // Loop thru our runners and request stop on each
+        // Loop through our runners and request stop on each
         for (SpoutRunner spoutRunner : spoutRunners.values()) {
             spoutRunner.requestStop();
         }
@@ -302,7 +302,7 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * @return - how often our monitor thread should run thru its maintenance loop, in milliseconds.
+     * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
      */
     private long getMonitorThreadIntervalMs() {
         return (long) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS);

@@ -194,7 +194,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         );
     }
 
-    // TODO: this needs a test
+    // TODO: this needs a test, and javadoc
     public List<SidelineIdentifier> listSidelineRequests() {
         verifyHasBeenOpened();
 
@@ -340,7 +340,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             // If it doesn't exist,
             if (curator.checkExists().forPath(path) == null) {
                 // Nothing to do!
-                logger.warn("Tried to delete {}, but it doesnt exist.", path);
+                logger.warn("Tried to delete {}, but it does not exist.", path);
                 return;
             }
 

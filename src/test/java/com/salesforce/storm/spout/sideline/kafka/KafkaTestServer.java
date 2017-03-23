@@ -188,8 +188,7 @@ public class KafkaTestServer implements AutoCloseable {
         kafkaConsumerConfig.put("value.deserializer", ByteArrayDeserializer.class.getName());
         kafkaConsumerConfig.put("partition.assignment.strategy", "org.apache.kafka.clients.consumer.RoundRobinAssignor");
 
-        KafkaConsumer kafkaConsumer = new KafkaConsumer(kafkaConsumerConfig);
-        return kafkaConsumer;
+        return new KafkaConsumer(kafkaConsumerConfig);
     }
 
     @Override

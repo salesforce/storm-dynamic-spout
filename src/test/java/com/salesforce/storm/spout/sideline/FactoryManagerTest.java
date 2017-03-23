@@ -9,6 +9,7 @@ import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManag
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
@@ -162,7 +163,7 @@ public class FactoryManagerTest {
 
             // Validate it
             assertNotNull(instance);
-            assertTrue("Is correct instance", instance instanceof PersistenceManager);
+            assertTrue("Is correct instance", instance instanceof ZookeeperPersistenceManager);
 
             // Verify its a different instance than our previous ones
             assertFalse("Not a previous instance", instances.contains(instance));

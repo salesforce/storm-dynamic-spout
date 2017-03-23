@@ -4,7 +4,7 @@ import com.salesforce.storm.spout.sideline.KafkaMessage;
 
 public class NegatingFilterChainStep implements FilterChainStep {
 
-    final private FilterChainStep step;
+    private final FilterChainStep step;
 
     public NegatingFilterChainStep(FilterChainStep step) {
         this.step = step;

@@ -124,7 +124,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
         logger.info("Status {}", channel.isConnected());
 
         // Issue request asking for which broker contains the metadata/offset data we need
-        // Build group coord request & send
+        // Build group coordinator request & send
         GroupCoordinatorRequest request = new GroupCoordinatorRequest(consumerId, GroupCoordinatorRequest.CurrentVersion(), correlationId++, consumerId);
         channel.send(request);
 
@@ -216,7 +216,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 } else if ((short) partitionErrorCode == ErrorMapping.NotCoordinatorForConsumerCode() || (short) partitionErrorCode == ErrorMapping.ConsumerCoordinatorNotAvailableCode()) {
                     channel.disconnect();
                     // Go to step 1 (offset manager has moved) and then retry the commit to the new offset manager
-                    logger.error("Offsetmanager has moved :(");
+                    logger.error("OffsetManager has moved :(");
                 } else {
                     // log and retry the commit
                     logger.error("Some other error :/");
@@ -252,7 +252,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 channel.disconnect();
                 // Go to step 1 and retry the offset fetch
             } else if (offsetFetchErrorCode == ErrorMapping.OffsetsLoadInProgressCode()) {
-                // retry the offset fetch (after backoff)
+                // retry the offset fetch (after back-off)
                 logger.error("Load in progress?");
             } else {
                 long retrievedOffset = result.offset();

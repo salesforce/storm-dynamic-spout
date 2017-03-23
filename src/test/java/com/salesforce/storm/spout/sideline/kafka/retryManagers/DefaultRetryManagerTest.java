@@ -53,7 +53,7 @@ public class DefaultRetryManagerTest {
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
-        assertEquals("Wrong max retrys", expectedMaxRetries, retryManager.getMaxRetries());
+        assertEquals("Wrong max retries", expectedMaxRetries, retryManager.getMaxRetries());
         assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getMinRetryTimeMs());
     }
 
@@ -69,7 +69,7 @@ public class DefaultRetryManagerTest {
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
-        assertEquals("Wrong max retrys", 25, retryManager.getMaxRetries());
+        assertEquals("Wrong max retries", 25, retryManager.getMaxRetries());
         assertEquals("Wrong retry time", 1000, retryManager.getMinRetryTimeMs());
     }
 
@@ -174,7 +174,7 @@ public class DefaultRetryManagerTest {
     }
 
     /**
-     * Tests that all previously untracked messageIds should be retried.
+     * Tests that all previously un-tracked messageIds should be retried.
      */
     @Test
     public void testRetryFurtherForUntrackedMessageId() {
@@ -413,15 +413,15 @@ public class DefaultRetryManagerTest {
         assertNotNull("Queue should exist for our retry time of " + expectedRetryTime, failQueue);
         assertTrue("Queue should contain our tuple messageId", failQueue.contains(tupleMessageId));
 
-        // This messageId should have the right number of fails assocaited with it.
-        assertEquals("Should have expected number of fails", (Integer) expectedFailCount, (Integer) retryManager.getNumberOfTimesFailed().get(tupleMessageId));
+        // This messageId should have the right number of fails associated with it.
+        assertEquals("Should have expected number of fails", (Integer) expectedFailCount, retryManager.getNumberOfTimesFailed().get(tupleMessageId));
 
         // Should this be marked as in flight?
         assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getRetriesInFlight().contains(tupleMessageId));
     }
 
     private void validateTupleNotInFailedSetButIsInFlight(DefaultRetryManager retryManager, TupleMessageId tupleMessageId) {
-        // Loop thru all failed tuples
+        // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
             assertFalse("Should not contain our messageId", queue.contains(tupleMessageId));
@@ -430,7 +430,7 @@ public class DefaultRetryManagerTest {
     }
 
     private void validateTupleIsNotBeingTracked(DefaultRetryManager retryManager, TupleMessageId tupleMessageId) {
-        // Loop thru all failed tuples
+        // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
             assertFalse("Should not contain our messageId", queue.contains(tupleMessageId));

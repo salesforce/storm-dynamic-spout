@@ -423,7 +423,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
         ackTimeBuckets.put("CommitOffset", ackTimeBuckets.get("CommitOffset") + (System.currentTimeMillis() - start));
 
-        // Remove this tuple from the spout where we track things incase the tuple fails.
+        // Remove this tuple from the spout where we track things in-case the tuple fails.
         start = System.currentTimeMillis();
         trackedMessages.remove(tupleMessageId);
         ackTimeBuckets.put("RemoveTracked", ackTimeBuckets.get("RemoveTracked") + (System.currentTimeMillis() - start));
@@ -517,6 +517,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         return consumerId;
     }
 
+    /**
+     * Define the consumerId for this VirtualSpout.
+     * @TODO: This probably should be renamed to setVirtualSpoutId.
+     * @param consumerId - The unique identifier for this consumer.
+     */
     public void setConsumerId(String consumerId) {
         if (Strings.isNullOrEmpty(consumerId)) {
             throw new IllegalStateException("Consumer id cannot be null or empty! (" + consumerId + ")");
@@ -611,7 +616,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer.unsubscribeTopicPartition(topicPartition);
         }
 
-        // If we made it all the way thru the above loop, we completed!
+        // If we made it all the way through the above loop, we completed!
         // Lets flip our flag to true.
         logger.info("Looks like all partitions are complete!  Lets wrap this up.");
         isCompleted = true;

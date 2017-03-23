@@ -5,8 +5,8 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
-import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
@@ -100,7 +100,7 @@ public class SidelineSpout extends BaseRichSpout {
      * @param topologyConfig - Our configuration.
      */
     public SidelineSpout(Map topologyConfig) {
-        // Save off config, injectings appropriate default values for anything not explicitly configured.
+        // Save off config, injecting appropriate default values for anything not explicitly configured.
         this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(topologyConfig));
 
         // Create our factory manager, which must be serializable.
@@ -109,7 +109,7 @@ public class SidelineSpout extends BaseRichSpout {
 
     /**
      * Set a starting trigger on the spout for starting a sideline request.
-     * @param startingTrigger An impplementation of a starting trigger
+     * @param startingTrigger An implementation of a starting trigger
      */
     public void setStartingTrigger(StartingTrigger startingTrigger) {
         this.startingTrigger = startingTrigger;
@@ -328,12 +328,12 @@ public class SidelineSpout extends BaseRichSpout {
             }
         }
 
-        // TODO: LEMON - shoudn't this be always not null, can we remove this?
+        // TODO: LEMON - shouldn't this be always not null, can we remove this?
         if (startingTrigger != null) {
             startingTrigger.open(getTopologyConfig());
         }
 
-        // TODO: LEMON - shoudn't this be always not null, can we remove this?
+        // TODO: LEMON - shouldn't this be always not null, can we remove this?
         if (stoppingTrigger != null) {
             stoppingTrigger.open(getTopologyConfig());
         }
@@ -426,7 +426,7 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
-     * Currently a no-op.  We could make this unpause things in the coordinator.
+     * Currently a no-op.  We could make this un-pause things in the coordinator.
      */
     @Override
     public void deactivate() {

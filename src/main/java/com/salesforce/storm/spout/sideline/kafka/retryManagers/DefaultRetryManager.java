@@ -15,8 +15,8 @@ import java.util.TreeMap;
 /**
  * This Retry Manager implementation does 2 things.
  * It attempts retries of failed tuples a maximum of MAX_RETRIES times.
- * After a tuple fails more than that, it will be "ack'd" or marked as completed.
- * Each retry is attempted using an exponential backoff time period.
+ * After a tuple fails more than that, it will be "acked" or marked as completed.
+ * Each retry is attempted using an exponential back-off time period.
  * The first retry will be attempted within MIN_RETRY_TIME_MS milliseconds.  Each attempt
  * after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
  *
@@ -28,7 +28,7 @@ public class DefaultRetryManager implements RetryManager {
     private long minRetryTimeMs = 1000;
 
     /**
-     * This Set holds which Tuples are in flight.
+     * This Set holds which tuples are in flight.
      */
     private Set<TupleMessageId> retriesInFlight;
 

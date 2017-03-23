@@ -22,28 +22,38 @@ public class PartitionOffsetManager {
     private long lastFinishedOffset = 0;
     private long lastStartedOffset = 0;
 
+    /**
+     * Constructor.
+     * @param topic - What topic this Partition belongs to.
+     * @param partitionId - What partition this instance represents.
+     * @param lastFinishedOffset - What offset should be considered the last "completed" offset.
+     */
     public PartitionOffsetManager(final String topic, final int partitionId, final long lastFinishedOffset) {
         this.topic = topic;
         this.partitionId = partitionId;
         this.lastFinishedOffset = lastFinishedOffset;
     }
 
+    /**
+     * @return - The topic associated with this instance.
+     */
     public String getTopic() {
         return topic;
     }
 
+    /**
+     * @return - The partition this instance represents.
+     */
     public int getPartitionId() {
         return partitionId;
     }
 
     /**
-     * Start the filter of tracking this offset
-     *
+     * Mark this offset as being emitted into the topology, but not yet confirmed/completed.
      * Not thread safe
-     *
-     * @param offset
+     * @param offset - The offset we want to start tracking.
      */
-    public void startOffset(long offset) {
+    public void startOffset(final long offset) {
         trackedOffsets.add(offset);
 
         if (offset >= lastStartedOffset) {
@@ -54,11 +64,9 @@ public class PartitionOffsetManager {
     }
 
     /**
-     * Finish the filter of tracking this offset
-     *
+     * Mark this offset as having completed processing.
      * Not thread safe.
-     *
-     * @param offset
+     * @param offset - The offset we want to mark as completed.
      */
     public void finishOffset(final long offset) {
         if (!trackedOffsets.contains(offset)) {
@@ -104,7 +112,6 @@ public class PartitionOffsetManager {
     }
 
     /**
-     * Not thread safe.
      * @return - return the last offset considered "finished".
      * Here a "finished" offset is the highest continuous offset.
      */

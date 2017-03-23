@@ -94,7 +94,7 @@ public class SpoutCoordinatorTest {
         // Fail the third
         coordinator.fail(message3.getTupleMessageId());
 
-        // Wait for those to come thru to the correct VirtualSpouts.
+        // Wait for those to come through to the correct VirtualSpouts.
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.acks.size(), equalTo(1));
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.fails.size(), equalTo(1));
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.acks.size(), equalTo(1));

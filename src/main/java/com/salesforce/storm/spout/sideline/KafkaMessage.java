@@ -57,15 +57,15 @@ public class KafkaMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
+    public boolean equals(Object other) {
+        if (this == other) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (other == null || getClass() != other.getClass()) {
             return false;
         }
 
-        KafkaMessage that = (KafkaMessage) o;
+        KafkaMessage that = (KafkaMessage) other;
 
         if (!getTupleMessageId().equals(that.getTupleMessageId())) {
             return false;

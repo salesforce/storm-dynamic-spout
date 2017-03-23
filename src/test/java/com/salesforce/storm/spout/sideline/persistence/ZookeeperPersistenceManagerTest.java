@@ -348,7 +348,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
-        assertNotNull("Child Node Name shouldnt be null", childNodeName);
+        assertNotNull("Child Node Name should not be null", childNodeName);
         assertEquals("Child Node name not correct", consumerId, childNodeName);
 
         // 5. Grab the value and validate it
@@ -535,7 +535,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
-        assertNotNull("Child Node Name shouldnt be null", childNodeName);
+        assertNotNull("Child Node Name should not be null", childNodeName);
         assertEquals("Child Node name not correct", sidelineIdentifier.toString(), childNodeName);
 
         // 5. Grab the value and validate it

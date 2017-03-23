@@ -16,7 +16,7 @@ public class PartitionOffsetManagerTest {
         // Create our manager we want to test
         final PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, 0L);
 
-        // Loop thru some offsets
+        // Loop through some offsets
         for (int currentOffset=0; currentOffset<maxOffset; currentOffset++) {
             // Start the current offset
             offsetManager.startOffset(currentOffset);

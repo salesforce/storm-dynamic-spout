@@ -168,7 +168,7 @@ public class VirtualSidelineSpoutTest {
         // Create test config
         final Map topologyConfig = getDefaultConfig();
 
-        // Create mock toplogy context
+        // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -204,7 +204,7 @@ public class VirtualSidelineSpoutTest {
         // Create test config
         final Map topologyConfig = getDefaultConfig();
 
-        // Create mock toplogy context
+        // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -286,7 +286,7 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
-     * Tests what happens when you call nextTuple(), and the underyling deserializer fails to
+     * Tests what happens when you call nextTuple(), and the underlying deserializer fails to
      * deserialize (returns null), then nextTuple() should return null.
      */
     @Test
@@ -580,7 +580,7 @@ public class VirtualSidelineSpoutTest {
         // Check result
         assertNull("Should be null because the offset is greater than the limit.", result);
 
-        // Call nextTuple(), again the offset hsould be greater than our ending offset
+        // Call nextTuple(), again the offset should be greater than our ending offset
         // and thus should return null.
         result = virtualSidelineSpout.nextTuple();
 
@@ -588,7 +588,7 @@ public class VirtualSidelineSpoutTest {
         assertNull("Should be null because the offset is greater than the limit.", result);
 
         // Validate unsubscribed was called on our mock sidelineConsumer
-        // Right now this is called twice... unsure if thats an issue. I don't think it is.
+        // Right now this is called twice... unsure if that is an issue. I don't think it is.
         verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
@@ -777,7 +777,7 @@ public class VirtualSidelineSpoutTest {
         // Call ack with null, nothing should explode.
         virtualSidelineSpout.fail(null);
 
-        // No iteractions w/ our mocks
+        // No interactions w/ our mocks
         verify(mockRetryManager, never()).retryFurther(anyObject());
         verify(mockRetryManager, never()).acked(anyObject());
         verify(mockRetryManager, never()).failed(anyObject());
@@ -859,7 +859,7 @@ public class VirtualSidelineSpoutTest {
         // Call ack with null, nothing should explode.
         virtualSidelineSpout.ack(null);
 
-        // No iteractions w/ our mock sideline consumer for committing offsets
+        // No interactions w/ our mock sideline consumer for committing offsets
         verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
         verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
         verify(mockRetryManager, never()).acked(anyObject());
@@ -1433,7 +1433,7 @@ public class VirtualSidelineSpoutTest {
         final ConsumerState expectedConsumerState = new ConsumerState();
         expectedConsumerState.setOffset(new TopicPartition("myTopic", 0), 200L);
 
-        // Setup our mock to return exepected value
+        // Setup our mock to return expected value
         when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
 
         // Call get current state.

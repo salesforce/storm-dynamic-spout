@@ -192,7 +192,7 @@ public class SidelineConsumer {
             final TopicPartition availableTopicPartition = new TopicPartition(partition.topic(), partition.partition());
             Long offset = initialState.getOffsetForTopicAndPartition(availableTopicPartition);
             if (offset == null) {
-                // Unstarted partitions should "begin" at the earliest available offset
+                // Un-started partitions should "begin" at the earliest available offset
                 // We determine this in the resetPartitionsToEarliest() method.
                 noStatePartitions.add(availableTopicPartition);
             } else {
@@ -367,7 +367,7 @@ public class SidelineConsumer {
             }
 
             // This partition did NOT have any errors, but its possible that we "lost" some messages
-            // during the poll() call.  This partition needs to be seeked back to its previous position
+            // during the poll() call.  This partition needs to seek back to its previous position
             // before the exception was thrown.
             final long offset = partitionStateManagers.get(assignedTopicPartition).lastStartedOffset();
             logger.info("Backtracking {} offset to {}", assignedTopicPartition, offset);
@@ -409,7 +409,7 @@ public class SidelineConsumer {
      * Close out Kafka connections.
      */
     public void close() {
-        // If our consumer is already nulled out
+        // If our consumer is already null
         if (kafkaConsumer == null) {
             // Do nothing.
             return;
@@ -469,6 +469,12 @@ public class SidelineConsumer {
         return true;
     }
 
+    /**
+     * Returns what the consumer considers its current "finished" state to be.  This means the highest
+     * offsets for all partitions its consuming that it has tracked as having been complete.
+     *
+     * @return - Returns the Consumer's current state.
+     */
     public ConsumerState getCurrentState() {
         ConsumerState consumerState = new ConsumerState();
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {

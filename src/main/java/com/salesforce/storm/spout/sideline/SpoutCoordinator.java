@@ -175,7 +175,7 @@ public class SpoutCoordinator {
             // Wait for clean termination
             executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
-            logger.error("Interupted clean shutdown, forcing stop: {}", ex);
+            logger.error("Interrupted clean shutdown, forcing stop: {}", ex);
         }
 
         // If we haven't shut down yet..

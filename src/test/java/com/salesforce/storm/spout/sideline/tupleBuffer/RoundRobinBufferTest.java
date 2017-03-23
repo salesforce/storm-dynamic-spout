@@ -169,7 +169,7 @@ public class RoundRobinBufferTest {
                     System.out.println("Found new key! " + keyValue);
                     return keyValue;
                 }
-            };
+            }
             return "Nada";
         });
 
@@ -221,7 +221,7 @@ public class RoundRobinBufferTest {
                     System.out.println("Hey Key4 is missing!");
                     return true;
                 }
-            };
+            }
             return false;
         });
 
@@ -267,7 +267,7 @@ public class RoundRobinBufferTest {
                 if (!foundKeys.contains(keyValue)) {
                     foundKeys.add(keyValue);
                 }
-            };
+            }
             return false;
         });
 
