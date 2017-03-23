@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;

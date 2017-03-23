@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -19,7 +19,7 @@ public class FailedMsgRetryManagerPerformanceTest {
      */
     public void runTest() throws InterruptedException {
         // Create instance with default settings
-        FailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        RetryManager retryManager = new DefaultRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // Do warm up
@@ -28,12 +28,12 @@ public class FailedMsgRetryManagerPerformanceTest {
 
         // Now start test
         logger.info("STARTING TEST");
-        retryManager = new DefaultFailedMsgRetryManager();
+        retryManager = new DefaultRetryManager();
         retryManager.open(Maps.newHashMap());
         doTest2(retryManager);
     }
 
-    public void doTest2(FailedMsgRetryManager retryManager) throws InterruptedException {
+    public void doTest2(RetryManager retryManager) throws InterruptedException {
         logger.info("Starting to test {}", retryManager.getClass().getSimpleName());
 
         // Define test parameters

@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,11 +79,11 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (String) Defines which FailedMsgRetryManager implementation to use.
-     * Should be a full classpath to a class that implements the FailedMsgRetryManager interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager"
+     * (String) Defines which RetryManager implementation to use.
+     * Should be a full classpath to a class that implements the RetryManager interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
      */
-    public static final String FAILED_MSG_RETRY_MANAGER_CLASS = "sideline_spout.failed_msg_retry_manager.class";
+    public static final String RETRY_MANAGER_CLASS = "sideline_spout.retry_manager.class";
 
     /**
      * (int) Defines how many times a failed message will be replayed before just being acked.
@@ -91,7 +91,7 @@ public class SidelineSpoutConfig {
      * A negative value means tuples will be retried forever.
      *
      * Default Value: 25
-     * Optional - Only required if you use the DefaultFailedMsgRetryManager implementation.
+     * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     public static final String FAILED_MSG_RETRY_MANAGER_MAX_RETRIES = "sideline_spout.failed_msg_retry_manager.max_retries";
 
@@ -103,7 +103,7 @@ public class SidelineSpoutConfig {
      * before the next retry attempt.
      *
      * Default Value: 1000
-     * Optional - Only required if you use the DefaultFailedMsgRetryManager implementation.
+     * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     public static final String FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS = "sideline_spout.failed_msg_retry_manager.min_retry_time_ms";
 
@@ -177,9 +177,9 @@ public class SidelineSpoutConfig {
         clonedConfig.putAll(config);
 
         // Add in defaults where needed.
-        if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_CLASS)) {
-            clonedConfig.put(FAILED_MSG_RETRY_MANAGER_CLASS, DefaultFailedMsgRetryManager.class.getName());
-            logger.info("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_CLASS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_CLASS));
+        if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
+            clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
+            logger.info("Missing configuration {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
         }
         if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
             clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, 25);

@@ -8,9 +8,8 @@ import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -103,7 +102,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * For tracking failed messages, and knowing when to replay them.
      */
-    private FailedMsgRetryManager failedMsgRetryManager;
+    private RetryManager retryManager;
     private final Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
     // TEMP
@@ -181,8 +180,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         deserializer = getFactoryManager().createNewDeserializerInstance();
 
         // Create our failed msg retry manager & open
-        failedMsgRetryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
-        failedMsgRetryManager.open(getTopologyConfig());
+        retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
+        retryManager.open(getTopologyConfig());
 
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
@@ -283,14 +282,14 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
         // If so, emit that and return.
         long startTime = System.currentTimeMillis();
-        final TupleMessageId nextFailedMessageId = failedMsgRetryManager.nextFailedMessageToRetry();
+        final TupleMessageId nextFailedMessageId = retryManager.nextFailedMessageToRetry();
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
                 // Emit the tuple.
                 return trackedMessages.get(nextFailedMessageId);
             } else {
                 logger.warn("Unable to find tuple that should be replayed due to a fail {}", nextFailedMessageId);
-                failedMsgRetryManager.acked(nextFailedMessageId);
+                retryManager.acked(nextFailedMessageId);
             }
         }
         nextTupleTimeBuckets.put("failedRetry", nextTupleTimeBuckets.get("failedRetry") + (System.currentTimeMillis() - startTime));
@@ -431,7 +430,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Mark it as completed in the failed message handler if it exists.
         start = System.currentTimeMillis();
-        failedMsgRetryManager.acked(tupleMessageId);
+        retryManager.acked(tupleMessageId);
         ackTimeBuckets.put("FailedMsgAck", ackTimeBuckets.get("FailedMsgAck") + (System.currentTimeMillis() - start));
 
         // Update our metrics,
@@ -476,11 +475,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If this tuple shouldn't be replayed again
-        if (!failedMsgRetryManager.retryFurther(tupleMessageId)) {
+        if (!retryManager.retryFurther(tupleMessageId)) {
             logger.warn("Not retrying failed msgId any further {}", tupleMessageId);
 
-            // Mark it as acked in failedMsgRetryManager
-            failedMsgRetryManager.acked(tupleMessageId);
+            // Mark it as acked in retryManager
+            retryManager.acked(tupleMessageId);
 
             // Ack it in the consumer
             sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
@@ -490,7 +489,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // Otherwise mark it as failed.
-        failedMsgRetryManager.failed(tupleMessageId);
+        retryManager.failed(tupleMessageId);
     }
 
     /**

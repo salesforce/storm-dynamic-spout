@@ -6,7 +6,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.RetryFailedTuplesFirstRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
@@ -452,7 +452,7 @@ public class SidelineSpoutTest {
     }
 
     /**
-     * End-to-End test over the fail() method using the {@link RetryFailedTuplesFirstRetryManager}
+     * End-to-End test over the fail() method using the {@link FailedTuplesFirstRetryManager}
      * retry manager.
      *
      * This test stands up our spout and ask it to consume from our kafka topic.
@@ -479,8 +479,8 @@ public class SidelineSpoutTest {
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
-        // Configure to use our RetryFailedTuplesFirstRetryManager retry manager.
-        config.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, RetryFailedTuplesFirstRetryManager.class.getName());
+        // Configure to use our FailedTuplesFirstRetryManager retry manager.
+        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -869,7 +869,7 @@ public class SidelineSpoutTest {
     private Map<String, Object> getDefaultConfig(final String consumerIdPrefix, final String configuredStreamId) {
         final Map<String, Object> config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
-        config.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager");
+        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager");
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));

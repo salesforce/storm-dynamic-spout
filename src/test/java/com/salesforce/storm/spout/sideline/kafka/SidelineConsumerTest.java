@@ -3,7 +3,6 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

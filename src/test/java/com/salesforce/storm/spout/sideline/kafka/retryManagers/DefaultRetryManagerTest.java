@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
@@ -20,8 +20,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class DefaultFailedMsgRetryManagerTest {
-    private static final Logger logger = LoggerFactory.getLogger(DefaultFailedMsgRetryManagerTest.class);
+public class DefaultRetryManagerTest {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultRetryManagerTest.class);
 
     /**
      * Used to mock the system clock.
@@ -50,7 +50,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
         assertEquals("Wrong max retrys", expectedMaxRetries, retryManager.getMaxRetries());
@@ -66,7 +66,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(null, null);
 
         // Create instance and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
         assertEquals("Wrong max retrys", 25, retryManager.getMaxRetries());
@@ -86,7 +86,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -130,7 +130,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -186,7 +186,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -211,7 +211,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -236,7 +236,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -297,7 +297,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -333,7 +333,7 @@ public class DefaultFailedMsgRetryManagerTest {
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultFailedMsgRetryManager retryManager = new DefaultFailedMsgRetryManager();
+        DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -407,7 +407,7 @@ public class DefaultFailedMsgRetryManagerTest {
      * @param expectedRetryTime
      * @param expectedToBeInFlight
      */
-    private void validateExpectedFailedMessageId(DefaultFailedMsgRetryManager retryManager, TupleMessageId tupleMessageId, int expectedFailCount, long expectedRetryTime, boolean expectedToBeInFlight) {
+    private void validateExpectedFailedMessageId(DefaultRetryManager retryManager, TupleMessageId tupleMessageId, int expectedFailCount, long expectedRetryTime, boolean expectedToBeInFlight) {
         // Find its queue
         Queue<TupleMessageId> failQueue = retryManager.getFailedMessageIds().get(expectedRetryTime);
         assertNotNull("Queue should exist for our retry time of " + expectedRetryTime, failQueue);
@@ -420,7 +420,7 @@ public class DefaultFailedMsgRetryManagerTest {
         assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getRetriesInFlight().contains(tupleMessageId));
     }
 
-    private void validateTupleNotInFailedSetButIsInFlight(DefaultFailedMsgRetryManager retryManager, TupleMessageId tupleMessageId) {
+    private void validateTupleNotInFailedSetButIsInFlight(DefaultRetryManager retryManager, TupleMessageId tupleMessageId) {
         // Loop thru all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
@@ -429,7 +429,7 @@ public class DefaultFailedMsgRetryManagerTest {
         assertTrue("Should be tracked as in flight", retryManager.getRetriesInFlight().contains(tupleMessageId));
     }
 
-    private void validateTupleIsNotBeingTracked(DefaultFailedMsgRetryManager retryManager, TupleMessageId tupleMessageId) {
+    private void validateTupleIsNotBeingTracked(DefaultRetryManager retryManager, TupleMessageId tupleMessageId) {
         // Loop thru all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);

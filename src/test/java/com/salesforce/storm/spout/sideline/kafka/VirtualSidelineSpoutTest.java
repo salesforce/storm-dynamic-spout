@@ -7,11 +7,10 @@ import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
@@ -213,10 +212,10 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock Deserializer
         Deserializer mockDeserializer = mock(Deserializer.class);
-        FailedMsgRetryManager mockFailedMsgRetryManager = mock(FailedMsgRetryManager.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockFailedMsgRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager);
 
         // Create MetricsRecorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -235,8 +234,8 @@ public class VirtualSidelineSpoutTest {
         // Validate that we asked factory manager for a failed msg retry manager
         verify(mockFactoryManager, times(1)).createNewFailedMsgRetryManagerInstance();
 
-        // Validate we called open on the FailedMsgRetryManager
-        verify(mockFailedMsgRetryManager, times(1)).open(topologyConfig);
+        // Validate we called open on the RetryManager
+        verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
         verify(mockSidelineConsumer, times(1)).open(null, Collections.emptyList());
@@ -601,13 +600,13 @@ public class VirtualSidelineSpoutTest {
      * This test does the following:
      *
      * 1. Call nextTuple() -
-     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
+     *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
      *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
      * 2. Call fail() with the message previously returned from nextTuple().
      * 2. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return the failed tuple
+     *  a. This time RetryManager should return the failed tuple
      * 3. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
+     *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
      *  b. sideline consumer should return a new consumer record.
      */
     @Test
@@ -653,7 +652,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord);
 
         // Create a mock RetryManager
-        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
 
         // First time its called, it should return null.
         // The 2nd time it should return our tuple Id.
@@ -746,7 +745,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testFailWithNull() {
         // Create mock failed msg retry manager
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -828,7 +827,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testAckWithNull() {
         // Create mock Failed msg retry manager
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -917,7 +916,7 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
@@ -1330,13 +1329,13 @@ public class VirtualSidelineSpoutTest {
      * This test does the following:
      *
      * 1. Call nextTuple() -
-     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
+     *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
      *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
      * 2. Call fail() with the message previously returned from nextTuple().
      * 2. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return the failed tuple
+     *  a. This time RetryManager should return the failed tuple
      * 3. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
+     *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
      *  b. sideline consumer should return a new consumer record.
      */
     @Test
@@ -1365,7 +1364,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create a mock RetryManager
-        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1408,7 +1407,7 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -1466,7 +1465,7 @@ public class VirtualSidelineSpoutTest {
     /**
      * Utility method for creating a mock factory manager.
      */
-    private FactoryManager createMockFactoryManager(Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager) {
+    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager) {
         // Create our mock
         FactoryManager factoryManager = mock(FactoryManager.class);
 
@@ -1478,10 +1477,10 @@ public class VirtualSidelineSpoutTest {
         when(factoryManager.createNewDeserializerInstance()).thenReturn(deserializer);
 
         // If a mocked failed msg retry manager isn't passed in
-        if (failedMsgRetryManager == null) {
-            failedMsgRetryManager = new NoRetryFailedMsgRetryManager();
+        if (retryManager == null) {
+            retryManager = new NeverRetryManager();
         }
-        when(factoryManager.createNewFailedMsgRetryManagerInstance()).thenReturn(failedMsgRetryManager);
+        when(factoryManager.createNewFailedMsgRetryManagerInstance()).thenReturn(retryManager);
 
         return factoryManager;
     }

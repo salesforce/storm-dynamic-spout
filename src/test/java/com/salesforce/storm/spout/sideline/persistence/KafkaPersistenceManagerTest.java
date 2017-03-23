@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
 import org.junit.Before;

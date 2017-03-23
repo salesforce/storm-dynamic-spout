@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 
@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * This implementation will never retry failed messages.  One and done.
  */
-public class NoRetryFailedMsgRetryManager implements FailedMsgRetryManager {
+public class NeverRetryManager implements RetryManager {
     @Override
     public void open(Map stormConfig) {
         // Nothing to do

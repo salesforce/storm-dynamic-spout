@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -22,7 +22,7 @@ import java.util.TreeMap;
  *
  * Note: Super naive implementation of a retry manager.
  */
-public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
+public class DefaultRetryManager implements RetryManager {
     // Configuration
     private int maxRetries = 25;
     private long minRetryTimeMs = 1000;

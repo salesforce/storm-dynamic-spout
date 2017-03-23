@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.util.List;

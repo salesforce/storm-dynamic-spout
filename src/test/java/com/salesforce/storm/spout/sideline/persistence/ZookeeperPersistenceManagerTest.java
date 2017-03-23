@@ -4,7 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
