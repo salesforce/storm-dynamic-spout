@@ -93,9 +93,6 @@ public class StormRecorder implements MetricsRecorder {
 
 
     private String generateKey(Class sourceClass, String metricName) {
-        return new StringBuilder(sourceClass.getSimpleName())
-                .append(".")
-                .append(metricName)
-                .toString();
+        return sourceClass.getSimpleName() + "." + metricName;
     }
 }

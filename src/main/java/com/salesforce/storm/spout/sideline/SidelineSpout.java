@@ -253,11 +253,9 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Grab our ConsumerId prefix from the config, append the task index.  This will probably cause problems
         // if you decrease the number of instances of the spout.
-        final String cfgConsumerIdPrefix = new StringBuilder()
-            .append(getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))
-            .append("-")
-            .append(topologyContext.getThisTaskIndex())
-            .toString();
+        final String cfgConsumerIdPrefix =
+                getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX)
+                + "-" + topologyContext.getThisTaskIndex();
 
         // Create and open() persistence manager passing appropriate configuration.
         persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();

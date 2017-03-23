@@ -15,16 +15,12 @@ import java.util.concurrent.Callable;
 public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
-    private Map<String, Long> counters;
-    private Map<String, CircularFifoBuffer> averages;
-    private Map<String, Object> assignedValues;
+    private final Map<String, Long> counters = Maps.newConcurrentMap();
+    private final Map<String, CircularFifoBuffer> averages = Maps.newConcurrentMap();
+    private final Map<String, Object> assignedValues = Maps.newConcurrentMap();
 
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext) {
-        // Create concurrent maps
-        counters = Maps.newConcurrentMap();
-        assignedValues = Maps.newConcurrentMap();
-        averages = Maps.newConcurrentMap();
     }
 
     @Override
@@ -93,9 +89,6 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     private String generateKey(Class sourceClass, String metricName) {
-        return new StringBuilder(sourceClass.getSimpleName())
-                .append(".")
-                .append(metricName)
-                .toString();
+        return sourceClass.getSimpleName() + "." + metricName;
     }
 }

@@ -202,7 +202,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
         try {
             // TODO: This should be moved to it's own method
-            final String path = new StringBuilder(getZkRoot()).append("/requests").toString();
+            final String path = getZkRoot() + "/requests";
 
             if (curator.checkExists().forPath(path) == null) {
                 return ids;
@@ -355,14 +355,14 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      * @return - The full zookeeper path to where our consumer state is stored.
      */
     String getZkConsumerStatePath(final String consumerId) {
-        return new StringBuilder(getZkRoot()).append("/consumers/").append(consumerId).toString();
+        return getZkRoot() + "/consumers/" + consumerId;
     }
 
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
     String getZkRequestStatePath(final String sidelineIdentifierStr) {
-        return new StringBuilder(getZkRoot()).append("/requests/").append(sidelineIdentifierStr).toString();
+        return getZkRoot() + "/requests/" + sidelineIdentifierStr;
     }
 
     /**

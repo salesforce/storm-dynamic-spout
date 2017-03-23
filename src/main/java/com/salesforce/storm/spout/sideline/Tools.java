@@ -39,14 +39,13 @@ public class Tools {
      * @return - String representation of the duration
      */
     public static String prettyDuration(Duration duration) {
-        return new StringBuilder(String.valueOf(duration.toDays()))
-                .append(" days ")
-                .append(String.valueOf(duration.toHours() % 24))
-                .append(" hrs ")
-                .append(String.valueOf(duration.toMinutes() % 60))
-                .append(" mins ")
-                .append(String.valueOf(duration.getSeconds() % 60))
-                .append( "secs")
-                .toString();
+        return String.valueOf(duration.toDays())
+            + " days "
+            + String.valueOf(duration.toHours() % 24)
+            + " hrs "
+            + String.valueOf(duration.toMinutes() % 60)
+            + " mins "
+            + String.valueOf(duration.getSeconds() % 60)
+            + "secs";
     }
 }
