@@ -7,11 +7,10 @@ import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
@@ -87,7 +86,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify the config is immutable and throws exception when you try to modify it
         expectedException.expect(UnsupportedOperationException.class);
-        virtualSidelineSpout.getTopologyConfig().put("poop", "value");
+        virtualSidelineSpout.getTopologyConfig().put("MyKey", "MyValue");
     }
 
     /**
@@ -169,7 +168,7 @@ public class VirtualSidelineSpoutTest {
         // Create test config
         final Map topologyConfig = getDefaultConfig();
 
-        // Create mock toplogy context
+        // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -205,7 +204,7 @@ public class VirtualSidelineSpoutTest {
         // Create test config
         final Map topologyConfig = getDefaultConfig();
 
-        // Create mock toplogy context
+        // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -213,10 +212,10 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock Deserializer
         Deserializer mockDeserializer = mock(Deserializer.class);
-        FailedMsgRetryManager mockFailedMsgRetryManager = mock(FailedMsgRetryManager.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockFailedMsgRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager);
 
         // Create MetricsRecorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -235,8 +234,8 @@ public class VirtualSidelineSpoutTest {
         // Validate that we asked factory manager for a failed msg retry manager
         verify(mockFactoryManager, times(1)).createNewFailedMsgRetryManagerInstance();
 
-        // Validate we called open on the FailedMsgRetryManager
-        verify(mockFailedMsgRetryManager, times(1)).open(topologyConfig);
+        // Validate we called open on the RetryManager
+        verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
         verify(mockSidelineConsumer, times(1)).open(null, Collections.emptyList());
@@ -287,7 +286,7 @@ public class VirtualSidelineSpoutTest {
     }
 
     /**
-     * Tests what happens when you call nextTuple(), and the underyling deserializer fails to
+     * Tests what happens when you call nextTuple(), and the underlying deserializer fails to
      * deserialize (returns null), then nextTuple() should return null.
      */
     @Test
@@ -368,9 +367,6 @@ public class VirtualSidelineSpoutTest {
         final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
         final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
-
-        // Define expected result
-        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -584,7 +580,7 @@ public class VirtualSidelineSpoutTest {
         // Check result
         assertNull("Should be null because the offset is greater than the limit.", result);
 
-        // Call nextTuple(), again the offset hsould be greater than our ending offset
+        // Call nextTuple(), again the offset should be greater than our ending offset
         // and thus should return null.
         result = virtualSidelineSpout.nextTuple();
 
@@ -592,7 +588,7 @@ public class VirtualSidelineSpoutTest {
         assertNull("Should be null because the offset is greater than the limit.", result);
 
         // Validate unsubscribed was called on our mock sidelineConsumer
-        // Right now this is called twice... unsure if thats an issue. I don't think it is.
+        // Right now this is called twice... unsure if that is an issue. I don't think it is.
         verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
@@ -604,13 +600,13 @@ public class VirtualSidelineSpoutTest {
      * This test does the following:
      *
      * 1. Call nextTuple() -
-     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
+     *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
      *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
      * 2. Call fail() with the message previously returned from nextTuple().
      * 2. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return the failed tuple
+     *  a. This time RetryManager should return the failed tuple
      * 3. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
+     *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
      *  b. sideline consumer should return a new consumer record.
      */
     @Test
@@ -656,7 +652,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord);
 
         // Create a mock RetryManager
-        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
 
         // First time its called, it should return null.
         // The 2nd time it should return our tuple Id.
@@ -749,7 +745,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testFailWithNull() {
         // Create mock failed msg retry manager
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -781,7 +777,7 @@ public class VirtualSidelineSpoutTest {
         // Call ack with null, nothing should explode.
         virtualSidelineSpout.fail(null);
 
-        // No iteractions w/ our mocks
+        // No interactions w/ our mocks
         verify(mockRetryManager, never()).retryFurther(anyObject());
         verify(mockRetryManager, never()).acked(anyObject());
         verify(mockRetryManager, never()).failed(anyObject());
@@ -822,7 +818,7 @@ public class VirtualSidelineSpoutTest {
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
-        virtualSidelineSpout.fail("Poop");
+        virtualSidelineSpout.fail("This is a String!");
     }
 
     /**
@@ -831,7 +827,7 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testAckWithNull() {
         // Create mock Failed msg retry manager
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -863,7 +859,7 @@ public class VirtualSidelineSpoutTest {
         // Call ack with null, nothing should explode.
         virtualSidelineSpout.ack(null);
 
-        // No iteractions w/ our mock sideline consumer for committing offsets
+        // No interactions w/ our mock sideline consumer for committing offsets
         verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
         verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
         verify(mockRetryManager, never()).acked(anyObject());
@@ -903,7 +899,7 @@ public class VirtualSidelineSpoutTest {
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
-        virtualSidelineSpout.ack("Poop");
+        virtualSidelineSpout.ack("This is my String!");
     }
 
     /**
@@ -920,7 +916,7 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
@@ -1333,13 +1329,13 @@ public class VirtualSidelineSpoutTest {
      * This test does the following:
      *
      * 1. Call nextTuple() -
-     *  a. the first time FailedMsgRetryManager should return null, saying it has no failed tuples to replay
+     *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
      *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
      * 2. Call fail() with the message previously returned from nextTuple().
      * 2. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return the failed tuple
+     *  a. This time RetryManager should return the failed tuple
      * 3. Call nextTuple()
-     *  a. This time FailedMsgRetryManager should return null, saying it has no failed tuples to replay.
+     *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
      *  b. sideline consumer should return a new consumer record.
      */
     @Test
@@ -1368,7 +1364,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create a mock RetryManager
-        FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1411,7 +1407,7 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final FailedMsgRetryManager mockRetryManager = mock(FailedMsgRetryManager.class);
+        final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
@@ -1437,7 +1433,7 @@ public class VirtualSidelineSpoutTest {
         final ConsumerState expectedConsumerState = new ConsumerState();
         expectedConsumerState.setOffset(new TopicPartition("myTopic", 0), 200L);
 
-        // Setup our mock to return exepected value
+        // Setup our mock to return expected value
         when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
 
         // Call get current state.
@@ -1469,7 +1465,7 @@ public class VirtualSidelineSpoutTest {
     /**
      * Utility method for creating a mock factory manager.
      */
-    private FactoryManager createMockFactoryManager(Deserializer deserializer, FailedMsgRetryManager failedMsgRetryManager) {
+    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager) {
         // Create our mock
         FactoryManager factoryManager = mock(FactoryManager.class);
 
@@ -1481,10 +1477,10 @@ public class VirtualSidelineSpoutTest {
         when(factoryManager.createNewDeserializerInstance()).thenReturn(deserializer);
 
         // If a mocked failed msg retry manager isn't passed in
-        if (failedMsgRetryManager == null) {
-            failedMsgRetryManager = new NoRetryFailedMsgRetryManager();
+        if (retryManager == null) {
+            retryManager = new NeverRetryManager();
         }
-        when(factoryManager.createNewFailedMsgRetryManagerInstance()).thenReturn(failedMsgRetryManager);
+        when(factoryManager.createNewFailedMsgRetryManagerInstance()).thenReturn(retryManager);
 
         return factoryManager;
     }

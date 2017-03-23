@@ -42,7 +42,7 @@ public interface MetricsRecorder {
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
      *
-     * A scope is a secondary keyspace, so Foo.Bar as a metric name.
+     * A scope is a secondary key space, so Foo.Bar as a metric name.
      *
      * @param callable Some code that you want to time when it runs
      * @return The result of the Callable, whatever they might be
@@ -53,7 +53,7 @@ public interface MetricsRecorder {
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
      *
-     * A scope is a secondary keyspace, so Foo.Bar as a metric name.
+     * A scope is a secondary key space, so Foo.Bar as a metric name.
      *
      * @throws Exception Hopefully whatever went wrong in your callable
      */

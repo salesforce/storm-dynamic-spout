@@ -98,7 +98,7 @@ public class TupleBufferTest {
 
                     KafkaMessage kafkaMessage = new KafkaMessage(
                             new TupleMessageId("my topic", partition, x, sourceSpoutId),
-                            new Values("poop" + x));
+                            new Values("myValue" + x));
 
                     try {
                         final long startPutTime = System.currentTimeMillis();
@@ -138,7 +138,7 @@ public class TupleBufferTest {
         }
         logger.info("Found {} messages with a total of {} nulls returned", totalFound, totalNullsReturned);
 
-        // Wait for futures to be complete, at this point htey should already be done tho.
+        // Wait for futures to be complete, at this point they should already be done tho.
         await()
                 .atMost(5, TimeUnit.SECONDS)
                 .until(() -> {

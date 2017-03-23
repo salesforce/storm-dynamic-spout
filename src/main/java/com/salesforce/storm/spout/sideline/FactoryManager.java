@@ -3,7 +3,7 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
@@ -31,9 +31,9 @@ public class FactoryManager implements Serializable {
     private transient Class<? extends Deserializer> deserializerClass;
 
     /**
-     * Class instance of our FailedMsgRetryManager.
+     * Class instance of our RetryManager.
      */
-    private transient Class<? extends FailedMsgRetryManager> failedMsgRetryManagerClass;
+    private transient Class<? extends RetryManager> failedMsgRetryManagerClass;
 
     /**
      * Class instance of our PersistenceManager.
@@ -79,17 +79,17 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured FailedMsgRetryManager.
+     * @return returns a new instance of the configured RetryManager.
      */
-    public synchronized FailedMsgRetryManager createNewFailedMsgRetryManagerInstance() {
+    public synchronized RetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
-            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS);
+            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             }
 
             try {
-                failedMsgRetryManagerClass = (Class<? extends FailedMsgRetryManager>) Class.forName(classStr);
+                failedMsgRetryManagerClass = (Class<? extends RetryManager>) Class.forName(classStr);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

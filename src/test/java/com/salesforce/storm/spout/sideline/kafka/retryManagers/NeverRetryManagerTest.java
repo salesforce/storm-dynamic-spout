@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
@@ -10,7 +10,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Test over the No Retry Failed Msg manager.
  */
-public class NoRetryFailedMsgRetryManagerTest {
+public class NeverRetryManagerTest {
 
     /**
      * Mostly for lame test coverage.
@@ -18,7 +18,7 @@ public class NoRetryFailedMsgRetryManagerTest {
     @Test
     public void testShouldReEmitMsg() {
         // Create instance.
-        NoRetryFailedMsgRetryManager retryManager = new NoRetryFailedMsgRetryManager();
+        NeverRetryManager retryManager = new NeverRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // retryFurther always returns false

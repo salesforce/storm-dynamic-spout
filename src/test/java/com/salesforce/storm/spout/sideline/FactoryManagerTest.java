@@ -5,10 +5,11 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.DefaultFailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.NoRetryFailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
@@ -98,8 +99,8 @@ public class FactoryManagerTest {
     @DataProvider
     public static Object[][] provideFailedMsgRetryManagerClasses() {
         return new Object[][]{
-                { NoRetryFailedMsgRetryManager.class },
-                { DefaultFailedMsgRetryManager.class }
+                { NeverRetryManager.class },
+                { DefaultRetryManager.class }
         };
     }
 
@@ -111,13 +112,13 @@ public class FactoryManagerTest {
     public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_CLASS, clazz.getName());
+        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        List<FailedMsgRetryManager> instances = Lists.newArrayList();
+        List<RetryManager> instances = Lists.newArrayList();
         for (int x=0; x<5; x++) {
-            FailedMsgRetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
+            RetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
 
             // Validate it
             assertNotNull(retryManager);
@@ -162,7 +163,7 @@ public class FactoryManagerTest {
 
             // Validate it
             assertNotNull(instance);
-            assertTrue("Is correct instance", instance instanceof PersistenceManager);
+            assertTrue("Is correct instance", instance instanceof ZookeeperPersistenceManager);
 
             // Verify its a different instance than our previous ones
             assertFalse("Not a previous instance", instances.contains(instance));

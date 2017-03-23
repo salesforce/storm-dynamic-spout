@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -44,7 +44,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 
     // Kafka client configuration
-    private int readTimeoutMS = 5000;
+    private final int readTimeoutMs = 5000;
 
     // Configuration
     private String topicName;
@@ -92,7 +92,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
         final String brokerHost = brokerBits[0];
         final int brokerPort;
         if (brokerBits.length == 2) {
-            brokerPort = Integer.valueOf(brokerBits[1]);
+            brokerPort = Integer.parseInt(brokerBits[1]);
         } else {
             brokerPort = 9092;
         }
@@ -118,13 +118,13 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 brokerHost, brokerPort,
                 BlockingChannel.UseDefaultBufferSize(),
                 BlockingChannel.UseDefaultBufferSize(),
-                readTimeoutMS);
+                readTimeoutMs);
         channel.connect();
 
         logger.info("Status {}", channel.isConnected());
 
         // Issue request asking for which broker contains the metadata/offset data we need
-        // Build group coord request & send
+        // Build group coordinator request & send
         GroupCoordinatorRequest request = new GroupCoordinatorRequest(consumerId, GroupCoordinatorRequest.CurrentVersion(), correlationId++, consumerId);
         channel.send(request);
 
@@ -216,7 +216,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 } else if ((short) partitionErrorCode == ErrorMapping.NotCoordinatorForConsumerCode() || (short) partitionErrorCode == ErrorMapping.ConsumerCoordinatorNotAvailableCode()) {
                     channel.disconnect();
                     // Go to step 1 (offset manager has moved) and then retry the commit to the new offset manager
-                    logger.error("Offsetmanager has moved :(");
+                    logger.error("OffsetManager has moved :(");
                 } else {
                     // log and retry the commit
                     logger.error("Some other error :/");
@@ -252,7 +252,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 channel.disconnect();
                 // Go to step 1 and retry the offset fetch
             } else if (offsetFetchErrorCode == ErrorMapping.OffsetsLoadInProgressCode()) {
-                // retry the offset fetch (after backoff)
+                // retry the offset fetch (after back-off)
                 logger.error("Load in progress?");
             } else {
                 long retrievedOffset = result.offset();

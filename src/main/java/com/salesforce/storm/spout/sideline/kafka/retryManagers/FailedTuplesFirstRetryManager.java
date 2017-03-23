@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
@@ -12,7 +12,7 @@ import java.util.Set;
  * This implementation will always retry failed tuples at the earliest chance it can.
  * No back-off strategy, no maximum times a tuple can fail.
  */
-public class RetryFailedTuplesFirstRetryManager implements FailedMsgRetryManager {
+public class FailedTuplesFirstRetryManager implements RetryManager {
     /**
      * This Set holds which Tuples are in flight.
      */

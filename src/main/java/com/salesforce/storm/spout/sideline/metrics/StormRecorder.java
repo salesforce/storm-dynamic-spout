@@ -46,7 +46,7 @@ public class StormRecorder implements MetricsRecorder {
 
     @Override
     public void count(Class sourceClass, String metricName) {
-     count(sourceClass, metricName, 1);
+        count(sourceClass, metricName, 1);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class StormRecorder implements MetricsRecorder {
         timer(sourceClass, metricName, (end - start));
 
         // return result.
-        return (T) result;
+        return result;
     }
 
     public void timer(Class sourceClass, String metricName, long timeInMs) {

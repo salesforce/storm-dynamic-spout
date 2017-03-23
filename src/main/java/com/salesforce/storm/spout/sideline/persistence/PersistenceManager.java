@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -45,9 +45,9 @@ public interface PersistenceManager {
     void clearConsumerState(String consumerId);
 
     /**
-     * @param type
+     * @param type - Sideline Type (Start/Stop)
      * @param id - unique identifier for the sideline request.
-     * @param endingState
+     * @param endingState - The consumer state we will stop at.
      */
     void persistSidelineRequestState(SidelineType type, final SidelineIdentifier id, final SidelineRequest request, final ConsumerState startingState, ConsumerState endingState);
 

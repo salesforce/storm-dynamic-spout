@@ -68,7 +68,7 @@ public class RoundRobinBufferTest {
 
             KafkaMessage kafkaMessage = new KafkaMessage(
                     new TupleMessageId("my topic", partition, x, sourceSpoutId),
-                    new Values("poop" + x));
+                    new Values("myValue" + x));
 
             // Keep track of order
             if (!submittedOrder.containsKey(sourceSpoutId)) {
@@ -169,7 +169,7 @@ public class RoundRobinBufferTest {
                     System.out.println("Found new key! " + keyValue);
                     return keyValue;
                 }
-            };
+            }
             return "Nada";
         });
 
@@ -221,7 +221,7 @@ public class RoundRobinBufferTest {
                     System.out.println("Hey Key4 is missing!");
                     return true;
                 }
-            };
+            }
             return false;
         });
 
@@ -267,7 +267,7 @@ public class RoundRobinBufferTest {
                 if (!foundKeys.contains(keyValue)) {
                     foundKeys.add(keyValue);
                 }
-            };
+            }
             return false;
         });
 
@@ -300,6 +300,8 @@ public class RoundRobinBufferTest {
         future.cancel(true);
         try {
             future.get();
-        } catch (CancellationException e) {}
+        } catch (CancellationException e) {
+            e.printStackTrace();
+        }
     }
 }

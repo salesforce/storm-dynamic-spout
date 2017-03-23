@@ -4,7 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -99,7 +99,7 @@ public class ZookeeperPersistenceManagerTest {
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
         final String expectedZkRoot = "/myRoot";
-        final String expectedConsumerId = "PoopyId";
+        final String expectedConsumerId = "MyConsumerId";
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
         final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
 
@@ -130,7 +130,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic";
-        final String zkRootPath = "/poop";
+        final String zkRootPath = "/topLevel";
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
@@ -201,7 +201,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistenceUpdatingEntryForSameConsumerId() throws InterruptedException {
         final String topicName = "MyTopic";
-        final String zkRootPath = "/poop";
+        final String zkRootPath = "/topLevel";
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
@@ -348,7 +348,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
-        assertNotNull("Child Node Name shouldnt be null", childNodeName);
+        assertNotNull("Child Node Name should not be null", childNodeName);
         assertEquals("Child Node name not correct", consumerId, childNodeName);
 
         // 5. Grab the value and validate it
@@ -386,7 +386,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndRequestStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic1";
-        final String zkRootPath = "/poop";
+        final String zkRootPath = "/topLevel";
         final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
@@ -535,7 +535,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
-        assertNotNull("Child Node Name shouldnt be null", childNodeName);
+        assertNotNull("Child Node Name should not be null", childNodeName);
         assertEquals("Child Node name not correct", sidelineIdentifier.toString(), childNodeName);
 
         // 5. Grab the value and validate it
@@ -559,7 +559,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
@@ -576,7 +575,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
@@ -593,7 +591,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
@@ -610,7 +607,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
@@ -629,7 +625,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception

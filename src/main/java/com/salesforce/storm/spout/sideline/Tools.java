@@ -16,7 +16,7 @@ public class Tools {
      * Creates a shallow copy of a map and wraps it in an UnmodifiableMap.
      *
      * @param sourceMap - the map we want to shallow clone and make immutable.
-     * @return - A shallow cloned map thats immutable.
+     * @return - A shallow cloned map that is immutable.
      */
     public static <K,V> Map<K,V> immutableCopy(Map<K,V> sourceMap) {
         // If we're already dealing with an UnmodifiableMap

@@ -5,7 +5,7 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 
 /**
- * Simple deserializer that deserializes the key and message fields as UTF8 Strings.
+ * Simple deserializer that can deserialize the key and message fields as UTF8 Strings.
  */
 public class Utf8StringDeserializer implements Deserializer {
 

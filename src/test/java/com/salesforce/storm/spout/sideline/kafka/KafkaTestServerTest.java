@@ -44,7 +44,7 @@ public class KafkaTestServerTest {
         final String expectedValue = "my test message";
 
         // Publish a msg
-        ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<String, byte[]>(topicName, partitionId, expectedKey, expectedValue.getBytes("utf8"));
+        ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(topicName, partitionId, expectedKey, expectedValue.getBytes("utf8"));
         KafkaProducer<String, byte[]> producer = server.getKafkaProducer();
         Future<RecordMetadata> future = producer.send(producerRecord);
         producer.flush();
@@ -76,7 +76,7 @@ public class KafkaTestServerTest {
         String foundKey = new String(kafkaMessage.key(), "utf8");
 
         assertEquals("Should have message", expectedValue, foundMessage);
-        assertEquals("Should ahve key", expectedKey, foundKey);
+        assertEquals("Should have key", expectedKey, foundKey);
         consumer.shutdown();
 
         // Shutdown server

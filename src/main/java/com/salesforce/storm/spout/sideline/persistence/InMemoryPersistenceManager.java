@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -24,7 +24,7 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
 
     @Override
     public void open(Map topologyConfig) {
-        // Allow non-destructive re-initing
+        // Allow non-destructive re-opening
         if (storedConsumerState == null) {
             storedConsumerState = new HashMap<>();
         }
@@ -64,9 +64,9 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
     }
 
     /**
-     * @param type
+     * @param type - SidelineType (Start or Stop)
      * @param id - unique identifier for the sideline request.
-     * @param endingState
+     * @param endingState - The state when we can stop consuming.
      */
     @Override
     public void persistSidelineRequestState(SidelineType type, SidelineIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {

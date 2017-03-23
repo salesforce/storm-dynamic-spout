@@ -3,7 +3,6 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -741,7 +740,7 @@ public class SidelineConsumerTest {
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
-        logger.info("ASsigned partitions: {}", assignedPartitions);
+        logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
         assertNotNull("Should be non-null", assignedPartitions);
@@ -1142,7 +1141,7 @@ public class SidelineConsumerTest {
      * 5. Validate that the state is correct.
      */
     @Test
-    public void testConsumeFromTopicWithMultipePartitionsWithAcking() {
+    public void testConsumeFromTopicWithMultiplePartitionsWithAcking() {
         this.topicName = "MyMultiPartitionTopic";
         final int expectedNumberOfPartitions = 2;
 
@@ -1340,7 +1339,7 @@ public class SidelineConsumerTest {
      * 3. Consume all of the msgs from the topic.
      * 4. Produce more msgs into both partitions.
      * 5. Unsubscribe from partition 0.
-     * 6. Attempt to consume more msgs, verify only those from partition 1 come thru.
+     * 6. Attempt to consume more msgs, verify only those from partition 1 come through.
      */
     @Test
     public void testConsumeFromTopicAfterUnsubscribingFromMultiplePartitions() {
@@ -1367,7 +1366,7 @@ public class SidelineConsumerTest {
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
-        logger.info("ASsigned partitions: {}", assignedPartitions);
+        logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
         assertNotNull("Should be non-null", assignedPartitions);
@@ -1587,7 +1586,6 @@ public class SidelineConsumerTest {
 
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-        return config;
+        return new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
     }
 }

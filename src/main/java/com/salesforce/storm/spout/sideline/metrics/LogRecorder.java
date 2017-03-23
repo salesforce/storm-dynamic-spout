@@ -84,7 +84,7 @@ public class LogRecorder implements MetricsRecorder {
         timer(sourceClass, metricName, (end - start));
 
         // return result.
-        return (T) result;
+        return result;
     }
 
     @Override

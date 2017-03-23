@@ -119,7 +119,7 @@ public class SpoutMonitor implements Runnable {
             // How long to keep idle threads around for before closing them
             1L, TimeUnit.MINUTES,
             // Task input queue
-            new LinkedBlockingQueue<Runnable>()
+            new LinkedBlockingQueue<>()
         );
     }
 
@@ -186,8 +186,9 @@ public class SpoutMonitor implements Runnable {
      */
     private void watchForCompletedTasks() {
         // Cleanup loop
-        for (String virtualSpoutId: spoutThreads.keySet()) {
-            final CompletableFuture future = spoutThreads.get(virtualSpoutId);
+        for (Map.Entry<String, CompletableFuture> entry: spoutThreads.entrySet()) {
+            final String virtualSpoutId = entry.getKey();
+            final CompletableFuture future = entry.getValue();
             final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
 
             if (future.isDone()) {
@@ -253,7 +254,7 @@ public class SpoutMonitor implements Runnable {
         // accepting/starting new tasks.
         executor.shutdown();
 
-        // Loop thru our runners and request stop on each
+        // Loop through our runners and request stop on each
         for (SpoutRunner spoutRunner : spoutRunners.values()) {
             spoutRunner.requestStop();
         }
@@ -301,7 +302,7 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * @return - how often our monitor thread should run thru its maintenance loop, in milliseconds.
+     * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
      */
     private long getMonitorThreadIntervalMs() {
         return (long) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS);

@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -15,20 +15,20 @@ import java.util.TreeMap;
 /**
  * This Retry Manager implementation does 2 things.
  * It attempts retries of failed tuples a maximum of MAX_RETRIES times.
- * After a tuple fails more than that, it will be "ack'd" or marked as completed.
- * Each retry is attempted using an exponential backoff time period.
+ * After a tuple fails more than that, it will be "acked" or marked as completed.
+ * Each retry is attempted using an exponential back-off time period.
  * The first retry will be attempted within MIN_RETRY_TIME_MS milliseconds.  Each attempt
  * after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
  *
  * Note: Super naive implementation of a retry manager.
  */
-public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
+public class DefaultRetryManager implements RetryManager {
     // Configuration
     private int maxRetries = 25;
     private long minRetryTimeMs = 1000;
 
     /**
-     * This Set holds which Tuples are in flight.
+     * This Set holds which tuples are in flight.
      */
     private Set<TupleMessageId> retriesInFlight;
 
@@ -84,8 +84,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         if (failCount > 1) {
             // Make sure they're removed.  This kind of sucks.
             // This may not be needed in reality...just because of how we've setup our tests :/
-            for (Long key: failedMessageIds.keySet()) {
-                Queue queue = failedMessageIds.get(key);
+            for (Queue queue: failedMessageIds.values()) {
                 if (queue.remove(messageId)) {
                     break;
                 }

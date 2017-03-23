@@ -33,7 +33,7 @@ public class SpoutCoordinator {
      *
      * ThreadSafety - Lucky for us, Clock is all thread safe :)
      */
-    private Clock clock = Clock.systemUTC();
+    private final Clock clock = Clock.systemUTC();
 
     /**
      * Queue of spouts that need to be passed to the monitor and spun up.
@@ -175,7 +175,7 @@ public class SpoutCoordinator {
             // Wait for clean termination
             executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
-            logger.error("Interupted clean shutdown, forcing stop: {}", ex);
+            logger.error("Interrupted clean shutdown, forcing stop: {}", ex);
         }
 
         // If we haven't shut down yet..

@@ -11,5 +11,6 @@ import java.util.List;
  */
 public interface Scheme extends Serializable {
     List<Object> deserialize(ByteBuffer ser);
-    public Fields getOutputFields();
+
+    Fields getOutputFields();
 }

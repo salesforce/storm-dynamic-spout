@@ -12,8 +12,17 @@ import java.util.List;
  */
 public abstract class AbstractScheme implements Scheme, Deserializer {
 
-    abstract public List<Object> deserialize(ByteBuffer ser);
-    abstract public Fields getOutputFields();
+    /**
+     * @return - Define the fields that you will deserialize into.
+     */
+    public abstract Fields getOutputFields();
+
+    /**
+     * Implement deserialization logic and return List of objects/tuple values.
+     * @param ser - byte buffer to deserialize.
+     * @return - List of objects/tuple values.
+     */
+    public abstract List<Object> deserialize(ByteBuffer ser);
 
     /**
      * Provides compatibility layer to 'Storm-Kafka' Scheme-like interface.

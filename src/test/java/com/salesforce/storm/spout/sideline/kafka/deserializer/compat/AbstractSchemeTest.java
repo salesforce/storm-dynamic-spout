@@ -73,7 +73,7 @@ public class AbstractSchemeTest {
         final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(Charsets.UTF_8), "value".getBytes(Charsets.UTF_8));
 
         // Validate
-        assertNull("Should pass the null thru", myValues);
+        assertNull("Should pass the null through", myValues);
     }
 
     /**

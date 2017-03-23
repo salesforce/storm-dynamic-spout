@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.util.List;
@@ -29,7 +28,13 @@ public class SidelineConsumerConfig {
      */
     private long consumerStateAutoCommitIntervalMs = 15000;
 
-    public SidelineConsumerConfig(List<String> brokerHosts, String consumerId, String topic) {
+    /**
+     * Constructor.
+     * @param brokerHosts - List of Kafka brokers in format of ["host1:9092", "host2:9092", ...]
+     * @param consumerId - What consumerId the consumer should use.
+     * @param topic - What topic the consumer should consume from.
+     */
+    public SidelineConsumerConfig(final List<String> brokerHosts, final String consumerId, final String topic) {
         this.topic = topic;
         this.consumerId = consumerId;
 

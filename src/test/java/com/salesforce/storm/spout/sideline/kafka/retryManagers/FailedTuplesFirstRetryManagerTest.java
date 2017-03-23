@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers;
+package com.salesforce.storm.spout.sideline.kafka.retryManagers;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 /**
  *
  */
-public class RetryFailedTuplesFirstRetryManagerTest {
+public class FailedTuplesFirstRetryManagerTest {
 
     /**
      * Tests tracking a new failed messageIds.
@@ -21,7 +21,7 @@ public class RetryFailedTuplesFirstRetryManagerTest {
     @Test
     public void testFailedSimpleCase() {
         // construct manager and call open
-        RetryFailedTuplesFirstRetryManager retryManager = new RetryFailedTuplesFirstRetryManager();
+        FailedTuplesFirstRetryManager retryManager = new FailedTuplesFirstRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // Define our tuple message id
@@ -122,7 +122,7 @@ public class RetryFailedTuplesFirstRetryManagerTest {
      * @param tupleMessageId
      * @param expectedToBeInFlight
      */
-    private void validateExpectedFailedMessageId(RetryFailedTuplesFirstRetryManager retryManager, TupleMessageId tupleMessageId, boolean expectedToBeInFlight) {
+    private void validateExpectedFailedMessageId(FailedTuplesFirstRetryManager retryManager, TupleMessageId tupleMessageId, boolean expectedToBeInFlight) {
         // Find its queue
         assertTrue("Queue should contain our tuple messageId", retryManager.getFailedMessageIds().contains(tupleMessageId));
 
@@ -130,12 +130,12 @@ public class RetryFailedTuplesFirstRetryManagerTest {
         assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getMessageIdsInFlight().contains(tupleMessageId));
     }
 
-    private void validateTupleNotInFailedSetButIsInFlight(RetryFailedTuplesFirstRetryManager retryManager, TupleMessageId tupleMessageId) {
+    private void validateTupleNotInFailedSetButIsInFlight(FailedTuplesFirstRetryManager retryManager, TupleMessageId tupleMessageId) {
         assertFalse("Should not contain our messageId", retryManager.getFailedMessageIds().contains(tupleMessageId));
         assertTrue("Should be tracked as in flight", retryManager.getMessageIdsInFlight().contains(tupleMessageId));
     }
 
-    private void validateTupleIsNotBeingTracked(RetryFailedTuplesFirstRetryManager retryManager, TupleMessageId tupleMessageId) {
+    private void validateTupleIsNotBeingTracked(FailedTuplesFirstRetryManager retryManager, TupleMessageId tupleMessageId) {
         assertFalse("Should not contain our messageId", retryManager.getFailedMessageIds().contains(tupleMessageId));
         assertFalse("Should not be tracked as in flight", retryManager.getMessageIdsInFlight().contains(tupleMessageId));
     }

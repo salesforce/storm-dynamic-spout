@@ -55,7 +55,7 @@ public class FIFOBufferTest {
 
             KafkaMessage kafkaMessage = new KafkaMessage(
                     new TupleMessageId("my topic", partition, x, sourceSpoutId),
-                    new Values("poop" + x));
+                    new Values("value" + x));
 
             // Keep track of order
             submittedOrder.add(kafkaMessage);

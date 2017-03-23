@@ -8,9 +8,8 @@ import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
-import com.salesforce.storm.spout.sideline.kafka.consumerState.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.failedMsgRetryManagers.FailedMsgRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -68,7 +67,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private Deserializer deserializer;
 
 
-    private FilterChain filterChain = new FilterChain();
+    private final FilterChain filterChain = new FilterChain();
 
     // Define starting and ending offsets.
     private ConsumerState startingState = null;
@@ -98,13 +97,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * For collecting metrics.
      */
-    private MetricsRecorder metricsRecorder;
+    private final MetricsRecorder metricsRecorder;
 
     /**
      * For tracking failed messages, and knowing when to replay them.
      */
-    private FailedMsgRetryManager failedMsgRetryManager;
-    private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
+    private RetryManager retryManager;
+    private final Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
     // TEMP
     private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
@@ -181,8 +180,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         deserializer = getFactoryManager().createNewDeserializerInstance();
 
         // Create our failed msg retry manager & open
-        failedMsgRetryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
-        failedMsgRetryManager.open(getTopologyConfig());
+        retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
+        retryManager.open(getTopologyConfig());
 
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
@@ -283,14 +282,14 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
         // If so, emit that and return.
         long startTime = System.currentTimeMillis();
-        final TupleMessageId nextFailedMessageId = failedMsgRetryManager.nextFailedMessageToRetry();
+        final TupleMessageId nextFailedMessageId = retryManager.nextFailedMessageToRetry();
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
                 // Emit the tuple.
                 return trackedMessages.get(nextFailedMessageId);
             } else {
                 logger.warn("Unable to find tuple that should be replayed due to a fail {}", nextFailedMessageId);
-                failedMsgRetryManager.acked(nextFailedMessageId);
+                retryManager.acked(nextFailedMessageId);
             }
         }
         nextTupleTimeBuckets.put("failedRetry", nextTupleTimeBuckets.get("failedRetry") + (System.currentTimeMillis() - startTime));
@@ -365,8 +364,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (nextTupleTimeBuckets.get("totalCalls") % 10_000_000 == 0) {
             totalTime = nextTupleTimeBuckets.get("totalTime");
             logger.info("==== nextTuple() Totals after {} calls ====", nextTupleTimeBuckets.get("totalCalls"));
-            for (String key : nextTupleTimeBuckets.keySet()) {
-                logger.info("nextTuple() {} => {} ms ({}%)", key, nextTupleTimeBuckets.get(key), ((float) nextTupleTimeBuckets.get(key) / totalTime) * 100);
+            for (Map.Entry<String, Long> entry : nextTupleTimeBuckets.entrySet()) {
+                logger.info("nextTuple() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / totalTime) * 100);
             }
         }
 
@@ -397,11 +396,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If its > the ending offset
-        if (currentOffset > endingOffset) {
-            // Then
-            return true;
-        }
-        return false;
+        return currentOffset > endingOffset;
     }
 
     @Override
@@ -428,14 +423,14 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
         ackTimeBuckets.put("CommitOffset", ackTimeBuckets.get("CommitOffset") + (System.currentTimeMillis() - start));
 
-        // Remove this tuple from the spout where we track things incase the tuple fails.
+        // Remove this tuple from the spout where we track things in-case the tuple fails.
         start = System.currentTimeMillis();
         trackedMessages.remove(tupleMessageId);
         ackTimeBuckets.put("RemoveTracked", ackTimeBuckets.get("RemoveTracked") + (System.currentTimeMillis() - start));
 
         // Mark it as completed in the failed message handler if it exists.
         start = System.currentTimeMillis();
-        failedMsgRetryManager.acked(tupleMessageId);
+        retryManager.acked(tupleMessageId);
         ackTimeBuckets.put("FailedMsgAck", ackTimeBuckets.get("FailedMsgAck") + (System.currentTimeMillis() - start));
 
         // Update our metrics,
@@ -451,8 +446,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (ackTimeBuckets.get("TotalCalls") % 10_000_000 == 0) {
             totalTime = ackTimeBuckets.get("TotalTime");
             logger.info("==== ack() Totals after {} calls ====", ackTimeBuckets.get("TotalCalls"));
-            for (String key : ackTimeBuckets.keySet()) {
-                logger.info("ack() {} => {} ms ({}%)", key, ackTimeBuckets.get(key), ((float) ackTimeBuckets.get(key) / totalTime) * 100);
+            for (Map.Entry<String, Long> entry : ackTimeBuckets.entrySet()) {
+                logger.info("ack() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / totalTime) * 100);
             }
         }
     }
@@ -480,11 +475,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If this tuple shouldn't be replayed again
-        if (!failedMsgRetryManager.retryFurther(tupleMessageId)) {
+        if (!retryManager.retryFurther(tupleMessageId)) {
             logger.warn("Not retrying failed msgId any further {}", tupleMessageId);
 
-            // Mark it as acked in failedMsgRetryManager
-            failedMsgRetryManager.acked(tupleMessageId);
+            // Mark it as acked in retryManager
+            retryManager.acked(tupleMessageId);
 
             // Ack it in the consumer
             sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
@@ -494,7 +489,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // Otherwise mark it as failed.
-        failedMsgRetryManager.failed(tupleMessageId);
+        retryManager.failed(tupleMessageId);
     }
 
     /**
@@ -522,6 +517,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         return consumerId;
     }
 
+    /**
+     * Define the consumerId for this VirtualSpout.
+     * @TODO: This probably should be renamed to setVirtualSpoutId.
+     * @param consumerId - The unique identifier for this consumer.
+     */
     public void setConsumerId(String consumerId) {
         if (Strings.isNullOrEmpty(consumerId)) {
             throw new IllegalStateException("Consumer id cannot be null or empty! (" + consumerId + ")");
@@ -616,7 +616,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer.unsubscribeTopicPartition(topicPartition);
         }
 
-        // If we made it all the way thru the above loop, we completed!
+        // If we made it all the way through the above loop, we completed!
         // Lets flip our flag to true.
         logger.info("Looks like all partitions are complete!  Lets wrap this up.");
         isCompleted = true;

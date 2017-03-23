@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Process a filter through a chain of steps, giving the next step the result of the previous one
+ * Process a filter through a chain of steps, giving the next step the result of the previous one.
  */
 public class FilterChain {
 
@@ -72,11 +72,11 @@ public class FilterChain {
      * @return Identifier for the steps in the chain
      */
     public SidelineIdentifier findSteps(List<FilterChainStep> seek) {
-        for (SidelineIdentifier id : steps.keySet()) {
-            List<FilterChainStep> listOfSteps = steps.get(id);
+        for (Map.Entry<SidelineIdentifier, List<FilterChainStep>> entry : steps.entrySet()) {
+            List<FilterChainStep> listOfSteps = entry.getValue();
 
             if (listOfSteps.equals(seek)) {
-                return id;
+                return entry.getKey();
             }
         }
 
