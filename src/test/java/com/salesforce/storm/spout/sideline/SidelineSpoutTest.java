@@ -304,220 +304,122 @@ public class SidelineSpoutTest {
         spout.close();
     }
 
-//
-//    /**
-//     * End-to-End test over the fail() method using the {@link FailedTuplesFirstRetryManager}
-//     * retry manager.
-//     *
-//     * This test stands up our spout and ask it to consume from our kafka topic.
-//     * We publish some data into kafka, and validate that when we call nextTuple() on
-//     * our spout that we get out our messages that were published into kafka.
-//     *
-//     * We then fail some tuples and validate that they get replayed.
-//     * We ack some tuples and then validate that they do NOT get replayed.
-//     *
-//     * This does not make use of any side lining logic, just simple consuming from the
-//     * 'fire hose' topic.
-//     */
-//    @Test
-//    public void doBasicFailTest() throws InterruptedException {
-//        // Define how many tuples we should push into the topic, and then consume back out.
-//        final int emitTupleCount = 10;
-//
-//        // Define our ConsumerId prefix
-//        final String consumerIdPrefix = "SidelineSpout-";
-//
-//        // Define our output stream id
-//        final String expectedStreamId = "default";
-//
-//        // Create our config
-//        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
-//
-//        // Configure to use our FailedTuplesFirstRetryManager retry manager.
-//        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
-//
-//        // Some mock stuff to get going
-//        final TopologyContext topologyContext = new MockTopologyContext();
-//        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
-//
-//        // Create spout and call open
-//        final SidelineSpout spout = new SidelineSpout(config);
-//        spout.open(config, topologyContext, spoutOutputCollector);
-//
-//        // validate our streamId
-//        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
-//
-//        // Call next tuple, topic is empty, so should get nothing.
-//        spout.nextTuple();
-//        assertTrue("SpoutOutputCollector should have no emissions", spoutOutputCollector.getEmissions().isEmpty());
-//
-//        // Lets produce some data into the topic
-//        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
-//
-//        // Now loop and get our tuples
-//        for (int x=0; x<emitTupleCount; x++) {
-//            // Async call spout.nextTuple() because it can take a bit to fill the buffer.
-//            await()
-//                    .atMost(5, TimeUnit.SECONDS)
-//                    .until(() -> {
-//                        // Ask for next tuple
-//                        spout.nextTuple();
-//
-//                        // Return how many tuples have been emitted so far
-//                        // It should be equal to our loop count + 1
-//                        return spoutOutputCollector.getEmissions().size();
-//                    }, equalTo(x+1));
-//
-//            // Should have some emissions
-//            assertEquals("SpoutOutputCollector should have emissions", (x + 1), spoutOutputCollector.getEmissions().size());
-//        }
-//        // Now lets validate that what we got out of the spout is what we actually expected.
-//        final List<SpoutEmission> spoutEmissions = spoutOutputCollector.getEmissions();
-//        logger.info("Emissions: {}", spoutEmissions);
-//
-//        // Define some expected values for validation
-//        final String expectedConsumerId = consumerIdPrefix + "firehose";
-//        int expectedMessageOffset = 0;
-//
-//        // Loop over what we produced into kafka
-//        Iterator<SpoutEmission> emissionIterator = spoutEmissions.iterator();
-//        for (ProducerRecord<byte[], byte[]> producedRecord: producedRecords) {
-//            // Sanity check
-//            assertTrue("Should have more emissions", emissionIterator.hasNext());
-//
-//            // Now find its corresponding tuple
-//            final SpoutEmission spoutEmission = emissionIterator.next();
-//
-//            // validate it
-//            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedMessageOffset, expectedStreamId);
-//
-//            // Increment expected message offset for next iteration through this loop.
-//            expectedMessageOffset++;
-//        }
-//
-//        // Call next tuple a few more times to make sure nothing unexpected shows up.
-//        for (int x=0; x<3; x++) {
-//            // This shouldn't get any more tuples
-//            spout.nextTuple();
-//
-//            // Should have some emissions
-//            assertEquals("SpoutOutputCollector should have same number of emissions", emitTupleCount, spoutOutputCollector.getEmissions().size());
-//        }
-//
-//        // Clear output collector
-//        spoutOutputCollector.reset();
-//
-//        // Now lets fail our tuples.
-//        failTuples(spout, spoutEmissions);
-//
-//        // And lets call nextTuple, and we should get the same emissions back out because we called fail on them
-//        // And our retry manager should replay them first chance it gets.
-//        for (int x=0; x<emitTupleCount; x++) {
-//            // Async call spout.nextTuple() because it can take a bit to fill the buffer.
-//            await()
-//                    .atMost(5, TimeUnit.SECONDS)
-//                    .until(() -> {
-//                        // Ask for next tuple
-//                        spout.nextTuple();
-//
-//                        // Return how many tuples have been emitted so far
-//                        // It should be equal to our loop count + 1
-//                        return spoutOutputCollector.getEmissions().size();
-//                    }, equalTo(x+1));
-//
-//            // Should have some emissions
-//            assertEquals("SpoutOutputCollector should have emissions", (x + 1), spoutOutputCollector.getEmissions().size());
-//        }
-//        // Now lets validate that what we got out of the spout is what we actually expected.
-//        List<SpoutEmission> spoutFailedEmissions = spoutOutputCollector.getEmissions();
-//        logger.info("Previously Failed and now retried Emissions: {}", spoutEmissions);
-//
-//        // Loop over what we produced into kafka
-//        emissionIterator = spoutFailedEmissions.iterator();
-//        expectedMessageOffset = 0;
-//        for (ProducerRecord<byte[], byte[]> producedRecord: producedRecords) {
-//            // Sanity check
-//            assertTrue("Should have more emissions", emissionIterator.hasNext());
-//
-//            // Now find its corresponding tuple
-//            final SpoutEmission spoutEmission = emissionIterator.next();
-//
-//            // validate it
-//            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedMessageOffset, expectedStreamId);
-//
-//            // Increment expected message offset for next iteration through this loop.
-//            expectedMessageOffset++;
-//        }
-//
-//        // Now lets ack offsets 0 and 3
-//        List<SpoutEmission> ackedEmissions = Lists.newArrayList();
-//        ackedEmissions.add(spoutFailedEmissions.get(0));
-//        ackedEmissions.add(spoutFailedEmissions.get(3));
-//        ackTuples(spout, ackedEmissions);
-//
-//        // And lets fail the others
-//        List<SpoutEmission> failEmissions = Lists.newArrayList(spoutFailedEmissions);
-//        failEmissions.removeAll(ackedEmissions);
-//        failTuples(spout, failEmissions);
-//        int retries = failEmissions.size();
-//
-//        // reset collector
-//        spoutOutputCollector.reset();
-//
-//        // If we call nextTuple, we should get back our failed emissions
-//        for (int x=0; x<retries; x++) {
-//            // Async call spout.nextTuple() because it can take a bit to fill the buffer.
-//            await()
-//                    .atMost(6500, TimeUnit.MILLISECONDS)
-//                    .until(() -> {
-//                        // Ask for next tuple
-//                        spout.nextTuple();
-//
-//                        // Return how many tuples have been emitted so far
-//                        // It should be equal to our loop count + 1
-//                        return spoutOutputCollector.getEmissions().size();
-//                    }, equalTo(x+1));
-//
-//            // Should have some emissions
-//            assertEquals("SpoutOutputCollector should have emissions", (x + 1), spoutOutputCollector.getEmissions().size());
-//        }
-//        // Now lets validate that what we got out of the spout is what we actually expected.
-//        spoutFailedEmissions = spoutOutputCollector.getEmissions();
-//        logger.info("Previously Failed and now retried Emissions: {}", spoutEmissions);
-//
-//        // Validate it
-//        // Loop over what we produced into kafka
-//        emissionIterator = spoutFailedEmissions.iterator();
-//        expectedMessageOffset = 0;
-//        for (ProducerRecord<byte[], byte[]> producedRecord: producedRecords) {
-//            // Skip these offsets because we acked em
-//            if (expectedMessageOffset == 0 || expectedMessageOffset == 3) {
-//                expectedMessageOffset++;
-//                continue;
-//            }
-//            // Sanity check
-//            assertTrue("Should have more emissions", emissionIterator.hasNext());
-//
-//            // Now find its corresponding tuple
-//            final SpoutEmission spoutEmission = emissionIterator.next();
-//
-//            // validate it
-//            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedMessageOffset, expectedStreamId);
-//
-//            // Increment expected message offset for next iteration through this loop.
-//            expectedMessageOffset++;
-//        }
-//
-//        // Cleanup.
-//        spout.close();
-//    }
+    /**
+     * End-to-End test over the fail() method using the {@link FailedTuplesFirstRetryManager}
+     * retry manager.
+     *
+     * This test stands up our spout and ask it to consume from our kafka topic.
+     * We publish some data into kafka, and validate that when we call nextTuple() on
+     * our spout that we get out our messages that were published into kafka.
+     *
+     * We then fail some tuples and validate that they get replayed.
+     * We ack some tuples and then validate that they do NOT get replayed.
+     *
+     * This does not make use of any side lining logic, just simple consuming from the
+     * 'fire hose' topic.
+     */
+    @Test
+    public void doBasicFailTest() throws InterruptedException {
+        // Define how many tuples we should push into the topic, and then consume back out.
+        final int emitTupleCount = 10;
 
-    // Helper method
+        // Define our ConsumerId prefix
+        final String consumerIdPrefix = "SidelineSpout-";
+
+        // Define our output stream id
+        final String expectedStreamId = "default";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Configure to use our FailedTuplesFirstRetryManager retry manager.
+        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
+
+        // Some mock stuff to get going
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final SidelineSpout spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+
+        // Call next tuple, topic is empty, so should get nothing.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Lets produce some data into the topic
+        List<KafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+
+        // Now loop and get our tuples
+        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
+
+        // Now lets validate that what we got out of the spout is what we actually expected.
+        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
+
+        // Call next tuple a few more times to make sure nothing unexpected shows up.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Now lets fail our tuples.
+        failTuples(spout, spoutEmissions);
+
+        // And lets call nextTuple, and we should get the same emissions back out because we called fail on them
+        // And our retry manager should replay them first chance it gets.
+        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
+        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
+
+        // Now lets ack 2 different offsets, entries 0 and 3.
+        // This means they should never get replayed.
+        List<SpoutEmission> ackedEmissions = Lists.newArrayList();
+        ackedEmissions.add(spoutEmissions.get(0));
+        ackedEmissions.add(spoutEmissions.get(3));
+        ackTuples(spout, ackedEmissions);
+
+        // And lets remove their related KafkaRecords
+        // Remember to remove in reverse order, because ArrayLists have no gaps in indexes :p
+        producedRecords.remove(3);
+        producedRecords.remove(0);
+
+        // And lets fail the others
+        List<SpoutEmission> failEmissions = Lists.newArrayList(spoutEmissions);
+        failEmissions.removeAll(ackedEmissions);
+        failTuples(spout, failEmissions);
+
+        // This is how many we failed.
+        final int failedTuples = failEmissions.size();
+
+        // If we call nextTuple, we should get back our failed emissions
+        final List<SpoutEmission> replayedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, failedTuples);
+
+        // Validate we don't get anything else
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+
+        // Validate the replayed tuples were our failed ones
+        validateTuplesFromSourceKafkaMessages(producedRecords, replayedEmissions, expectedStreamId);
+
+        // Now lets ack these
+        ackTuples(spout, replayedEmissions);
+
+        // And validate nextTuple gives us nothing new
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Cleanup.
+        spout.close();
+    }
+
+    // Helper methods
+
+    /**
+     * Given a list of KafkaRecords that got published into Kafka, compare it against a list of SpoutEmissions that
+     * got emitted by the spout, and make sure everything matches up to what we expected.
+     *
+     * @param sourceProducerRecord - The KafkaRecord messages published into kafka.
+     * @param spoutEmission - The SpoutEmissions we got out of the spout
+     * @param expectedConsumerId - What consumerId these emissions should be associated with.
+     * @param expectedOutputStreamId - What stream these emissions should have been emitted down.
+     */
     private void validateEmission(final KafkaRecord<byte[], byte[]> sourceProducerRecord, final SpoutEmission spoutEmission, final String expectedConsumerId, final String expectedOutputStreamId) {
-        // These values may change
-        // TODO: - how do we validate task id?  Do we need too?
-        final Integer expectedTaskId = null;
-
         // Now find its corresponding tuple
         assertNotNull("Not null sanity check", spoutEmission);
         assertNotNull("Not null sanity check", sourceProducerRecord);
@@ -547,7 +449,6 @@ public class SidelineSpoutTest {
 
         // Validate Emit Parameters
         assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
-        assertEquals("Got expected taskId", expectedTaskId, spoutEmission.getTaskId());
     }
 
     /**
