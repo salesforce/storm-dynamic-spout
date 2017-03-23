@@ -11,27 +11,20 @@ import java.util.Map;
  *
  */
 public class MultiAssignableMetric implements IMetric {
-    Map<String, AssignableMetric> values = new HashMap();
+    private final Map<String, AssignableMetric> values = new HashMap();
 
     public MultiAssignableMetric() {
     }
 
     public AssignableMetric scope(String key) {
-        AssignableMetric val = this.values.get(key);
-        if(val == null) {
-            this.values.put(key, val = new AssignableMetric(null));
-        }
-
-        return val;
+        return this.values.computeIfAbsent(key, k -> new AssignableMetric(null));
     }
 
     public Object getValueAndReset() {
         HashMap ret = new HashMap();
-        Iterator var2 = this.values.entrySet().iterator();
 
-        while(var2.hasNext()) {
-            Map.Entry e = (Map.Entry)var2.next();
-            ret.put(e.getKey(), ((AssignableMetric)e.getValue()).getValueAndReset());
+        for (Map.Entry<String, AssignableMetric> entry : this.values.entrySet()) {
+            ret.put(entry.getKey(), (entry.getValue()).getValueAndReset());
         }
 
         return ret;

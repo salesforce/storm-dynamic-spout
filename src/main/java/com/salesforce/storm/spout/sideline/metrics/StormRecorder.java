@@ -83,7 +83,7 @@ public class StormRecorder implements MetricsRecorder {
         timer(sourceClass, metricName, (end - start));
 
         // return result.
-        return (T) result;
+        return result;
     }
 
     public void timer(Class sourceClass, String metricName, long timeInMs) {

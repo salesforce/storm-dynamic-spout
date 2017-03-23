@@ -115,8 +115,7 @@ public class RoundRobinBuffer implements TupleBuffer {
     @Override
     public int size() {
         int total = 0;
-        for (String key: tupleBuffer.keySet()) {
-            Queue queue = tupleBuffer.get(key);
+        for (final Queue queue: tupleBuffer.values()) {
             if (queue != null) {
                 total += queue.size();
             }

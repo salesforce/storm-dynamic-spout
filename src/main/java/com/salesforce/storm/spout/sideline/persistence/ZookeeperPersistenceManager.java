@@ -39,10 +39,10 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     // Additional Config
     // TODO - Move into some kind of config/properties class/map/thing.
-    private int zkSessionTimeout = 6000;
-    private int zkConnectionTimeout = 6000;
-    private int zkRetryAttempts = 10;
-    private int zkRetryInterval = 10;
+    private final int zkSessionTimeout = 6000;
+    private final int zkConnectionTimeout = 6000;
+    private final int zkRetryAttempts = 10;
+    private final int zkRetryInterval = 10;
 
     // Zookeeper connection
     private CuratorFramework curator;
@@ -62,10 +62,11 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         }
 
         // Build out our bits and pieces.
-        String serverPorts = "";
+        StringBuilder stringBuilder = new StringBuilder();
         for (String server : zkServers) {
-            serverPorts = serverPorts + server + ",";
+            stringBuilder.append(server).append(",");
         }
+        String serverPorts = stringBuilder.toString();
         serverPorts = serverPorts.substring(0, serverPorts.length() - 1);
         this.zkConnectionString = serverPorts;
         this.zkRoot = zkRoot;
@@ -250,11 +251,11 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         }
 
         // Otherwise parse the stored json
-        for (Object key: json.keySet()) {
-            String[] bits = ((String)key).split("-");
+        for (Map.Entry<Object, Object> entry: json.entrySet()) {
+            String[] bits = ((String)entry.getKey()).split("-");
 
             // Populate consumerState.
-            consumerState.setOffset(new TopicPartition(bits[0], Integer.valueOf(bits[1])), (Long)json.get(key));
+            consumerState.setOffset(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
         }
         return consumerState;
     }
@@ -262,7 +263,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     /**
      * Internal method to create a new Curator connection.
      */
-    private CuratorFramework newCurator() throws Exception {
+    private CuratorFramework newCurator() {
         return CuratorFrameworkFactory.newClient(zkConnectionString, zkSessionTimeout, zkConnectionTimeout, new RetryNTimes(zkRetryAttempts, zkRetryInterval));
     }
 

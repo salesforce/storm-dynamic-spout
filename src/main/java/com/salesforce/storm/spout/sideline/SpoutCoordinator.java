@@ -33,7 +33,7 @@ public class SpoutCoordinator {
      *
      * ThreadSafety - Lucky for us, Clock is all thread safe :)
      */
-    private Clock clock = Clock.systemUTC();
+    private final Clock clock = Clock.systemUTC();
 
     /**
      * Queue of spouts that need to be passed to the monitor and spun up.

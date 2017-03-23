@@ -22,11 +22,11 @@ public interface Deserializer extends Serializable {
      * @param value - byte array representing the value.
      * @return Values that should be emitted by the spout to the topology.
      */
-    public Values deserialize(final String topic, final int partition, final long offset, final byte[] key, final byte[] value);
+    Values deserialize(final String topic, final int partition, final long offset, final byte[] key, final byte[] value);
 
     /**
      * Declares the output fields for the deserializer.
      * @return An instance of the fields
      */
-    public Fields getOutputFields();
+    Fields getOutputFields();
 }

@@ -559,7 +559,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
@@ -576,7 +575,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
@@ -593,7 +591,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
@@ -610,7 +607,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
@@ -629,7 +625,6 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = "/TestRootPath";
 
         // Create our instance
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception

@@ -84,8 +84,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         if (failCount > 1) {
             // Make sure they're removed.  This kind of sucks.
             // This may not be needed in reality...just because of how we've setup our tests :/
-            for (Long key: failedMessageIds.keySet()) {
-                Queue queue = failedMessageIds.get(key);
+            for (Queue queue: failedMessageIds.values()) {
                 if (queue.remove(messageId)) {
                     break;
                 }
@@ -147,11 +146,7 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         final int numberOfTimesHasFailed = numberOfTimesFailed.getOrDefault(messageId, 0);
 
         // If we have exceeded our max retry limit
-        if (numberOfTimesHasFailed >= maxRetries) {
-            // Then we shouldn't retry
-            return false;
-        }
-        return true;
+        return numberOfTimesHasFailed < maxRetries;
     }
 
     /**

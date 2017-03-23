@@ -119,7 +119,7 @@ public class SpoutMonitor implements Runnable {
             // How long to keep idle threads around for before closing them
             1L, TimeUnit.MINUTES,
             // Task input queue
-            new LinkedBlockingQueue<Runnable>()
+            new LinkedBlockingQueue<>()
         );
     }
 
@@ -186,8 +186,9 @@ public class SpoutMonitor implements Runnable {
      */
     private void watchForCompletedTasks() {
         // Cleanup loop
-        for (String virtualSpoutId: spoutThreads.keySet()) {
-            final CompletableFuture future = spoutThreads.get(virtualSpoutId);
+        for (Map.Entry<String, CompletableFuture> entry: spoutThreads.entrySet()) {
+            final String virtualSpoutId = entry.getKey();
+            final CompletableFuture future = entry.getValue();
             final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
 
             if (future.isDone()) {

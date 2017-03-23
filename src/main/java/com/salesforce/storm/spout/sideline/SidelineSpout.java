@@ -73,7 +73,7 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * Manages creating implementation instances.
      */
-    private FactoryManager factoryManager;
+    private final FactoryManager factoryManager;
 
     /**
      * Stores state about starting/stopping sideline requests.
@@ -376,8 +376,8 @@ public class SidelineSpout extends BaseRichSpout {
         }
         emitCounter++;
         if (emitCounter >= 5_000_000L) {
-            for (String key : emitCountMetrics.keySet()) {
-                logger.info("Emit Count on {} => {}", key, emitCountMetrics.get(key));
+            for (Map.Entry<String, Long> entry : emitCountMetrics.entrySet()) {
+                logger.info("Emit Count on {} => {}", entry.getKey(), entry.getValue());
             }
             emitCountMetrics.clear();
             emitCounter = 0;

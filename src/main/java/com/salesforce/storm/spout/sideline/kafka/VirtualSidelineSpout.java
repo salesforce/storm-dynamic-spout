@@ -68,7 +68,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private Deserializer deserializer;
 
 
-    private FilterChain filterChain = new FilterChain();
+    private final FilterChain filterChain = new FilterChain();
 
     // Define starting and ending offsets.
     private ConsumerState startingState = null;
@@ -98,13 +98,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * For collecting metrics.
      */
-    private MetricsRecorder metricsRecorder;
+    private final MetricsRecorder metricsRecorder;
 
     /**
      * For tracking failed messages, and knowing when to replay them.
      */
     private FailedMsgRetryManager failedMsgRetryManager;
-    private Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
+    private final Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
     // TEMP
     private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
@@ -365,8 +365,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (nextTupleTimeBuckets.get("totalCalls") % 10_000_000 == 0) {
             totalTime = nextTupleTimeBuckets.get("totalTime");
             logger.info("==== nextTuple() Totals after {} calls ====", nextTupleTimeBuckets.get("totalCalls"));
-            for (String key : nextTupleTimeBuckets.keySet()) {
-                logger.info("nextTuple() {} => {} ms ({}%)", key, nextTupleTimeBuckets.get(key), ((float) nextTupleTimeBuckets.get(key) / totalTime) * 100);
+            for (Map.Entry<String, Long> entry : nextTupleTimeBuckets.entrySet()) {
+                logger.info("nextTuple() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / totalTime) * 100);
             }
         }
 
@@ -397,11 +397,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // If its > the ending offset
-        if (currentOffset > endingOffset) {
-            // Then
-            return true;
-        }
-        return false;
+        return currentOffset > endingOffset;
     }
 
     @Override
@@ -451,8 +447,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (ackTimeBuckets.get("TotalCalls") % 10_000_000 == 0) {
             totalTime = ackTimeBuckets.get("TotalTime");
             logger.info("==== ack() Totals after {} calls ====", ackTimeBuckets.get("TotalCalls"));
-            for (String key : ackTimeBuckets.keySet()) {
-                logger.info("ack() {} => {} ms ({}%)", key, ackTimeBuckets.get(key), ((float) ackTimeBuckets.get(key) / totalTime) * 100);
+            for (Map.Entry<String, Long> entry : ackTimeBuckets.entrySet()) {
+                logger.info("ack() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / totalTime) * 100);
             }
         }
     }

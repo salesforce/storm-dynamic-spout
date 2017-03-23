@@ -44,7 +44,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 
     // Kafka client configuration
-    private int readTimeoutMS = 5000;
+    private final int readTimeoutMs = 5000;
 
     // Configuration
     private String topicName;
@@ -92,7 +92,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
         final String brokerHost = brokerBits[0];
         final int brokerPort;
         if (brokerBits.length == 2) {
-            brokerPort = Integer.valueOf(brokerBits[1]);
+            brokerPort = Integer.parseInt(brokerBits[1]);
         } else {
             brokerPort = 9092;
         }
@@ -118,7 +118,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 brokerHost, brokerPort,
                 BlockingChannel.UseDefaultBufferSize(),
                 BlockingChannel.UseDefaultBufferSize(),
-                readTimeoutMS);
+                readTimeoutMs);
         channel.connect();
 
         logger.info("Status {}", channel.isConnected());

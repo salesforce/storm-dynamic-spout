@@ -369,9 +369,6 @@ public class VirtualSidelineSpoutTest {
         final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
 
-        // Define expected result
-        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
-
         // Create test config
         final Map topologyConfig = getDefaultConfig();
 

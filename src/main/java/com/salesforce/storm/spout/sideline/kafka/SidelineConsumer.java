@@ -472,8 +472,8 @@ public class SidelineConsumer {
 
     public ConsumerState getCurrentState() {
         ConsumerState consumerState = new ConsumerState();
-        for (TopicPartition topicPartition : partitionStateManagers.keySet()) {
-            consumerState.setOffset(topicPartition, partitionStateManagers.get(topicPartition).lastFinishedOffset());
+        for (Map.Entry<TopicPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
+            consumerState.setOffset(entry.getKey(), entry.getValue().lastFinishedOffset());
         }
         return consumerState;
     }
