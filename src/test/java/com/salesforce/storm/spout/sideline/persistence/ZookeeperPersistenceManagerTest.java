@@ -99,7 +99,7 @@ public class ZookeeperPersistenceManagerTest {
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
         final String expectedZkRoot = "/myRoot";
-        final String expectedConsumerId = "PoopyId";
+        final String expectedConsumerId = "MyConsumerId";
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
         final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
 
@@ -130,7 +130,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic";
-        final String zkRootPath = "/poop";
+        final String zkRootPath = "/topLevel";
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
@@ -201,7 +201,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistenceUpdatingEntryForSameConsumerId() throws InterruptedException {
         final String topicName = "MyTopic";
-        final String zkRootPath = "/poop";
+        final String zkRootPath = "/topLevel";
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
@@ -386,7 +386,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndRequestStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic1";
-        final String zkRootPath = "/poop";
+        final String zkRootPath = "/topLevel";
         final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 

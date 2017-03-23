@@ -68,7 +68,7 @@ public class RoundRobinBufferTest {
 
             KafkaMessage kafkaMessage = new KafkaMessage(
                     new TupleMessageId("my topic", partition, x, sourceSpoutId),
-                    new Values("poop" + x));
+                    new Values("myValue" + x));
 
             // Keep track of order
             if (!submittedOrder.containsKey(sourceSpoutId)) {

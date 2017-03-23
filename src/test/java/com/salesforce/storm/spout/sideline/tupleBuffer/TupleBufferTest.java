@@ -98,7 +98,7 @@ public class TupleBufferTest {
 
                     KafkaMessage kafkaMessage = new KafkaMessage(
                             new TupleMessageId("my topic", partition, x, sourceSpoutId),
-                            new Values("poop" + x));
+                            new Values("myValue" + x));
 
                     try {
                         final long startPutTime = System.currentTimeMillis();

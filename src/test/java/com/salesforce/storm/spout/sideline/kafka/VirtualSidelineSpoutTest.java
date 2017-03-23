@@ -86,7 +86,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify the config is immutable and throws exception when you try to modify it
         expectedException.expect(UnsupportedOperationException.class);
-        virtualSidelineSpout.getTopologyConfig().put("poop", "value");
+        virtualSidelineSpout.getTopologyConfig().put("MyKey", "MyValue");
     }
 
     /**
@@ -818,7 +818,7 @@ public class VirtualSidelineSpoutTest {
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
-        virtualSidelineSpout.fail("Poop");
+        virtualSidelineSpout.fail("This is a String!");
     }
 
     /**
@@ -899,7 +899,7 @@ public class VirtualSidelineSpoutTest {
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
-        virtualSidelineSpout.ack("Poop");
+        virtualSidelineSpout.ack("This is my String!");
     }
 
     /**
