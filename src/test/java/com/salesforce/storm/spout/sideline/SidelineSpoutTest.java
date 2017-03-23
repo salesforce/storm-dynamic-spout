@@ -15,7 +15,6 @@ import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import kafka.Kafka;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -24,6 +23,7 @@ import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,9 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.Clock;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +53,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * End to End testing of Sideline Spout as a whole under various scenarios.
+ * End to End integration testing of Sideline Spout under various scenarios.
  */
 @RunWith(DataProviderRunner.class)
 public class SidelineSpoutTest {
@@ -405,6 +407,115 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
 
         // Cleanup.
+        spout.close();
+    }
+
+    /**
+     * This test stands up a spout instance and begins consuming from a topic.
+     * Halfway thru consuming all the messages published in that topic we will shutdown
+     * the spout gracefully.
+     *
+     * We'll create a new instance of the spout and fire it up, then validate that it resumes
+     * consuming from where it left off.
+     *
+     * Assumptions made in this test:
+     *   - single partition topic
+     *   - using ZK persistence manager to maintain state between spout instances/restarts.
+     */
+    @Test
+    public void testResumingForFirehoseVirtualSpout() throws InterruptedException, IOException, KeeperException {
+        // Produce 10 messages into kafka (offsets 0->9)
+        final List<KafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+
+        // Create spout
+        // Define our output stream id
+        final String expectedStreamId = "default";
+        final String consumerIdPrefix = "TestSidelineSpout";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Use zookeeper persistence manager
+        config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager");
+
+        // Some mock stuff to get going
+        TopologyContext topologyContext = new MockTopologyContext();
+        MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        SidelineSpout spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+
+        // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
+        final List<SpoutEmission> spoutEmissions = Collections.unmodifiableList(consumeTuplesFromSpout(spout, spoutOutputCollector, 6));
+
+        // Validate its the messages we expected
+        validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(1), spoutEmissions.get(1), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(2), spoutEmissions.get(2), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(3), spoutEmissions.get(3), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(4), spoutEmissions.get(4), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(5), spoutEmissions.get(5), consumerIdPrefix, expectedStreamId);
+
+        // We will ack offsets in the following order: 2,0,1,3,5
+        // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(5)));
+
+        // Stop the spout.
+        // A graceful shutdown of the spout should have the consumer state flushed to the persistence layer.
+        spout.close();
+        spout = null;
+
+        // Create fresh new spoutOutputCollector & topology context
+        topologyContext = new MockTopologyContext();
+        spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create fresh new instance of spout & call open all with the same config
+        spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // Call next tuple to get remaining tuples out.
+        // It should give us offsets [4,5,6,7,8,9]
+        final List<SpoutEmission> spoutEmissionsAfterResume = Collections.unmodifiableList(consumeTuplesFromSpout(spout, spoutOutputCollector, 6));
+
+        // Validate no further tuples
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+
+        // Validate its the tuples we expect [4,5,6,7,8,9]
+        validateEmission(producedRecords.get(4), spoutEmissionsAfterResume.get(0), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(5), spoutEmissionsAfterResume.get(1), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(6), spoutEmissionsAfterResume.get(2), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(7), spoutEmissionsAfterResume.get(3), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(8), spoutEmissionsAfterResume.get(4), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(9), spoutEmissionsAfterResume.get(5), consumerIdPrefix, expectedStreamId);
+
+        // Ack all tuples.
+        ackTuples(spout, spoutEmissionsAfterResume);
+
+        // Stop the spout.
+        // A graceful shutdown of the spout should have the consumer state flushed to the persistence layer.
+        spout.close();
+        spout = null;
+
+        // Create fresh new spoutOutputCollector & topology context
+        topologyContext = new MockTopologyContext();
+        spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create fresh new instance of spout & call open all with the same config
+        spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // Validate no further tuples, as we acked all the things.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 3000L);
+
+        // And done.
         spout.close();
     }
 
