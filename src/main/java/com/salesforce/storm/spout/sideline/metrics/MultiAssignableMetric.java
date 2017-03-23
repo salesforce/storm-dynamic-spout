@@ -24,7 +24,7 @@ public class MultiAssignableMetric implements IMetric {
         HashMap ret = new HashMap();
 
         for (Map.Entry<String, AssignableMetric> entry : this.values.entrySet()) {
-            ret.put(entry.getKey(), (entry.getValue()).getValueAndReset());
+            ret.put(entry.getKey(), entry.getValue().getValueAndReset());
         }
 
         return ret;

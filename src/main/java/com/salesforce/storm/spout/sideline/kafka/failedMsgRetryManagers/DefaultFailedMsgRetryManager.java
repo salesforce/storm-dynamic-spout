@@ -146,7 +146,11 @@ public class DefaultFailedMsgRetryManager implements FailedMsgRetryManager {
         final int numberOfTimesHasFailed = numberOfTimesFailed.getOrDefault(messageId, 0);
 
         // If we have exceeded our max retry limit
-        return numberOfTimesHasFailed < maxRetries;
+        if (numberOfTimesHasFailed >= maxRetries) {
+            // Then we shouldn't retry
+            return false;
+        }
+        return true;
     }
 
     /**
