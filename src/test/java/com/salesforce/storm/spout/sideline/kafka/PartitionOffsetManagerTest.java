@@ -1,7 +1,5 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
-import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -10,7 +8,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -206,7 +203,6 @@ public class PartitionOffsetManagerTest {
 
         // Now create our manager
         final PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, 0L);
-        offsetManager.useIterator = true;
 
         // Now create a sorted array
         int[] sortedNumbers = Arrays.copyOf(randomNumbers, randomNumbers.length);

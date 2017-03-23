@@ -24,7 +24,7 @@ public class PartitionOffsetManager {
     private long lastStartedOffset = 0;
 
     // TODO: Lemon Remove this after code review
-    public boolean useIterator = true;
+    public final boolean useIterator = true;
 
     /**
      * Constructor.
