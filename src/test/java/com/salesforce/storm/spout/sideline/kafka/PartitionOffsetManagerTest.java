@@ -7,7 +7,7 @@ import static org.junit.Assert.assertEquals;
 public class PartitionOffsetManagerTest {
 
     /**
-     * This test tracks offsets and acks them in order, then verifies that the last  last finished offset is correct.
+     * This test tracks offsets and will ack them in order, then verifies that the last finished offset is correct.
      */
     @Test
     public void inOrderTrackAndAck() {
@@ -30,7 +30,7 @@ public class PartitionOffsetManagerTest {
     }
 
     /**
-     * This test tracks offsets and acks them in order, then verifies that the last  last finished offset is correct.
+     * This test tracks offsets and will ack them in order, then verifies that the last finished offset is correct.
      */
     @Test
     public void outOfOrderAck() {

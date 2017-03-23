@@ -300,6 +300,8 @@ public class RoundRobinBufferTest {
         future.cancel(true);
         try {
             future.get();
-        } catch (CancellationException e) {}
+        } catch (CancellationException e) {
+            e.printStackTrace();
+        }
     }
 }
