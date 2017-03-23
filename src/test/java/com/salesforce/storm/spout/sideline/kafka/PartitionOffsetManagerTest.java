@@ -1,10 +1,24 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
+import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(DataProviderRunner.class)
 public class PartitionOffsetManagerTest {
+    private static final Logger logger = LoggerFactory.getLogger(PartitionOffsetManagerTest.class);
 
     /**
      * This test tracks offsets and will ack them in order, then verifies that the last finished offset is correct.
@@ -170,5 +184,66 @@ public class PartitionOffsetManagerTest {
         offsetManager.finishOffset(2L);
         result = offsetManager.lastStartedOffset();
         assertEquals("Should be 4L + 1 => 5L", 5L, result);
+    }
+
+    /**
+     * Rudimentary benchmark test against PartitionOffsetManager.
+     *
+     * @param totalNumbers - total number of offsets to add to the manager.
+     */
+    @Test
+    @UseDataProvider("provideSizes")
+    public void doPerformanceBenchmark(final int totalNumbers) throws InterruptedException {
+        final int spread = 100;
+
+        // Generate out of order numbers
+        Random random = new Random();
+        int[] randomNumbers = new int[totalNumbers];
+        for (int x=0; x<totalNumbers; x++) {
+            int nextNumber = random.nextInt(spread);
+            randomNumbers[x] = x + nextNumber;
+        }
+
+        // Now create our manager
+        final PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, 0L);
+        offsetManager.useIterator = true;
+
+        // Now create a sorted array
+        int[] sortedNumbers = Arrays.copyOf(randomNumbers, randomNumbers.length);
+        Arrays.sort(sortedNumbers);
+
+        // Start tracking from ordered ist
+        long start = System.currentTimeMillis();
+        for (int x=0; x<totalNumbers; x++) {
+            offsetManager.startOffset(sortedNumbers[x]);
+        }
+        logger.info("Finished starting {} in {} ms ", totalNumbers, (System.currentTimeMillis() - start));
+
+        // Now start acking
+        start = System.currentTimeMillis();
+        for (int x=0; x<totalNumbers; x++) {
+            offsetManager.finishOffset(randomNumbers[x]);
+        }
+        logger.info("Finished acking {} in {} ms ", totalNumbers, (System.currentTimeMillis() - start));
+    }
+
+    /**
+     * Provides various tuple buffer implementation.
+     */
+    @DataProvider
+    public static Object[][] provideSizes() throws InstantiationException, IllegalAccessException {
+        return new Object[][]{
+                { 10 },
+                { 100 },
+                { 1_000 },
+                { 10_000 },
+                { 20_000 },
+                { 40_000 },
+                { 80_000 },
+                { 160_000 },
+                { 320_000 },
+                { 640_000 },
+                { 1_280_000 },
+        };
     }
 }
