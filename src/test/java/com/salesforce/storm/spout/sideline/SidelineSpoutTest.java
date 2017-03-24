@@ -519,6 +519,88 @@ public class SidelineSpoutTest {
         spout.close();
     }
 
+    /**
+     * This test stands up a spout instance and starts sidelining.
+     * It then stops the spout, creates a new instance of it, and restarts it.  If things are working
+     * correctly when the next instance comes back up it should continue sidelining and filtering
+     * tuples from being emitted.
+     */
+    @Test
+    public void testResumingWhileSideliningIsActive() {
+        // TODO - write test plan.
+    }
+
+    /**
+     * This test stands up a spout instance and tests sidelining.
+     * Half way thru consuming the tuples that should be emitted from the sidelined VirtualSpout
+     * we stop the spout, create a new instance and restart it.  If things are working correctly
+     * the sidelined VirtualSpout should resume from where it left off.
+     */
+    @Test
+    public void testResumingSpoutWhileSidelinedVirtualSpoutIsActive() {
+        // Produce 10 messages into Kafka topic
+
+        // Create spout instance using ZK persistence layer
+        // Open spout
+
+        // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
+
+        // We will ack offsets in the following order: 2,0,1,3,5
+        // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
+
+        // Start sideline request, which filters ALL messages.
+
+        // Call nextTuple() 10 times, we should get no more tuples because they are all filtered.
+        // Internally the fire hose should still be set on offset 3 because we never committed #4 or #5
+
+        // Stop Spout.
+
+        // Inspect Firehose consumer state, it should show largest offset being 3
+        // Inspect Sideline Request: It should show starting at offset #3
+
+        // Create new Spout instance and start
+        // Verify we have a single virtual spouts running
+        // Call nextTuple() 10 times, we should no tuples
+        // Consumer state should be now adjusted to offset 9 however.
+
+        // Stop Sidelining
+        // Verify 2 VirtualSpouts are running
+
+        // Call nextTuple() 3 times
+        // Verify we get offsets [4,5,6] by validating the tuples
+
+        // Ack offsets [4,5] => committed offset should be 5 now on sideline consumer.
+
+        // Shut down spout.
+
+        // Create new spout instance and start
+        // Verify that we have 2 virtual spouts running
+
+        // Call nextTuple() 4 times to get offsets [6,7,8,9]
+        // Validate the tuples returned
+
+        // call nextTuple() several times, get nothing back
+        // Ack offsets [6,7,8,9]
+
+        // Verify 2nd VirtualSpout shuts off
+
+        // Produce 5 messages into Kafka topic with offsets [10,11,12,13,14]
+
+        // Call nextTuple() 5 times,
+        // verify we get the tuples.
+        // Ack offsets [10,11,12] => committed offset is now 12
+
+        // Stop spout.
+
+        // Create new spout instance and start.
+        // Verify single VirtualSpout running
+
+        // Call nextTuple() 2 times,
+        // verify we get offsets [13,14]
+
+        // Stop spout.
+    }
+
     // Helper methods
 
     /**
@@ -871,6 +953,8 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+
+        // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager");
 
         // Configure SpoutMonitor thread to run every 1 second
@@ -956,4 +1040,3 @@ public class SidelineSpoutTest {
         }
     }
 }
-
