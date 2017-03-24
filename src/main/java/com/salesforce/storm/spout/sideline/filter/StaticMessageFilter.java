@@ -2,23 +2,51 @@ package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 
+import java.util.UUID;
+
 /**
  * We use this filter in tests because it allows us an easy way to define
  * how a filter behaves.
  */
 public class StaticMessageFilter implements FilterChainStep {
 
-    private final boolean shouldFilter;
+    /**
+     * We need a way to make this instance unique from others, so we use a UUID.
+     */
+    private final UUID uniqueId;
 
-    public StaticMessageFilter(boolean shouldFilter) {
-        this.shouldFilter = shouldFilter;
+    public StaticMessageFilter() {
+        this.uniqueId = UUID.randomUUID();
     }
 
-    public boolean isShouldFilter() {
-        return shouldFilter;
-    }
-
+    @Override
     public boolean filter(KafkaMessage message) {
-        return shouldFilter;
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+
+        StaticMessageFilter that = (StaticMessageFilter) other;
+
+        return uniqueId.equals(that.uniqueId);
+    }
+
+    @Override
+    public int hashCode() {
+        return uniqueId.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "StaticMessageFilter{"
+            + "uniqueId=" + uniqueId
+            + '}';
     }
 }

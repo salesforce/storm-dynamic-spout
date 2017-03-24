@@ -390,7 +390,7 @@ public class VirtualSidelineSpoutTest {
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
-        final StaticMessageFilter filterStep = new StaticMessageFilter(true);
+        final StaticMessageFilter filterStep = new StaticMessageFilter();
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
