@@ -237,11 +237,13 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.open(getTopologyConfig(), getTopologyContext());
 
         // TODO: LEMON - should this be removed?
+        // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
         if (startingTrigger != null) {
             startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
         // TODO: LEMON - should this be removed?
+        // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
         if (stoppingTrigger != null) {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
@@ -290,6 +292,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // TODO: LEMON - We should build the full payload here rather than individual requests later on
         final List<SidelineIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
+        logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
         for (SidelineIdentifier id : existingRequestIds) {
             final SidelinePayload payload = persistenceManager.retrieveSidelineRequest(id);

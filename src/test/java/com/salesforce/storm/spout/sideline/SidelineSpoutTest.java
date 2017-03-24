@@ -194,119 +194,6 @@ public class SidelineSpoutTest {
     }
 
     /**
-     * Our most basic End 2 End test that includes basic sidelining.
-     * First we stand up our spout and produce some records into the kafka topic its consuming from.
-     * Records 1 and 2 we get out of the spout.
-     * Then we enable sidelining, and call nextTuple(), the remaining records should not be emitted.
-     * We stop sidelining, this should cause a virtual spout to be started within the spout.
-     * Calling nextTuple() should get back the records that were previously skipped.
-     * We produce additional records into the topic.
-     * Call nextTuple() and we should get them out.
-     */
-    @Test
-    public void doTestWithSidelining() throws InterruptedException {
-        // How many records to publish into kafka per go.
-        final int numberOfRecordsToPublish = 3;
-
-        // Define our ConsumerId prefix
-        final String consumerIdPrefix = "TestSidelineSpout";
-
-        // Define our output stream id
-        final String expectedStreamId = "default";
-
-        // Create our Config
-        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
-
-        // Create some stand-in mocks.
-        final TopologyContext topologyContext = new MockTopologyContext();
-        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
-
-        // Create a static trigger for being able to easily make start and stop requests.
-        final StaticTrigger staticTrigger = new StaticTrigger();
-
-        // Create our spout, add references to our static trigger, and call open().
-        final SidelineSpout spout = new SidelineSpout(config);
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
-        spout.open(config, topologyContext, spoutOutputCollector);
-
-        // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
-
-        // Produce records into kafka
-        List<KafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish);
-
-        // Wait for our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
-        // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
-        // take several calls to nextTuple() before the messages are pulled in from kafka behind the scenes and available
-        // to be emitted.
-        // Grab out the emissions so we can validate them.
-        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
-
-        // Validate the tuples are what we published into kafka
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
-
-        // Lets ack our tuples, this should commit offsets 0 -> 2. (0,1,2)
-        ackTuples(spout, spoutEmissions);
-
-        // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
-
-        // Create a static message filter, this allows us to easily start filtering messages.
-        // It should filter ALL messages
-        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter(true);
-
-        final SidelineRequest request = new SidelineRequest(staticMessageFilter);
-
-        // Send a new start request with our filter.
-        // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
-        staticTrigger.sendStartRequest(request);
-
-        // Produce another 3 records into kafka.
-        producedRecords = produceRecords(numberOfRecordsToPublish);
-
-        // We basically want the time that would normally pass before we check that there are no new tuples
-        // Call next tuple, it should NOT receive any tuples because
-        // all tuples are filtered.
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 3000L);
-
-        // Send a stop sideline request
-        staticTrigger.sendStopRequest(request);
-
-        // We need to wait a bit for the sideline spout instance to spin up and start consuming
-        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
-
-        // We should validate these emissions
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
-
-        // Call next tuple a few more times to be safe nothing else comes in.
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
-
-        // Validate that virtualsideline spouts are NOT closed out, but still waiting for unacked tuples.
-        // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
-        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
-
-        // Lets ack our messages.
-        ackTuples(spout, spoutEmissions);
-
-        // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
-        // We need to wait for the monitor thread to run to clean it up.
-        waitForVirtualSpoutsToClose(spout, 1);
-
-        // Produce some more records, verify they come in the firehose.
-        producedRecords = produceRecords(numberOfRecordsToPublish);
-
-        // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
-        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
-
-        // Loop over what we produced into kafka and validate them
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
-
-        // Close out
-        spout.close();
-    }
-
-    /**
      * End-to-End test over the fail() method using the {@link FailedTuplesFirstRetryManager}
      * retry manager.
      *
@@ -407,6 +294,119 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
 
         // Cleanup.
+        spout.close();
+    }
+
+    /**
+     * Our most basic End 2 End test that includes basic sidelining.
+     * First we stand up our spout and produce some records into the kafka topic its consuming from.
+     * Records 1 and 2 we get out of the spout.
+     * Then we enable sidelining, and call nextTuple(), the remaining records should not be emitted.
+     * We stop sidelining, this should cause a virtual spout to be started within the spout.
+     * Calling nextTuple() should get back the records that were previously skipped.
+     * We produce additional records into the topic.
+     * Call nextTuple() and we should get them out.
+     */
+    @Test
+    public void doTestWithSidelining() throws InterruptedException {
+        // How many records to publish into kafka per go.
+        final int numberOfRecordsToPublish = 3;
+
+        // Define our ConsumerId prefix
+        final String consumerIdPrefix = "TestSidelineSpout";
+
+        // Define our output stream id
+        final String expectedStreamId = "default";
+
+        // Create our Config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Create some stand-in mocks.
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create a static trigger for being able to easily make start and stop requests.
+        final StaticTrigger staticTrigger = new StaticTrigger();
+
+        // Create our spout, add references to our static trigger, and call open().
+        final SidelineSpout spout = new SidelineSpout(config);
+        spout.setStartingTrigger(staticTrigger);
+        spout.setStoppingTrigger(staticTrigger);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+
+        // Produce records into kafka
+        List<KafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish);
+
+        // Wait for our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
+        // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
+        // take several calls to nextTuple() before the messages are pulled in from kafka behind the scenes and available
+        // to be emitted.
+        // Grab out the emissions so we can validate them.
+        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
+
+        // Validate the tuples are what we published into kafka
+        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
+
+        // Lets ack our tuples, this should commit offsets 0 -> 2. (0,1,2)
+        ackTuples(spout, spoutEmissions);
+
+        // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
+        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
+
+        // Create a static message filter, this allows us to easily start filtering messages.
+        // It should filter ALL messages
+        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
+
+        final SidelineRequest request = new SidelineRequest(staticMessageFilter);
+
+        // Send a new start request with our filter.
+        // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
+        staticTrigger.sendStartRequest(request);
+
+        // Produce another 3 records into kafka.
+        producedRecords = produceRecords(numberOfRecordsToPublish);
+
+        // We basically want the time that would normally pass before we check that there are no new tuples
+        // Call next tuple, it should NOT receive any tuples because
+        // all tuples are filtered.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 3000L);
+
+        // Send a stop sideline request
+        staticTrigger.sendStopRequest(request);
+
+        // We need to wait a bit for the sideline spout instance to spin up and start consuming
+        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
+
+        // We should validate these emissions
+        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
+
+        // Call next tuple a few more times to be safe nothing else comes in.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+
+        // Validate that virtualsideline spouts are NOT closed out, but still waiting for unacked tuples.
+        // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
+        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
+
+        // Lets ack our messages.
+        ackTuples(spout, spoutEmissions);
+
+        // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
+        // We need to wait for the monitor thread to run to clean it up.
+        waitForVirtualSpouts(spout, 1);
+
+        // Produce some more records, verify they come in the firehose.
+        producedRecords = produceRecords(numberOfRecordsToPublish);
+
+        // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
+        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
+
+        // Loop over what we produced into kafka and validate them
+        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
+
+        // Close out
         spout.close();
     }
 
@@ -537,47 +537,157 @@ public class SidelineSpoutTest {
      * the sidelined VirtualSpout should resume from where it left off.
      */
     @Test
-    public void testResumingSpoutWhileSidelinedVirtualSpoutIsActive() {
-        // Produce 10 messages into Kafka topic
+    public void testResumingSpoutWhileSidelinedVirtualSpoutIsActive() throws InterruptedException {
+        // Produce 10 messages into kafka (offsets 0->9)
+        final List<KafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
 
-        // Create spout instance using ZK persistence layer
-        // Open spout
+        // Create spout
+        // Define our output stream id
+        final String expectedStreamId = "default";
+        final String consumerIdPrefix = "TestSidelineSpout";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Use zookeeper persistence manager
+        config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager");
+
+        // Some mock stuff to get going
+        TopologyContext topologyContext = new MockTopologyContext();
+        MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create a static trigger for being able to easily make start and stop requests.
+        StaticTrigger staticTrigger = new StaticTrigger();
+
+        // Create our spout, add references to our static trigger, and call open().
+        SidelineSpout spout = new SidelineSpout(config);
+        spout.setStartingTrigger(staticTrigger);
+        spout.setStoppingTrigger(staticTrigger);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
+        final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 6);
+
+        // Validate its the messages we expected
+        validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(1), spoutEmissions.get(1), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(2), spoutEmissions.get(2), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(3), spoutEmissions.get(3), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(4), spoutEmissions.get(4), consumerIdPrefix, expectedStreamId);
+        validateEmission(producedRecords.get(5), spoutEmissions.get(5), consumerIdPrefix, expectedStreamId);
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(5)));
 
-        // Start sideline request, which filters ALL messages.
+        // Create a static message filter, this allows us to easily start filtering messages.
+        // It should filter ALL messages
+        final SidelineRequest request = new SidelineRequest(new StaticMessageFilter());
 
-        // Call nextTuple() 10 times, we should get no more tuples because they are all filtered.
-        // Internally the fire hose should still be set on offset 3 because we never committed #4 or #5
+        // Send a new start request with our filter.
+        // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
+        staticTrigger.sendStartRequest(request);
 
-        // Stop Spout.
+        // Produce 5 more messages into kafka
+        List<KafkaRecord<byte[], byte[]>> additionalRecords = produceRecords(5);
 
+        // Call nextTuple() 4 more times, we should get the remaining first 10 records because they were already buffered.
+        spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
+
+        // We'll validate them
+        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId);
+
+        // But if we call nextTuple() 5 more times, we should never get the additional 5 records we produced.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 5, 100L);
+
+        // Lets not ack any more tuples from the fire hose, that means the last completed
+        // offset on the fire hose spout should still be 3.
+
+        // Stop the spout.
+        // A graceful shutdown of the spout should have the consumer state flushed to the persistence layer.
+        spout.close();
+        spout = null;
+
+        // TODO:
         // Inspect Firehose consumer state, it should show largest offset being 3
         // Inspect Sideline Request: It should show starting at offset #3
 
         // Create new Spout instance and start
-        // Verify we have a single virtual spouts running
-        // Call nextTuple() 10 times, we should no tuples
-        // Consumer state should be now adjusted to offset 9 however.
+        topologyContext = new MockTopologyContext();
+        spoutOutputCollector = new MockSpoutOutputCollector();
 
-        // Stop Sidelining
+        // Create a new static trigger for being able to easily make start and stop requests.
+        staticTrigger = new StaticTrigger();
+
+        // Create our spout, add references to our static trigger, and call open().
+        spout = new SidelineSpout(config);
+        spout.setStartingTrigger(staticTrigger);
+        spout.setStoppingTrigger(staticTrigger);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // Wait 3 seconds, then verify we have a single virtual spouts running
+        Thread.sleep(3000L);
+        waitForVirtualSpouts(spout, 1);
+
+        // Call nextTuple() 20 times, we should get no tuples, last committed offset was 3, so this means we asked for
+        // offsets [4,5,6,7,8,9,10,11,12,13,14] <- last committed offset now 14 on firehose.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 20, 100L);
+
+        // Send a stop sideline request
+        staticTrigger.sendStopRequest(request);
+
         // Verify 2 VirtualSpouts are running
+        waitForVirtualSpouts(spout, 2);
 
         // Call nextTuple() 3 times
-        // Verify we get offsets [4,5,6] by validating the tuples
+        List<SpoutEmission> sidelinedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 3);
 
-        // Ack offsets [4,5] => committed offset should be 5 now on sideline consumer.
+        // Verify we get offsets [4,5,6] by validating the tuples
+        validateEmission(producedRecords.get(4), sidelinedEmissions.get(0), "NotUsed", expectedStreamId);
+        validateEmission(producedRecords.get(5), sidelinedEmissions.get(1), "NotUsed", expectedStreamId);
+        validateEmission(producedRecords.get(6), sidelinedEmissions.get(2), "NotUsed", expectedStreamId);
+
+        // Ack offsets [4,5,6] => committed offset should be 6 now on sideline consumer.
+        ackTuples(spout, sidelinedEmissions);
 
         // Shut down spout.
+        spout.close();
 
         // Create new spout instance and start
-        // Verify that we have 2 virtual spouts running
+        // Create new Spout instance and start
+        topologyContext = new MockTopologyContext();
+        spoutOutputCollector = new MockSpoutOutputCollector();
 
-        // Call nextTuple() 4 times to get offsets [6,7,8,9]
-        // Validate the tuples returned
+        // Create a new static trigger for being able to easily make start and stop requests.
+        staticTrigger = new StaticTrigger();
+
+        // Create our spout, add references to our static trigger, and call open().
+        spout = new SidelineSpout(config);
+        spout.setStartingTrigger(staticTrigger);
+        spout.setStoppingTrigger(staticTrigger);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // Verify we have a 2 virtual spouts running
+        waitForVirtualSpouts(spout, 2);
+
+        // Call nextTuple() 3 times to get offsets [7,8,9]
+        // TODO: Seems like maybe virtual spout is closing after filling the buffer instead of after acks are completed?
+        sidelinedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 3);
+
+        // Verify we get offsets [7,8,9] by validating the tuples
+        validateEmission(producedRecords.get(7), sidelinedEmissions.get(0), "NotUsed", expectedStreamId);
+        validateEmission(producedRecords.get(8), sidelinedEmissions.get(1), "NotUsed", expectedStreamId);
+        validateEmission(producedRecords.get(9), sidelinedEmissions.get(2), "NotUsed", expectedStreamId);
+
+        // Ack offsets [7,8,9] => committed offset should be 6 now on sideline consumer.
+        ackTuples(spout, sidelinedEmissions);
 
         // call nextTuple() several times, get nothing back
         // Ack offsets [6,7,8,9]
@@ -599,6 +709,7 @@ public class SidelineSpoutTest {
         // verify we get offsets [13,14]
 
         // Stop spout.
+        spout.close();
     }
 
     // Helper methods
@@ -885,13 +996,13 @@ public class SidelineSpoutTest {
      * @param spout - The spout instance
      * @param howManyVirtualSpoutsWeWantLeft - Wait until this many virtual spouts are left running.
      */
-    private void waitForVirtualSpoutsToClose(SidelineSpout spout, int howManyVirtualSpoutsWeWantLeft) {
+    private void waitForVirtualSpouts(SidelineSpout spout, int howManyVirtualSpoutsWeWantLeft) {
         await()
                 .atMost(5, TimeUnit.SECONDS)
                 .until(() -> {
                     return spout.getCoordinator().getTotalSpouts();
-                }, equalTo(1));
-        assertEquals("We should have only 1 virtual spouts running", 1, spout.getCoordinator().getTotalSpouts());
+                }, equalTo(howManyVirtualSpoutsWeWantLeft));
+        assertEquals("We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running", howManyVirtualSpoutsWeWantLeft, spout.getCoordinator().getTotalSpouts());
     }
 
     private List<KafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
