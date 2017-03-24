@@ -37,6 +37,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -548,6 +549,14 @@ public class ZookeeperPersistenceManagerTest {
         logger.info("Stored data string {}", storedDataStr);
         assertNotNull("Stored data string should be non-null", storedDataStr);
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
+
+        // Now test clearing
+        persistenceManager.clearSidelineRequest(sidelineRequestIdentifier);
+
+        // Validate in the Zk Client.
+        doesNodeExist = zookeeperClient.exists(zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(), false);
+        logger.debug("Result {}", doesNodeExist);
+        assertNull("Our root node should No longer exist", doesNodeExist);
     }
 
     /**
@@ -555,9 +564,6 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testPersistConsumerStateBeforeBeingOpened() {
-        // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
-
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
@@ -571,9 +577,6 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testRetrieveConsumerStateBeforeBeingOpened() {
-        // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
-
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
@@ -587,9 +590,6 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testClearConsumerStateBeforeBeingOpened() {
-        // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
-
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
@@ -603,9 +603,6 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testPersistSidelineRequestStateBeforeBeingOpened() {
-        // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
-
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
@@ -621,15 +618,25 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testRetrieveSidelineRequestStateBeforeBeingOpened() {
-        // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
-
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
         persistenceManager.retrieveSidelineRequest(new SidelineRequestIdentifier());
+    }
+
+    /**
+     * Verify we get an exception if you try to persist before calling open().
+     */
+    @Test
+    public void testClearSidelineRequestBeforeBeingOpened() {
+        // Create our instance
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+
+        // Call method and watch for exception
+        expectedException.expect(IllegalStateException.class);
+        persistenceManager.clearSidelineRequest(new SidelineRequestIdentifier());
     }
 
     /**

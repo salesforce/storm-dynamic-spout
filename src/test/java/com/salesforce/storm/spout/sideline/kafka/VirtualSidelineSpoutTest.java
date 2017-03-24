@@ -14,6 +14,7 @@ import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -142,6 +143,27 @@ public class VirtualSidelineSpoutTest {
 
         // Verify it
         assertEquals("Got expected consumer id", expectedConsumerId, virtualSidelineSpout.getConsumerId());
+    }
+
+    /**
+     * Test setter and getter
+     */
+    @Test
+    public void testSetAndGetSidelineRequestId() {
+        // Define input
+        final SidelineRequestIdentifier expectedId = new SidelineRequestIdentifier();
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
+
+        // Defaults null
+        assertNull("should be null", virtualSidelineSpout.getSidelineRequestIdentifier());
+
+        // Set it
+        virtualSidelineSpout.setSidelineRequestIdentifier(expectedId);
+
+        // Verify it
+        assertEquals("Got expected requext id", expectedId, virtualSidelineSpout.getSidelineRequestIdentifier());
     }
 
     /**
@@ -1235,9 +1257,14 @@ public class VirtualSidelineSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create a mock PersistanceManager & associate with SidelineConsumer.
+        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
+        when(mockSidelineConsumer.getPersistenceManager()).thenReturn(mockPersistenceManager);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1255,6 +1282,7 @@ public class VirtualSidelineSpoutTest {
                 mockSidelineConsumer,
                 null, null);
         virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
         virtualSidelineSpout.open();
 
         // Mark sure is completed field is set to false before calling close
@@ -1274,19 +1302,84 @@ public class VirtualSidelineSpoutTest {
 
         // But we never called remove consumer state.
         verify(mockSidelineConsumer, never()).removeConsumerState();
+
+        // Never remove sideline request state
+        verify(mockPersistenceManager, never()).clearSidelineRequest(anyObject());
     }
 
     /**
      * Test calling close, verifies what happens if the completed flag is true.
+     * Verifies what happens if SidelineRequestIdentifier is set.
      */
     @Test
     public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier();
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create a mock PersistanceManager & associate with SidelineConsumer.
+        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
+        when(mockSidelineConsumer.getPersistenceManager()).thenReturn(mockPersistenceManager);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create spout
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+                topologyConfig,
+                mockTopologyContext,
+                factoryManager,
+                metricsRecorder,
+                mockSidelineConsumer,
+                null, null);
+        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
+        virtualSidelineSpout.open();
+
+        // Mark sure is completed field is set to true before calling close
+        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        isCompletedField.setAccessible(true);
+        isCompletedField.set(virtualSidelineSpout, true);
+
+        // Verify close hasn't been called yet.
+        verify(mockSidelineConsumer, never()).close();
+
+        // Call close
+        virtualSidelineSpout.close();
+
+        // Verify close was called, and state was cleared
+        verify(mockSidelineConsumer, times(1)).removeConsumerState();
+        verify(mockPersistenceManager, times(1)).clearSidelineRequest(sidelineRequestId);
+        verify(mockSidelineConsumer, times(1)).close();
+
+        // But we never called flush consumer state.
+        verify(mockSidelineConsumer, never()).flushConsumerState();
+    }
+
+    /**
+     * Test calling close, verifies what happens if the completed flag is true.
+     * Verifies what happens if SidelineRequestIdentifier is null.
+     */
+    @Test
+    public void testCloseWithCompletedFlagSetToTrueNoSidelineREquestIdentifier() throws NoSuchFieldException, IllegalAccessException {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+
+        // Create a mock PersistanceManager & associate with SidelineConsumer.
+        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
+        when(mockSidelineConsumer.getPersistenceManager()).thenReturn(mockPersistenceManager);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1319,6 +1412,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
+        verify(mockPersistenceManager, never()).clearSidelineRequest(anyObject());
         verify(mockSidelineConsumer, times(1)).close();
 
         // But we never called flush consumer state.
