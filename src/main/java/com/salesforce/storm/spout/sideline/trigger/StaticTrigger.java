@@ -7,7 +7,7 @@ import java.util.Map;
 public class StaticTrigger implements StartingTrigger, StoppingTrigger {
 
     private SpoutTriggerProxy sidelineSpout;
-    private SidelineIdentifier currentSidelineIdentifier;
+    private SidelineRequestIdentifier currentSidelineRequestIdentifier;
 
     @Override
     public void open(Map config) {
@@ -19,8 +19,8 @@ public class StaticTrigger implements StartingTrigger, StoppingTrigger {
 
     }
 
-    public void start(SidelineIdentifier sidelineIdentifier) {
-        this.currentSidelineIdentifier = sidelineIdentifier;
+    public void start(SidelineRequestIdentifier sidelineRequestIdentifier) {
+        this.currentSidelineRequestIdentifier = sidelineRequestIdentifier;
     }
 
     public void stop() {
@@ -39,7 +39,7 @@ public class StaticTrigger implements StartingTrigger, StoppingTrigger {
         this.sidelineSpout = sidelineSpout;
     }
 
-    public SidelineIdentifier getCurrentSidelineIdentifier() {
-        return this.currentSidelineIdentifier;
+    public SidelineRequestIdentifier getCurrentSidelineRequestIdentifier() {
+        return this.currentSidelineRequestIdentifier;
     }
 }

@@ -2,15 +2,15 @@ package com.salesforce.storm.spout.sideline.trigger;
 
 import java.util.UUID;
 
-public class SidelineIdentifier {
+public class SidelineRequestIdentifier {
 
     public final UUID id;
 
-    public SidelineIdentifier(final UUID id) {
+    public SidelineRequestIdentifier(final UUID id) {
         this.id = id;
     }
 
-    public SidelineIdentifier() {
+    public SidelineRequestIdentifier() {
         this(UUID.randomUUID());
     }
 

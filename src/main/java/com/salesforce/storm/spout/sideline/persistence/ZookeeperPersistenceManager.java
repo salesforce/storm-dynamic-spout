@@ -5,7 +5,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
@@ -141,7 +141,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     @Override
     public void persistSidelineRequestState(
         SidelineType type,
-        SidelineIdentifier id,
+        SidelineRequestIdentifier id,
         SidelineRequest request,
         ConsumerState startingState,
         ConsumerState endingState
@@ -162,7 +162,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     }
 
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
@@ -194,11 +194,26 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         );
     }
 
-    // TODO: this needs a test, and javadoc
-    public List<SidelineIdentifier> listSidelineRequests() {
+    /**
+     * Removes a sideline request from the persistence layer.
+     * @param id - SidelineRequestIdentifier you want to clear.
+     */
+    @Override
+    public void clearSidelineRequest(SidelineRequestIdentifier id) {
+        // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
-        final List<SidelineIdentifier> ids = new ArrayList<>();
+        // Delete!
+        final String path = getZkRequestStatePath(id.toString());
+        logger.info("Delete request from Zookeeper at {}", path);
+        deleteNode(path);
+    }
+
+    // TODO: this needs a test, and javadoc
+    public List<SidelineRequestIdentifier> listSidelineRequests() {
+        verifyHasBeenOpened();
+
+        final List<SidelineRequestIdentifier> ids = new ArrayList<>();
 
         try {
             // TODO: This should be moved to it's own method
@@ -211,7 +226,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             final List<String> requests = curator.getChildren().forPath(path);
 
             for (String request : requests) {
-                ids.add(new SidelineIdentifier(UUID.fromString(request)));
+                ids.add(new SidelineRequestIdentifier(UUID.fromString(request)));
             }
 
             logger.info("Existing sideline request identifiers = {}", ids);

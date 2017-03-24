@@ -6,7 +6,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import kafka.api.GroupCoordinatorRequest;
@@ -274,21 +274,28 @@ public class KafkaPersistenceManager implements PersistenceManager {
     }
 
     @Override
-    public void persistSidelineRequestState(SidelineType type, SidelineIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
+    public void persistSidelineRequestState(SidelineType type, SidelineRequestIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
         // Can this be stored into kafka?
         // Not implemented?
         throw new RuntimeException("Not implemented yet..");
     }
 
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id) {
         // Can this be stored into kafka?
         // Not implemented?
         throw new RuntimeException("Not implemented yet..");
     }
 
     @Override
-    public List<SidelineIdentifier> listSidelineRequests() {
+    public void clearSidelineRequest(SidelineRequestIdentifier id) {
+        // Can this be stored into kafka?
+        // Not implemented?
+        throw new RuntimeException("Not implemented yet..");
+    }
+
+    @Override
+    public List<SidelineRequestIdentifier> listSidelineRequests() {
         // Can this be stored into kafka?
         // Not implemented?
         throw new RuntimeException("Not implemented yet..");

@@ -738,8 +738,8 @@ public class SidelineSpoutTest {
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
 
-        // Verify we have a single 1 virtual spouts running
-        // TODO - Lemon - This fails because we're not cleaning up finished side line requests after they're complete.
+        // Verify we have a single 1 virtual spouts running,
+        // This makes sure that we don't resume a previously completed sideline request.
         Thread.sleep(3000);
         waitForVirtualSpouts(spout, 1);
 

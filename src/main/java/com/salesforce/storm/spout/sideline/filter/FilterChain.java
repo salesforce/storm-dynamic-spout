@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.filter;
 
 import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,12 +14,12 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    private final Map<SidelineIdentifier,List<FilterChainStep>> steps = new HashMap<>();
+    private final Map<SidelineRequestIdentifier,List<FilterChainStep>> steps = new HashMap<>();
 
     public FilterChain() {
     }
 
-    public boolean hasSteps(final SidelineIdentifier id) {
+    public boolean hasSteps(final SidelineRequestIdentifier id) {
         return this.steps.containsKey(id);
     }
 
@@ -29,16 +29,16 @@ public class FilterChain {
      * @param step A step for processing in the chain
      * @return The chain instance
      */
-    public FilterChain addStep(final SidelineIdentifier id, final FilterChainStep step) {
+    public FilterChain addStep(final SidelineRequestIdentifier id, final FilterChainStep step) {
         return addSteps(id, Lists.newArrayList(step));
     }
 
-    public FilterChain addSteps(final SidelineIdentifier id, final List<FilterChainStep> steps) {
+    public FilterChain addSteps(final SidelineRequestIdentifier id, final List<FilterChainStep> steps) {
         this.steps.put(id, steps);
         return this;
     }
 
-    public List<FilterChainStep> removeSteps(final SidelineIdentifier id) {
+    public List<FilterChainStep> removeSteps(final SidelineRequestIdentifier id) {
         return this.steps.remove(id);
     }
 
@@ -71,8 +71,8 @@ public class FilterChain {
      * @param seek The list of steps to find
      * @return Identifier for the steps in the chain
      */
-    public SidelineIdentifier findSteps(List<FilterChainStep> seek) {
-        for (Map.Entry<SidelineIdentifier, List<FilterChainStep>> entry : steps.entrySet()) {
+    public SidelineRequestIdentifier findSteps(List<FilterChainStep> seek) {
+        for (Map.Entry<SidelineRequestIdentifier, List<FilterChainStep>> entry : steps.entrySet()) {
             List<FilterChainStep> listOfSteps = entry.getValue();
 
             if (listOfSteps.equals(seek)) {
@@ -89,11 +89,11 @@ public class FilterChain {
      * @param seek The step to find
      * @return Identifier for the steps in the chain
      */
-    public SidelineIdentifier findStep(FilterChainStep seek) {
+    public SidelineRequestIdentifier findStep(FilterChainStep seek) {
         return findSteps(Collections.singletonList(seek));
     }
 
-    public Map<SidelineIdentifier,List<FilterChainStep>> getSteps() {
+    public Map<SidelineRequestIdentifier,List<FilterChainStep>> getSteps() {
         return steps;
     }
 

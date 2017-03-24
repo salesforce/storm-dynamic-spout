@@ -12,6 +12,7 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -93,6 +94,12 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * Is our unique ConsumerId.
      */
     private String consumerId;
+
+    /**
+     * If this VirtualSpout is associated with a sideline request,
+     * the requestId will be stored here.
+     */
+    private SidelineRequestIdentifier sidelineRequestIdentifier = null;
 
     /**
      * For collecting metrics.
@@ -253,9 +260,14 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     @Override
     public void close() {
         // If we've successfully completed processing
-        if (isCompleted) {
+        if (isCompleted()) {
             // We should clean up consumer state
             sidelineConsumer.removeConsumerState();
+
+            // Clean up sideline request
+            if (getSidelineRequestIdentifier() != null) {
+                sidelineConsumer.getPersistenceManager().clearSidelineRequest(getSidelineRequestIdentifier());
+            }
         } else {
             // We are just closing up shop,
             // First flush our current consumer state.
@@ -495,6 +507,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * Call this method to request this VirtualSidelineSpout instance
      * to cleanly stop.
+     *
+     * Synchronized because this can be called from multiple threads.
      */
     public void requestStop() {
         synchronized (this) {
@@ -504,12 +518,31 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     /**
      * Determine if anyone has requested stop on this instance.
+     * Synchronized because this can be called from multiple threads.
+     *
      * @return - true if so, false if not.
      */
     public boolean isStopRequested() {
         synchronized (this) {
             return requestedStop;
         }
+    }
+
+    /**
+     * This this method to determine if the spout was marked as 'completed'.
+     * We define 'completed' meaning it reached its ending state.
+     * @return - True if 'completed', false if not.
+     */
+    private boolean isCompleted() {
+        return isCompleted;
+    }
+
+    /**
+     * Mark this spout as 'completed.'
+     * We define 'completed' meaning it reached its ending state.
+     */
+    private void setCompleted() {
+        isCompleted = true;
     }
 
     @Override
@@ -527,6 +560,24 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             throw new IllegalStateException("Consumer id cannot be null or empty! (" + consumerId + ")");
         }
         this.consumerId = consumerId;
+    }
+
+    /**
+     * If this VirtualSpout instance is associated with SidelineRequest, this will return
+     * the SidelineRequestId.
+     *
+     * @return - The associated SidelineRequestId if one is associated, or null.
+     */
+    public SidelineRequestIdentifier getSidelineRequestIdentifier() {
+        return sidelineRequestIdentifier;
+    }
+
+    /**
+     * If this VirtualSpout instance is associated with SidelineRequest, set that reference here.
+     * @param id - The SidelineRequestIdentifierId.
+     */
+    public void setSidelineRequestIdentifier(SidelineRequestIdentifier id) {
+        this.sidelineRequestIdentifier = id;
     }
 
     public FilterChain getFilterChain() {
@@ -623,7 +674,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // If we made it all the way through the above loop, we completed!
         // Lets flip our flag to true.
         logger.info("Looks like all partitions are complete!  Lets wrap this up.");
-        isCompleted = true;
+        setCompleted();
 
         // Cleanup consumerState.
         // Request that we stop.
