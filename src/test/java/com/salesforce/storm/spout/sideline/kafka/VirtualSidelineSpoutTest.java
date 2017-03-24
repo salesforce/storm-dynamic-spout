@@ -14,7 +14,7 @@ import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
@@ -401,7 +401,7 @@ public class VirtualSidelineSpoutTest {
                 mockSidelineConsumer,
                 null, null
         );
-        virtualSidelineSpout.getFilterChain().addStep(new SidelineIdentifier(), filterStep);
+        virtualSidelineSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
         virtualSidelineSpout.setConsumerId(expectedConsumerId);
         virtualSidelineSpout.open();
 

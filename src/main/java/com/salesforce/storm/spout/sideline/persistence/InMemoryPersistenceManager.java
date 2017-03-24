@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
@@ -20,7 +20,7 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
     private Map<String, ConsumerState> storedConsumerState;
 
     // "Persists" side line request states in memory.
-    private Map<SidelineIdentifier, SidelinePayload> storedSidelineRequests;
+    private Map<SidelineRequestIdentifier, SidelinePayload> storedSidelineRequests;
 
     @Override
     public void open(Map topologyConfig) {
@@ -69,22 +69,27 @@ public class InMemoryPersistenceManager implements PersistenceManager, Serializa
      * @param endingState - The state when we can stop consuming.
      */
     @Override
-    public void persistSidelineRequestState(SidelineType type, SidelineIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
+    public void persistSidelineRequestState(SidelineType type, SidelineRequestIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
         storedSidelineRequests.put(id, new SidelinePayload(type, id, request, startingState, null));
     }
 
     /**
-     * Retrieves a sideline request state for the given SidelineIdentifier.
-     * @param id - SidelineIdentifier you want to retrieve the state for.
+     * Retrieves a sideline request state for the given SidelineRequestIdentifier.
+     * @param id - SidelineRequestIdentifier you want to retrieve the state for.
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id) {
         return storedSidelineRequests.get(id);
     }
 
     @Override
-    public List<SidelineIdentifier> listSidelineRequests() {
+    public void clearSidelineRequest(SidelineRequestIdentifier id) {
+        storedSidelineRequests.remove(id);
+    }
+
+    @Override
+    public List<SidelineRequestIdentifier> listSidelineRequests() {
         return new ArrayList<>(storedSidelineRequests.keySet());
     }
 }

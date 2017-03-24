@@ -12,6 +12,7 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -93,6 +94,12 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * Is our unique ConsumerId.
      */
     private String consumerId;
+
+    /**
+     * If this VirtualSpout is associated with a sideline request,
+     * the requestId will be stored here.
+     */
+    private SidelineRequestIdentifier sidelineRequestIdentifier = null;
 
     /**
      * For collecting metrics.
@@ -256,6 +263,11 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         if (isCompleted()) {
             // We should clean up consumer state
             sidelineConsumer.removeConsumerState();
+
+            // Clean up sideline request
+            if (getSidelineRequestIdentifier() != null) {
+                sidelineConsumer.getPersistenceManager().clearSidelineRequest(getSidelineRequestIdentifier());
+            }
         } else {
             // We are just closing up shop,
             // First flush our current consumer state.
@@ -495,10 +507,24 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * Call this method to request this VirtualSidelineSpout instance
      * to cleanly stop.
+     *
+     * Synchronized because this can be called from multiple threads.
      */
     public void requestStop() {
         synchronized (this) {
             requestedStop = true;
+        }
+    }
+
+    /**
+     * Determine if anyone has requested stop on this instance.
+     * Synchronized because this can be called from multiple threads.
+     *
+     * @return - true if so, false if not.
+     */
+    public boolean isStopRequested() {
+        synchronized (this) {
+            return requestedStop;
         }
     }
 
@@ -508,9 +534,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @return - True if 'completed', false if not.
      */
     private boolean isCompleted() {
-        synchronized (this) {
-            return isCompleted;
-        }
+        return isCompleted;
     }
 
     /**
@@ -518,19 +542,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * We define 'completed' meaning it reached its ending state.
      */
     private void setCompleted() {
-        synchronized (this) {
-            isCompleted = true;
-        }
-    }
-
-    /**
-     * Determine if anyone has requested stop on this instance.
-     * @return - true if so, false if not.
-     */
-    public boolean isStopRequested() {
-        synchronized (this) {
-            return requestedStop;
-        }
+        isCompleted = true;
     }
 
     @Override
@@ -548,6 +560,24 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             throw new IllegalStateException("Consumer id cannot be null or empty! (" + consumerId + ")");
         }
         this.consumerId = consumerId;
+    }
+
+    /**
+     * If this VirtualSpout instance is associated with SidelineRequest, this will return
+     * the SidelineRequestId.
+     *
+     * @return - The associated SidelineRequestId if one is associated, or null.
+     */
+    public SidelineRequestIdentifier getSidelineRequestIdentifier() {
+        return sidelineRequestIdentifier;
+    }
+
+    /**
+     * If this VirtualSpout instance is associated with SidelineRequest, set that reference here.
+     * @param id - The SidelineRequestIdentifierId.
+     */
+    public void setSidelineRequestIdentifier(SidelineRequestIdentifier id) {
+        this.sidelineRequestIdentifier = id;
     }
 
     public FilterChain getFilterChain() {

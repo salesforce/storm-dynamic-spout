@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
@@ -49,18 +49,24 @@ public interface PersistenceManager {
      * @param id - unique identifier for the sideline request.
      * @param endingState - The consumer state we will stop at.
      */
-    void persistSidelineRequestState(SidelineType type, final SidelineIdentifier id, final SidelineRequest request, final ConsumerState startingState, ConsumerState endingState);
+    void persistSidelineRequestState(SidelineType type, final SidelineRequestIdentifier id, final SidelineRequest request, final ConsumerState startingState, ConsumerState endingState);
 
     /**
-     * Retrieves a sideline request state for the given SidelineIdentifier.
-     * @param id - SidelineIdentifier you want to retrieve the state for.
+     * Retrieves a sideline request state for the given SidelineRequestIdentifier.
+     * @param id - SidelineRequestIdentifier you want to retrieve the state for.
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
-    SidelinePayload retrieveSidelineRequest(final SidelineIdentifier id);
+    SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id);
+
+    /**
+     * Removes a sideline request from the persistence layer.
+     * @param id - SidelineRequestIdentifier you want to clear.
+     */
+    void clearSidelineRequest(SidelineRequestIdentifier id);
 
     /**
      * Lists existing sideline requests.
      * @return A list of identifiers for existing sideline requests
      */
-    List<SidelineIdentifier> listSidelineRequests();
+    List<SidelineRequestIdentifier> listSidelineRequests();
 }

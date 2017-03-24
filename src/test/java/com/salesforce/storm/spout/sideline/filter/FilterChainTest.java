@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
@@ -21,9 +21,9 @@ public class FilterChainTest {
         );
 
         final FilterChain filterChain = new FilterChain()
-            .addStep(new SidelineIdentifier(), new StepOne())
-            .addStep(new SidelineIdentifier(), new StepTwo())
-            .addStep(new SidelineIdentifier(), new StepThree())
+            .addStep(new SidelineRequestIdentifier(), new StepOne())
+            .addStep(new SidelineRequestIdentifier(), new StepTwo())
+            .addStep(new SidelineRequestIdentifier(), new StepThree())
         ;
 
         assertTrue(filterChain.filter(message));

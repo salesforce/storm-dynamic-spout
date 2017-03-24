@@ -11,7 +11,7 @@ import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
@@ -128,10 +128,10 @@ public class SidelineSpout extends BaseRichSpout {
      * Starts a sideline request.
      * @param sidelineRequest A representation of the request that is being started
      */
-    public SidelineIdentifier startSidelining(SidelineRequest sidelineRequest) {
+    public SidelineRequestIdentifier startSidelining(SidelineRequest sidelineRequest) {
         logger.info("Received START sideline request");
 
-        final SidelineIdentifier id = new SidelineIdentifier();
+        final SidelineRequestIdentifier id = new SidelineRequestIdentifier();
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
@@ -160,7 +160,7 @@ public class SidelineSpout extends BaseRichSpout {
      * @param sidelineRequest A representation of the request that is being stopped
      */
     public void stopSidelining(SidelineRequest sidelineRequest) {
-        final SidelineIdentifier id = fireHoseSpout.getFilterChain().findSteps(sidelineRequest.steps);
+        final SidelineRequestIdentifier id = fireHoseSpout.getFilterChain().findSteps(sidelineRequest.steps);
 
         if (id == null) {
             logger.error(
@@ -214,6 +214,7 @@ public class SidelineSpout extends BaseRichSpout {
             endingState
         );
         spout.setConsumerId(fireHoseSpout.getConsumerId() + "_" + id.toString());
+        spout.setSidelineRequestIdentifier(id);
         spout.getFilterChain().addSteps(id, negatedSteps);
 
         getCoordinator().addSidelineSpout(spout);
@@ -296,10 +297,10 @@ public class SidelineSpout extends BaseRichSpout {
         getCoordinator().open(getTopologyConfig());
 
         // TODO: LEMON - We should build the full payload here rather than individual requests later on
-        final List<SidelineIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
+        final List<SidelineRequestIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
-        for (SidelineIdentifier id : existingRequestIds) {
+        for (SidelineRequestIdentifier id : existingRequestIds) {
             final SidelinePayload payload = persistenceManager.retrieveSidelineRequest(id);
 
             // Resuming a start request means we apply the previous filter chain to the fire hose
@@ -314,10 +315,8 @@ public class SidelineSpout extends BaseRichSpout {
 
             // Resuming a stopped request means we spin up a new sideline spout
             if (payload.type.equals(SidelineType.STOP)) {
+                // TODO: refactor this and stopSidelining() method to de-duplicate code.
                 logger.info("Resuming STOP sideline {} {}", payload.id, payload.request.steps);
-
-                // TODO: Lemon - Bug - How do we know if this is finished or not?  We should mark it complete
-                // Or delete its entry?
 
                 // Define our VirtualSpoutId
                 final String virtualSpoutId = fireHoseSpout.getConsumerId() + "_" + payload.id.toString();
@@ -346,6 +345,7 @@ public class SidelineSpout extends BaseRichSpout {
                     payload.endingState
                 );
                 spout.setConsumerId(virtualSpoutId);
+                spout.setSidelineRequestIdentifier(id);
 
                 // Add the request's filter steps
                 // TODO: But we never persisted the negated steps?  So we have to negate them here.

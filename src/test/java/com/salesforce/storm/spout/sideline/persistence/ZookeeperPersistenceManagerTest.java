@@ -5,7 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.test.InstanceSpec;
@@ -387,7 +387,7 @@ public class ZookeeperPersistenceManagerTest {
     public void testEndToEndRequestStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic1";
         final String zkRootPath = "/topLevel";
-        final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
+        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
         // Create our config
@@ -405,10 +405,10 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineIdentifier, sidelineRequest, consumerState, null);
+        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
 
         // Attempt to read it?
-        ConsumerState result = persistenceManager.retrieveSidelineRequest(sidelineIdentifier).startingState;
+        ConsumerState result = persistenceManager.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
         logger.info("Result {}", result);
 
         // Validate result
@@ -432,7 +432,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
-        result = persistenceManager.retrieveSidelineRequest(sidelineIdentifier).startingState;
+        result = persistenceManager.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
         logger.info("Result {}", result);
 
         // Validate result
@@ -468,7 +468,7 @@ public class ZookeeperPersistenceManagerTest {
         // Define our ZK Root Node
         final String zkRootNodePath = "/TestRootPath";
         final String zkRequestsRootNodePath = zkRootNodePath + "/requests";
-        final SidelineIdentifier sidelineIdentifier = new SidelineIdentifier();
+        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
         // 1 - Connect to ZK directly
@@ -512,7 +512,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineIdentifier, sidelineRequest, consumerState, null);
+        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -536,10 +536,10 @@ public class ZookeeperPersistenceManagerTest {
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
         assertNotNull("Child Node Name should not be null", childNodeName);
-        assertEquals("Child Node name not correct", sidelineIdentifier.toString(), childNodeName);
+        assertEquals("Child Node name not correct", sidelineRequestIdentifier.toString(), childNodeName);
 
         // 5. Grab the value and validate it
-        final byte[] storedDataBytes = zookeeperClient.getData(zkRequestsRootNodePath + "/" + sidelineIdentifier.toString(), false, null);
+        final byte[] storedDataBytes = zookeeperClient.getData(zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(), false, null);
         logger.debug("Stored data bytes {}", storedDataBytes);
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
@@ -613,7 +613,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, new SidelineIdentifier(), sidelineRequest, new ConsumerState(), null);
+        persistenceManager.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, new ConsumerState(), null);
     }
 
     /**
@@ -629,7 +629,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.retrieveSidelineRequest(new SidelineIdentifier());
+        persistenceManager.retrieveSidelineRequest(new SidelineRequestIdentifier());
     }
 
     /**
