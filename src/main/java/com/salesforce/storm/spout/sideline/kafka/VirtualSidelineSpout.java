@@ -346,8 +346,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
-            logger.info("FilterChain looks like: {}", getFilterChain());
-            logger.info("[TEST] - Filtered Tuple {}", tupleMessageId);
             // Ack
             ack(tupleMessageId);
 
@@ -618,7 +616,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
             if (sidelineConsumer.unsubscribeTopicPartition(topicPartition)) {
-                logger.info("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
+                logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
             }
         }
 

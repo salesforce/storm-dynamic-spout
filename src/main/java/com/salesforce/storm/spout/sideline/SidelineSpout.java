@@ -188,7 +188,6 @@ public class SidelineSpout extends BaseRichSpout {
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
 
         // Persist the side line request state with the new negated verion of the steps.
-        logger.info("Updating SidelineRequest {} with negated FilterChain {}", id, steps);
         persistenceManager.persistSidelineRequestState(
             SidelineType.STOP,
             id,
