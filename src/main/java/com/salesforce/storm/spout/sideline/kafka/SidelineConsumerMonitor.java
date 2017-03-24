@@ -135,10 +135,10 @@ public class SidelineConsumerMonitor {
             totalProcessed = (currentOffset - startingOffset);
 
             // Calculate percentage we've worked thru
-            if (totalUnprocessed == 0) {
+            if (totalMessages == 0) {
                 percentageComplete = 0;
             } else {
-                percentageComplete = ((float) totalProcessed / totalUnprocessed) * 100;
+                percentageComplete = ((float) totalProcessed / totalMessages) * 100;
             }
         }
 
