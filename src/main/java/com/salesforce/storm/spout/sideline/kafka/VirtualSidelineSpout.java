@@ -253,7 +253,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     @Override
     public void close() {
         // If we've successfully completed processing
-        if (isCompleted) {
+        if (isCompleted()) {
             // We should clean up consumer state
             sidelineConsumer.removeConsumerState();
         } else {
@@ -503,6 +503,27 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     /**
+     * This this method to determine if the spout was marked as 'completed'.
+     * We define 'completed' meaning it reached its ending state.
+     * @return - True if 'completed', false if not.
+     */
+    private boolean isCompleted() {
+        synchronized (this) {
+            return isCompleted;
+        }
+    }
+
+    /**
+     * Mark this spout as 'completed.'
+     * We define 'completed' meaning it reached its ending state.
+     */
+    private void setCompleted() {
+        synchronized (this) {
+            isCompleted = true;
+        }
+    }
+
+    /**
      * Determine if anyone has requested stop on this instance.
      * @return - true if so, false if not.
      */
@@ -623,7 +644,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // If we made it all the way through the above loop, we completed!
         // Lets flip our flag to true.
         logger.info("Looks like all partitions are complete!  Lets wrap this up.");
-        isCompleted = true;
+        setCompleted();
 
         // Cleanup consumerState.
         // Request that we stop.
