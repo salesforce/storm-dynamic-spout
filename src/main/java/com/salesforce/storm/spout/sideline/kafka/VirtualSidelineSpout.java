@@ -341,11 +341,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?
         // Loops through each step in the chain to filter a filter before emitting
         startTime = System.currentTimeMillis();
-        final boolean isFiltered  = this.filterChain.filter(message);
+        final boolean isFiltered  = getFilterChain().filter(message);
         nextTupleTimeBuckets.put("isFiltered", nextTupleTimeBuckets.get("isFiltered") + (System.currentTimeMillis() - startTime));
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
+            logger.info("FilterChain looks like: {}", getFilterChain());
+            logger.info("[TEST] - Filtered Tuple {}", tupleMessageId);
             // Ack
             ack(tupleMessageId);
 
@@ -603,7 +605,10 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Compare it against our ending state
         for (TopicPartition topicPartition: currentState.getTopicPartitions()) {
+            // currentOffset contains the last "committed" offset our consumer has fully processed
             final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
+
+            // endingOffset contains the last offset we want to process.
             final long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
 
             // If the current offset is < ending offset
@@ -612,8 +617,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            logger.debug("{} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
-            sidelineConsumer.unsubscribeTopicPartition(topicPartition);
+            if (sidelineConsumer.unsubscribeTopicPartition(topicPartition)) {
+                logger.info("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
+            }
         }
 
         // If we made it all the way through the above loop, we completed!

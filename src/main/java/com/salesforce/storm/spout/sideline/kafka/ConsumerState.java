@@ -49,6 +49,13 @@ public class ConsumerState {
         return getState().keySet();
     }
 
+    /**
+     * @return - return true if this contains no information.
+     */
+    public boolean isEmpty() {
+        return state == null || state.isEmpty();
+    }
+
     @Override
     public String toString() {
         return "ConsumerState{"

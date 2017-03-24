@@ -96,4 +96,11 @@ public class FilterChain {
     public Map<SidelineIdentifier,List<FilterChainStep>> getSteps() {
         return steps;
     }
+
+    @Override
+    public String toString() {
+        return "FilterChain{"
+            + "steps=" + steps
+            + '}';
+    }
 }

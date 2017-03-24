@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
@@ -186,9 +187,14 @@ public class SidelineSpout extends BaseRichSpout {
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
 
+        // Persist the side line request state with the new negated verion of the steps.
+        logger.info("Updating SidelineRequest {} with negated FilterChain {}", id, steps);
         persistenceManager.persistSidelineRequestState(
             SidelineType.STOP,
             id,
+            // TODO: Lemon - Is this a bug?  We're persisting the non-negated steps here!
+            // TODO: Lemon - When we resume we have to remember to negate them.... is that what we want to do?
+            // TODO: Lemon - See my TODO in open() about this...
             new SidelineRequest(steps), // Persist a new request with the negated steps
             startingState,
             endingState
@@ -311,18 +317,46 @@ public class SidelineSpout extends BaseRichSpout {
             if (payload.type.equals(SidelineType.STOP)) {
                 logger.info("Resuming STOP sideline {} {}", payload.id, payload.request.steps);
 
+                // TODO: Lemon - Bug - How do we know if this is finished or not?  We should mark it complete
+                // Or delete its entry?
+
+                // Define our VirtualSpoutId
+                final String virtualSpoutId = fireHoseSpout.getConsumerId() + "_" + payload.id.toString();
+
+                // TODO: Lemon - Bug - What if we've previously processed this virtual spout before...?
+                // If we tell it start at the payloads start... it won't resume where it left off.
+                // Lets hack this in for now..is there a better way?
+                PersistenceManager persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
+                persistenceManager.open(getTopologyConfig());
+                ConsumerState startingState = persistenceManager.retrieveConsumerState(virtualSpoutId);
+                persistenceManager.close();
+
+                // If our starting state is null or empty
+                if (startingState == null || startingState.isEmpty()) {
+                    // THen we have no previously stored state, so use the payload state
+                    startingState = payload.startingState;
+                }
+
+                // Create spout instance.
                 final VirtualSidelineSpout spout = new VirtualSidelineSpout(
                     getTopologyConfig(),
                     getTopologyContext(),
                     getFactoryManager(),
                     metricsRecorder,
-                    payload.startingState,
+                    startingState,
                     payload.endingState
                 );
-                spout.setConsumerId(fireHoseSpout.getConsumerId() + "_" + payload.id.toString());
+                spout.setConsumerId(virtualSpoutId);
 
                 // Add the request's filter steps
-                spout.getFilterChain().addSteps(payload.id, payload.request.steps);
+                // TODO: But we never persisted the negated steps?  So we have to negate them here.
+                // TODO: Is this a bug? see my TODO note in stopSidelining() method.
+                // TODO: Note - Steviep added this next loop to negate steps, was not here previously
+                final List<FilterChainStep> negatedSteps = Lists.newArrayList();
+                for (FilterChainStep step : payload.request.steps) {
+                    negatedSteps.add(new NegatingFilterChainStep(step));
+                }
+                spout.getFilterChain().addSteps(payload.id, negatedSteps);
 
                 // Now pass the new "resumed" spout over to the coordinator to open and run
                 getCoordinator().addSidelineSpout(spout);
