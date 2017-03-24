@@ -117,7 +117,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         // Read!
         final String path = getZkConsumerStatePath(consumerId);
         Map<Object, Object> json = readJson(path);
-        logger.info("Read state from Zookeeper at {}: {}", path, json);
+        logger.debug("Read state from Zookeeper at {}: {}", path, json);
 
         // Parse to ConsumerState
         return parseJsonToConsumerState(json);
@@ -169,7 +169,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         // Read!
         final String path = getZkRequestStatePath(id.toString());
         Map<Object, Object> json = readJson(path);
-        logger.info("Read request state from Zookeeper at {}: {}", path, json);
+        logger.debug("Read request state from Zookeeper at {}: {}", path, json);
 
         final String typeString = (String) json.get("type");
 
@@ -229,15 +229,13 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
                 ids.add(new SidelineRequestIdentifier(UUID.fromString(request)));
             }
 
-            logger.info("Existing sideline request identifiers = {}", ids);
+            logger.debug("Existing sideline request identifiers = {}", ids);
         } catch (Exception ex) {
             logger.error("{}", ex);
         }
 
         return ids;
     }
-
-    // TODO: Add a method to remove a sideline request from Zookeeper
 
     private List<FilterChainStep> parseJsonToFilterChainSteps(final Map<Object, Object> json) {
         if (json == null) {
@@ -288,7 +286,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      * @param data - Map representation of JSON data to write.
      */
     private void writeJson(String path, Map data) {
-        logger.info("Zookeeper Writing {} the data {}", path, data.toString());
+        logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
         writeBytes(path, JSONValue.toJSONString(data).getBytes(Charset.forName("UTF-8")));
     }
 

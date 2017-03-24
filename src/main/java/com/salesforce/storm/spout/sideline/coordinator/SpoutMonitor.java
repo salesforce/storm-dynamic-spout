@@ -1,10 +1,14 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
+import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerMonitor;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,8 +180,8 @@ public class SpoutMonitor implements Runnable {
             spoutRunners.put(spout.getConsumerId(), spoutRunner);
 
             // Run as a CompletableFuture
-            final CompletableFuture spoutInstance = CompletableFuture.runAsync(spoutRunner, this.executor);
-            spoutThreads.put(spout.getConsumerId(), spoutInstance);
+            final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, this.executor);
+            spoutThreads.put(spout.getConsumerId(), completableFuture);
         }
     }
 
@@ -241,6 +245,34 @@ public class SpoutMonitor implements Runnable {
             executor.getTaskCount()
         );
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
+
+        // TODO: All of this is hacky.
+        // Loop thru spouts instances
+        final PersistenceManager persistenceManager = new FactoryManager(getTopologyConfig()).createNewPersistenceManagerInstance();
+        persistenceManager.open(getTopologyConfig());
+        final SidelineConsumerMonitor consumerMonitor = new SidelineConsumerMonitor(persistenceManager);
+
+        for (String virtualSpoutId: spoutRunners.keySet()) {
+            Map<TopicPartition, SidelineConsumerMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(virtualSpoutId);
+            if (progressMap == null) {
+                continue;
+            }
+            logger.info("== VirtualSpoutId {} Status ==", virtualSpoutId);
+
+            // Calculate the progress
+            for (Map.Entry<TopicPartition,SidelineConsumerMonitor.PartitionProgress> entry : progressMap.entrySet()) {
+                final TopicPartition topicPartition = entry.getKey();
+                final SidelineConsumerMonitor.PartitionProgress partitionProgress = entry.getValue();
+
+                logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
+                    topicPartition,
+                    partitionProgress.getPercentageComplete(),
+                    partitionProgress.getTotalProcessed(),
+                    partitionProgress.getTotalMessages(),
+                    partitionProgress.getTotalUnprocessed()
+                );
+            }
+        }
     }
 
     /**

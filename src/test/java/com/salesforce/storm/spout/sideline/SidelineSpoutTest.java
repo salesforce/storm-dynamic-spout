@@ -677,11 +677,6 @@ public class SidelineSpoutTest {
         // Call nextTuple() 8 times to get offsets [7,8,9,10,11,12,13,14]
         sidelinedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 8);
 
-        logger.info("Should start with offset 8");
-        for (SpoutEmission spoutEmission: sidelinedEmissions) {
-            logger.info("We Got Offset: {}", ((TupleMessageId)spoutEmission.getMessageId()).getOffset());
-        }
-
         // Verify we get offsets [7,8,9,10,11,12,13,14] by validating the tuples
         // Gather up the expected records
         List<KafkaRecord<byte[], byte[]>> sidelineKafkaRecords = Lists.newArrayList();
