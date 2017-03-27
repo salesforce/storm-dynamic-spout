@@ -21,6 +21,14 @@ public class SidelineConsumerMonitor {
         this.persistenceManager = persistenceManager;
     }
 
+    public void open(Map topologyConfig) {
+        persistenceManager.open(topologyConfig);
+    }
+
+    public void close() {
+        persistenceManager.close();
+    }
+
     public Map<TopicPartition, PartitionProgress> getStatus(final String virtualSpoutId) {
         // Parse out the SidelineRequestId, this is hacky
         final String[] bits = virtualSpoutId.split("_");

@@ -81,6 +81,11 @@ public class SpoutMonitor implements Runnable {
      */
     private final Map<String, Object> topologyConfig;
 
+    /**
+     * Calculates progress of VirtualSideline spout instances.
+     */
+    private SidelineConsumerMonitor consumerMonitor;
+
     private final Map<String, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
     private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
     private boolean isOpen = true;
@@ -246,11 +251,14 @@ public class SpoutMonitor implements Runnable {
         );
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
 
-        // TODO: All of this is hacky.
+        // TODO: All of this is hacky.  And how do we calculate the fire hose status?
+        // Maybe this is better suited inside of the VirtualSidelineSpout somewhere?
         // Loop through spouts instances
-        final PersistenceManager persistenceManager = new FactoryManager(getTopologyConfig()).createNewPersistenceManagerInstance();
-        persistenceManager.open(getTopologyConfig());
-        final SidelineConsumerMonitor consumerMonitor = new SidelineConsumerMonitor(persistenceManager);
+        if (consumerMonitor == null) {
+            // Create consumer monitor instance
+            consumerMonitor = new SidelineConsumerMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceManagerInstance());
+            consumerMonitor.open(getTopologyConfig());
+        }
 
         for (String virtualSpoutId: spoutRunners.keySet()) {
             Map<TopicPartition, SidelineConsumerMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(virtualSpoutId);
@@ -273,9 +281,6 @@ public class SpoutMonitor implements Runnable {
                 );
             }
         }
-
-        // Close persistence manager
-        persistenceManager.close();
     }
 
     /**
@@ -288,6 +293,12 @@ public class SpoutMonitor implements Runnable {
         // Ask the executor to shut down, this will prevent it from
         // accepting/starting new tasks.
         executor.shutdown();
+
+        // Stop consumerMonitor
+        if (consumerMonitor != null) {
+            consumerMonitor.close();
+            consumerMonitor = null;
+        }
 
         // Loop through our runners and request stop on each
         for (SpoutRunner spoutRunner : spoutRunners.values()) {
