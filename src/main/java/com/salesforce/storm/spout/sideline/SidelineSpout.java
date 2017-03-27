@@ -199,6 +199,9 @@ public class SidelineSpout extends BaseRichSpout {
             endingState
         );
 
+        // Generate our virtualSpoutId using the payload id.
+        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
+
         // This info is repeated in VirtualSidelineSpout.open(), not needed here.
         logger.debug("Starting VirtualSidelineSpout with starting state {}", startingState);
         logger.debug("Starting VirtualSidelineSpout with ending state {}", endingState);
@@ -213,7 +216,7 @@ public class SidelineSpout extends BaseRichSpout {
             // When the sideline request ends
             endingState
         );
-        spout.setVirtualSpoutId(fireHoseSpout.getVirtualSpoutId() + "_" + id.toString());
+        spout.setVirtualSpoutId(virtualSpoutId);
         spout.setSidelineRequestIdentifier(id);
         spout.getFilterChain().addSteps(id, negatedSteps);
 
@@ -259,12 +262,6 @@ public class SidelineSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
-        // Grab our ConsumerId prefix from the config, append the task index.  This will probably cause problems
-        // if you decrease the number of instances of the spout.
-        final String cfgConsumerIdPrefix =
-                getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX)
-                + "-" + topologyContext.getThisTaskIndex();
-
         // Create and open() persistence manager passing appropriate configuration.
         persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
         persistenceManager.open(getTopologyConfig());
@@ -275,7 +272,7 @@ public class SidelineSpout extends BaseRichSpout {
                 getTopologyContext(),
                 getFactoryManager(),
                 metricsRecorder);
-        fireHoseSpout.setVirtualSpoutId(cfgConsumerIdPrefix);
+        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Create TupleBuffer
         final TupleBuffer tupleBuffer = getFactoryManager().createNewTupleBufferInstance();
@@ -318,8 +315,8 @@ public class SidelineSpout extends BaseRichSpout {
                 // TODO: refactor this and stopSidelining() method to de-duplicate code.
                 logger.info("Resuming STOP sideline {} {}", payload.id, payload.request.steps);
 
-                // Define our VirtualSpoutId
-                final String virtualSpoutId = fireHoseSpout.getVirtualSpoutId() + "_" + payload.id.toString();
+                // Generate our virtualSpoutId using the payload id.
+                final String virtualSpoutId = generateVirtualSpoutId(payload.id.toString());
 
                 // TODO: Lemon - Bug - What if we've previously processed this virtual spout before...?
                 // If we tell it start at the payloads start... it won't resume where it left off.
@@ -563,5 +560,23 @@ public class SidelineSpout extends BaseRichSpout {
             }
         }
         return outputStreamId;
+    }
+
+    // Grab our ConsumerId prefix from the config, append the task index.  This will probably cause problems
+    // if you decrease the number of instances of the spout.
+    private String generateVirtualSpoutId(String optionalPostfix) {
+        // Also prefixed with our configured prefix
+        String newId = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+
+        // If we have an optional postfix
+        if (!Strings.isNullOrEmpty(optionalPostfix)) {
+            // append it
+            newId += "-" + optionalPostfix;
+        }
+        // Always append the task index
+        newId += "-" + getTopologyContext().getThisTaskIndex();
+
+        // return it
+        return newId;
     }
 }
