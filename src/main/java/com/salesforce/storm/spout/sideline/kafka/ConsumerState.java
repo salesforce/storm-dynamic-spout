@@ -25,21 +25,7 @@ public class ConsumerState {
     public Long getOffsetForTopicAndPartition(TopicPartition topicPartition) {
         return getState().get(topicPartition);
     }
-
-    /**
-     * Set the current offset for a specified TopicPartition.
-     *
-     * @param topicPartition - the TopicPartition to set the offset for.
-     * @param offset - the offset
-     */
-    public void setOffset(TopicPartition topicPartition, Long offset) {
-        if (offset == null) {
-            getState().remove(topicPartition);
-        } else {
-            getState().put(topicPartition, offset);
-        }
-    }
-
+    
     /**
      * @return - returns internal hashmap representation.
      */
