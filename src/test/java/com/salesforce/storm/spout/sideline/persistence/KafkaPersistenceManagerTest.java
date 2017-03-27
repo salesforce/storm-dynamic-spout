@@ -17,9 +17,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- *
- */
 public class KafkaPersistenceManagerTest {
 
     // Our internal Kafka and Zookeeper Server, used to test against.
@@ -75,10 +72,12 @@ public class KafkaPersistenceManagerTest {
         persistenceManager.open(topologyConfig);
 
         // Create state
-        final ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 100L);
-        consumerState.setOffset(new TopicPartition(topicName, 1), 200L);
-        consumerState.setOffset(new TopicPartition(topicName, 2), 300L);
+        final ConsumerState consumerState = ConsumerState
+            .builder()
+            .withPartition(new TopicPartition(topicName, 0), 100L)
+            .withPartition(new TopicPartition(topicName, 1), 200L)
+            .withPartition(new TopicPartition(topicName, 2), 300L)
+            .build();
 
         // Persist it
         persistenceManager.persistConsumerState(consumerIdPrefix, consumerState);
@@ -88,8 +87,8 @@ public class KafkaPersistenceManagerTest {
 
         // Validate it
         assertNotNull("Should be non-null", results);
-        assertNotNull("Should be non-null", results.getState());
         assertNotNull("should be non-null", results.getTopicPartitions());
+        assertEquals("Should have 3 entries", 3, results.size());
         assertEquals("Should have 3 entries", 3, results.getTopicPartitions().size());
         assertEquals("Should have correct value", 100L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
         assertEquals("Should have correct value", 200L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));

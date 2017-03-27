@@ -102,7 +102,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Persist!
-        writeJson(getZkConsumerStatePath(consumerId), consumerState.getState());
+        writeJson(getZkConsumerStatePath(consumerId), consumerState);
     }
 
     /**
@@ -151,9 +151,9 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
         Map<String, Object> data = new HashMap<>();
         data.put("type", type.toString());
-        data.put("startingState", startingState.getState());
+        data.put("startingState", startingState);
         if (endingState != null) { // Optional
-            data.put("endingState", endingState.getState());
+            data.put("endingState", endingState);
         }
         data.put("filterChainSteps", Serializer.serialize(request.steps));
 
@@ -255,12 +255,12 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      */
     private ConsumerState parseJsonToConsumerState(final Map<Object, Object> json) {
         // Create new ConsumerState instance.
-        final ConsumerState consumerState = new ConsumerState();
+        final ConsumerState.ConsumerStateBuilder builder = new ConsumerState.ConsumerStateBuilder();
 
         // If no state is stored yet.
         if (json == null) {
             // Return empty consumerState
-            return consumerState;
+            return builder.build();
         }
 
         // Otherwise parse the stored json
@@ -268,9 +268,9 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             String[] bits = ((String)entry.getKey()).split("-");
 
             // Populate consumerState.
-            consumerState.setOffset(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
+            builder.withPartition(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
         }
-        return consumerState;
+        return builder.build();
     }
 
     /**

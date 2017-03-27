@@ -171,10 +171,11 @@ public class SidelineConsumer {
             persistenceManager.persistConsumerState(getConsumerId(), startingState);
         }
 
-        // Load initial positions, if null returned, use an empty ConsumerState instance.
+        // Load initial positions,
         ConsumerState initialState = persistenceManager.retrieveConsumerState(getConsumerId());
         if (initialState == null) {
-            initialState = new ConsumerState();
+            // if null returned, use an empty ConsumerState instance.
+            initialState = ConsumerState.builder().build();
         }
 
         final KafkaConsumer kafkaConsumer = getKafkaConsumer();
@@ -293,14 +294,17 @@ public class SidelineConsumer {
      * @return - A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
-        // Create a consumer state instance.
-        ConsumerState consumerState = new ConsumerState();
+        // Create a consumer state builder.
+        ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         // Loop thru all of our partition managers
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
             // Get the current offset for each partition.
-            consumerState.setOffset(entry.getKey(), entry.getValue().lastFinishedOffset());
+            builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
         }
+
+        // Build
+        final ConsumerState consumerState = builder.build();
 
         // Persist state.
         persistenceManager.persistConsumerState(getConsumerId(), consumerState);
@@ -476,11 +480,12 @@ public class SidelineConsumer {
      * @return - Returns the Consumer's current state.
      */
     public ConsumerState getCurrentState() {
-        ConsumerState consumerState = new ConsumerState();
+        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
-            consumerState.setOffset(entry.getKey(), entry.getValue().lastFinishedOffset());
+            builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
         }
-        return consumerState;
+        return builder.build();
     }
 
     /**

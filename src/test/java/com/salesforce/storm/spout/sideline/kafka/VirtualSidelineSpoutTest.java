@@ -353,7 +353,7 @@ public class VirtualSidelineSpoutTest {
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
@@ -407,7 +407,7 @@ public class VirtualSidelineSpoutTest {
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
@@ -532,8 +532,9 @@ public class VirtualSidelineSpoutTest {
         final KafkaMessage expectedKafkaMessageEqualEndingOffset = new KafkaMessage(new TupleMessageId(topic, partition, endingOffset, "ConsumerId"), new Values("equal-key", "equal-value"));
 
         // Defining our Ending State
-        final ConsumerState endingState = new ConsumerState();
-        endingState.setOffset(new TopicPartition(topic, partition), endingOffset);
+        final ConsumerState endingState = ConsumerState.builder()
+            .withPartition(new TopicPartition(topic, partition), endingOffset)
+            .build();
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -552,7 +553,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
         when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
@@ -951,7 +952,7 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(new ConsumerState());
+        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -1042,8 +1043,9 @@ public class VirtualSidelineSpoutTest {
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position equal to our TupleMessageId
-        ConsumerState endingState = new ConsumerState();
-        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+        final ConsumerState endingState = ConsumerState.builder()
+            .withPartition(new TopicPartition(expectedTopic, expectedPartition), expectedOffset)
+            .build();
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1086,8 +1088,9 @@ public class VirtualSidelineSpoutTest {
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position less than our TupleMessageId
-        ConsumerState endingState = new ConsumerState();
-        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100));
+        final ConsumerState endingState = ConsumerState.builder()
+            .withPartition(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100))
+            .build();
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1130,8 +1133,9 @@ public class VirtualSidelineSpoutTest {
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position greater than than our TupleMessageId
-        ConsumerState endingState = new ConsumerState();
-        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100));
+        final ConsumerState endingState = ConsumerState.builder()
+            .withPartition(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100))
+            .build();
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1176,8 +1180,9 @@ public class VirtualSidelineSpoutTest {
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position greater than than our TupleMessageId, but on a different partition
-        ConsumerState endingState = new ConsumerState();
-        endingState.setOffset(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100));
+        final ConsumerState endingState = ConsumerState.builder()
+            .withPartition(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100))
+            .build();
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1524,8 +1529,10 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.setConsumerId("MyConsumerId");
         virtualSidelineSpout.open();
 
-        final ConsumerState expectedConsumerState = new ConsumerState();
-        expectedConsumerState.setOffset(new TopicPartition("myTopic", 0), 200L);
+        final ConsumerState expectedConsumerState = ConsumerState
+            .builder()
+            .withPartition(new TopicPartition("myTopic", 0), 200L)
+            .build();
 
         // Setup our mock to return expected value
         when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);

@@ -465,7 +465,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
-        for (TopicPartition partition: consumerState.getState().keySet()) {
+        for (TopicPartition partition: consumerState.getTopicPartitions()) {
             final String key = getConsumerId() +  "." + keyPrefix + ".partition" + partition.partition();
             metricsRecorder.assignValue(getClass(), key, consumerState.getOffsetForTopicAndPartition(partition));
         }

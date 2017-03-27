@@ -142,10 +142,11 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.open(topologyConfig);
 
         // Create state
-        final ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 0L);
-        consumerState.setOffset(new TopicPartition(topicName, 1), 100L);
-        consumerState.setOffset(new TopicPartition(topicName, 3), 300L);
+        final ConsumerState consumerState = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 0L)
+            .withPartition(new TopicPartition(topicName, 1), 100L)
+            .withPartition(new TopicPartition(topicName, 3), 300L)
+            .build();
 
         // Persist it
         logger.info("Persisting {}", consumerState);
@@ -159,13 +160,13 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Got an object back", result);
 
         // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.getState().size());
-        assertTrue("Contains Partition 0", result.getState().containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getState().get(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.getState().containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getState().get(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.getState().containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getState().get(new TopicPartition(topicName, 3)));
+        assertEquals("Should have 3 entries", 3, result.size());
+        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
+        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
+        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
+        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
         persistenceManager.close();
@@ -183,13 +184,13 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Got an object back", result);
 
         // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.getState().size());
-        assertTrue("Contains Partition 0", result.getState().containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getState().get(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.getState().containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getState().get(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.getState().containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getState().get(new TopicPartition(topicName, 3)));
+        assertEquals("Should have 3 entries", 3, result.size());
+        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
+        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
+        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
+        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
         persistenceManager.close();
@@ -213,10 +214,11 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.open(topologyConfig);
 
         // Create state
-        final ConsumerState consumerStateOriginal = new ConsumerState();
-        consumerStateOriginal.setOffset(new TopicPartition(topicName, 0), 0L);
-        consumerStateOriginal.setOffset(new TopicPartition(topicName, 1), 100L);
-        consumerStateOriginal.setOffset(new TopicPartition(topicName, 3), 300L);
+        final ConsumerState consumerStateOriginal = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 0L)
+            .withPartition(new TopicPartition(topicName, 1), 100L)
+            .withPartition(new TopicPartition(topicName, 3), 300L)
+            .build();
 
         // Persist it
         logger.info("Persisting {}", consumerStateOriginal);
@@ -230,19 +232,20 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Got an object back", result);
 
         // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.getState().size());
-        assertTrue("Contains Partition 0", result.getState().containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getState().get(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.getState().containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getState().get(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.getState().containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getState().get(new TopicPartition(topicName, 3)));
+        assertEquals("Should have 3 entries", 3, result.size());
+        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
+        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
+        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
+        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Now attempt to update the state
-        final ConsumerState consumerStateUpdated = new ConsumerState();
-        consumerStateUpdated.setOffset(new TopicPartition(topicName, 0), 100L);
-        consumerStateUpdated.setOffset(new TopicPartition(topicName, 1), 120L);
-        consumerStateUpdated.setOffset(new TopicPartition(topicName, 3), 320L);
+        final ConsumerState consumerStateUpdated = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 100L)
+            .withPartition(new TopicPartition(topicName, 1), 120L)
+            .withPartition(new TopicPartition(topicName, 3), 320L)
+            .build();
 
         // Persisted the updated state
         persistenceManager.persistConsumerState(consumerId, consumerStateUpdated);
@@ -255,13 +258,13 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Got an object back", result);
 
         // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.getState().size());
-        assertTrue("Contains Partition 0", result.getState().containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 100L", 100L, (long) result.getState().get(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.getState().containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 120L", 120L, (long) result.getState().get(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.getState().containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 320L", 320L, (long) result.getState().get(new TopicPartition(topicName, 3)));
+        assertEquals("Should have 3 entries", 3, result.size());
+        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
+        assertEquals("Contains Partition 0 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
+        assertEquals("Contains Partition 1 with value 120L", 120L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
+        assertEquals("Contains Partition 3 with value 320L", 320L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
         persistenceManager.close();
@@ -319,10 +322,11 @@ public class ZookeeperPersistenceManagerTest {
         // Define our expected result that will be stored in zookeeper
         final String expectedStoredState = "{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}";
 
-        final ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 0L);
-        consumerState.setOffset(new TopicPartition(topicName, 1), 100L);
-        consumerState.setOffset(new TopicPartition(topicName, 3), 300L);
+        final ConsumerState consumerState = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 0L)
+            .withPartition(new TopicPartition(topicName, 1), 100L)
+            .withPartition(new TopicPartition(topicName, 3), 300L)
+            .build();
 
         // Persist it
         logger.info("Persisting {}", consumerState);
@@ -399,10 +403,11 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.open(topologyConfig);
 
         // Create state
-        final ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 10L);
-        consumerState.setOffset(new TopicPartition(topicName, 1), 1000L);
-        consumerState.setOffset(new TopicPartition(topicName, 3), 3000L);
+        final ConsumerState consumerState = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 10L)
+            .withPartition(new TopicPartition(topicName, 1), 1000L)
+            .withPartition(new TopicPartition(topicName, 3), 3000L)
+            .build();
 
         // Persist it
         logger.info("Persisting {}", consumerState);
@@ -416,13 +421,13 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Got an object back", result);
 
         // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.getState().size());
-        assertTrue("Contains Partition 0", result.getState().containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 10L, (long) result.getState().get(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.getState().containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 1000L, (long) result.getState().get(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.getState().containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getState().get(new TopicPartition(topicName, 3)));
+        assertEquals("Should have 3 entries", 3, result.size());
+        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
+        assertEquals("Contains Partition 0 with value 0L", 10L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
+        assertEquals("Contains Partition 1 with value 100L", 1000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
+        assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
         persistenceManager.close();
@@ -440,13 +445,13 @@ public class ZookeeperPersistenceManagerTest {
         assertNotNull("Got an object back", result);
 
         // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.getState().size());
-        assertTrue("Contains Partition 0", result.getState().containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 10L, (long) result.getState().get(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.getState().containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 1000L, (long) result.getState().get(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.getState().containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getState().get(new TopicPartition(topicName, 3)));
+        assertEquals("Should have 3 entries", 3, result.size());
+        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
+        assertEquals("Contains Partition 0 with value 0L", 10L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
+        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
+        assertEquals("Contains Partition 1 with value 100L", 1000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
+        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
+        assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
         persistenceManager.close();
@@ -506,10 +511,11 @@ public class ZookeeperPersistenceManagerTest {
         // TODO: I hate this, let's build the damn map...
         final String expectedStoredState = "{\"filterChainSteps\":\"rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==\",\"type\":\"START\",\"startingState\":{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}}";
 
-        final ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 0L);
-        consumerState.setOffset(new TopicPartition(topicName, 1), 100L);
-        consumerState.setOffset(new TopicPartition(topicName, 3), 300L);
+        final ConsumerState consumerState = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 0L)
+            .withPartition(new TopicPartition(topicName, 1), 100L)
+            .withPartition(new TopicPartition(topicName, 3), 300L)
+            .build();
 
         // Persist it
         logger.info("Persisting {}", consumerState);
@@ -569,7 +575,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistConsumerState("MyConsumerId", new ConsumerState());
+        persistenceManager.persistConsumerState("MyConsumerId", ConsumerState.builder().build());
     }
 
     /**
@@ -610,7 +616,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, new ConsumerState(), null);
+        persistenceManager.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, ConsumerState.builder().build(), null);
     }
 
     /**

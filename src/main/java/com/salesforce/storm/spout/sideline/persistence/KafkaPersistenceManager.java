@@ -241,7 +241,7 @@ public class KafkaPersistenceManager implements PersistenceManager {
         OffsetFetchResponse fetchResponse = OffsetFetchResponse.readFrom(channel.receive().payload());
 
         // Build return result
-        ConsumerState consumerState = new ConsumerState();
+        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         for (TopicAndPartition partition: availablePartitions) {
             OffsetMetadataAndError result = fetchResponse.offsets().get(partition);
@@ -259,12 +259,12 @@ public class KafkaPersistenceManager implements PersistenceManager {
                 String retrievedMetadata = result.metadata();
 
                 logger.info("Partition {} => offset {} (metadata: {})", partition.partition(), retrievedOffset, retrievedMetadata);
-                consumerState.setOffset(new TopicPartition(partition.topic(), partition.partition()), retrievedOffset);
+                builder.withPartition(new TopicPartition(partition.topic(), partition.partition()), retrievedOffset);
             }
         }
 
         // return result
-        return consumerState;
+        return builder.build();
     }
 
     @Override
