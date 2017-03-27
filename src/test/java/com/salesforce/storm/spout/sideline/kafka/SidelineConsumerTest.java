@@ -292,7 +292,7 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        ConsumerState emptyConsumerState = new ConsumerState();
+        final ConsumerState emptyConsumerState = ConsumerState.builder().build();
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
 
         // Call constructor injecting our mocks
@@ -363,7 +363,7 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        ConsumerState emptyConsumerState = new ConsumerState();
+        ConsumerState emptyConsumerState = ConsumerState.builder().build();
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
 
         // When we ask for the positions for each partition return mocked values
@@ -444,8 +444,10 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), lastCommittedOffset);
+        final ConsumerState consumerState = ConsumerState
+            .builder()
+            .withPartition(new TopicPartition(topicName, 0), lastCommittedOffset)
+            .build();
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
@@ -513,10 +515,12 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(partition0, lastCommittedOffsetPartition0);
-        consumerState.setOffset(partition1, lastCommittedOffsetPartition1);
-        consumerState.setOffset(partition2, lastCommittedOffsetPartition2);
+        final ConsumerState consumerState = ConsumerState
+            .builder()
+            .withPartition(partition0, lastCommittedOffsetPartition0)
+            .withPartition(partition1, lastCommittedOffsetPartition1)
+            .withPartition(partition2, lastCommittedOffsetPartition2)
+            .build();
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
@@ -598,9 +602,11 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state for partitions 0 and 2.
-        ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(partition0, lastCommittedOffsetPartition0);
-        consumerState.setOffset(partition2, lastCommittedOffsetPartition2);
+        final ConsumerState consumerState = ConsumerState
+                .builder()
+                .withPartition(partition0, lastCommittedOffsetPartition0)
+                .withPartition(partition2, lastCommittedOffsetPartition2)
+                .build();
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
 
         // Define values returned for partitions without state
@@ -1105,8 +1111,9 @@ public class SidelineConsumerTest {
 
         // Create a state in which we have already acked the first 5 messages
         // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
-        ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 4L);
+        final ConsumerState consumerState = ConsumerState.builder()
+            .withPartition(new TopicPartition(topicName, 0), 4L)
+            .build();
         persistenceManager.persistConsumerState(config.getConsumerId(), consumerState);
 
         // Create our consumer
@@ -1498,9 +1505,10 @@ public class SidelineConsumerTest {
         persistenceManager.open(Maps.newHashMap());
 
         // Create starting state
-        ConsumerState startingState = new ConsumerState();
-        startingState.setOffset(expectedTopicPartition0, partition0StartingOffset);
-        startingState.setOffset(expectedTopicPartition1, partition1StartingOffset);
+        final ConsumerState startingState = ConsumerState.builder()
+                .withPartition(expectedTopicPartition0, partition0StartingOffset)
+                .withPartition(expectedTopicPartition1, partition1StartingOffset)
+                .build();
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);

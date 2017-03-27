@@ -12,12 +12,16 @@ public class ConsumerStateTest {
      */
     @Test
     public void testIsEmpty() {
+        final ConsumerState emptyConsumerState = ConsumerState.builder().build();
+
         // Newly constructed state is always empty
-        assertTrue("Should be empty", new ConsumerState().isEmpty());
+        assertTrue("Should be empty", emptyConsumerState.isEmpty());
 
         // Create consumer state with stored offset
-        ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition("Topic", 0), 0L);
+        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+        builder.withPartition(new TopicPartition("Topic", 0), 0L);
+
+        final ConsumerState consumerState = builder.build();
         assertFalse("Should NOT be empty", consumerState.isEmpty());
 
         // Now remove the topic partition

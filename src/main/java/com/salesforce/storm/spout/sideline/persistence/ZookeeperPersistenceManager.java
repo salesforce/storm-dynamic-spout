@@ -255,12 +255,12 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      */
     private ConsumerState parseJsonToConsumerState(final Map<Object, Object> json) {
         // Create new ConsumerState instance.
-        final ConsumerState consumerState = new ConsumerState();
+        final ConsumerState.ConsumerStateBuilder builder = new ConsumerState.ConsumerStateBuilder();
 
         // If no state is stored yet.
         if (json == null) {
             // Return empty consumerState
-            return consumerState;
+            return builder.build();
         }
 
         // Otherwise parse the stored json
@@ -268,9 +268,9 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             String[] bits = ((String)entry.getKey()).split("-");
 
             // Populate consumerState.
-            consumerState.setOffset(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
+            builder.withPartition(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
         }
-        return consumerState;
+        return builder.build();
     }
 
     /**

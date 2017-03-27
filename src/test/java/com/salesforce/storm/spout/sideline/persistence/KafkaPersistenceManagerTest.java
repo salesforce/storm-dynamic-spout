@@ -75,10 +75,12 @@ public class KafkaPersistenceManagerTest {
         persistenceManager.open(topologyConfig);
 
         // Create state
-        final ConsumerState consumerState = new ConsumerState();
-        consumerState.setOffset(new TopicPartition(topicName, 0), 100L);
-        consumerState.setOffset(new TopicPartition(topicName, 1), 200L);
-        consumerState.setOffset(new TopicPartition(topicName, 2), 300L);
+        final ConsumerState consumerState = ConsumerState
+            .builder()
+            .withPartition(new TopicPartition(topicName, 0), 100L)
+            .withPartition(new TopicPartition(topicName, 1), 200L)
+            .withPartition(new TopicPartition(topicName, 2), 300L)
+            .build();
 
         // Persist it
         persistenceManager.persistConsumerState(consumerIdPrefix, consumerState);
