@@ -4,16 +4,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
-import kafka.javaapi.OffsetRequest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
-import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.metrics.KafkaMetric;
-import org.apache.kafka.common.metrics.stats.Max;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -522,22 +518,5 @@ public class SidelineConsumer {
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
         getPersistenceManager().clearConsumerState(getConsumerId());
-    }
-
-    /**
-     * KafkaConsumer does not expose lag per partition... :(
-     * But we can get the max lag over all of the partitions...which i suppose is better than nothing?
-     * @return Max lag across all partitions.
-     */
-    public double getMaxLag() {
-        for (Object metricObject: getKafkaConsumer().metrics().keySet()) {
-            MetricName metricName = (MetricName) metricObject;
-            if (!metricName.name().equals("records-lag-max")) {
-                continue;
-            }
-            KafkaMetric metric = (KafkaMetric) getKafkaConsumer().metrics().get(metricName);
-            return metric.value();
-        }
-        return 0.0;
     }
 }

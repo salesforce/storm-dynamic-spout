@@ -197,11 +197,6 @@ public class SpoutCoordinatorTest {
         }
 
         @Override
-        public void logProgress() {
-            // noop
-        }
-
-        @Override
         public String getConsumerId() {
             return consumerId;
         }
