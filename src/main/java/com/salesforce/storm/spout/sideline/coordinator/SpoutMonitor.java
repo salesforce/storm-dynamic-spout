@@ -252,7 +252,6 @@ public class SpoutMonitor implements Runnable {
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
 
         // TODO: All of this is hacky.  And how do we calculate the fire hose status?
-        // Maybe this is better suited inside of the VirtualSidelineSpout somewhere?
         // Loop through spouts instances
         if (consumerMonitor == null) {
             // Create consumer monitor instance
@@ -260,6 +259,8 @@ public class SpoutMonitor implements Runnable {
             consumerMonitor.open(getTopologyConfig());
         }
 
+        // Loop thru all of them to get virtualSpout Ids.
+        // This doesn't work for the 'firehose' instance tho..and we have no good way to identify which is the 'firehose'
         for (String virtualSpoutId: spoutRunners.keySet()) {
             Map<TopicPartition, SidelineConsumerMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(virtualSpoutId);
             if (progressMap == null) {
