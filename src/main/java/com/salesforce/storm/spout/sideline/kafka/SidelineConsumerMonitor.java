@@ -53,7 +53,7 @@ public class SidelineConsumerMonitor {
         Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
         // Calculate the progress
-        for (TopicPartition topicPartition : startingState.getState().keySet()) {
+        for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
             // Make sure no nulls
             boolean hasError = false;
             if (startingState.getOffsetForTopicAndPartition(topicPartition) == null) {

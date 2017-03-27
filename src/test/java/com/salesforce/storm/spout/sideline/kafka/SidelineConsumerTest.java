@@ -315,7 +315,7 @@ public class SidelineConsumerTest {
         assertNotNull("Should be non-null", currentState);
 
         // State should have one entry
-        assertEquals("Should have 1 entry", 1, currentState.getState().size());
+        assertEquals("Should have 1 entry", 1, currentState.size());
 
         // Offset should have offset 1000L - 1 for completed offset.
         assertEquals("Expected value should be 999", (earliestPosition - 1), (long) currentState.getOffsetForTopicAndPartition(partition0));
@@ -399,7 +399,7 @@ public class SidelineConsumerTest {
         assertNotNull("Should be non-null", currentState);
 
         // State should have one entry
-        assertEquals("Should have 3 entries", 3, currentState.getState().size());
+        assertEquals("Should have 3 entries", 3, currentState.size());
 
         // Offsets should be the earliest position - 1
         assertEquals("Expected value for partition0", (earliestPositionPartition0 - 1), (long) currentState.getOffsetForTopicAndPartition(partition0));
@@ -650,7 +650,7 @@ public class SidelineConsumerTest {
         assertNotNull("Should be non-null", resultingConsumerState);
 
         // State should have one entry
-        assertEquals("Should have 4 entries", 4, resultingConsumerState.getState().size());
+        assertEquals("Should have 4 entries", 4, resultingConsumerState.size());
 
         // Offsets should be set to what we expected.
         assertEquals("Expected value for partition0", expectedStateOffsetPartition0, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition0));

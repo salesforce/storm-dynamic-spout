@@ -102,7 +102,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Persist!
-        writeJson(getZkConsumerStatePath(consumerId), consumerState.getState());
+        writeJson(getZkConsumerStatePath(consumerId), consumerState);
     }
 
     /**
@@ -151,9 +151,9 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
         Map<String, Object> data = new HashMap<>();
         data.put("type", type.toString());
-        data.put("startingState", startingState.getState());
+        data.put("startingState", startingState);
         if (endingState != null) { // Optional
-            data.put("endingState", endingState.getState());
+            data.put("endingState", endingState);
         }
         data.put("filterChainSteps", Serializer.serialize(request.steps));
 

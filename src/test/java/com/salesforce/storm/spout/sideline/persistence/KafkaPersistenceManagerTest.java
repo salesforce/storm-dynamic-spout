@@ -87,8 +87,8 @@ public class KafkaPersistenceManagerTest {
 
         // Validate it
         assertNotNull("Should be non-null", results);
-        assertNotNull("Should be non-null", results.getState());
         assertNotNull("should be non-null", results.getTopicPartitions());
+        assertEquals("Should have 3 entries", 3, results.size());
         assertEquals("Should have 3 entries", 3, results.getTopicPartitions().size());
         assertEquals("Should have correct value", 100L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
         assertEquals("Should have correct value", 200L, (long) results.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));

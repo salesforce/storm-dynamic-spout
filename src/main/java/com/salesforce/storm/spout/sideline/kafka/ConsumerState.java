@@ -4,17 +4,29 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Tools;
 import org.apache.kafka.common.TopicPartition;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * This represents the State of a Consumer.
+ * This represents the State of a Consumer.  Immutable, use Builder to construct an instance.
  */
-public class ConsumerState {
+public class ConsumerState implements Map<TopicPartition, Long> {
     private final Map<TopicPartition, Long> state;
 
+    /**
+     * Private constructor.  Create an instance via builder().
+     * @param state - State that backs the consumer state.
+     */
     private ConsumerState(Map<TopicPartition, Long> state) {
         this.state = Tools.immutableCopy(state);
+    }
+
+    /**
+     * @return - A new ConsumerStateBuilder instance.
+     */
+    public static ConsumerStateBuilder builder() {
+        return new ConsumerStateBuilder();
     }
 
     /**
@@ -23,39 +35,66 @@ public class ConsumerState {
      * @return - The current offset, or null if none is available.
      */
     public Long getOffsetForTopicAndPartition(TopicPartition topicPartition) {
-        return getState().get(topicPartition);
-    }
-    
-    /**
-     * @return - returns internal hashmap representation.
-     */
-    public Map<TopicPartition, Long> getState() {
-        return state;
+        return state.get(topicPartition);
     }
 
     /**
      * @return - returns all of the TopicPartitions represented by the state.
      */
     public Set<TopicPartition> getTopicPartitions() {
-        return getState().keySet();
+        return state.keySet();
     }
 
-    /**
-     * @return - return true if this contains no information.
-     */
+// Map Interface methods.
+
+    @Override
     public boolean isEmpty() {
         return state == null || state.isEmpty();
     }
 
-    /**
-     * @return - the number of entries.
-     */
+    @Override
+    public boolean containsKey(Object key) {
+        return state.containsKey(key);
+    }
+
+    @Override
+    public Long get(Object key) {
+        return state.get(key);
+    }
+
+    @Override
+    public Set<TopicPartition> keySet() {
+        return getTopicPartitions();
+    }
+
+    @Override
+    public Collection<Long> values() {
+        return state.values();
+    }
+
+    @Override
+    public Set<Entry<TopicPartition, Long>> entrySet() {
+        return state.entrySet();
+    }
+
+    @Override
     public int size() {
         return state.size();
     }
 
-    public static ConsumerStateBuilder builder() {
-        return new ConsumerStateBuilder();
+    @Override
+    public boolean containsValue(Object value) {
+        return state.containsValue(value);
+    }
+
+    @Override
+    public Long put(TopicPartition key, Long value) {
+        throw new UnsupportedOperationException("Immutable map");
+    }
+
+    @Override
+    public Long remove(Object key) {
+        throw new UnsupportedOperationException("Immutable map");
     }
 
     @Override
@@ -64,9 +103,20 @@ public class ConsumerState {
                 + "state=" + state
                 + '}';
     }
+// Unsupported Map interface methods.
+
+    @Override
+    public void putAll(Map<? extends TopicPartition, ? extends Long> m) {
+        throw new UnsupportedOperationException("Immutable map");
+    }
+
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException("Immutable map");
+    }
 
     /**
-     * WIP builder pattern.
+     * ConsumerState builder.
      */
     public static final class ConsumerStateBuilder {
         private Map<TopicPartition, Long> state = Maps.newHashMap();
