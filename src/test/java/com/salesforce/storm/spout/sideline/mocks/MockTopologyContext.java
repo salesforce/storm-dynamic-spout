@@ -11,7 +11,8 @@ import java.util.Map;
 public class MockTopologyContext extends TopologyContext {
 
     public Map<String, IMetric> mockRegisteredMetrics = new HashMap<>();
-    public int taskId;
+    public int taskId = 0;
+    public int taskIndex = 0;
 
     public MockTopologyContext() {
         super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -42,6 +43,6 @@ public class MockTopologyContext extends TopologyContext {
     }
 
     public int getThisTaskIndex() {
-        return 0;
+        return taskIndex;
     }
 }

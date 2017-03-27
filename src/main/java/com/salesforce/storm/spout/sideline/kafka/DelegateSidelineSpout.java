@@ -14,7 +14,7 @@ public interface DelegateSidelineSpout {
 
     void fail(Object msgId);
 
-    String getConsumerId();
+    String getVirtualSpoutId();
 
     void flushState();
 

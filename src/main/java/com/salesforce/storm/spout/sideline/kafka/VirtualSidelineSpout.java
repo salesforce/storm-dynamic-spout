@@ -91,9 +91,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     private boolean isCompleted = false;
 
     /**
-     * Is our unique ConsumerId.
+     * Is our unique VirtualSpoutId.
      */
-    private String consumerId;
+    private String virtualSpoutId;
 
     /**
      * If this VirtualSpout is associated with a sideline request,
@@ -200,7 +200,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             // Construct SidelineConsumerConfig based on topology config.
             final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
             final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-            final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getConsumerId(), topic);
+            final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
 
             // Create sideline consumer
             sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
@@ -315,7 +315,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // Create a Tuple Message Id
         startTime = System.currentTimeMillis();
-        final TupleMessageId tupleMessageId = new TupleMessageId(record.topic(), record.partition(), record.offset(), getConsumerId());
+        final TupleMessageId tupleMessageId = new TupleMessageId(record.topic(), record.partition(), record.offset(), getVirtualSpoutId());
         nextTupleTimeBuckets.put("tupleMessageId", nextTupleTimeBuckets.get("tupleMessageId") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple exceeds our ending offset
@@ -464,7 +464,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
     private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
         for (TopicPartition partition: consumerState.getTopicPartitions()) {
-            final String key = getConsumerId() +  "." + keyPrefix + ".partition" + partition.partition();
+            final String key = getVirtualSpoutId() +  "." + keyPrefix + ".partition" + partition.partition();
             metricsRecorder.assignValue(getClass(), key, consumerState.getOffsetForTopicAndPartition(partition));
         }
     }
@@ -543,21 +543,23 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         isCompleted = true;
     }
 
+    /**
+     * @return - Return this instance's unique virtual spout it.
+     */
     @Override
-    public String getConsumerId() {
-        return consumerId;
+    public String getVirtualSpoutId() {
+        return virtualSpoutId;
     }
 
     /**
-     * Define the consumerId for this VirtualSpout.
-     * @TODO: This probably should be renamed to setVirtualSpoutId.
-     * @param consumerId - The unique identifier for this consumer.
+     * Define the virtualSpoutId for this VirtualSpout.
+     * @param virtualSpoutId - The unique identifier for this consumer.
      */
-    public void setConsumerId(String consumerId) {
-        if (Strings.isNullOrEmpty(consumerId)) {
-            throw new IllegalStateException("Consumer id cannot be null or empty! (" + consumerId + ")");
+    public void setVirtualSpoutId(final String virtualSpoutId) {
+        if (Strings.isNullOrEmpty(virtualSpoutId)) {
+            throw new IllegalStateException("Consumer id cannot be null or empty! (" + virtualSpoutId + ")");
         }
-        this.consumerId = consumerId;
+        this.virtualSpoutId = virtualSpoutId;
     }
 
     /**

@@ -6,7 +6,6 @@ import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerMonitor;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -170,7 +169,7 @@ public class SpoutMonitor implements Runnable {
     private void startNewSpoutTasks() {
         // Look for new spouts to start.
         for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
-            logger.info("Preparing thread for spout {}", spout.getConsumerId());
+            logger.info("Preparing thread for spout {}", spout.getVirtualSpoutId());
 
             final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
@@ -182,11 +181,11 @@ public class SpoutMonitor implements Runnable {
                     getTopologyConfig()
             );
 
-            spoutRunners.put(spout.getConsumerId(), spoutRunner);
+            spoutRunners.put(spout.getVirtualSpoutId(), spoutRunner);
 
             // Run as a CompletableFuture
             final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, this.executor);
-            spoutThreads.put(spout.getConsumerId(), completableFuture);
+            spoutThreads.put(spout.getVirtualSpoutId(), completableFuture);
         }
     }
 

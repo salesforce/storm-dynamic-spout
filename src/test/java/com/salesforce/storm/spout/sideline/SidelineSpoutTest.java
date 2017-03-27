@@ -134,6 +134,46 @@ public class SidelineSpoutTest {
     }
 
     /**
+     * Internal method, but we're gonna test it.  Make sure we generate virtual spout ids
+     * in consistent ways.
+     */
+    @Test
+    public void testGenerateVirtualSpoutId() {
+        final String expectedPrefix = "MyVirtualSpoutPrefix";
+        final int expectedTaskIndex = 10;
+
+        // Create our config missing the consumerIdPrefix
+        final Map<String, Object> config = getDefaultConfig(expectedPrefix, null);
+
+        // Setup our mock TopologyContext
+        final MockTopologyContext topologyContext = new MockTopologyContext();
+        topologyContext.taskId = 100;
+        topologyContext.taskIndex = expectedTaskIndex;
+
+        // Mock output collector
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final SidelineSpout spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // Now call our method with empty string
+        String result = spout.generateVirtualSpoutId("");
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-" + expectedTaskIndex);
+
+        // Call our method with null
+        result = spout.generateVirtualSpoutId(null);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-" + expectedTaskIndex);
+
+        // Call our method with a postfix
+        result = spout.generateVirtualSpoutId("PostFix");
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-PostFix-"  + expectedTaskIndex);
+
+        // Call close.
+        spout.close();
+    }
+
+    /**
      * Our most simple end-2-end test.
      * This test stands up our spout and ask it to consume from our kafka topic.
      * We publish some data into kafka, and validate that when we call nextTuple() on

@@ -89,15 +89,15 @@ public class SpoutRunner implements Runnable {
     public void run() {
         try {
             // Rename thread to use the spout's consumer id
-            Thread.currentThread().setName(spout.getConsumerId());
+            Thread.currentThread().setName(spout.getVirtualSpoutId());
 
-            logger.info("Opening {} spout", spout.getConsumerId());
+            logger.info("Opening {} spout", spout.getVirtualSpoutId());
             spout.open();
 
             // Let all of our queues know about our new instance.
-            tupleOutputQueue.addVirtualSpoutId(spout.getConsumerId());
-            ackedTupleQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
-            failedTupleQueue.put(spout.getConsumerId(), new ConcurrentLinkedQueue<>());
+            tupleOutputQueue.addVirtualSpoutId(spout.getVirtualSpoutId());
+            ackedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
+            failedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
 
             // Count down our latch for thread synchronization.
             latch.countDown();
@@ -122,21 +122,21 @@ public class SpoutRunner implements Runnable {
                 //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
                 // Ack anything that needs to be acked
-                while (!ackedTupleQueue.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = ackedTupleQueue.get(spout.getConsumerId()).poll();
+                while (!ackedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
+                    TupleMessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
                     spout.ack(id);
                 }
 
                 // Fail anything that needs to be failed
-                while (!failedTupleQueue.get(spout.getConsumerId()).isEmpty()) {
-                    TupleMessageId id = failedTupleQueue.get(spout.getConsumerId()).poll();
+                while (!failedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
+                    TupleMessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
                     spout.fail(id);
                 }
 
                 // Periodically we flush the state of the spout to capture progress
                 final long now = getClock().millis();
                 if ((lastFlush + getConsumerStateFlushIntervalMs()) < now) {
-                    logger.info("Flushing state for spout {}", spout.getConsumerId());
+                    logger.info("Flushing state for spout {}", spout.getVirtualSpoutId());
                     spout.flushState();
                     lastFlush = now;
                 }
@@ -145,16 +145,16 @@ public class SpoutRunner implements Runnable {
             // Looks like someone requested that we stop this instance.
             // So we call close on it, and log our run time.
             final Duration runtime = Duration.ofMillis(getClock().millis() - startTime);
-            logger.info("Closing {} spout, total run time was {}", spout.getConsumerId(), Tools.prettyDuration(runtime));
+            logger.info("Closing {} spout, total run time was {}", spout.getVirtualSpoutId(), Tools.prettyDuration(runtime));
             spout.close();
 
             // Remove our entries from our queues.
-            tupleOutputQueue.removeVirtualSpoutId(spout.getConsumerId());
-            ackedTupleQueue.remove(spout.getConsumerId());
-            failedTupleQueue.remove(spout.getConsumerId());
+            tupleOutputQueue.removeVirtualSpoutId(spout.getVirtualSpoutId());
+            ackedTupleQueue.remove(spout.getVirtualSpoutId());
+            failedTupleQueue.remove(spout.getVirtualSpoutId());
         } catch (Exception ex) {
             // TODO: Should we restart the SpoutRunner?  I'd guess that SpoutMonitor should handle re-starting
-            logger.error("SpoutRunner for {} threw an exception {}", spout.getConsumerId(), ex);
+            logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex);
             ex.printStackTrace();
 
             // We re-throw the exception
