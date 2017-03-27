@@ -31,7 +31,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * How often our monitor thread will output a status report, in milliseconds.
      */
-    public static final long REPORT_STATUS_INTERVAL_MS = 60_000;
+    private static final long REPORT_STATUS_INTERVAL_MS = 60_000;
 
     /**
      * The executor service that we submit VirtualSidelineSpouts to run within.
@@ -87,7 +87,11 @@ public class SpoutMonitor implements Runnable {
 
     private final Map<String, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
     private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
-    private boolean isOpen = true;
+
+    /**
+     * Flag used to determine if we should stop running or not.
+     */
+    private boolean keepRunning = true;
 
     /**
      * The last timestamp of a status report.
@@ -138,7 +142,7 @@ public class SpoutMonitor implements Runnable {
             Thread.currentThread().setName("VirtualSpoutMonitor");
 
             // Start monitoring loop.
-            while (isOpen) {
+            while (keepRunning()) {
                 // Look for completed tasks
                 watchForCompletedTasks();
 
@@ -168,7 +172,7 @@ public class SpoutMonitor implements Runnable {
      */
     private void startNewSpoutTasks() {
         // Look for new spouts to start.
-        for (DelegateSidelineSpout spout; (spout = newSpoutQueue.poll()) != null;) {
+        for (DelegateSidelineSpout spout; (spout = getNewSpoutQueue().poll()) != null;) {
             logger.info("Preparing thread for spout {}", spout.getVirtualSpoutId());
 
             final SpoutRunner spoutRunner = new SpoutRunner(
@@ -184,7 +188,7 @@ public class SpoutMonitor implements Runnable {
             spoutRunners.put(spout.getVirtualSpoutId(), spoutRunner);
 
             // Run as a CompletableFuture
-            final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, this.executor);
+            final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
             spoutThreads.put(spout.getVirtualSpoutId(), completableFuture);
         }
     }
@@ -215,7 +219,6 @@ public class SpoutMonitor implements Runnable {
                 spoutThreads.remove(virtualSpoutId);
             }
         }
-
     }
 
     /**
@@ -288,11 +291,15 @@ public class SpoutMonitor implements Runnable {
      * as finish running our monitor thread.
      */
     public void close() {
-        isOpen = false;
+        keepRunning = false;
 
         // Ask the executor to shut down, this will prevent it from
         // accepting/starting new tasks.
         executor.shutdown();
+
+        // Empty our run queue, this will prevent queued virtual spouts from getting started
+        // during the shutdown process.
+        executor.getQueue().clear();
 
         // Stop consumerMonitor
         if (consumerMonitor != null) {
@@ -327,7 +334,7 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * @return - return the number of spout runner instances.
-     *           *note* - it doesn't mean all of these are actually running.
+     *           *note* - it doesn't mean all of these are actually running, some may be queued.
      */
     public int getTotalSpouts() {
         return spoutRunners.size();
@@ -336,35 +343,57 @@ public class SpoutMonitor implements Runnable {
     /**
      * @return - Our system clock instance.
      */
-    private Clock getClock() {
+    Clock getClock() {
         return clock;
     }
 
     /**
      * @return - Storm topology configuration.
      */
-    private Map<String, Object> getTopologyConfig() {
+    Map<String, Object> getTopologyConfig() {
         return topologyConfig;
     }
 
     /**
      * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
      */
-    private long getMonitorThreadIntervalMs() {
+    long getMonitorThreadIntervalMs() {
         return (long) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS);
     }
 
     /**
      * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
-    private long getMaxTerminationWaitTimeMs() {
-        return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_STOP_TIME_MS);
+    long getMaxTerminationWaitTimeMs() {
+        return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
     }
 
     /**
      * @return - the maximum amount of concurrently running VirtualSpouts we'll start.
      */
-    private int getMaxConcurrentVirtualSpouts() {
+    int getMaxConcurrentVirtualSpouts() {
         return (int) getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+    }
+
+    /**
+     * @return - ThreadPoolExecutor Service that runs VirtualSpout instances.
+     */
+    ThreadPoolExecutor getExecutor() {
+        return executor;
+    }
+
+    /**
+     * @return - The new spout queue.
+     */
+    Queue<DelegateSidelineSpout> getNewSpoutQueue() {
+        return newSpoutQueue;
+    }
+
+    /**
+     * Flag to know if we should keep running, or shut down.
+     * @return - true if we should keep running, false if we should be stopping/stopped.
+     */
+    boolean keepRunning() {
+        return keepRunning;
     }
 }

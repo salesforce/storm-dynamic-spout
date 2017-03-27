@@ -147,7 +147,7 @@ public class SidelineSpoutConfig {
      * them with force, in Milliseconds.
      * Default Value: 10000
      */
-    public static final String MAX_SPOUT_STOP_TIME_MS = "sideline_spout.coordinator.max_spout_stop_time_ms";
+    public static final String MAX_SPOUT_SHUTDOWN_TIME_MS = "sideline_spout.coordinator.max_spout_shutdown_time_ms";
 
     /**
      * (long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
@@ -197,9 +197,9 @@ public class SidelineSpoutConfig {
             clonedConfig.put(MONITOR_THREAD_INTERVAL_MS, 2000L);
             logger.info("Missing configuration {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
         }
-        if (!clonedConfig.containsKey(MAX_SPOUT_STOP_TIME_MS)) {
-            clonedConfig.put(MAX_SPOUT_STOP_TIME_MS, 10000L);
-            logger.info("Missing configuration {} using default value {}", MAX_SPOUT_STOP_TIME_MS, clonedConfig.get(MAX_SPOUT_STOP_TIME_MS));
+        if (!clonedConfig.containsKey(MAX_SPOUT_SHUTDOWN_TIME_MS)) {
+            clonedConfig.put(MAX_SPOUT_SHUTDOWN_TIME_MS, 10000L);
+            logger.info("Missing configuration {} using default value {}", MAX_SPOUT_SHUTDOWN_TIME_MS, clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS));
         }
         if (!clonedConfig.containsKey(CONSUMER_STATE_FLUSH_INTERVAL_MS)) {
             clonedConfig.put(CONSUMER_STATE_FLUSH_INTERVAL_MS, 30000L);
