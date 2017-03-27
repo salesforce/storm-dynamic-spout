@@ -118,6 +118,9 @@ public class ZookeeperPersistenceManagerTest {
         // Validate that getZkXXXXStatePath returns the expected value
         assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId));
         assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceManager.getZkRequestStatePath(expectedConsumerId));
+
+        // Close everyone out
+        persistenceManager.close();
     }
 
     /**
@@ -378,6 +381,9 @@ public class ZookeeperPersistenceManagerTest {
                     return zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId, false);
                 }, nullValue());
 
+        // Close everyone out
+        persistenceManager.close();
+        zookeeperClient.close();
     }
 
     /**
@@ -563,6 +569,10 @@ public class ZookeeperPersistenceManagerTest {
         doesNodeExist = zookeeperClient.exists(zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(), false);
         logger.debug("Result {}", doesNodeExist);
         assertNull("Our root node should No longer exist", doesNodeExist);
+
+        // Close everyone out
+        persistenceManager.close();
+        zookeeperClient.close();
     }
 
     /**

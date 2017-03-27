@@ -301,7 +301,7 @@ public class RoundRobinBufferTest {
         try {
             future.get();
         } catch (CancellationException e) {
-            e.printStackTrace();
+            // We expect an exception because we cancelled it. swallow.
         }
     }
 }
