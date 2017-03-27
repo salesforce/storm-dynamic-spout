@@ -543,6 +543,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         isCompleted = true;
     }
 
+    /**
+     * @return - Return this instance's unique virtual spout it.
+     */
     @Override
     public String getVirtualSpoutId() {
         return virtualSpoutId;

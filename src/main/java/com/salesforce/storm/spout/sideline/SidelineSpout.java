@@ -138,7 +138,7 @@ public class SidelineSpout extends BaseRichSpout {
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
         // Store in request manager
-        persistenceManager.persistSidelineRequestState(
+        getPersistenceManager().persistSidelineRequestState(
             SidelineType.START,
             id,
             sidelineRequest,
@@ -182,7 +182,7 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // This is the state that the VirtualSidelineSpout should start with
-        final ConsumerState startingState = persistenceManager.retrieveSidelineRequest(id).startingState;
+        final ConsumerState startingState = getPersistenceManager().retrieveSidelineRequest(id).startingState;
 
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
@@ -264,7 +264,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Create and open() persistence manager passing appropriate configuration.
         persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
-        persistenceManager.open(getTopologyConfig());
+        getPersistenceManager().open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSidelineSpout(
@@ -294,11 +294,11 @@ public class SidelineSpout extends BaseRichSpout {
         getCoordinator().open(getTopologyConfig());
 
         // TODO: LEMON - We should build the full payload here rather than individual requests later on
-        final List<SidelineRequestIdentifier> existingRequestIds = persistenceManager.listSidelineRequests();
+        final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceManager().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
         for (SidelineRequestIdentifier id : existingRequestIds) {
-            final SidelinePayload payload = persistenceManager.retrieveSidelineRequest(id);
+            final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(id);
 
             // Resuming a start request means we apply the previous filter chain to the fire hose
             if (payload.type.equals(SidelineType.START)) {
@@ -321,10 +321,7 @@ public class SidelineSpout extends BaseRichSpout {
                 // TODO: Lemon - Bug - What if we've previously processed this virtual spout before...?
                 // If we tell it start at the payloads start... it won't resume where it left off.
                 // Lets hack this in for now..is there a better way?
-                PersistenceManager persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
-                persistenceManager.open(getTopologyConfig());
-                ConsumerState startingState = persistenceManager.retrieveConsumerState(virtualSpoutId);
-                persistenceManager.close();
+                ConsumerState startingState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
 
                 // If our starting state is null or empty
                 if (startingState == null || startingState.isEmpty()) {
@@ -547,6 +544,13 @@ public class SidelineSpout extends BaseRichSpout {
     }
 
     /**
+     * @return - The persistence manager.
+     */
+    PersistenceManager getPersistenceManager() {
+        return persistenceManager;
+    }
+
+    /**
      * @return - returns the stream that tuples will be emitted out.
      */
     String getOutputStreamId() {
@@ -562,9 +566,14 @@ public class SidelineSpout extends BaseRichSpout {
         return outputStreamId;
     }
 
-    // Grab our ConsumerId prefix from the config, append the task index.  This will probably cause problems
-    // if you decrease the number of instances of the spout.
-    private String generateVirtualSpoutId(String optionalPostfix) {
+    /**
+     * Generates a VirtualSpoutId using an optional postfix.  It also appends
+     * the Task index id.  This will probably cause problems if you decrease the number of instances of the spout.
+     *
+     * @param optionalPostfix - Optional postfix to add.
+     * @return - Generates VirtualSpoutId.
+     */
+    String generateVirtualSpoutId(String optionalPostfix) {
         // Also prefixed with our configured prefix
         String newId = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
 
