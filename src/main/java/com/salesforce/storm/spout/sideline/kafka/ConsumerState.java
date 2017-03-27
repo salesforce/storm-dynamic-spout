@@ -61,6 +61,13 @@ public class ConsumerState {
         return state == null || state.isEmpty();
     }
 
+    /**
+     * @return - the number of entries.
+     */
+    public int size() {
+        return state.size();
+    }
+
     public static ConsumerStateBuilder builder() {
         return new ConsumerStateBuilder();
     }
