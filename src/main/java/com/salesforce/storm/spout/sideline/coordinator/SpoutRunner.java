@@ -136,9 +136,12 @@ public class SpoutRunner implements Runnable {
                 // Periodically we flush the state of the spout to capture progress
                 final long now = getClock().millis();
                 if ((lastFlush + getConsumerStateFlushIntervalMs()) < now) {
+                    lastFlush = now;
                     logger.info("Flushing state for spout {}", spout.getConsumerId());
                     spout.flushState();
-                    lastFlush = now;
+
+                    // Log progress for debugging?
+                    spout.logProgress();
                 }
             }
 

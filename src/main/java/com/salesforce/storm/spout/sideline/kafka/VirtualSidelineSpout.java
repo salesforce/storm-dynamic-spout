@@ -14,8 +14,10 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
@@ -629,6 +631,23 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         // See if we can finish and close out this VirtualSidelineConsumer.
         attemptToComplete();
+    }
+
+    /**
+     * Utility method to print out progress.  Kind of hacky.
+     */
+    public void logProgress() {
+        // If we've got set starting and ending states
+        if (startingState != null && endingState != null) {
+            // Display progress.
+            SidelineConsumerMonitor.printProgress(
+                    SidelineConsumerMonitor.calculateProgress(startingState, getCurrentState(), endingState)
+            );
+        } else {
+            // No explicit starting/ending state means we want to show lag on a per partition basis.
+            // Unfortunately KafkaConsumer does not expose this, so show max lag?
+            logger.info("Max lag: {}", sidelineConsumer.getMaxLag());
+        }
     }
 
     /**

@@ -21,41 +21,25 @@ public class SidelineConsumerMonitor {
         this.persistenceManager = persistenceManager;
     }
 
-    public void open(Map topologyConfig) {
-        persistenceManager.open(topologyConfig);
+    public static void printProgress(Map<TopicPartition, PartitionProgress> progressMap) {
+        for (Map.Entry<TopicPartition,PartitionProgress> entry : progressMap.entrySet()) {
+            final TopicPartition topicPartition = entry.getKey();
+            final PartitionProgress partitionProgress = entry.getValue();
+
+            logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
+                    topicPartition,
+                    partitionProgress.getPercentageComplete(),
+                    partitionProgress.getTotalProcessed(),
+                    partitionProgress.getTotalMessages(),
+                    partitionProgress.getTotalUnprocessed()
+            );
+        }
     }
 
-    public void close() {
-        persistenceManager.close();
-    }
-
-    public Map<TopicPartition, PartitionProgress> getStatus(final String virtualSpoutId) {
-        // Parse out the SidelineRequestId, this is hacky
-        final String[] bits = virtualSpoutId.split("_");
-        if (bits.length < 2) {
-            // Silently fail
-            //logger.warn("Unable to parse virtualSpoutId: {}", virtualSpoutId);
-            return null;
-        }
-        final String sidelineRequestIdStr = bits[bits.length - 1];
-        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdStr));
-
-        // Retrieve status
-        final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(sidelineRequestIdentifier);
-        if (payload == null) {
-            // Nothing to do?
-            logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
-            return null;
-        }
-        final ConsumerState startingState = payload.startingState;
-        final ConsumerState endingState = payload.endingState;
-
-        // Get the state
-        ConsumerState currentState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
-        if (currentState == null) {
-            logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
-            currentState = endingState;
-        }
+    public static Map<TopicPartition, PartitionProgress> calculateProgress(
+            final ConsumerState startingState,
+            final ConsumerState currentState,
+            final ConsumerState endingState) {
 
         // Create return map
         Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
@@ -91,7 +75,37 @@ public class SidelineConsumerMonitor {
         }
 
         return Collections.unmodifiableMap(progressMap);
+    }
 
+    public Map<TopicPartition, PartitionProgress> getStatus(final String virtualSpoutId) {
+        // Parse out the SidelineRequestId, this is hacky
+        final String[] bits = virtualSpoutId.split("_");
+        if (bits.length < 2) {
+            // Silently fail
+            //logger.warn("Unable to parse virtualSpoutId: {}", virtualSpoutId);
+            return null;
+        }
+        final String sidelineRequestIdStr = bits[bits.length - 1];
+        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdStr));
+
+        // Retrieve status
+        final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(sidelineRequestIdentifier);
+        if (payload == null) {
+            // Nothing to do?
+            logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
+            return null;
+        }
+        final ConsumerState startingState = payload.startingState;
+        final ConsumerState endingState = payload.endingState;
+
+        // Get the state
+        ConsumerState currentState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
+        if (currentState == null) {
+            logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
+            currentState = endingState;
+        }
+
+        return calculateProgress(startingState, currentState, endingState);
     }
 
     public void printStatus(final String virtualSpoutId) {
@@ -101,18 +115,7 @@ public class SidelineConsumerMonitor {
         }
 
         // Calculate the progress
-        for (Map.Entry<TopicPartition,PartitionProgress> entry : progressMap.entrySet()) {
-            final TopicPartition topicPartition = entry.getKey();
-            final PartitionProgress partitionProgress = entry.getValue();
-
-            logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
-                topicPartition,
-                partitionProgress.getPercentageComplete(),
-                partitionProgress.getTotalProcessed(),
-                partitionProgress.getTotalMessages(),
-                partitionProgress.getTotalUnprocessed()
-            );
-        }
+        printProgress(progressMap);
     }
 
     private PersistenceManager getPersistenceManager() {

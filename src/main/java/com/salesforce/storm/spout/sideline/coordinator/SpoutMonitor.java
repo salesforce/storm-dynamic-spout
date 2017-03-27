@@ -1,14 +1,11 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerMonitor;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
-import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,11 +77,6 @@ public class SpoutMonitor implements Runnable {
      * Storm topology configuration.
      */
     private final Map<String, Object> topologyConfig;
-
-    /**
-     * Calculates progress of VirtualSideline spout instances.
-     */
-    private SidelineConsumerMonitor consumerMonitor;
 
     private final Map<String, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
     private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
@@ -250,37 +242,6 @@ public class SpoutMonitor implements Runnable {
             executor.getTaskCount()
         );
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
-
-        // TODO: All of this is hacky.  And how do we calculate the fire hose status?
-        // Maybe this is better suited inside of the VirtualSidelineSpout somewhere?
-        // Loop through spouts instances
-        if (consumerMonitor == null) {
-            // Create consumer monitor instance
-            consumerMonitor = new SidelineConsumerMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceManagerInstance());
-            consumerMonitor.open(getTopologyConfig());
-        }
-
-        for (String virtualSpoutId: spoutRunners.keySet()) {
-            Map<TopicPartition, SidelineConsumerMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(virtualSpoutId);
-            if (progressMap == null) {
-                continue;
-            }
-            logger.info("== VirtualSpoutId {} Status ==", virtualSpoutId);
-
-            // Calculate the progress
-            for (Map.Entry<TopicPartition,SidelineConsumerMonitor.PartitionProgress> entry : progressMap.entrySet()) {
-                final TopicPartition topicPartition = entry.getKey();
-                final SidelineConsumerMonitor.PartitionProgress partitionProgress = entry.getValue();
-
-                logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
-                    topicPartition,
-                    partitionProgress.getPercentageComplete(),
-                    partitionProgress.getTotalProcessed(),
-                    partitionProgress.getTotalMessages(),
-                    partitionProgress.getTotalUnprocessed()
-                );
-            }
-        }
     }
 
     /**
@@ -293,12 +254,6 @@ public class SpoutMonitor implements Runnable {
         // Ask the executor to shut down, this will prevent it from
         // accepting/starting new tasks.
         executor.shutdown();
-
-        // Stop consumerMonitor
-        if (consumerMonitor != null) {
-            consumerMonitor.close();
-            consumerMonitor = null;
-        }
 
         // Loop through our runners and request stop on each
         for (SpoutRunner spoutRunner : spoutRunners.values()) {
