@@ -128,7 +128,7 @@ public class VirtualSidelineSpoutTest {
 
     /**
      * Test setter and getter
-     * Note - Setter may go away in liu of being set by the topologyConfig.  getConsumerId() should remain tho.
+     * Note - Setter may go away in liu of being set by the topologyConfig.  getVirtualSpoutId() should remain tho.
      */
     @Test
     public void testSetAndGetConsumerId() {
@@ -139,10 +139,10 @@ public class VirtualSidelineSpoutTest {
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
 
         // Set it
-        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
 
         // Verify it
-        assertEquals("Got expected consumer id", expectedConsumerId, virtualSidelineSpout.getConsumerId());
+        assertEquals("Got expected consumer id", expectedConsumerId, virtualSidelineSpout.getVirtualSpoutId());
     }
 
     /**
@@ -205,7 +205,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         final VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
 
         // Call it once.
         virtualSidelineSpout.open();
@@ -245,7 +245,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout
         final VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
 
         // Call open
         virtualSidelineSpout.open();
@@ -293,7 +293,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -360,7 +360,7 @@ public class VirtualSidelineSpoutTest {
 
         // Create spout & open
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -424,7 +424,7 @@ public class VirtualSidelineSpoutTest {
                 null, null
         );
         virtualSidelineSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
-        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -483,7 +483,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -566,7 +566,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setConsumerId("ConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("ConsumerId");
         virtualSidelineSpout.open();
 
         // Call nextTuple(), this should return our entry BEFORE the ending offset
@@ -693,7 +693,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSidelineSpout.open();
 
         // Call nextTuple()
@@ -794,7 +794,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -836,7 +836,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -876,7 +876,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -917,7 +917,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -962,7 +962,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Never called yet
@@ -1009,7 +1009,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Create our test TupleMessageId
@@ -1062,7 +1062,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call our method & validate.
@@ -1107,7 +1107,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call our method & validate.
@@ -1152,7 +1152,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call our method & validate.
@@ -1199,7 +1199,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Call our method & validate exception is thrown
@@ -1238,7 +1238,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Create our test TupleMessageId
@@ -1286,7 +1286,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
         virtualSidelineSpout.open();
 
@@ -1345,7 +1345,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
         virtualSidelineSpout.open();
 
@@ -1401,7 +1401,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         // Mark sure is completed field is set to true before calling close
@@ -1480,7 +1480,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId(expectedConsumerId);
+        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSidelineSpout.open();
 
         // Now call fail on this
@@ -1526,7 +1526,7 @@ public class VirtualSidelineSpoutTest {
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setConsumerId("MyConsumerId");
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.open();
 
         final ConsumerState expectedConsumerState = ConsumerState

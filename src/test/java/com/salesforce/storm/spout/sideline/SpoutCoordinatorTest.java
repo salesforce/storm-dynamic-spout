@@ -43,9 +43,9 @@ public class SpoutCoordinatorTest {
         final MockDelegateSidelineSpout sidelineSpout2 = new MockDelegateSidelineSpout();
 
         // Note: I set the topic here to different things largely to aide debugging the message ids later on
-        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("message1", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message1"));
-        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("message2", 1, 1L, sidelineSpout1.getConsumerId()), new Values("message2"));
-        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("message3", 1, 1L, fireHoseSpout.getConsumerId()), new Values("message3"));
+        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("message1", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message1"));
+        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
+        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
 
         final FIFOBuffer actual = FIFOBuffer.createDefaultInstance();
 
@@ -158,7 +158,7 @@ public class SpoutCoordinatorTest {
 
         @Override
         public void close() {
-            logger.info("Closing spout {}", getConsumerId());
+            logger.info("Closing spout {}", getVirtualSpoutId());
         }
 
         @Override
@@ -197,7 +197,7 @@ public class SpoutCoordinatorTest {
         }
 
         @Override
-        public String getConsumerId() {
+        public String getVirtualSpoutId() {
             return consumerId;
         }
     }

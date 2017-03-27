@@ -213,7 +213,7 @@ public class SidelineSpout extends BaseRichSpout {
             // When the sideline request ends
             endingState
         );
-        spout.setConsumerId(fireHoseSpout.getConsumerId() + "_" + id.toString());
+        spout.setVirtualSpoutId(fireHoseSpout.getVirtualSpoutId() + "_" + id.toString());
         spout.setSidelineRequestIdentifier(id);
         spout.getFilterChain().addSteps(id, negatedSteps);
 
@@ -275,7 +275,7 @@ public class SidelineSpout extends BaseRichSpout {
                 getTopologyContext(),
                 getFactoryManager(),
                 metricsRecorder);
-        fireHoseSpout.setConsumerId(cfgConsumerIdPrefix);
+        fireHoseSpout.setVirtualSpoutId(cfgConsumerIdPrefix);
 
         // Create TupleBuffer
         final TupleBuffer tupleBuffer = getFactoryManager().createNewTupleBufferInstance();
@@ -319,7 +319,7 @@ public class SidelineSpout extends BaseRichSpout {
                 logger.info("Resuming STOP sideline {} {}", payload.id, payload.request.steps);
 
                 // Define our VirtualSpoutId
-                final String virtualSpoutId = fireHoseSpout.getConsumerId() + "_" + payload.id.toString();
+                final String virtualSpoutId = fireHoseSpout.getVirtualSpoutId() + "_" + payload.id.toString();
 
                 // TODO: Lemon - Bug - What if we've previously processed this virtual spout before...?
                 // If we tell it start at the payloads start... it won't resume where it left off.
@@ -344,7 +344,7 @@ public class SidelineSpout extends BaseRichSpout {
                     startingState,
                     payload.endingState
                 );
-                spout.setConsumerId(virtualSpoutId);
+                spout.setVirtualSpoutId(virtualSpoutId);
                 spout.setSidelineRequestIdentifier(id);
 
                 // Add the request's filter steps
