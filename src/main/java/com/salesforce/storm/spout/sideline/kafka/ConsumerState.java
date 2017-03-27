@@ -106,7 +106,7 @@ public class ConsumerState implements Map<TopicPartition, Long> {
 // Unsupported Map interface methods.
 
     @Override
-    public void putAll(Map<? extends TopicPartition, ? extends Long> m) {
+    public void putAll(Map<? extends TopicPartition, ? extends Long> map) {
         throw new UnsupportedOperationException("Immutable map");
     }
 

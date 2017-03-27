@@ -297,7 +297,7 @@ public class SidelineConsumer {
         // Create a consumer state builder.
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
-        // Loop thru all of our partition managers
+        // Loop through all of our partition managers
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
             // Get the current offset for each partition.
             builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());

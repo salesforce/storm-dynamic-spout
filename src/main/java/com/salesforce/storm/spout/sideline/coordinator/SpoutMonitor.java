@@ -247,7 +247,7 @@ public class SpoutMonitor implements Runnable {
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
 
         // TODO: All of this is hacky.
-        // Loop thru spouts instances
+        // Loop through spouts instances
         final PersistenceManager persistenceManager = new FactoryManager(getTopologyConfig()).createNewPersistenceManagerInstance();
         persistenceManager.open(getTopologyConfig());
         final SidelineConsumerMonitor consumerMonitor = new SidelineConsumerMonitor(persistenceManager);

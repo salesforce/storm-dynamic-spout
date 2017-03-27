@@ -19,6 +19,9 @@ public class MultiAssignableMetric implements IMetric {
         return this.values.computeIfAbsent(key, k -> new AssignableMetric(null));
     }
 
+    /**
+     * @return - Returns values stored and resets internal values.
+     */
     public Object getValueAndReset() {
         HashMap ret = new HashMap();
 

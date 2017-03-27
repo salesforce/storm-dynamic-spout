@@ -89,7 +89,7 @@ public class SidelineConsumerConfig {
          * Note: If we use latest we miss too many messages.
          *
          * Note: If we use earliest the following problem arises:
-         * We're acking along at 1,2,3,4,5 so our last completed offset is 5.  Then we determine offset 6
+         * We ack offsets 1,2,3,4,5 so our last completed offset is 5.  Then we determine offset 6
          * is out of range, and jump to offset 10 and start acking 10,11,12,13.  Our largest completed
          * offset will still be 5 because of the hole.  So we'll have issues using smallest.
          *

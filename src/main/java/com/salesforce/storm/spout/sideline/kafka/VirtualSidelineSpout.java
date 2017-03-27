@@ -279,9 +279,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     }
 
     /**
-     * Shoudl this return a tuple?  Some other intermediate abstraction?  The deserialized object
-     * from the kafka message?  Unsure
-     * @return unknown.
+     * @return - The next KafkaMessage that should be played into the topology.
      */
     @Override
     public KafkaMessage nextTuple() {
@@ -611,7 +609,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * Unsubscribes the underlying consumer from the specified topic/partition.
      *
      * @param topicPartition - the topic/partition to unsubscribe from.
-     * @return boolean - true if successfully unsub'd, false if not.
+     * @return boolean - true if successfully unsubscribed, false if not.
      */
     public boolean unsubscribeTopicPartition(TopicPartition topicPartition) {
         final boolean result = sidelineConsumer.unsubscribeTopicPartition(topicPartition);

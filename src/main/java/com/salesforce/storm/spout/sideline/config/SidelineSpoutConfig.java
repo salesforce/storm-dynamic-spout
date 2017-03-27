@@ -37,7 +37,7 @@ public class SidelineSpoutConfig {
     public static final String KAFKA_TOPIC = "sideline_spout.kafka.topic";
 
     /**
-     * (List<String>) Holds a list of Kafka Broker Hostnames + Ports in the following format:
+     * (List<String>) Holds a list of Kafka Broker hostnames + ports in the following format:
      * ["broker1:9092", "broker2:9092", ...]
      */
     public static final String KAFKA_BROKERS = "sideline_spout.kafka.brokers";

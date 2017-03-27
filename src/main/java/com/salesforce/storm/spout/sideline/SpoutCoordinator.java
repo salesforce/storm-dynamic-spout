@@ -121,6 +121,7 @@ public class SpoutCoordinator {
         // Start executing the spout monitor in a new thread.
         executor.submit(spoutMonitor);
 
+        // Block/wait for all of our VirtualSpout instances to start before continuing on.
         try {
             latch.await();
         } catch (InterruptedException ex) {
@@ -162,7 +163,7 @@ public class SpoutCoordinator {
     }
 
     /**
-     * Stop coordinating spouts, calling this should shut down and finish the coordinator's spouts.
+     * Stop managed spouts, calling this should shut down and finish the coordinator's spouts.
      */
     public void close() {
         try {

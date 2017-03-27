@@ -187,7 +187,7 @@ public class SidelineSpout extends BaseRichSpout {
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
 
-        // Persist the side line request state with the new negated verion of the steps.
+        // Persist the side line request state with the new negated version of the steps.
         persistenceManager.persistSidelineRequestState(
             SidelineType.STOP,
             id,

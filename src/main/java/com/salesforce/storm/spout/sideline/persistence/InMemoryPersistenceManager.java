@@ -5,7 +5,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +14,7 @@ import java.util.Map;
  * In memory persistence layer implementation. useful for tests.
  * NOT for production use as all state will be lost between JVM restarts.
  */
-public class InMemoryPersistenceManager implements PersistenceManager, Serializable {
+public class InMemoryPersistenceManager implements PersistenceManager {
     // "Persists" consumer state in memory.
     private Map<String, ConsumerState> storedConsumerState;
 

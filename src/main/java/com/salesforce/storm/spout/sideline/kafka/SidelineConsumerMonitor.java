@@ -35,7 +35,7 @@ public class SidelineConsumerMonitor {
         // Retrieve status
         final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(sidelineRequestIdentifier);
         if (payload == null) {
-            // NOthing to do?
+            // Nothing to do?
             logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
             return null;
         }
@@ -45,7 +45,7 @@ public class SidelineConsumerMonitor {
         // Get the state
         ConsumerState currentState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
         if (currentState == null) {
-            logger.error("Could not find Current State for Id {}, assuming consumer unstarted", virtualSpoutId);
+            logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
             currentState = endingState;
         }
 
@@ -134,7 +134,7 @@ public class SidelineConsumerMonitor {
             // Calculate total processed
             totalProcessed = (currentOffset - startingOffset);
 
-            // Calculate percentage we've worked thru
+            // Calculate percentage we've worked through
             if (totalMessages == 0) {
                 percentageComplete = 0;
             } else {

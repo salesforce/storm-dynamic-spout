@@ -142,7 +142,7 @@ public class PartitionOffsetManager {
 
     /**
      * @return - return the last offset considered "finished".
-     * Here a "finished" offset is the highest continuous offset.
+     *           Here a "finished" offset is the highest continuous offset.
      */
     public long lastFinishedOffset() {
         return lastFinishedOffset;
@@ -150,7 +150,7 @@ public class PartitionOffsetManager {
 
     /**
      * @return - return the largest offset we have started tracking.
-     * This is NOT the same as the "Last Finished Offset"
+     *           This is NOT the same as the "Last Finished Offset"
      */
     public long lastStartedOffset() {
         // If the last finished offset happens to be higher, which is the case

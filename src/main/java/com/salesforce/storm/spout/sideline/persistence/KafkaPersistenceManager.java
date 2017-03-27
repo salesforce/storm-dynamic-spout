@@ -43,8 +43,8 @@ public class KafkaPersistenceManager implements PersistenceManager {
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
 
-    // Kafka client configuration
-    private final int readTimeoutMs = 5000;
+    // Kafka client configuration, to be moved into a configuration setting.
+    private static final int readTimeoutMs = 5000;
 
     // Configuration
     private String topicName;
