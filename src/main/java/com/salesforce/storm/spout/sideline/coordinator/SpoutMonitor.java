@@ -273,6 +273,9 @@ public class SpoutMonitor implements Runnable {
                 );
             }
         }
+
+        // Close persistence manager
+        persistenceManager.close();
     }
 
     /**
