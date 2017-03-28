@@ -114,14 +114,39 @@ The FilterChainStep interface dictates how you want to filter messages being con
 
 ## Optional Interfaces for Overachievers
 ### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
+This interface dictates how and where metadata gets stored such that it lives between topology re-deploys.
+In an attempt to decouple this data storage layer from the spout, we have this interface.  Currently we have
+one implementation backed by Zookeeper.
+
+###### Configuration
+- **sideline_spout.persistence_manager.class** - (String) Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface.
+
 #### Current Implementations
-##### [ZookeeperPersistenceManager]()
-##### [InMemoryPersistenceManager]()
+##### [ZookeeperPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceManager.java)
+This is our default implementation, it uses a Zookeeper cluster to persist the required metadata.
+
+###### Configuration
+- **sideline_spout.persistence.zk_servers** - (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...]
+- **sideline_spout.persistence.zk_root** - (String) Defines the root path to persist state under.  Example: "/sideline-consumer-state"
+
+##### [InMemoryPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceManager.java)
+This implementation only stores metadata in memory.  This is useful for tests, but has no real world use case as all state will be lost between JVM restarts.
 
 ### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)
+Interface for handling failed tuples.  By creating an implementation of this interface you can control how the Spout deals with tuples that have failed within the topology. Currently we have
+three separate implementations bundled with the spout which should cover most standard use cases.
+
 #### Current Implementations
 ##### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
+This is our default implementation for the spout.  It attempts retries of failed tuples a maximum of MAX_RETRIES times.
+After a tuple fails more than that, it will be "acked" or marked as completed and never tried again.
+Each retry is attempted using an exponential back-off time period.  The first retry will be attempted within MIN_RETRY_TIME_MS milliseconds.  Each attempt
+after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
+
+###### Configuration
+
 ##### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
+
 ##### [NeverRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java)
 
 ### [TupleBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java)
