@@ -113,6 +113,10 @@ The FilterChainStep interface dictates how you want to filter messages being con
 ```
 
 ## Optional Interfaces for Overachievers
+Forst most use cases the above interfaces are all that are required to get going.  But..sometimes your use case requires
+you to do do something just a little special of different.  If thats the case with you, we provide the following 
+configurable interfaces to hopefully ease the pain.
+
 ### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
 This interface dictates how and where metadata gets stored such that it lives between topology deploys.
 In an attempt to decouple this data storage layer from the spout, we have this interface.  Currently we have
@@ -124,7 +128,7 @@ Config Key   | Type | Description | Default Value |
 sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface. | *null* 
 
 
-#### Current Implementations
+#### Provided Implementations
 ##### [ZookeeperPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceManager.java)
 This is our default implementation, it uses a Zookeeper cluster to persist the required metadata.
 
@@ -146,7 +150,7 @@ Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
 sideline_spout.retry_manager.class | String | Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface. |"com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
 
-#### Current Implementations
+#### Provided Implementations
 ##### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
 This is our default implementation for the spout.  It attempts retries of failed tuples a maximum of MAX_RETRIES times.
 After a tuple fails more than that, it will be "acked" or marked as completed and never tried again.
@@ -170,7 +174,7 @@ This interface defines an abstraction around essentially a concurrent queue.  Ab
 implement a "fairness" algorithm on the poll() method for pulling off of the queue. Using a straight ConcurrentQueue would give us FIFO semantics 
 but with an abstraction we could implement round robin across kafka consumers, or any scheduling algorithm that you'd like.
 
-This is getting into the nitty-gritty of the implementation here, you would need a pretty special use case to mess around
+This is getting into the nitty-gritty internals of the spout here, you would need a pretty special use case to mess around
 with this one.
 
 ###### Configuration
@@ -178,7 +182,7 @@ Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
 sideline_spout.coordinator.tuple_buffer.class | String | Defines which TupleBuffer implementation to use. Should be a full classpath to a class that implements the TupleBuffer interface. | "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer"
 
-#### Current Implementations
+#### Provided Implementations
 ##### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
 This is our default implementation, which is essentially round-robin.  Each virtual spout has its own queue that gets added too.  A very chatty
 virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR through all the available
@@ -196,7 +200,7 @@ FIFO implementation.  Has absolutely no "fairness" between VirtualSpouts or any 
 ### [MetricsRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java)
 This is still a work in progress.  More details to come.
 
-#### Current Implementations
+#### Provided Implementations
 ##### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
 ##### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
 
