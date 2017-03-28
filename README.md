@@ -55,7 +55,7 @@ any where you would like.  Mysql? Redis? Sure!  Contribute an adapter to the pro
 
 ## Required Interface Implementations
 ### [Deserializer](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java)
-The Deserializer interface dictates how the byte[] consumed from Kafka gets transformed into a storm tuple. It also 
+The Deserializer interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple. It also 
 controls the naming of your output field(s).
 
 ```
@@ -84,14 +84,55 @@ For compatibility to Storm-Kafka's Scheme interface, you can instead extend [Abs
 and use an existing implementation.
 
 ### [StartingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java)
+The StartingTrigger interface dictates how your running spout instance gets notified of new requests to filter and sideline
+messages being consumed from Kafka.
+
+```
+void setSidelineSpout(SpoutTriggerProxy spout);
+```
+
 ### [StoppingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java)
-### [FilterChainStep]()
+The StoppingTrigger interface dictates how your running spout instance gets notified of new requests to remove a previously
+started filter and start reprocessing any messages that were previously skipped.
+
+```
+void setSidelineSpout(SpoutTriggerProxy spout);
+```
+
+### [FilterChainStep](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java)
+The FilterChainStep interface dictates how you want to filter messages being consumed from kafka.
+
+```
+    /**
+     * Inputs an object, performs some business logic on it and then returns the result.
+     *
+     * @param message The filter to be processed by this step of the chain
+     * @return The resulting filter after being processed
+     */
+    boolean filter(KafkaMessage message);
+```
 
 ## Optional Interfaces for Overachievers
 ### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
+#### Current Implementations
+##### [ZookeeperPersistenceManager]()
+##### [InMemoryPersistenceManager]()
+
 ### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)
+#### Current Implementations
+##### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
+##### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
+##### [NeverRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java)
+
 ### [TupleBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java)
+#### Current Implementations
+##### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
+##### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java)
+
 ### [MetricsRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java)
+#### Current Implementations
+##### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
+##### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
 
 # Metrics
 
