@@ -114,7 +114,7 @@ The FilterChainStep interface dictates how you want to filter messages being con
 
 ## Optional Interfaces for Overachievers
 ### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
-This interface dictates how and where metadata gets stored such that it lives between topology re-deploys.
+This interface dictates how and where metadata gets stored such that it lives between topology deploys.
 In an attempt to decouple this data storage layer from the spout, we have this interface.  Currently we have
 one implementation backed by Zookeeper.
 
@@ -130,11 +130,11 @@ This is our default implementation, it uses a Zookeeper cluster to persist the r
 - **sideline_spout.persistence.zk_root** - (String) Defines the root path to persist state under.  Example: "/sideline-consumer-state"
 
 ##### [InMemoryPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceManager.java)
-This implementation only stores metadata in memory.  This is useful for tests, but has no real world use case as all state will be lost between JVM restarts.
+This implementation only stores metadata within memory.  This is useful for tests, but has no real world use case as all state will be lost between topology deploys.
 
 ### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)
-Interface for handling failed tuples.  By creating an implementation of this interface you can control how the Spout deals with tuples that have failed within the topology. Currently we have
-three separate implementations bundled with the spout which should cover most standard use cases.
+Interface for handling failed tuples.  By creating an implementation of this interface you can control how the spout deals with tuples that have failed within the topology. Currently we have
+three implementations bundled with the spout which should cover most standard use cases.
 
 ###### Configuration
 - **sideline_spout.retry_manager.class** - (String) Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface.  Default Value: "com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
