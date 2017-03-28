@@ -8,7 +8,8 @@ to dynamically "*sideline*" or skip specific messages to be replayed at a later 
 Under normal circumstances this spout works much like your typical [Kafka-Spout](https://github.com/nathanmarz/storm-contrib/tree/master/storm-kafka) and
 aims to be a drop in replacement for it.  This implementation differs in that it exposes trigger and 
 filter semantics when you build your topology which allow for specific messages to be skipped, and then
-replayed at a later point in time.  And it does this without requiring you to re-deploy your topology!
+replayed at a later point in time.  And it does dynamically without requiring you to re-deploy your topology as the 
+criteria changes!
 
 ### Example use cases
 Wow! That sounds interesting...but when would I need this?
@@ -45,16 +46,21 @@ messages which got filtered.
 ## Dependencies
 ## Configuration
 
-# Metrics
+## Required Interface Implementations
+### [Deserializer]()
+#### Compatibility [Scheme]()
+### [StartingTrigger]()
+### [StoppingTrigger]()
+### [FilterChainStep]()
 
-# Customization
-## Interfaces
-### Interface A
-### Interface B
-### Interface C
+## Optional Interfaces for Overachievers
+### [PersistenceManager]()
+### [RetryManager]()
+### [TupleBuffer]()
+### [MetricsRecorder]()
+
+# Metrics
 
 # Releases & Changelog 
 
 
-
- 
