@@ -1132,19 +1132,13 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.open(null);
 
-        // Read from topic async since startup/connect times may vary from system to system
-        List<ConsumerRecord<byte[], byte[]>> foundRecords = consumeRecords(sidelineConsumer, numberOfRecordsToConsume);
-
-        // Loop over and validate
-        Iterator<ProducedKafkaRecord<byte[], byte[]>> producerRecordIterator = expectedProducedRecords.iterator();
-        for (ConsumerRecord<byte[], byte[]> foundRecord : foundRecords) {
-            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producerRecordIterator.next();
-
-            // Sanity checks
+        // Read from topic, verify we get what we expect, we should only get the last 5 records.
+        for (int x=numberOfRecordsToConsume; x<numberOfRecordsToProduce; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
             assertNotNull(foundRecord);
-            assertNotNull(expectedRecord);
-
             // Compare to what we expected
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
             assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
             assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
@@ -1593,27 +1587,5 @@ public class SidelineConsumerTest {
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         return new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
-    }
-
-    /**
-     * Helper method to async consume messages from a sideline consumer.
-     */
-    private List<ConsumerRecord<byte[], byte[]>> consumeRecords(SidelineConsumer sidelineConsumer, int numberToConsume) {
-        List<ConsumerRecord<byte[], byte[]>> records = Lists.newArrayList();
-
-        await()
-            .atMost(15, TimeUnit.SECONDS)
-            .until(() -> {
-                ConsumerRecord<byte[], byte[]> nextRecord = sidelineConsumer.nextRecord();
-                if (nextRecord != null) {
-                    records.add(nextRecord);
-                }
-                return records.size();
-            }, equalTo(numberToConsume));
-
-        // Sanity check
-        assertEquals("Should have the right number of records", numberToConsume, records.size());
-
-        return records;
     }
 }
