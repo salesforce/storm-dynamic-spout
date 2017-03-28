@@ -317,7 +317,7 @@ public class SidelineConsumer {
      * Internal method used to fill internal message buffer from kafka.
      * Maybe this should be marked private.
      */
-    public void fillBuffer() {
+    private void fillBuffer() {
         // If our buffer is null, or our iterator is at the end
         if (buffer == null || !bufferIterator.hasNext()) {
             // Time to refill the buffer
