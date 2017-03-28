@@ -239,7 +239,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * Get the partitions that this particular spout instance should consume from.
      * @return List of partitions to consume from
      */
-    private List<PartitionInfo> getPartitions() {
+    List<PartitionInfo> getPartitions() {
         final int numInstances = topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size();
 
         final int instanceIndex = topologyContext.getThisTaskIndex();
