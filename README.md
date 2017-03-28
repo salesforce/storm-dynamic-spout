@@ -1,37 +1,33 @@
 <a name="storm-sideline-spout"></a>
 # Storm Sidelining Kafka Spout
 
-Some random timings for future reference:
-
-> ==== nextTuple() Totals after 75000000 calls ====
-> nextTuple() totalCalls => 75000000
-> nextTuple() totalTime => 317228 ms (100.0%)
-> nextTuple() tupleMessageId => 3634 ms (1.1455482%)
-> nextTuple() isFiltered => 3089 ms (0.97374755%)
-> nextTuple() failedRetry => 10809 ms (3.4073286%)
-> nextTuple() kafkaMessage => 3960 ms (1.2483134%)
-> nextTuple() nextRecord => 118934 ms (37.491646%)
-> nextTuple() doesExceedEndOffset => 2937 ms (0.9258325%)
-> nextTuple() deserialize => 134894 ms (42.522728%)
-
-
-> ==== ack() Totals after 75000000 calls ====
-> ack() CommitOffset => 98977 ms (69.50144%)
-> ack() TotalCalls => 75000000 ms (52664.844%)
-> ack() UpdateMetrics => 0 ms (0.0%)
-> ack() RemoveTracked => 13305 ms (9.342743%)
-> ack() TotalTime => 142410 ms (100.0%)
-> ack() TupleMessageId => 2919 ms (2.0497155%)
-> ack() FailedMsgAck => 7675 ms (5.389369%)
-
-
 ## Purpose of this project
-The purpose of this project is to provide a ....
+The purpose of this project is to provide a [Kafka (0.10.0.x)](https://kafka.apache.org/) based spout for [Apache Storm (1.0.x)](https://storm.apache.org/) that provides the ability
+to dynamically "*sideline*" specific messages to be replayed at a later time based on a filter criteria.
 
-## What is NOT the purpose of this project
-....  
+Under normal circumstances this Spout works much like your typical [Kafka Spout](https://github.com/nathanmarz/storm-contrib/tree/master/storm-kafka) and
+aims to be a drop in replacement for it.  This implementation differs in that it exposes trigger and 
+filtering semantics when you build your topology which allow for sidelined messages to be skipped, and then
+replayed at a later time.
+
+### Example use cases
+Wow! That sounds interesting...but when would I need this?
+
+#### Multi-tenant processing
+When reading a multi-tenant commit log you may want to postpone processing for a given tenant. Sidelining 
+is an implementation of tracking when a request to postpone processing occurs, by a given filter criteria, 
+and then resuming it once the circumstances that caused it to be postponed are changed.
+
+#### Some other use case here
+Surely we can come up with another use case.
  
-## So what does this Spout do?
+## How does it work?
+This spout implementation exposes 2 interfaces for controlling **WHEN** and **WHAT** get messages from Kafka get
+skipped for processing at a later time.
+
+The **Trigger Interface** allows you to define how you tell the Spout **WHEN** to start marking messages for delayed processing.
+
+The **Filter Interface** allows you to define how you tell the Spout **WHAT** messages get marked for delayed processing.
 
 # Getting started
 ## Configuration
@@ -43,6 +39,8 @@ The purpose of this project is to provide a ....
 ### Interface A
 ### Interface B
 ### Interface C
+
+# Releases & Changelog 
 
 
 
