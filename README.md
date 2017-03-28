@@ -44,6 +44,13 @@ messages which got filtered.
 
 # Getting started
 ## Dependencies
+Using the default straight-out-of-the-box configuration, this spout has the following dependencies:
+- [Apache Storm 1.0.x](https://storm.apache.org/) - This one should be self explanatory.
+- [Apache Kafka 0.10.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
+- [Zookeeper](https://zookeeper.apache.org/) - Metadata the spout tracks has to be persisted somewhere, by default we use Zookeeper.  This is not
+a hard dependency as you can write your own [PersistenceManager]() implementation to store this metadata
+any where you'd like.  Mysql? Redis? Sure!  Contribute an adapter to the project!
+
 ## Configuration
 
 ## Required Interface Implementations
