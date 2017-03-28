@@ -121,7 +121,7 @@ one implementation backed by Zookeeper.
 ###### Configuration
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface. | <none> 
+sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface. | *null* 
 
 
 #### Current Implementations
@@ -129,8 +129,10 @@ sideline_spout.persistence_manager.class | String | Defines which PersistenceMan
 This is our default implementation, it uses a Zookeeper cluster to persist the required metadata.
 
 ###### Configuration
-- **sideline_spout.persistence.zk_servers** - (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...]
-- **sideline_spout.persistence.zk_root** - (String) Defines the root path to persist state under.  Example: "/sideline-consumer-state"
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.persistence.zk_servers | List\<String\> | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | *null* 
+sideline_spout.persistence.zk_root | String | Defines the root path to persist state under.  Example: "/sideline-consumer-state" | *null*
 
 ##### [InMemoryPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceManager.java)
 This implementation only stores metadata within memory.  This is useful for tests, but has no real world use case as all state will be lost between topology deploys.
@@ -140,7 +142,9 @@ Interface for handling failed tuples.  By creating an implementation of this int
 three implementations bundled with the spout which should cover most standard use cases.
 
 ###### Configuration
-- **sideline_spout.retry_manager.class** - (String) Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface.  Default Value: "com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.retry_manager.class | String | Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface. |"com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
 
 #### Current Implementations
 ##### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
@@ -150,8 +154,10 @@ Each retry is attempted using an exponential back-off time period.  The first re
 after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
 
 ###### Configuration
-- **sideline_spout.failed_msg_retry_manager.max_retries** - (int) Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. Default Value: 25
-- **sideline_spout.failed_msg_retry_manager.min_retry_time_ms** - (long) Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. Default Value: 1000
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.failed_msg_retry_manager.max_retries | int | Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. | 25
+sideline_spout.failed_msg_retry_manager.min_retry_time_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
 
 ##### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
 
