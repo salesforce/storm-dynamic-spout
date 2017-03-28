@@ -160,15 +160,42 @@ sideline_spout.failed_msg_retry_manager.max_retries | int | Defines how many tim
 sideline_spout.failed_msg_retry_manager.min_retry_time_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
 
 ##### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
+This implementation will always retry failed tuples at the earliest chance it can.  No back-off strategy, no maximum times a tuple can fail.
 
 ##### [NeverRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java)
+This implementation will never retry failed messages.  One and done.
 
 ### [TupleBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java)
+This interface defines an abstraction around essentially a concurrent queue.  Abstracting this instead of using directly a queue object allows us to do things like
+implement a "fairness" algorithm on the poll() method for pulling off of the queue. Using a straight ConcurrentQueue would give us FIFO semantics 
+but with an abstraction we could implement round robin across kafka consumers, or any scheduling algorithm that you'd like.
+
+This is getting into the nitty-gritty of the implementation here, you would need a pretty special use case to mess around
+with this one.
+
+###### Configuration
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.coordinator.tuple_buffer.class | String | Defines which TupleBuffer implementation to use. Should be a full classpath to a class that implements the TupleBuffer interface. | "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer"
+
 #### Current Implementations
 ##### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
+This is our default implementation, which is essentially round-robin.  Each virtual spout has its own queue that gets added too.  A very chatty
+virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR through all the available
+queues to get the next msg.
+ 
+Internally we make use of BlockingQueues so that we can put an upper bound on the queue size.
+Once a queue is full, any producer attempting to put more messages onto the queue will block and wait
+for available space in the queue.  This acts to throttle producers of messages.
+Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
+This means consuming from the queue will always be fast.
+ 
 ##### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java)
+FIFO implementation.  Has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### [MetricsRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java)
+This is still a work in progress.  More details to come.
+
 #### Current Implementations
 ##### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
 ##### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
