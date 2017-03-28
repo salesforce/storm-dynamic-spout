@@ -5,10 +5,10 @@
 The purpose of this project is to provide a [Kafka (0.10.0.x)](https://kafka.apache.org/) based spout for [Apache Storm (1.0.x)](https://storm.apache.org/) that provides the ability
 to dynamically "*sideline*" or skip specific messages to be replayed at a later time based on a set of filter criteria.
 
-Under normal circumstances this Spout works much like your typical [Kafka Spout](https://github.com/nathanmarz/storm-contrib/tree/master/storm-kafka) and
+Under normal circumstances this spout works much like your typical [Kafka-Spout](https://github.com/nathanmarz/storm-contrib/tree/master/storm-kafka) and
 aims to be a drop in replacement for it.  This implementation differs in that it exposes trigger and 
 filter semantics when you build your topology which allow for specific messages to be skipped, and then
-replayed at a later point in time.
+replayed at a later point in time.  And it does this without requiring you to re-deploy your topology!
 
 ### Example use cases
 Wow! That sounds interesting...but when would I need this?
