@@ -1,7 +1,13 @@
 package com.salesforce.storm.spout.sideline.mocks;
 
+import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * A test mock.
@@ -11,7 +17,12 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
     public volatile boolean requestedStop = false;
     public volatile boolean wasOpenCalled = false;
     public volatile boolean wasCloseCalled = false;
+    public volatile boolean flushStateCalled = false;
     public volatile RuntimeException exceptionToThrow = null;
+    public volatile Set<TupleMessageId> failedTupleIds = Sets.newConcurrentHashSet();
+    public volatile Set<TupleMessageId> ackedTupleIds = Sets.newConcurrentHashSet();
+
+    public volatile Queue<KafkaMessage> emitQueue = Queues.newConcurrentLinkedQueue();
 
     public MockDelegateSidelineSpout(final String virtualSpoutId) {
         this.virtualSpoutId = virtualSpoutId;
@@ -32,17 +43,17 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
         if (exceptionToThrow != null) {
             throw exceptionToThrow;
         }
-        return null;
+        return emitQueue.poll();
     }
 
     @Override
-    public void ack(Object msgId) {
-
+    public void ack(Object id) {
+        ackedTupleIds.add((TupleMessageId) id);
     }
 
     @Override
-    public void fail(Object msgId) {
-
+    public void fail(Object id) {
+        failedTupleIds.add((TupleMessageId) id);
     }
 
     @Override
@@ -52,7 +63,7 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public void flushState() {
-
+        flushStateCalled = true;
     }
 
     @Override
