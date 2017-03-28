@@ -25,13 +25,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1105,7 +1101,7 @@ public class SidelineConsumerTest {
         // Define how many records to produce
         final int numberOfRecordsToProduce = 10;
 
-        // Define how many records we expect to consumer
+        // Define how many records we expect to consume
         final int numberOfRecordsToConsume = 5;
 
         // Produce entries to the topic.
@@ -1133,11 +1129,14 @@ public class SidelineConsumerTest {
         sidelineConsumer.open(null);
 
         // Read from topic, verify we get what we expect, we should only get the last 5 records.
-        for (int x=numberOfRecordsToConsume; x<numberOfRecordsToProduce; x++) {
+        for (int x=0; x<numberOfRecordsToConsume; x++) {
             ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
             assertNotNull(foundRecord);
-            // Compare to what we expected
-            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+
+            // Get the produced record we expected to get back.
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = expectedProducedRecords.get(x);
+
+            // Validate it
             logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
             assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
             assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
