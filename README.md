@@ -58,7 +58,7 @@ any where you would like.  Mysql? Redis? Sure!  Contribute an adapter to the pro
 The Deserializer interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple. It also 
 controls the naming of your output field(s).
 
-```
+```java
     /**
      * This is the method your implementation would need define.
      * A null return value from here will result in this message being ignored.
@@ -87,7 +87,7 @@ and use an existing implementation.
 The StartingTrigger interface dictates how your running spout instance gets notified of new requests to filter and sideline
 messages being consumed from Kafka.
 
-```
+```java
 void setSidelineSpout(SpoutTriggerProxy spout);
 ```
 
@@ -95,14 +95,14 @@ void setSidelineSpout(SpoutTriggerProxy spout);
 The StoppingTrigger interface dictates how your running spout instance gets notified of new requests to remove a previously
 started filter and start reprocessing any messages that were previously skipped.
 
-```
+```java
 void setSidelineSpout(SpoutTriggerProxy spout);
 ```
 
 ### [FilterChainStep](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java)
 The FilterChainStep interface dictates how you want to filter messages being consumed from kafka.
 
-```
+```java
     /**
      * Inputs an object, performs some business logic on it and then returns the result.
      *
@@ -119,7 +119,10 @@ In an attempt to decouple this data storage layer from the spout, we have this i
 one implementation backed by Zookeeper.
 
 ###### Configuration
-- **sideline_spout.persistence_manager.class** - (String) Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface.
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface. | <none> 
+
 
 #### Current Implementations
 ##### [ZookeeperPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceManager.java)
