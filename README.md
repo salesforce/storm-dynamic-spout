@@ -30,7 +30,7 @@ Surely we can come up with another use case.
  
 ## How does it work?
 This spout implementation exposes 2 interfaces for controlling **WHEN** and **WHAT** messages from Kafka get
-skipped and marked for processing at a later time.
+skipped and marked for processing at a later point in time.
 
 The **Trigger Interface** allows you to define **WHEN** the spout will start marking messages for delayed processing,
 and **WHEN** the spout will start processing messages that it previously skipped.
