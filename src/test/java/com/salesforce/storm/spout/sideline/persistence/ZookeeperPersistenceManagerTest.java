@@ -16,8 +16,8 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -54,22 +54,23 @@ public class ZookeeperPersistenceManagerTest {
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManagerTest.class);
 
     // An internal zookeeper server used for testing.
-    private TestingServer zkServer;
+    private static TestingServer zkServer;
 
     /**
-     * Before running any tests, we stand up an internal zookeeper server we test against.
+     * This gets run before all test methods in class.
+     * It stands up an internal zookeeper server that is shared for all test methods in this class.
      */
-    @Before
-    public void setup() throws Exception {
+    @BeforeClass
+    public static void setupZkServer() throws Exception {
         InstanceSpec zkInstanceSpec = new InstanceSpec(null, -1, -1, -1, true, -1, -1, 1000);
         zkServer = new TestingServer(zkInstanceSpec, true);
     }
 
     /**
-     * After running any tests, we shut down the internal zookeeper server instance.
+     * After running all the test methods in this class, destroy our internal zk server.
      */
-    @After
-    public void shutdown() throws Exception {
+    @AfterClass
+    public static void destroyZkServer() throws Exception {
         zkServer.stop();
         zkServer.close();
     }
@@ -99,7 +100,7 @@ public class ZookeeperPersistenceManagerTest {
     public void testOpen() {
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
-        final String expectedZkRoot = "/myRoot";
+        final String expectedZkRoot = getRandomZkRootNode();
         final String expectedConsumerId = "MyConsumerId";
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
         final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
@@ -134,7 +135,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic";
-        final String zkRootPath = "/topLevel";
+        final String zkRootPath = getRandomZkRootNode();
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
@@ -206,7 +207,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistenceUpdatingEntryForSameConsumerId() throws InterruptedException {
         final String topicName = "MyTopic";
-        final String zkRootPath = "/topLevel";
+        final String zkRootPath = getRandomZkRootNode();
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
 
         // Create our config
@@ -288,7 +289,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndConsumerStatePersistenceWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
         // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
+        final String zkRootNodePath = getRandomZkRootNode();
         final String zkConsumersRootNodePath = zkRootNodePath + "/consumers";
         final String consumerId = "MyConsumer" + Clock.systemUTC().millis();
 
@@ -397,7 +398,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndRequestStatePersistence() throws InterruptedException {
         final String topicName = "MyTopic1";
-        final String zkRootPath = "/topLevel";
+        final String zkRootPath = getRandomZkRootNode();
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
@@ -478,7 +479,7 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testEndToEndRequestStatePersistenceWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
         // Define our ZK Root Node
-        final String zkRootNodePath = "/TestRootPath";
+        final String zkRootNodePath = getRandomZkRootNode();
         final String zkRequestsRootNodePath = zkRootNodePath + "/requests";
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
@@ -670,5 +671,12 @@ public class ZookeeperPersistenceManagerTest {
      */
     private Map createDefaultConfig(String zkServers, String zkRootNode) {
         return createDefaultConfig(Lists.newArrayList(zkServers.split(",")), zkRootNode);
+    }
+
+    /**
+     * Helper method to generate a random zkRootNode path to use.
+     */
+    private String getRandomZkRootNode() {
+        return "/testRoot" + System.currentTimeMillis();
     }
 }

@@ -13,8 +13,9 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.slf4j.Logger;
@@ -51,21 +52,26 @@ import static org.mockito.Mockito.when;
 public class SidelineConsumerTest {
 
     private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerTest.class);
-    private KafkaTestServer kafkaTestServer;
+    private static KafkaTestServer kafkaTestServer;
     private String topicName;
 
     /**
      * Here we stand up an internal test kafka and zookeeper service.
+     * Once for all methods in this class.
      */
-    @Before
-    public void setup() throws Exception {
-        // ensure we're in a clean state
-        tearDown();
-
+    @BeforeClass
+    public static void setupKafkaServer() throws Exception {
         // Setup kafka test server
         kafkaTestServer = new KafkaTestServer();
         kafkaTestServer.start();
+    }
 
+    /**
+     * This happens once before every test method.
+     * Create a new empty topic with randomly generated name.
+     */
+    @Before
+    public void beforeTest() {
         // Generate topic name
         topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
@@ -76,8 +82,8 @@ public class SidelineConsumerTest {
     /**
      * Here we shut down the internal test kafka and zookeeper services.
      */
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void destroyKafkaServer() {
         // Close out kafka test server if needed
         if (kafkaTestServer == null) {
             return;
@@ -85,7 +91,7 @@ public class SidelineConsumerTest {
         try {
             kafkaTestServer.shutdown();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         kafkaTestServer = null;
     }
@@ -696,7 +702,7 @@ public class SidelineConsumerTest {
     @Test
     public void testGetAssignedPartitionsWithMultiplePartitions() {
         // Define and create our topic
-        final String expectedTopicName = "MyMultiPartitionTopic";
+        final String expectedTopicName = "testGetAssignedPartitionsWithMultiplePartitions" + System.currentTimeMillis();
         final int expectedNumberOfPartitions = 5;
         kafkaTestServer.createTopic(expectedTopicName, expectedNumberOfPartitions);
 
@@ -777,7 +783,7 @@ public class SidelineConsumerTest {
     @Test
     public void testUnsubscribeTopicPartitionMultiplePartitions() {
         // Define and create our topic
-        final String expectedTopicName = "MyMultiPartitionTopic";
+        final String expectedTopicName = "testUnsubscribeTopicPartitionMultiplePartitions" + System.currentTimeMillis();
         final int expectedNumberOfPartitions = 5;
         kafkaTestServer.createTopic(expectedTopicName, expectedNumberOfPartitions);
 
@@ -1149,7 +1155,7 @@ public class SidelineConsumerTest {
      */
     @Test
     public void testConsumeFromTopicWithMultiplePartitionsWithAcking() {
-        this.topicName = "MyMultiPartitionTopic";
+        this.topicName = "testConsumeFromTopicWithMultiplePartitionsWithAcking" + System.currentTimeMillis();
         final int expectedNumberOfPartitions = 2;
 
         // Create our multi-partition topic.
@@ -1350,7 +1356,7 @@ public class SidelineConsumerTest {
      */
     @Test
     public void testConsumeFromTopicAfterUnsubscribingFromMultiplePartitions() {
-        this.topicName = "MyMultiPartitionTopic";
+        this.topicName = "testConsumeFromTopicAfterUnsubscribingFromMultiplePartitions" + System.currentTimeMillis();
         final int expectedNumberOfPartitions = 2;
 
         // Create our multi-partition topic.
@@ -1474,7 +1480,7 @@ public class SidelineConsumerTest {
     @Test
     public void testWhatHappensIfOffsetIsInvalidShouldResetSmallest() {
         // Kafka topic setup
-        this.topicName = "MyMultiPartitionTopic";
+        this.topicName = "testWhatHappensIfOffsetIsInvalidShouldResetSmallest" + System.currentTimeMillis();
         final int numberOfPartitions = 2;
         final int numberOfMsgsPerPartition = 4;
 

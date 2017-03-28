@@ -24,14 +24,13 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +62,7 @@ public class SidelineSpoutTest {
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutTest.class);
 
     // Our internal Kafka and Zookeeper Server, used to test against.
-    private KafkaTestServer kafkaTestServer;
+    private static KafkaTestServer kafkaTestServer;
 
     // Gets set to our randomly generated topic created for the test.
     private String topicName;
@@ -76,16 +75,21 @@ public class SidelineSpoutTest {
 
     /**
      * Here we stand up an internal test kafka and zookeeper service.
+     * Once for all methods in this class.
      */
-    @Before
-    public void setup() throws Exception {
-        // ensure we're in a clean state
-        tearDown();
-
+    @BeforeClass
+    public static void setupKafkaServer() throws Exception {
         // Setup kafka test server
         kafkaTestServer = new KafkaTestServer();
         kafkaTestServer.start();
+    }
 
+    /**
+     * This happens once before every test method.
+     * Create a new empty topic with randomly generated name.
+     */
+    @Before
+    public void beforeTest() {
         // Generate topic name
         topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
@@ -96,8 +100,8 @@ public class SidelineSpoutTest {
     /**
      * Here we shut down the internal test kafka and zookeeper services.
      */
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void destroyKafkaServer() {
         // Close out kafka test server if needed
         if (kafkaTestServer == null) {
             return;
