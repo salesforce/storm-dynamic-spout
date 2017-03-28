@@ -119,7 +119,7 @@ public class SpoutCoordinator {
         );
 
         // Start executing the spout monitor in a new thread.
-        executor.submit(spoutMonitor);
+        getExecutor().submit(spoutMonitor);
 
         // Block/wait for all of our VirtualSpout instances to start before continuing on.
         try {
@@ -168,21 +168,21 @@ public class SpoutCoordinator {
     public void close() {
         try {
             // Call shutdown, which prevents the executor from starting any new tasks.
-            executor.shutdown();
+            getExecutor().shutdown();
 
             // Call close on the spout monitor
             spoutMonitor.close();
 
             // Wait for clean termination
-            executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
+            getExecutor().awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
             logger.error("Interrupted clean shutdown, forcing stop: {}", ex);
         }
 
         // If we haven't shut down yet..
-        if (!executor.isTerminated()) {
+        if (!getExecutor().isTerminated()) {
             logger.warn("Shutdown was not completed within {} ms, forcing stop of executor now", getMaxTerminationWaitTimeMs());
-            executor.shutdownNow();
+            getExecutor().shutdownNow();
         }
     }
 
@@ -241,5 +241,12 @@ public class SpoutCoordinator {
      */
     private long getMaxTerminationWaitTimeMs() {
         return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
+    }
+
+    /**
+     * @return - our internal executor service.
+     */
+    ExecutorService getExecutor() {
+        return executor;
     }
 }

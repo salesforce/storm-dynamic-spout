@@ -129,6 +129,9 @@ public class SpoutCoordinatorTest {
         }
 
         assertEquals(0, coordinator.getTotalSpouts());
+
+        // Verify the executor is terminated, and has no active tasks
+        assertTrue("Executor is terminated", coordinator.getExecutor().isTerminated());
     }
 
 
