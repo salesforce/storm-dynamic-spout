@@ -136,6 +136,9 @@ This implementation only stores metadata in memory.  This is useful for tests, b
 Interface for handling failed tuples.  By creating an implementation of this interface you can control how the Spout deals with tuples that have failed within the topology. Currently we have
 three separate implementations bundled with the spout which should cover most standard use cases.
 
+###### Configuration
+- **sideline_spout.retry_manager.class** - (String) Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface.  Default Value: "com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
+
 #### Current Implementations
 ##### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
 This is our default implementation for the spout.  It attempts retries of failed tuples a maximum of MAX_RETRIES times.
@@ -144,6 +147,8 @@ Each retry is attempted using an exponential back-off time period.  The first re
 after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
 
 ###### Configuration
+- **sideline_spout.failed_msg_retry_manager.max_retries** - (int) Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. Default Value: 25
+- **sideline_spout.failed_msg_retry_manager.min_retry_time_ms** - (long) Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. Default Value: 1000
 
 ##### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
 
