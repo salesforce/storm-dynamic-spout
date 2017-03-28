@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Provides a compatibility-like layer to Storm-Kafka Scheme interface.
  */
-public abstract class AbstractScheme implements Scheme, Deserializer {
+public abstract class AbstractScheme implements Deserializer {
 
     /**
      * @return - Define the fields that you will deserialize into.
