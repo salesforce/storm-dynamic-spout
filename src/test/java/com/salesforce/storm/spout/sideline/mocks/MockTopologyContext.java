@@ -13,6 +13,7 @@ public class MockTopologyContext extends TopologyContext {
     public Map<String, IMetric> mockRegisteredMetrics = new HashMap<>();
     public int taskId = 0;
     public int taskIndex = 0;
+    public List<Integer> componentTasks = Collections.singletonList(1);
 
     public MockTopologyContext() {
         super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -39,7 +40,7 @@ public class MockTopologyContext extends TopologyContext {
     }
 
     public List<Integer> getComponentTasks(String componentId) {
-        return Collections.singletonList(1);
+        return componentTasks;
     }
 
     public int getThisTaskIndex() {

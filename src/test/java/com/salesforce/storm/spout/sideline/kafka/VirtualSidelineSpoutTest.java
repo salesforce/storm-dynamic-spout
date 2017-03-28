@@ -16,18 +16,28 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.Node;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -45,6 +55,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@RunWith(DataProviderRunner.class)
 public class VirtualSidelineSpoutTest {
 
     /**
@@ -1546,6 +1557,80 @@ public class VirtualSidelineSpoutTest {
         // Verify result
         assertNotNull("result should not be null", result);
         assertEquals("Should be our expected instance", expectedConsumerState, result);
+    }
+
+    /**
+     * Test the number of partitions consumed from for a multi-instance spout
+     *
+     * @param numInstances Number of instances
+     * @param numPartitions Number of partitions
+     * @param instanceIndex The instances index (starts at 0)
+     * @param partitionCount Number of partitions to expect
+     */
+    @Test
+    @UseDataProvider("dataProviderForGetPartitions")
+    public void testGetPartitions(int numInstances, int numPartitions, int instanceIndex, int partitionCount) {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final RetryManager mockRetryManager = mock(RetryManager.class);
+
+        final MockTopologyContext mockTopologyContext = new MockTopologyContext();
+        mockTopologyContext.taskId = instanceIndex;
+        mockTopologyContext.componentTasks = new ArrayList<>();
+
+        for (int i=1; i<=numInstances; i++) {
+            mockTopologyContext.componentTasks.add(i);
+        }
+
+        final String topic = "foobar";
+        final Node leader = new Node(1, "localhost", 1234);
+        final List<PartitionInfo> mockPartitions = new ArrayList<>();
+
+        for (int i=1; i<=numPartitions; i++) {
+            mockPartitions.add(new PartitionInfo(topic, i, leader, new Node[]{}, new Node[]{}));
+        }
+
+        // Create a mock SidelineConsumer
+        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(mockPartitions);
+
+        // Define metric record
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, mockTopologyContext);
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+
+        // Create spout & open
+        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+            topologyConfig,
+            mockTopologyContext,
+            mockFactoryManager,
+            metricsRecorder,
+            mockSidelineConsumer,
+            null,
+            null
+        );
+        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
+
+        List<PartitionInfo> partitions = virtualSidelineSpout.getPartitions();
+
+        assertEquals(partitionCount, partitions.size());
+    }
+
+    @DataProvider
+    public static Object[][] dataProviderForGetPartitions() {
+        return new Object[][]{
+            // One instance, three partitions, first instance, expect 3 partitions for this spout
+            { 1, 3, 0, 3 },
+            // Two instances, three partitions, first instance, expect 1 partition for this spout
+            { 2, 3, 0, 1 },
+            // Two instances, three partitions, second instance, expect 2 partitions for this spout
+            { 2, 3, 1, 2 },
+            // Three instances, three partitions, third instance, expect 1 partitions for this spout
+            { 3, 3, 2, 1 },
+
+        };
     }
 
     /**
