@@ -23,9 +23,6 @@ public class PartitionOffsetManager {
     private long lastFinishedOffset = 0;
     private long lastStartedOffset = 0;
 
-    // TODO: Lemon Remove this after code review
-    public final boolean useIterator = true;
-
     /**
      * Constructor.
      * @param topic - What topic this Partition belongs to.
@@ -92,43 +89,23 @@ public class PartitionOffsetManager {
                 // We need to walk through our finished offsets and look for skips
                 int increment = 1;
 
-                // If we want to use the new iterator version
-                // TODO: LEMON - remove conditional after code review.
-                if (useIterator) {
-                    Iterator<Long> iterator = finishedOffsets.iterator();
-                    while (iterator.hasNext()) {
-                        final long finishedOffset = iterator.next();
-                        // The next offset has finished, so we filter it and move onto the next
-                        if (offset == finishedOffset - increment) {
-                            lastFinishedOffset = finishedOffset;
+                Iterator<Long> iterator = finishedOffsets.iterator();
+                while (iterator.hasNext()) {
+                    final long finishedOffset = iterator.next();
+                    // The next offset has finished, so we filter it and move onto the next
+                    if (offset == finishedOffset - increment) {
+                        lastFinishedOffset = finishedOffset;
 
-                            // Remove this entry from the tree
-                            iterator.remove();
+                        // Remove this entry from the tree
+                        iterator.remove();
 
-                            // Increment and continue;
-                            increment++;
-                        } else {
-                            // When there is a skip, we just stick with the offset we're currently handling since it's the most recent
-                            lastFinishedOffset = offset;
-                            trackedOffsets.remove(offset);
-                            break;
-                        }
-                    }
-                } else {
-                    // Use old clone and modify version
-                    for (final long finishedOffset : (TreeSet<Long>) finishedOffsets.clone()) {
-                        // The next offset has finished, so we filter it and move onto the next
-                        if (offset == finishedOffset - increment) {
-                            lastFinishedOffset = finishedOffset;
-                            finishedOffsets.remove(finishedOffset);
-
-                            increment++;
-                        } else {
-                            // When there is a skip, we just stick with the offset we're currently handling since it's the most recent
-                            lastFinishedOffset = offset;
-                            trackedOffsets.remove(offset);
-                            break;
-                        }
+                        // Increment and continue;
+                        increment++;
+                    } else {
+                        // When there is a skip, we just stick with the offset we're currently handling since it's the most recent
+                        lastFinishedOffset = offset;
+                        trackedOffsets.remove(offset);
+                        break;
                     }
                 }
             }
