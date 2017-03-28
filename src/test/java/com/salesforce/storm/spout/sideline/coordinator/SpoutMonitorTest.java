@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.mocks.MockDelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.junit.After;
@@ -38,7 +39,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 public class SpoutMonitorTest {
     private static final Logger logger = LoggerFactory.getLogger(SpoutMonitorTest.class);
     private static final int maxWaitTime = 5;
@@ -57,7 +57,7 @@ public class SpoutMonitorTest {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        if (!executorService.isShutdown()) {
+        if (!executorService.isTerminated()) {
             executorService.shutdownNow();
         }
     }
@@ -594,66 +594,6 @@ public class SpoutMonitorTest {
         );
 
         return spoutMonitor;
-    }
-
-    static class MockDelegateSidelineSpout implements DelegateSidelineSpout {
-        final String virtualSpoutId;
-        volatile boolean requestedStop = false;
-        volatile boolean wasOpenCalled = false;
-        volatile boolean wasCloseCalled = false;
-        volatile RuntimeException exceptionToThrow = null;
-
-        MockDelegateSidelineSpout(final String virtualSpoutId) {
-            this.virtualSpoutId = virtualSpoutId;
-        }
-
-        @Override
-        public void open() {
-            wasOpenCalled = true;
-        }
-
-        @Override
-        public void close() {
-            wasCloseCalled = true;
-        }
-
-        @Override
-        public KafkaMessage nextTuple() {
-            if (exceptionToThrow != null) {
-                throw exceptionToThrow;
-            }
-            return null;
-        }
-
-        @Override
-        public void ack(Object msgId) {
-
-        }
-
-        @Override
-        public void fail(Object msgId) {
-
-        }
-
-        @Override
-        public String getVirtualSpoutId() {
-            return virtualSpoutId;
-        }
-
-        @Override
-        public void flushState() {
-
-        }
-
-        @Override
-        public synchronized void requestStop() {
-            requestedStop = true;
-        }
-
-        @Override
-        public synchronized boolean isStopRequested() {
-            return requestedStop;
-        }
     }
 
     private CompletableFuture startSpoutMonitor(SpoutMonitor spoutMonitor) {

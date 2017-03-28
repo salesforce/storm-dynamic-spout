@@ -32,7 +32,7 @@ public class SpoutRunner implements Runnable {
     /**
      * This is the queue we put messages that need to be emitted out to the topology onto.
      */
-    private final TupleBuffer tupleOutputQueue;
+    private final TupleBuffer tupleQueue;
 
     /**
      * This is the queue we read tuples that need to be acked off of.
@@ -64,9 +64,15 @@ public class SpoutRunner implements Runnable {
      */
     private final long startTime;
 
+    /**
+     * This flag is used to signal for this instance to cleanly stop.
+     * Marked as volatile because currently its accessed via multiple threads.
+     */
+    private volatile boolean requestedStop = false;
+
     SpoutRunner(
             final DelegateSidelineSpout spout,
-            final TupleBuffer tupleOutputQueue,
+            final TupleBuffer tupleQueue,
             final Map<String, Queue<TupleMessageId>> ackedTupleQueue,
             final Map<String, Queue<TupleMessageId>> failedTupleInputQueue,
             final CountDownLatch latch,
@@ -74,7 +80,7 @@ public class SpoutRunner implements Runnable {
             final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
-        this.tupleOutputQueue = tupleOutputQueue;
+        this.tupleQueue = tupleQueue;
         this.ackedTupleQueue = ackedTupleQueue;
         this.failedTupleQueue = failedTupleInputQueue;
         this.latch = latch;
@@ -95,7 +101,7 @@ public class SpoutRunner implements Runnable {
             spout.open();
 
             // Let all of our queues know about our new instance.
-            tupleOutputQueue.addVirtualSpoutId(spout.getVirtualSpoutId());
+            tupleQueue.addVirtualSpoutId(spout.getVirtualSpoutId());
             ackedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
             failedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
 
@@ -106,12 +112,12 @@ public class SpoutRunner implements Runnable {
             long lastFlush = getClock().millis();
 
             // Loop forever until someone requests the spout to stop
-            while (!spout.isStopRequested() && !Thread.interrupted()) {
+            while (!isStopRequested() && !spout.isStopRequested() && !Thread.interrupted()) {
                 // First look for any new tuples to be emitted.
                 final KafkaMessage message = spout.nextTuple();
                 if (message != null) {
                     try {
-                        tupleOutputQueue.put(message);
+                        tupleQueue.put(message);
                     } catch (InterruptedException ex) {
                         logger.error("Shutting down due to interruption {}", ex);
                         spout.requestStop();
@@ -144,14 +150,14 @@ public class SpoutRunner implements Runnable {
 
             // Looks like someone requested that we stop this instance.
             // So we call close on it, and log our run time.
-            final Duration runtime = Duration.ofMillis(getClock().millis() - startTime);
+            final Duration runtime = Duration.ofMillis(getClock().millis() - getStartTime());
             logger.info("Closing {} spout, total run time was {}", spout.getVirtualSpoutId(), Tools.prettyDuration(runtime));
             spout.close();
 
             // Remove our entries from our queues.
-            tupleOutputQueue.removeVirtualSpoutId(spout.getVirtualSpoutId());
-            ackedTupleQueue.remove(spout.getVirtualSpoutId());
-            failedTupleQueue.remove(spout.getVirtualSpoutId());
+            getTupleQueue().removeVirtualSpoutId(spout.getVirtualSpoutId());
+            getAckedTupleQueue().remove(spout.getVirtualSpoutId());
+            getFailedTupleQueue().remove(spout.getVirtualSpoutId());
         } catch (Exception ex) {
             // TODO: Should we restart the SpoutRunner?  I'd guess that SpoutMonitor should handle re-starting
             logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex);
@@ -165,30 +171,66 @@ public class SpoutRunner implements Runnable {
     }
 
     /**
-     * Request that our thread stop and shut down.
+     * Call this method to request this SpoutRunner instance
+     * to cleanly stop.
+     *
+     * Synchronized because this can be called from multiple threads.
      */
     public void requestStop() {
-        this.spout.requestStop();
+        logger.info("Requested stop");
+        requestedStop = true;
     }
 
     /**
+     * Determine if anyone has requested stop on this instance.
+     *
+     * @return - true if so, false if not.
+     */
+    public boolean isStopRequested() {
+        return requestedStop;
+    }
+    /**
      * @return - our System clock instance.
      */
-    private Clock getClock() {
+    Clock getClock() {
         return clock;
     }
 
     /**
      * @return - Storm topology configuration.
      */
-    private Map<String, Object> getTopologyConfig() {
+    Map<String, Object> getTopologyConfig() {
         return topologyConfig;
     }
 
     /**
      * @return - How frequently, in milliseconds, we should flush consumer state.
      */
-    private long getConsumerStateFlushIntervalMs() {
+    long getConsumerStateFlushIntervalMs() {
         return (long) getTopologyConfig().get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS);
+    }
+
+    DelegateSidelineSpout getSpout() {
+        return spout;
+    }
+
+    Map<String, Queue<TupleMessageId>> getAckedTupleQueue() {
+        return ackedTupleQueue;
+    }
+
+    Map<String, Queue<TupleMessageId>> getFailedTupleQueue() {
+        return failedTupleQueue;
+    }
+
+    TupleBuffer getTupleQueue() {
+        return tupleQueue;
+    }
+
+    CountDownLatch getLatch() {
+        return latch;
+    }
+
+    long getStartTime() {
+        return startTime;
     }
 }

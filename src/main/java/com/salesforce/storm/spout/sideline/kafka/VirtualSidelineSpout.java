@@ -522,7 +522,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      */
     public boolean isStopRequested() {
         synchronized (this) {
-            return requestedStop;
+            return requestedStop || Thread.interrupted();
         }
     }
 

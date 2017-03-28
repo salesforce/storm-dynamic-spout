@@ -99,8 +99,8 @@ public class FactoryManagerTest {
     @DataProvider
     public static Object[][] provideFailedMsgRetryManagerClasses() {
         return new Object[][]{
-                { NeverRetryManager.class },
-                { DefaultRetryManager.class }
+            { NeverRetryManager.class },
+            { DefaultRetryManager.class }
         };
     }
 
