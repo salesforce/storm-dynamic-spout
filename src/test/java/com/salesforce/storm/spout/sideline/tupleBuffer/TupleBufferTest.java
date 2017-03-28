@@ -157,5 +157,12 @@ public class TupleBufferTest {
         for (int x=0; x<1024; x++) {
             assertNull("Should be null", tupleBuffer.poll());
         }
+
+        // Shutdown executor service
+        executorService.shutdown();
+        executorService.awaitTermination(3, TimeUnit.SECONDS);
+        if (!executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
     }
 }

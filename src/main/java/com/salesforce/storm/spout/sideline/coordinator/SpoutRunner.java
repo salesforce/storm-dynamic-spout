@@ -106,7 +106,7 @@ public class SpoutRunner implements Runnable {
             long lastFlush = getClock().millis();
 
             // Loop forever until someone requests the spout to stop
-            while (!spout.isStopRequested()) {
+            while (!spout.isStopRequested() && !Thread.interrupted()) {
                 // First look for any new tuples to be emitted.
                 final KafkaMessage message = spout.nextTuple();
                 if (message != null) {

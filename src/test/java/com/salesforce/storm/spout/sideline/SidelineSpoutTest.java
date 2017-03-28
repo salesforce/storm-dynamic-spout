@@ -12,12 +12,11 @@ import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
+import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
+import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
@@ -41,8 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -224,7 +221,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 2, 0L);
 
         // Lets produce some data into the topic
-        final List<KafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
 
         // Now consume tuples generated from the messages we published into kafka.
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
@@ -285,7 +282,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
 
         // Lets produce some data into the topic
-        List<KafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
 
         // Now loop and get our tuples
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
@@ -384,7 +381,7 @@ public class SidelineSpoutTest {
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Produce records into kafka
-        List<KafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish);
 
         // Wait for our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
         // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
@@ -471,7 +468,7 @@ public class SidelineSpoutTest {
     @Test
     public void testResumingForFirehoseVirtualSpout() throws InterruptedException, IOException, KeeperException {
         // Produce 10 messages into kafka (offsets 0->9)
-        final List<KafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
 
         // Create spout
         // Define our output stream id
@@ -574,7 +571,7 @@ public class SidelineSpoutTest {
     @Test
     public void testResumingSpoutWhileSidelinedVirtualSpoutIsActive() throws InterruptedException {
         // Produce 10 messages into kafka (offsets 0->9)
-        final List<KafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
 
         // Create spout
         // Define our output stream id
@@ -631,7 +628,7 @@ public class SidelineSpoutTest {
         staticTrigger.sendStartRequest(request);
 
         // Produce 5 more messages into kafka, should be offsets [10,11,12,13,14]
-        List<KafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5);
+        List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5);
 
         // Call nextTuple() 4 more times, we should get the remaining first 10 records because they were already buffered.
         spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
@@ -725,7 +722,7 @@ public class SidelineSpoutTest {
 
         // Verify we get offsets [7,8,9,10,11,12,13,14] by validating the tuples
         // Gather up the expected records
-        List<KafkaRecord<byte[], byte[]>> sidelineKafkaRecords = Lists.newArrayList();
+        List<ProducedKafkaRecord<byte[], byte[]>> sidelineKafkaRecords = Lists.newArrayList();
         sidelineKafkaRecords.addAll(producedRecords.subList(7, 10));
         sidelineKafkaRecords.addAll(additionalProducedRecords);
 
@@ -743,7 +740,7 @@ public class SidelineSpoutTest {
         logger.info("=== Virtual Spout should be closed now... just fire hose left!");
 
         // Produce 5 messages into Kafka topic with offsets [15,16,17,18,19]
-        List<KafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5);
+        List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5);
 
         // Call nextTuple() 5 times,
         List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 5);
@@ -809,7 +806,7 @@ public class SidelineSpoutTest {
      * @param expectedConsumerId - What consumerId these emissions should be associated with.
      * @param expectedOutputStreamId - What stream these emissions should have been emitted down.
      */
-    private void validateEmission(final KafkaRecord<byte[], byte[]> sourceProducerRecord, final SpoutEmission spoutEmission, final String expectedConsumerId, final String expectedOutputStreamId) {
+    private void validateEmission(final ProducedKafkaRecord<byte[], byte[]> sourceProducerRecord, final SpoutEmission spoutEmission, final String expectedConsumerId, final String expectedOutputStreamId) {
         // Now find its corresponding tuple
         assertNotNull("Not null sanity check", spoutEmission);
         assertNotNull("Not null sanity check", sourceProducerRecord);
@@ -1059,7 +1056,7 @@ public class SidelineSpoutTest {
      * @param spoutEmissions - The tuples that got emitted out from the spout
      * @param expectedStreamId - The stream id that we expected the tuples to get emitted out on.
      */
-    private void validateTuplesFromSourceKafkaMessages(List<KafkaRecord<byte[], byte[]>> producedRecords, List<SpoutEmission> spoutEmissions, final String expectedStreamId) {
+    private void validateTuplesFromSourceKafkaMessages(List<ProducedKafkaRecord<byte[], byte[]>> producedRecords, List<SpoutEmission> spoutEmissions, final String expectedStreamId) {
         // Define some expected values for validation
         final String expectedConsumerId = "NOT VALIDATED YET";
 
@@ -1070,7 +1067,7 @@ public class SidelineSpoutTest {
         final Iterator<SpoutEmission> emissionIterator = spoutEmissions.iterator();
 
         // Loop over what we produced into kafka
-        for (KafkaRecord<byte[], byte[]> producedRecord: producedRecords) {
+        for (ProducedKafkaRecord<byte[], byte[]> producedRecord: producedRecords) {
             // Now find its corresponding tuple from our iterator
             final SpoutEmission spoutEmission = emissionIterator.next();
 
@@ -1093,48 +1090,12 @@ public class SidelineSpoutTest {
         assertEquals("We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running", howManyVirtualSpoutsWeWantLeft, spout.getCoordinator().getTotalSpouts());
     }
 
-    private List<KafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
-        // This holds the records we produced
-        List<ProducerRecord<byte[], byte[]>> producedRecords = Lists.newArrayList();
-
-        // This holds futures returned
-        List<Future<RecordMetadata>> producerFutures = Lists.newArrayList();
-
-        KafkaProducer producer = kafkaTestServer.getKafkaProducer("org.apache.kafka.common.serialization.ByteArraySerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-        for (int x=0; x<numberOfRecords; x++) {
-            // Construct key and value
-            long timeStamp = Clock.systemUTC().millis();
-            String key = "key" + timeStamp;
-            String value = "value" + timeStamp;
-
-            // Construct filter
-            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicName, key.getBytes(Charsets.UTF_8), value.getBytes(Charsets.UTF_8));
-            producedRecords.add(record);
-
-            // Send it.
-            producerFutures.add(producer.send(record));
-        }
-
-        // Publish to the topic and close.
-        producer.flush();
-        logger.info("Produce completed");
-        producer.close();
-
-        // Loop thru the futures, and build KafkaRecord objects
-        List<KafkaRecord<byte[], byte[]>> kafkaRecords = Lists.newArrayList();
-        try {
-            for (int x=0; x<numberOfRecords; x++) {
-                final RecordMetadata metadata = producerFutures.get(x).get();
-                final ProducerRecord producerRecord = producedRecords.get(x);
-
-                kafkaRecords.add(KafkaRecord.newInstance(metadata, producerRecord));
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-
-        return kafkaRecords;
+    /**
+     * helper method to produce records into kafka.
+     */
+    private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
+        KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(kafkaTestServer);
+        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, 0);
     }
 
     /**
@@ -1186,56 +1147,5 @@ public class SidelineSpoutTest {
                 // Explicitly defined streamId should get used as is.
                 { "SpecialStreamId", "SpecialStreamId" }
         };
-    }
-
-    /**
-     * Class that wraps relevant information about data that was published to kafka.
-     * @param <K> - Object type of the Key written to kafka.
-     * @param <V> - Object type of the Value written to kafka.
-     */
-    private static class KafkaRecord<K, V> {
-        private final String topic;
-        private final int partition;
-        private final long offset;
-        private final K key;
-        private final V value;
-
-        public KafkaRecord(String topic, int partition, long offset, K key, V value) {
-            this.topic = topic;
-            this.partition = partition;
-            this.offset = offset;
-            this.key = key;
-            this.value = value;
-        }
-
-        public static <K,V> KafkaRecord<K,V> newInstance(RecordMetadata recordMetadata, ProducerRecord<K,V> producerRecord) {
-            return new KafkaRecord<K,V>(
-                recordMetadata.topic(),
-                recordMetadata.partition(),
-                recordMetadata.offset(),
-                producerRecord.key(),
-                producerRecord.value()
-            );
-        }
-
-        public String getTopic() {
-            return topic;
-        }
-
-        public int getPartition() {
-            return partition;
-        }
-
-        public long getOffset() {
-            return offset;
-        }
-
-        public K getKey() {
-            return key;
-        }
-
-        public V getValue() {
-            return value;
-        }
     }
 }

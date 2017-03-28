@@ -54,6 +54,7 @@ public class KafkaTestServer implements AutoCloseable {
         String connectionString = getZkServer().getConnectString();
 
         File logDir = new File("/tmp/kafka-logs-" + Double.toHexString(Math.random()));
+        logDir.deleteOnExit();
         String kafkaPort = String.valueOf(InstanceSpec.getRandomPort());
 
         Properties p = new Properties();

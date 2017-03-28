@@ -5,10 +5,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
+import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -862,7 +862,7 @@ public class SidelineConsumerTest {
         final int numberOfRecordsToProduce = 5;
 
         // Produce 5 entries to the topic.
-        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
@@ -881,10 +881,9 @@ public class SidelineConsumerTest {
             assertNotNull(foundRecord);
 
             // Compare to what we expected
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
 
         // Next one should return null
@@ -908,7 +907,7 @@ public class SidelineConsumerTest {
         final TopicPartition partition0 = new TopicPartition(topicName, 0);
 
         // Produce 5 entries to the topic.
-        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
@@ -928,10 +927,9 @@ public class SidelineConsumerTest {
             assertNotNull(foundRecord);
 
             // Compare to what we expected
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
 
             // Ack this message
             sidelineConsumer.commitOffset(foundRecord);
@@ -958,7 +956,7 @@ public class SidelineConsumerTest {
         final TopicPartition partition0 = new TopicPartition(topicName, 0);
 
         // Produce 5 entries to the topic.
-        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
@@ -980,10 +978,9 @@ public class SidelineConsumerTest {
             foundRecords.add(foundRecord);
 
             // Compare to what we expected
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
         logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
 
@@ -1019,7 +1016,7 @@ public class SidelineConsumerTest {
         final TopicPartition partition0 = new TopicPartition(topicName, 0);
 
         // Produce 5 entries to the topic.
-        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
@@ -1041,10 +1038,9 @@ public class SidelineConsumerTest {
             foundRecords.add(foundRecord);
 
             // Compare to what we expected
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
         logger.info("Consumer State {}", sidelineConsumer.flushConsumerState());
 
@@ -1096,17 +1092,23 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * We attempt to consume from the topic and get our expected messages.
-     * We use a previously saved state to skip the first several messages.
+     * Produce 10 messages into a kafka topic: offsets [0-9]
+     * Setup our SidelineConsumer such that its pre-existing state says to start at offset 4
+     * Consume using the SidelineConsumer, verify we only get the last 5 messages back.
      */
     @Test
     public void testConsumerWithInitialStateToSkipMessages() {
         // Define how many records to produce
         final int numberOfRecordsToProduce = 10;
-        final int numberOfExpectedRecordsToConsume = 5;
+
+        // Define how many records we expect to consume
+        final int numberOfRecordsToConsume = 5;
 
         // Produce entries to the topic.
-        final List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
+
+        // Create a list of the records we expect to get back from the consumer, this should be the last 5 entries.
+        List<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecords = producedRecords.subList(5,10);
 
         // Setup our config
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
@@ -1126,21 +1128,25 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.open(null);
 
-        // Read from topic, verify we get what we expect
-        for (int x=numberOfExpectedRecordsToConsume; x<numberOfRecordsToProduce; x++) {
+        // Read from topic, verify we get what we expect, we should only get the last 5 records.
+        for (int x=0; x<numberOfRecordsToConsume; x++) {
             ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
             assertNotNull(foundRecord);
 
-            // Compare to what we expected
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            // Get the produced record we expected to get back.
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = expectedProducedRecords.get(x);
+
+            // Validate it
+            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
 
-        // Next one should return null
-        ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        // Additional calls to nextRecord() should return null
+        for (int x=0; x<2; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNull("Should have nothing new to consume and be null", foundRecord);
+        }
 
         // Close out consumer
         sidelineConsumer.close();
@@ -1189,8 +1195,8 @@ public class SidelineConsumerTest {
 
         // Now produce 5 msgs to each topic (10 msgs total)
         final int expectedNumberOfMsgsPerPartition = 5;
-        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
-        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
 
         // Attempt to consume them
         // Read from topic, verify we get what we expect
@@ -1204,7 +1210,7 @@ public class SidelineConsumerTest {
             final int partitionSource = foundRecord.partition();
             assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
 
-            ProducerRecord<byte[], byte[]> expectedRecord;
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord;
             if (partitionSource == 0) {
                 expectedRecord = producedRecordsPartition0.get(partition0Index);
                 partition0Index++;
@@ -1214,9 +1220,9 @@ public class SidelineConsumerTest {
             }
 
             // Compare to what we expected
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
         // Next one should return null
         ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
@@ -1310,7 +1316,7 @@ public class SidelineConsumerTest {
 
         // Now produce 5 msgs
         final int expectedNumberOfMsgs = 5;
-        List<ProducerRecord<byte[], byte[]>> producedRecords = produceRecords(expectedNumberOfMsgs);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(expectedNumberOfMsgs, 0);
 
         // Attempt to consume them
         // Read from topic, verify we get what we expect
@@ -1319,10 +1325,10 @@ public class SidelineConsumerTest {
             assertNotNull(foundRecord);
 
             // Compare to what we expected
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
 
         // Next one should return null
@@ -1330,7 +1336,7 @@ public class SidelineConsumerTest {
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         // Now produce 5 more msgs
-        producedRecords = produceRecords(expectedNumberOfMsgs);
+        producedRecords = produceRecords(expectedNumberOfMsgs, 0);
 
         // Now unsub from the partition
         final boolean result = sidelineConsumer.unsubscribeTopicPartition(expectedTopicPartition);
@@ -1390,8 +1396,8 @@ public class SidelineConsumerTest {
 
         // Now produce 5 msgs to each topic (10 msgs total)
         final int expectedNumberOfMsgsPerPartition = 5;
-        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
-        List<ProducerRecord<byte[], byte[]>> producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
 
         // Attempt to consume them
         // Read from topic, verify we get what we expect
@@ -1405,7 +1411,7 @@ public class SidelineConsumerTest {
             final int partitionSource = foundRecord.partition();
             assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
 
-            ProducerRecord<byte[], byte[]> expectedRecord;
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord;
             if (partitionSource == 0) {
                 expectedRecord = producedRecordsPartition0.get(partition0Index);
                 partition0Index++;
@@ -1415,9 +1421,9 @@ public class SidelineConsumerTest {
             }
 
             // Compare to what we expected
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
         // Next one should return null
         ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
@@ -1440,12 +1446,12 @@ public class SidelineConsumerTest {
             assertEquals("Should be partition 1", 1, foundRecord.partition());
 
             // Validate it
-            ProducerRecord<byte[], byte[]> expectedRecord = producedRecordsPartition1.get(x);
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecordsPartition1.get(x);
 
             // Compare to what we expected
-            logger.info("Expected {} Actual {}", expectedRecord.key(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.key(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.value(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
+            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
+            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
 
         // Next one should return null
@@ -1565,33 +1571,12 @@ public class SidelineConsumerTest {
         assertEquals("Expected offset", expectedOffset, actualOffset);
     }
 
-    private List<ProducerRecord<byte[], byte[]>> produceRecords(final int numberOfRecords) {
-        return produceRecords(numberOfRecords, 0);
-    }
-
-    private List<ProducerRecord<byte[], byte[]>> produceRecords(final int numberOfRecords, final int partitionId) {
-        List<ProducerRecord<byte[], byte[]>> producedRecords = Lists.newArrayList();
-
-        KafkaProducer producer = kafkaTestServer.getKafkaProducer("org.apache.kafka.common.serialization.ByteArraySerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-        for (int x=0; x<numberOfRecords; x++) {
-            // Construct key and value
-            long timeStamp = Clock.systemUTC().millis();
-            String key = "key" + timeStamp;
-            String value = "value" + timeStamp;
-
-            // Construct filter
-            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicName, partitionId, key.getBytes(Charsets.UTF_8), value.getBytes(Charsets.UTF_8));
-            producedRecords.add(record);
-
-            // Send it.
-            producer.send(record);
-        }
-        // Publish to the topic and close.
-        producer.flush();
-        logger.info("Produce completed");
-        producer.close();
-
-        return producedRecords;
+    /**
+     * helper method to produce records into kafka.
+     */
+    private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(final int numberOfRecords, final int partitionId) {
+        KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(kafkaTestServer);
+        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
     }
 
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig() {

@@ -321,7 +321,7 @@ public class SpoutMonitor implements Runnable {
         }
 
         // If we didn't shut down cleanly
-        if (!executor.isShutdown()) {
+        if (!executor.isTerminated()) {
             // Force a shut down
             logger.warn("Forcing unclean shutdown of threadpool");
             executor.shutdownNow();
@@ -394,6 +394,6 @@ public class SpoutMonitor implements Runnable {
      * @return - true if we should keep running, false if we should be stopping/stopped.
      */
     boolean keepRunning() {
-        return keepRunning;
+        return keepRunning && !Thread.interrupted();
     }
 }
