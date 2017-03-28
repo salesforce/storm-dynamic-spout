@@ -17,9 +17,6 @@ import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
@@ -43,8 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;

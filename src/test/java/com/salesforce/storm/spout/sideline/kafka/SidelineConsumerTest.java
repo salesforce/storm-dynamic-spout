@@ -9,8 +9,6 @@ import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
 import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -29,7 +27,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -68,16 +65,6 @@ public class SidelineConsumerTest {
      */
     @BeforeClass
     public static void setupKafkaServer() throws Exception {
-        for (Map.Entry<Thread, StackTraceElement[]> entry :Thread.getAllStackTraces().entrySet()) {
-            final Thread thread = entry.getKey();
-            logger.info("Thread {}-{}-{}", thread.getId(), thread.getName(), thread.getState());
-            for (StackTraceElement element : entry.getValue()) {
-                logger.info("   {}", element);
-            }
-        }
-        // Pause
-        Thread.currentThread().join();
-
         // Setup kafka test server
         kafkaTestServer = new KafkaTestServer();
         kafkaTestServer.start();

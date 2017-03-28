@@ -10,7 +10,6 @@ import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
