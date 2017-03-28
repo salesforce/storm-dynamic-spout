@@ -20,11 +20,12 @@ that a subset of your tenants database infrastructure requires downtime for main
 implementation you really only have two options to deal with this situation.  
 
 You could stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
-Or you could filter these tenants out from being processed by your topology, then after the maintenance is complete start
-a separate topology/Kafka-Spout instance that knows where to start and stop consuming, and re-process the events for those 
-tenants that were previously filtered.  
 
-Unfortunately both of these solutions are complicated, error prone, and down right painful.
+Or you could filter these tenants out from being processed by your topology, then after the maintenance is complete start
+a separate topology/Kafka-Spout instance that somehow knows where to start and stop consuming, and by way of down-stream filter bolts
+re-process only the events for the tenants that were previously filtered.  
+
+Unfortunately both of these solutions are either not acceptable, complicated, error prone, not to mention down right painful.
 
 #### Some other use case here
 Surely we can come up with another use case.
