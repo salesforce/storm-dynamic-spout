@@ -180,7 +180,7 @@ public class SpoutCoordinator {
         }
 
         // If we haven't shut down yet..
-        if (!executor.isShutdown()) {
+        if (!executor.isTerminated()) {
             logger.warn("Shutdown was not completed within {} ms, forcing stop of executor now", getMaxTerminationWaitTimeMs());
             executor.shutdownNow();
         }

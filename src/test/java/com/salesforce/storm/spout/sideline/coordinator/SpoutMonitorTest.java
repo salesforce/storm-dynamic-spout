@@ -9,6 +9,8 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +42,26 @@ import static org.mockito.Mockito.when;
 
 public class SpoutMonitorTest {
     private static final Logger logger = LoggerFactory.getLogger(SpoutMonitorTest.class);
+    private static final int maxWaitTime = 5;
+
+    private ThreadPoolExecutor executorService;
+
+    @After
+    public void shutDown() throws InterruptedException {
+        // Shut down our executor service if it exists
+        if (executorService == null) {
+            return;
+        }
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(maxWaitTime, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if (!executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
+    }
 
     /**
      * Tests the constructor sets things appropriately.
@@ -87,6 +110,10 @@ public class SpoutMonitorTest {
 
         // Close up shop.
         spoutMonitor.close();
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     /**
@@ -101,7 +128,7 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
 
         // call run in async thread.
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor);
+        CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -117,8 +144,12 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-            .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(future::isDone, equalTo(true));
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     /**
@@ -136,7 +167,7 @@ public class SpoutMonitorTest {
         Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor);
+        CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -154,12 +185,12 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(spoutMonitor::getTotalSpouts, equalTo(1));
 
         // validate the executor is running it
@@ -180,11 +211,15 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(future::isDone, equalTo(true));
 
         // Verify close called on the mock spout
         verify(mockSpout, times(1)).close();
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     /**
@@ -197,13 +232,13 @@ public class SpoutMonitorTest {
         SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 5);
+        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         // Our new spout queue
         Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor);
+        CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -221,12 +256,12 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(spoutMonitor::getTotalSpouts, equalTo(1));
 
         // Verify open was called
@@ -240,7 +275,7 @@ public class SpoutMonitorTest {
 
         // Wait for spout count to decrease
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(spoutMonitor::getTotalSpouts, equalTo(0));
 
         // validate the executor should no longer have any running tasks?
@@ -251,11 +286,15 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(future::isDone, equalTo(true));
 
         // Verify closed was called
         assertTrue("Close() should have been called", mockSpout.wasCloseCalled);
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     /**
@@ -268,7 +307,7 @@ public class SpoutMonitorTest {
         SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 5);
+        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
@@ -282,7 +321,7 @@ public class SpoutMonitorTest {
         Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor);
+        CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -296,12 +335,12 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase to the number of spout instances we submitted.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
 
         // Now the executor should only run a certain number
@@ -327,7 +366,7 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+                .atMost(maxWaitTime, TimeUnit.SECONDS)
                 .until(future::isDone, equalTo(true));
 
         // Verify close was called on running spouts
@@ -342,6 +381,10 @@ public class SpoutMonitorTest {
                 assertFalse("close() should NOT have been called", mockSpout.wasCloseCalled);
             }
         }
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     /**
@@ -354,7 +397,7 @@ public class SpoutMonitorTest {
         SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 5);
+        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
@@ -368,7 +411,7 @@ public class SpoutMonitorTest {
         Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor);
+        CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -382,13 +425,13 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(newSpoutQueue::isEmpty, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase to the number of spout instances we submitted.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
 
         // Now the executor should only run a certain number
         assertEquals("Only configured max running concurrently", maxConccurentInstances, spoutMonitor.getExecutor().getActiveCount());
@@ -413,14 +456,14 @@ public class SpoutMonitorTest {
 
         // Wait for it to be closed
         await()
-            .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(() -> {
                 return mockSpouts.get(0).wasCloseCalled;
             }, equalTo(true));
 
         // Our not started instance should now start...
         await()
-            .atMost(testWaitTime, TimeUnit.MILLISECONDS)
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(() -> {
                     return notStartedSpout.wasOpenCalled;
             }, equalTo(true));
@@ -433,13 +476,17 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(future::isDone, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(future::isDone, equalTo(true));
 
         // Verify close was called on all spouts
         for (MockDelegateSidelineSpout mockSpout : mockSpouts) {
             assertTrue("close() should have been called", mockSpout.wasCloseCalled);
         }
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     /**
@@ -454,13 +501,13 @@ public class SpoutMonitorTest {
         SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 5);
+        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         // Our new spout queue
         Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor);
+        CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -478,13 +525,13 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(newSpoutQueue::isEmpty, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(1));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(1));
 
         // Verify open was called
         assertTrue("open() should have been called", mockSpout.wasOpenCalled);
@@ -494,21 +541,25 @@ public class SpoutMonitorTest {
 
         // Wait for spout count to decrease
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(0));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(0));
 
         // Close the monitor
         spoutMonitor.close();
 
         // Wait for it to stop running.
         await()
-                .atMost(testWaitTime, TimeUnit.MILLISECONDS)
-                .until(future::isDone, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(future::isDone, equalTo(true));
 
         // Verify closed was called on the spout instance?
         //assertTrue("Close() should have been called", mockSpout.wasCloseCalled);
 
         // Verify spout instance was re-started?
+
+        // Verify that executor service is terminated
+        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
     }
 
     private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
@@ -530,7 +581,7 @@ public class SpoutMonitorTest {
         final Clock clock = Clock.systemUTC();
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(2, 200L, 100L);
+        final Map<String, Object> topologyConfig = getDefaultConfig(2, 2000L, 100L);
 
         // Create instance.
         SpoutMonitor spoutMonitor = new SpoutMonitor(
@@ -604,5 +655,27 @@ public class SpoutMonitorTest {
         public synchronized boolean isStopRequested() {
             return requestedStop;
         }
+    }
+
+    private CompletableFuture startSpoutMonitor(SpoutMonitor spoutMonitor) {
+        if (executorService == null) {
+            executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+        }
+
+        // Sanity check
+        assertEquals("Executor service should be empty", 0, executorService.getActiveCount());
+
+        // Submit task to start
+        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor, executorService);
+
+        // Wait until it actually starts.
+        await()
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(() -> {
+                return executorService.getActiveCount() == 1;
+            }, equalTo(true));
+
+        // return the future
+        return future;
     }
 }

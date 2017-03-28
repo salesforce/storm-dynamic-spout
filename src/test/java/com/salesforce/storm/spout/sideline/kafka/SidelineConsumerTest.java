@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +68,16 @@ public class SidelineConsumerTest {
      */
     @BeforeClass
     public static void setupKafkaServer() throws Exception {
+        for (Map.Entry<Thread, StackTraceElement[]> entry :Thread.getAllStackTraces().entrySet()) {
+            final Thread thread = entry.getKey();
+            logger.info("Thread {}-{}-{}", thread.getId(), thread.getName(), thread.getState());
+            for (StackTraceElement element : entry.getValue()) {
+                logger.info("   {}", element);
+            }
+        }
+        // Pause
+        Thread.currentThread().join();
+
         // Setup kafka test server
         kafkaTestServer = new KafkaTestServer();
         kafkaTestServer.start();
@@ -1604,14 +1615,14 @@ public class SidelineConsumerTest {
         List<ConsumerRecord<byte[], byte[]>> records = Lists.newArrayList();
 
         await()
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> {
-                    ConsumerRecord<byte[], byte[]> nextRecord = sidelineConsumer.nextRecord();
-                    if (nextRecord != null) {
-                        records.add(nextRecord);
-                    }
-                    return records.size();
-                }, equalTo(numberToConsume));
+            .atMost(15, TimeUnit.SECONDS)
+            .until(() -> {
+                ConsumerRecord<byte[], byte[]> nextRecord = sidelineConsumer.nextRecord();
+                if (nextRecord != null) {
+                    records.add(nextRecord);
+                }
+                return records.size();
+            }, equalTo(numberToConsume));
 
         // Sanity check
         assertEquals("Should have the right number of records", numberToConsume, records.size());
