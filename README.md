@@ -12,7 +12,7 @@ replayed at a later point in time.  And it does dynamically without requiring yo
 criteria changes!
 
 ### Example use cases
-Wow! That sounds interesting...but when would I need this?
+Wow! That sounds interesting...but when would I actually need this?
 
 #### Multi-tenant processing
 When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine 
@@ -48,23 +48,50 @@ Using the default straight-out-of-the-box configuration, this spout has the foll
 - [Apache Storm 1.0.x](https://storm.apache.org/) - This one should be self explanatory.
 - [Apache Kafka 0.10.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
 - [Zookeeper](https://zookeeper.apache.org/) - Metadata the spout tracks has to be persisted somewhere, by default we use Zookeeper.  This is not
-a hard dependency as you can write your own [PersistenceManager]() implementation to store this metadata
-any where you'd like.  Mysql? Redis? Sure!  Contribute an adapter to the project!
+a hard dependency as you can write your own [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java) implementation to store this metadata
+any where you would like.  Mysql? Redis? Sure!  Contribute an adapter to the project!
 
 ## Configuration
 
 ## Required Interface Implementations
-### [Deserializer]()
-#### Compatibility [Scheme]()
-### [StartingTrigger]()
-### [StoppingTrigger]()
+### [Deserializer](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java)
+The Deserializer interface dictates how the byte[] consumed from Kafka gets transformed into a storm tuple. It also 
+controls the naming of your output field(s).
+
+```
+    /**
+     * This is the method your implementation would need define.
+     * A null return value from here will result in this message being ignored.
+     *
+     * @param topic - represents what topic this message came from.
+     * @param partition - represents what partition this message came from.
+     * @param offset - represents what offset this message came from.
+     * @param key - byte array representing the key.
+     * @param value - byte array representing the value.
+     * @return Values that should be emitted by the spout to the topology.
+     */
+    Values deserialize(final String topic, final int partition, final long offset, final byte[] key, final byte[] value);
+
+    /**
+     * Declares the output fields for the deserializer.
+     * @return An instance of the fields
+     */
+    Fields getOutputFields();
+```
+
+#### [AbstractScheme](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/compat/AbstractScheme.java)
+For compatibility to Storm-Kafka's Scheme interface, you can instead extend [AbstractScheme](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/compat/AbstractScheme.java)
+and use an existing implementation.
+
+### [StartingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java)
+### [StoppingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java)
 ### [FilterChainStep]()
 
 ## Optional Interfaces for Overachievers
-### [PersistenceManager]()
-### [RetryManager]()
-### [TupleBuffer]()
-### [MetricsRecorder]()
+### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
+### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)
+### [TupleBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java)
+### [MetricsRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java)
 
 # Metrics
 
