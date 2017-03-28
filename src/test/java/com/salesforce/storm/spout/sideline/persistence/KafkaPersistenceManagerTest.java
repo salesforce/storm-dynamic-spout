@@ -8,7 +8,9 @@ import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Clock;
@@ -20,7 +22,7 @@ import static org.junit.Assert.assertNotNull;
 public class KafkaPersistenceManagerTest {
 
     // Our internal Kafka and Zookeeper Server, used to test against.
-    private KafkaTestServer kafkaTestServer;
+    private static KafkaTestServer kafkaTestServer;
 
     // Gets set to our randomly generated topic created for the test.
     private String topicName;
@@ -29,21 +31,43 @@ public class KafkaPersistenceManagerTest {
 
     /**
      * Here we stand up an internal test kafka and zookeeper service.
+     * Once for all methods in this class.
      */
-    @Before
-    public void setup() throws Exception {
-        // ensure we're in a clean state
-        tearDown();
-
+    @BeforeClass
+    public static void setupKafkaServer() throws Exception {
         // Setup kafka test server
         kafkaTestServer = new KafkaTestServer();
         kafkaTestServer.start();
+    }
 
+    /**
+     * This happens once before every test method.
+     * Create a new empty topic with randomly generated name.
+     */
+    @Before
+    public void setup() throws Exception {
         // Generate topic name
         topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create topic with 3 partitions
         kafkaTestServer.createTopic(topicName, 3);
+    }
+
+    /**
+     * Here we shut down the internal test kafka and zookeeper services.
+     */
+    @AfterClass
+    public static void destroyKafkaServer() {
+        // Close out kafka test server if needed
+        if (kafkaTestServer == null) {
+            return;
+        }
+        try {
+            kafkaTestServer.shutdown();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        kafkaTestServer = null;
     }
 
     /**
