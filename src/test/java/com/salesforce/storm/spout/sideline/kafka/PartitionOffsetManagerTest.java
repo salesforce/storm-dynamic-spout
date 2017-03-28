@@ -185,10 +185,11 @@ public class PartitionOffsetManagerTest {
 
     /**
      * Rudimentary benchmark test against PartitionOffsetManager.
+     * Disabled.
      *
      * @param totalNumbers - total number of offsets to add to the manager.
      */
-    @Test
+    //@Test
     @UseDataProvider("provideSizes")
     public void doPerformanceBenchmark(final int totalNumbers) throws InterruptedException {
         final int spread = 100;

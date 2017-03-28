@@ -25,7 +25,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -81,6 +84,9 @@ public class SpoutMonitorTest {
         final ThreadPoolExecutor executor = spoutMonitor.getExecutor();
         assertNotNull("Executor should be not null", executor);
         assertEquals("Should have max threads set", maxConcurrentSpouts, executor.getMaximumPoolSize());
+
+        // Close up shop.
+        spoutMonitor.close();
     }
 
     /**
@@ -599,5 +605,4 @@ public class SpoutMonitorTest {
             return requestedStop;
         }
     }
-
 }

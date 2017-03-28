@@ -11,9 +11,6 @@ import kafka.server.KafkaServerStartable;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.RetryOneTime;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -35,24 +32,9 @@ import java.util.Properties;
  */
 public class KafkaTestServer implements AutoCloseable {
 
-
-    /**
-     * (String[]) Array of zookeeper servers supporting Kafka.  In format of "server.hostname:port"
-     * Example: [zkkafka1-1-dfw:2181, zkkafka1-2-dfw:2181, ...]
-     */
-    public static final String KAFKA_ZOOKEEPER = "environment.kafka.zookeeper";
-
-    /**
-     * (String[]) Array of zookeeper servers supporting Storm.  In format of "server.hostname:port"
-     * Example: [zkstorm1-1-dfw:2181, zkstorm1-2-dfw:2181, ...]
-     */
-    public static final String STORM_ZOOKEEPER = "environment.storm.zookeeper";
-
-
     private static final Logger logger = LoggerFactory.getLogger(KafkaTestServer.class);
     private TestingServer zkServer;
     private KafkaServerStartable kafka;
-    private CuratorFramework cli;
 
     public TestingServer getZkServer() {
         return this.zkServer;
@@ -60,10 +42,6 @@ public class KafkaTestServer implements AutoCloseable {
 
     public KafkaServerStartable getKafkaServer() {
         return this.kafka;
-    }
-
-    public CuratorFramework getCli() {
-        return this.cli;
     }
 
     /**
@@ -92,8 +70,6 @@ public class KafkaTestServer implements AutoCloseable {
         KafkaConfig config = new KafkaConfig(p);
         kafka = new KafkaServerStartable(config);
         getKafkaServer().startup();
-
-        cli = CuratorFrameworkFactory.newClient(getZkServer().getConnectString(), new RetryOneTime(2000));
     }
 
     /**
@@ -125,6 +101,9 @@ public class KafkaTestServer implements AutoCloseable {
             int replicationFactor = 1;
             AdminUtils.createTopic(zkUtils, topicName, partitions, replicationFactor, new Properties(), new RackAwareMode.Disabled$());
         }
+
+        // Close connection
+        zkClient.close();
     }
 
     /**
@@ -193,10 +172,6 @@ public class KafkaTestServer implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        if (getCli() != null) {
-            getCli().close();
-            cli = null;
-        }
         if (getKafkaServer() != null) {
             getKafkaServer().shutdown();
             kafka = null;

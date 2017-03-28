@@ -241,6 +241,11 @@ public class SidelineSpout extends BaseRichSpout {
         this.topologyContext = topologyContext;
         this.outputCollector = spoutOutputCollector;
 
+        // Ensure a consumer id prefix has been correctly set.
+        if (Strings.isNullOrEmpty((String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))) {
+            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        }
+
         // Initialize Metrics Collection
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
         metricsRecorder.open(getTopologyConfig(), getTopologyContext());
@@ -255,11 +260,6 @@ public class SidelineSpout extends BaseRichSpout {
         // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
         if (stoppingTrigger != null) {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
-        }
-
-        // Ensure a consumer id prefix has been correctly set.
-        if (Strings.isNullOrEmpty((String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))) {
-            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
         // Create and open() persistence manager passing appropriate configuration.
@@ -431,9 +431,16 @@ public class SidelineSpout extends BaseRichSpout {
     public void close() {
         logger.info("Stopping the coordinator and closing all spouts");
 
+        // Close coordinator
         if (getCoordinator() != null) {
             getCoordinator().close();
             coordinator = null;
+        }
+
+        // Close persistence manager
+        if (getPersistenceManager() != null) {
+            getPersistenceManager().close();
+            persistenceManager = null;
         }
 
         if (startingTrigger != null) {
