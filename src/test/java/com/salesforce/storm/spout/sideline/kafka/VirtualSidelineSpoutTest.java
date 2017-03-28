@@ -1575,7 +1575,7 @@ public class VirtualSidelineSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         final MockTopologyContext mockTopologyContext = new MockTopologyContext();
-        mockTopologyContext.taskId = instanceIndex;
+        mockTopologyContext.taskIndex = instanceIndex;
         mockTopologyContext.componentTasks = new ArrayList<>();
 
         for (int i=1; i<=numInstances; i++) {
@@ -1623,10 +1623,10 @@ public class VirtualSidelineSpoutTest {
         return new Object[][]{
             // One instance, three partitions, first instance, expect 3 partitions for this spout
             { 1, 3, 0, 3 },
-            // Two instances, three partitions, first instance, expect 1 partition for this spout
-            { 2, 3, 0, 1 },
-            // Two instances, three partitions, second instance, expect 2 partitions for this spout
-            { 2, 3, 1, 2 },
+            // Two instances, three partitions, first instance, expect 2 partitions for this spout
+            { 2, 3, 0, 2 },
+            // Two instances, three partitions, second instance, expect 1 partition for this spout
+            { 2, 3, 1, 1 },
             // Three instances, three partitions, third instance, expect 1 partitions for this spout
             { 3, 3, 2, 1 },
 
