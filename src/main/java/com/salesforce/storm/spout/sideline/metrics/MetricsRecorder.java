@@ -22,6 +22,11 @@ public interface MetricsRecorder {
     void open(final Map topologyConfig, final TopologyContext topologyContext);
 
     /**
+     * Perform any cleanup.
+     */
+    void close();
+
+    /**
      * Count a metric, given a name, increments it by 1.
      */
     void count(Class sourceClass, String metricName);

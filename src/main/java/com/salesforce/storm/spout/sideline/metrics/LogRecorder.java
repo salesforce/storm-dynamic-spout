@@ -24,6 +24,11 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
+    public void close() {
+        // Noop
+    }
+
+    @Override
     public void count(Class sourceClass, String metricName) {
         count(sourceClass, metricName, 1);
     }

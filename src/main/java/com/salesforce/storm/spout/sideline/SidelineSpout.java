@@ -450,6 +450,11 @@ public class SidelineSpout extends BaseRichSpout {
         if (stoppingTrigger != null) {
             stoppingTrigger.close();
         }
+
+        // Close metrics recorder.
+        if (metricsRecorder != null) {
+            metricsRecorder.close();
+        }
     }
 
     /**
