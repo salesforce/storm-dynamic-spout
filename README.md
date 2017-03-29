@@ -49,23 +49,23 @@ Lets define our major components of the Spout and give a brief explanation of wh
 build up how they all work together.
 
 
-[SidelineSpout]() - Implements Storm's spout interface.  Everything starts and stops here.  
+[SidelineSpout](src/main/java/com/salesforce/storm/spout/sideline/SidelineSpout.java) - Implements Storm's spout interface.  Everything starts and stops here.  
 
-[SidelineConsumer]() - This is our high-level Kafka consumer built ontop of [KafkaConsumer]() that handles consuming from
+[SidelineConsumer](src/main/java/com/salesforce/storm/spout/sideline/kafka/SidelineConsumer.java) - This is our high-level Kafka consumer built ontop of [KafkaConsumer]() that handles consuming from
 Kafka topics as well as maintaining consumer state information.  It wraps KafkaConsumer
 giving it semantics that play nicely with Storm.  KafkaConsumer assumes messages from a given partition are always
 consumed in order and processed in order.  As we know Storm provides no guarantee that as those messages get converted to tuples
 and emitted into your topology, they may get processed in no particular order.  Because of this, tracking which offsets
 within your Kafka topic have or have not been processed is not entirely trivial.  
 
-[VirtualSidelineSpout]() - Within a SidelineSpout instance, you will have one or more VirtualSidelineSpout instances.
+[VirtualSidelineSpout](src/main/java/com/salesforce/storm/spout/sideline/kafka/VirtualSidelineSpout.java) - Within a SidelineSpout instance, you will have one or more VirtualSidelineSpout instances.
 These wrap SidelineConsumer instances in order to consume messages from Kafka, and layers on functionality to determine
 which should be emitted into the topology, tracking which tuples have been ack'd, and which have failed.  
 
-[SpoutRunner]() - VirtualSidelineSpout instances are always run within their own processing Thread.  SpoutRunner is
+[SpoutRunner](src/main/java/com/salesforce/storm/spout/sideline/coordinator/SpoutRunner.java) - VirtualSidelineSpout instances are always run within their own processing Thread.  SpoutRunner is
 the wrapper around VirtualSidelineSpout that manages the Thead it runs within.
 
-[SpoutMonitor]() - This monitors new SidelineRequests via your implemented [Triggers]().  
+[SpoutMonitor](src/main/java/com/salesforce/storm/spout/sideline/coordinator/SpoutMonitor.java) - This monitors new SidelineRequests via your implemented [Triggers]().  
 
 When a [StartSidelineRequest] is triggered, it will start applying filter criteria to tuples being emitted
 from the spout.  Additionally it will track offsets within your topic of where it started filtering.
@@ -78,7 +78,7 @@ The VirtualSidelineSpout instance will only emit messages from Kafka that were f
 the VirtualSidelineSpout has processed all of the offsets within the topic, SpoutMonitor will shut it down.
 
 
-[SpoutCoordinator]() - This bridges the gap between our SidelineSpout and its internal VirtualSidelineSpouts.  
+[SpoutCoordinator](src/main/java/com/salesforce/storm/spout/sideline/SpoutCoordinator.java) - This bridges the gap between our SidelineSpout and its internal VirtualSidelineSpouts.  
 
 As nextTuple() is called on SidelineSpout, it asks SpoutCoordinator for the next kafka message that should be emitted. 
 The SpoutCoordinator gets the next message from one of its many VirtualSidelineSpout instances.
@@ -89,7 +89,7 @@ the failed tuple originated from and passes it to the correct instance's fail() 
 As ack() is called on SidelineSpout, the SpoutCoordinator determines which VirtualSidelineSpout instance
 the acked tuple originated from and passes it to the correct instance's ack() method.
 
-[PersistenceManager]() - This provides a persistence layer for storing SidelineSpout's metadata.  It stores things
+[PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java) - This provides a persistence layer for storing SidelineSpout's metadata.  It stores things
 such as consumer state/offsets for consuming, as well as metadata about SidelineRequests.
  
 
