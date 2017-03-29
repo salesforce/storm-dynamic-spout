@@ -44,8 +44,8 @@ public class InMemoryPersistenceManager implements PersistenceManager {
      * @param consumerState - ConsumerState to be persisted.
      */
     @Override
-    public void persistConsumerState(String consumerId, ConsumerState consumerState) {
-        storedConsumerState.put(consumerId, consumerState);
+    public void persistConsumerState(String consumerId, int partitionId, ConsumerState consumerState) {
+        storedConsumerState.put(getConsumerStateKey(consumerId, partitionId), consumerState);
     }
 
     /**
@@ -53,13 +53,13 @@ public class InMemoryPersistenceManager implements PersistenceManager {
      * @return ConsumerState
      */
     @Override
-    public ConsumerState retrieveConsumerState(String consumerId) {
-        return storedConsumerState.get(consumerId);
+    public ConsumerState retrieveConsumerState(String consumerId, int partitionId) {
+        return storedConsumerState.get(getConsumerStateKey(consumerId, partitionId));
     }
 
     @Override
-    public void clearConsumerState(String consumerId) {
-        storedConsumerState.remove(consumerId);
+    public void clearConsumerState(String consumerId, int partitionId) {
+        storedConsumerState.remove(getConsumerStateKey(consumerId, partitionId));
     }
 
     /**
@@ -90,5 +90,9 @@ public class InMemoryPersistenceManager implements PersistenceManager {
     @Override
     public List<SidelineRequestIdentifier> listSidelineRequests() {
         return new ArrayList<>(storedSidelineRequests.keySet());
+    }
+
+    private String getConsumerStateKey(final String consumerId, final int partitionId) {
+        return consumerId.concat(String.valueOf(partitionId));
     }
 }

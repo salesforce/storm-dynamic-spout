@@ -176,8 +176,9 @@ public class KafkaPersistenceManager implements PersistenceManager {
         }
     }
 
+    // TODO: Powis - implement partition id
     @Override
-    public void persistConsumerState(String consumerId, ConsumerState consumerState) {
+    public void persistConsumerState(String consumerId, int partitionId, ConsumerState consumerState) {
         // Ensure offset metadata has been loaded.
         loadOffsetMetadata(consumerId);
 
@@ -225,8 +226,9 @@ public class KafkaPersistenceManager implements PersistenceManager {
         }
     }
 
+    // TODO: Powis - implement partition id
     @Override
-    public ConsumerState retrieveConsumerState(String consumerId) {
+    public ConsumerState retrieveConsumerState(String consumerId, int partitionId) {
         // Ensure offset metadata has been loaded.
         loadOffsetMetadata(consumerId);
 
@@ -267,8 +269,9 @@ public class KafkaPersistenceManager implements PersistenceManager {
         return builder.build();
     }
 
+    // TODO: Powis - implement partition id
     @Override
-    public void clearConsumerState(String consumerId) {
+    public void clearConsumerState(String consumerId, int partitionId) {
         // Not implemented?
         throw new RuntimeException("Not implemented yet..");
     }

@@ -164,20 +164,6 @@ public class SidelineConsumer {
         }
         isOpen = true;
 
-        // If we have a starting offset, lets persist it
-        if (startingState != null) {
-            // If we persist it here, when sideline consumer starts up, it should start from this position
-            // when it reads out its state from persistenceManager.
-            persistenceManager.persistConsumerState(getConsumerId(), startingState);
-        }
-
-        // Load initial positions,
-        ConsumerState initialState = persistenceManager.retrieveConsumerState(getConsumerId());
-        if (initialState == null) {
-            // if null returned, use an empty ConsumerState instance.
-            initialState = ConsumerState.builder().build();
-        }
-
         final KafkaConsumer kafkaConsumer = getKafkaConsumer();
 
         // Assign them all to this consumer
@@ -191,6 +177,23 @@ public class SidelineConsumer {
         List<TopicPartition> noStatePartitions = Lists.newArrayList();
         for (PartitionInfo partition : partitions) {
             final TopicPartition availableTopicPartition = new TopicPartition(partition.topic(), partition.partition());
+
+            // If we have a starting offset, lets persist it
+            if (startingState == null) {
+                startingState = ConsumerState.builder().build();
+
+                // If we persist it here, when sideline consumer starts up, it should start from this position
+                // when it reads out its state from persistenceManager.
+                persistenceManager.persistConsumerState(getConsumerId(), availableTopicPartition.partition(), startingState);
+            }
+
+            // Load initial positions,
+            ConsumerState initialState = persistenceManager.retrieveConsumerState(getConsumerId(), availableTopicPartition.partition());
+            if (initialState == null) {
+                // if null returned, use an empty ConsumerState instance.
+                initialState = ConsumerState.builder().build();
+            }
+
             Long offset = initialState.getOffsetForTopicAndPartition(availableTopicPartition);
             if (offset == null) {
                 // Un-started partitions should "begin" at the earliest available offset
@@ -306,8 +309,11 @@ public class SidelineConsumer {
         // Build
         final ConsumerState consumerState = builder.build();
 
-        // Persist state.
-        persistenceManager.persistConsumerState(getConsumerId(), consumerState);
+        final Set<TopicPartition> partitions = getKafkaConsumer().assignment();
+
+        for (TopicPartition partition : partitions) {
+            persistenceManager.persistConsumerState(getConsumerId(), partition.partition(), consumerState);
+        }
 
         // Return the state that was persisted.
         return consumerState;
@@ -517,6 +523,11 @@ public class SidelineConsumer {
      */
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
-        getPersistenceManager().clearConsumerState(getConsumerId());
+
+        final Set<TopicPartition> partitions = getKafkaConsumer().assignment();
+
+        for (TopicPartition partition : partitions) {
+            getPersistenceManager().clearConsumerState(getConsumerId(), partition.partition());
+        }
     }
 }

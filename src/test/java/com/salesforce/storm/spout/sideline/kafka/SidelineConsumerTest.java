@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
@@ -153,7 +154,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Sleep for 1.5 seconds
         Thread.sleep(1500);
@@ -162,7 +163,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Now lets adjust our mock clock up by 2 seconds.
         instant = instant.plus(2000, ChronoUnit.MILLIS);
@@ -173,13 +174,13 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer WAS hit because we adjust our mock clock ahead 2 secs
-        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyObject());
+        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyObject());
 
         // Call our method again, it shouldn't fire.
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit again because we're using a mocked clock that has not changed since the last call :p
-        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Now lets adjust our mock clock up by 1.5 seconds.
         instant = instant.plus(1500, ChronoUnit.MILLIS);
@@ -190,7 +191,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer WAS hit a 2nd time because we adjust our mock clock ahead
-        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyObject());
+        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyObject());
     }
 
     /**
@@ -221,7 +222,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Sleep for 1.5 seconds
         Thread.sleep(1500);
@@ -230,7 +231,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Now lets adjust our mock clock up by 2 seconds.
         instant = instant.plus(2000, ChronoUnit.MILLIS);
@@ -241,13 +242,13 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Call our method again, it shouldn't fire.
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
 
         // Now lets adjust our mock clock up by 1.5 seconds.
         instant = instant.plus(1500, ChronoUnit.MILLIS);
@@ -258,7 +259,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
     }
 
     /**
@@ -299,7 +300,7 @@ public class SidelineConsumerTest {
 
         // When getState is called, return the following state
         final ConsumerState emptyConsumerState = ConsumerState.builder().build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(emptyConsumerState);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
@@ -370,7 +371,7 @@ public class SidelineConsumerTest {
 
         // When getState is called, return the following state
         ConsumerState emptyConsumerState = ConsumerState.builder().build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(emptyConsumerState);
 
         // When we ask for the positions for each partition return mocked values
         when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPositionPartition0);
@@ -454,7 +455,7 @@ public class SidelineConsumerTest {
             .builder()
             .withPartition(new TopicPartition(topicName, 0), lastCommittedOffset)
             .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
@@ -527,7 +528,7 @@ public class SidelineConsumerTest {
             .withPartition(partition1, lastCommittedOffsetPartition1)
             .withPartition(partition2, lastCommittedOffsetPartition2)
             .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(consumerState);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
@@ -613,7 +614,7 @@ public class SidelineConsumerTest {
                 .withPartition(partition0, lastCommittedOffsetPartition0)
                 .withPartition(partition2, lastCommittedOffsetPartition2)
                 .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(consumerState);
 
         // Define values returned for partitions without state
         when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);
@@ -1122,7 +1123,7 @@ public class SidelineConsumerTest {
         final ConsumerState consumerState = ConsumerState.builder()
             .withPartition(new TopicPartition(topicName, 0), 4L)
             .build();
-        persistenceManager.persistConsumerState(config.getConsumerId(), consumerState);
+        persistenceManager.persistConsumerState(config.getConsumerId(), 0, consumerState);
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);

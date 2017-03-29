@@ -93,11 +93,12 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     /**
      * Pass in the consumer state that you'd like persisted.
-     * @param consumerId - The consumer's id.
-     * @param consumerState - ConsumerState to be persisted.
+     * @param consumerId The consumer's id.
+     * @param partitionId The partition id
+     * @param consumerState Consumer state to be persisted.
      */
     @Override
-    public void persistConsumerState(final String consumerId, final ConsumerState consumerState) {
+    public void persistConsumerState(final String consumerId, final int partitionId, final ConsumerState consumerState) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
@@ -107,10 +108,12 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     /**
      * Retrieves the consumer state from the persistence layer.
-     * @return ConsumerState
+     * @param consumerId The consumer's id.
+     * @param partitionId The partition id
+     * @return ConsumerState Consumer state that was persisted
      */
     @Override
-    public ConsumerState retrieveConsumerState(final String consumerId) {
+    public ConsumerState retrieveConsumerState(final String consumerId, final int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
@@ -125,10 +128,11 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     /**
      * Removes consumer state.
-     * @param consumerId - consumerId to remove state for.
+     * @param consumerId The consumer's id
+     * @param partitionId The partition id
      */
     @Override
-    public void clearConsumerState(String consumerId) {
+    public void clearConsumerState(final String consumerId, final int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 

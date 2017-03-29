@@ -104,10 +104,12 @@ public class KafkaPersistenceManagerTest {
             .build();
 
         // Persist it
-        persistenceManager.persistConsumerState(consumerIdPrefix, consumerState);
+        // TODO: Fix partition id
+        persistenceManager.persistConsumerState(consumerIdPrefix, 1, consumerState);
 
         // Now attempt to retrieve it
-        final ConsumerState results = persistenceManager.retrieveConsumerState(consumerIdPrefix);
+        // TODO: Fix partition id
+        final ConsumerState results = persistenceManager.retrieveConsumerState(consumerIdPrefix, 1);
 
         // Validate it
         assertNotNull("Should be non-null", results);

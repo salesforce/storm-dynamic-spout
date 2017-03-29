@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Spout instance.
@@ -271,7 +272,8 @@ public class SidelineSpout extends BaseRichSpout {
                 getTopologyConfig(),
                 getTopologyContext(),
                 getFactoryManager(),
-                metricsRecorder);
+                metricsRecorder
+        );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Create TupleBuffer
@@ -321,7 +323,9 @@ public class SidelineSpout extends BaseRichSpout {
                 // TODO: Lemon - Bug - What if we've previously processed this virtual spout before...?
                 // If we tell it start at the payloads start... it won't resume where it left off.
                 // Lets hack this in for now..is there a better way?
-                ConsumerState startingState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
+                // TODO: Need to fix this!
+                ConsumerState startingState = ConsumerState.builder().build();
+                //ConsumerState startingState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
 
                 // If our starting state is null or empty
                 if (startingState == null || startingState.isEmpty()) {

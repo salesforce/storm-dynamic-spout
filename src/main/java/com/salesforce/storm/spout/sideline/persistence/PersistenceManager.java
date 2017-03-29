@@ -27,22 +27,26 @@ public interface PersistenceManager {
 
     /**
      * Pass in the consumer state that you'd like persisted.
-     * @param consumerId - The consumer's id.
-     * @param consumerState - ConsumerState to be persisted.
+     * @param consumerId The consumer's id.
+     * @param partitionId The partition id
+     * @param consumerState Consumer state to be persisted.
      */
-    void persistConsumerState(final String consumerId, final ConsumerState consumerState);
+    void persistConsumerState(final String consumerId, final int partitionId, final ConsumerState consumerState);
 
     /**
      * Retrieves the consumer state from the persistence layer.
-     * @return ConsumerState
+     * @param consumerId The consumer's id.
+     * @param partitionId The partition id
+     * @return ConsumerState Consumer state that was persisted
      */
-    ConsumerState retrieveConsumerState(final String consumerId);
+    ConsumerState retrieveConsumerState(final String consumerId, final int partitionId);
 
     /**
      * Removes consumer state from the persistence layer.
-     * @param consumerId - the consumer's id you'd like cleared.
+     * @param consumerId The consumer's id you'd like cleared.
+     * @param partitionId The partition id
      */
-    void clearConsumerState(String consumerId);
+    void clearConsumerState(final String consumerId, final int partitionId);
 
     /**
      * @param type - Sideline Type (Start/Stop)

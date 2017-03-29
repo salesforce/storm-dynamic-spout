@@ -50,18 +50,18 @@ public class SidelineConsumerMonitor {
         final ConsumerState startingState = payload.startingState;
         final ConsumerState endingState = payload.endingState;
 
-        // Get the state
-        ConsumerState currentState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
-        if (currentState == null) {
-            logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
-            currentState = endingState;
-        }
-
         // Create return map
         Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
         // Calculate the progress
         for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
+            // Get the state
+            ConsumerState currentState = getPersistenceManager().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
+            if (currentState == null) {
+                logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
+                currentState = endingState;
+            }
+
             // Make sure no nulls
             boolean hasError = false;
             if (startingState.getOffsetForTopicAndPartition(topicPartition) == null) {
