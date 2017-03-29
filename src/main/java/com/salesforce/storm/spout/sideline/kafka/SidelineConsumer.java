@@ -531,6 +531,6 @@ public class SidelineConsumer {
             );
         }
 
-        return topicPartitions;
+        return Collections.unmodifiableList(topicPartitions);
     }
 }
