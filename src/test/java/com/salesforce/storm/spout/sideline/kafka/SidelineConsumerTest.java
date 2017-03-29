@@ -619,7 +619,9 @@ public class SidelineConsumerTest {
 
         // When getState is called, return the following state for partitions 0 and 2.
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(null);
         when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition3.partition()))).thenReturn(null);
 
         // Define values returned for partitions without state
         when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);
@@ -640,7 +642,10 @@ public class SidelineConsumerTest {
 
         // Since ConsumerStateManager has state for only 2 partitions, we should call seekToBeginning on partitions 1 and 3.
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
-                partition1, partition3
+            partition1
+        )));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
+            partition3
         )));
 
         // Verify we asked for the positions for 2 unknown state partitions
