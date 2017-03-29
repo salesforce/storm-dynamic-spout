@@ -86,7 +86,7 @@ public class SidelineSpoutTest {
      * Create a new empty topic with randomly generated name.
      */
     @Before
-    public void beforeTest() {
+    public void beforeTest() throws InterruptedException {
         // Generate topic name
         topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 

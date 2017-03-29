@@ -566,6 +566,11 @@ public class SidelineConsumerTest {
      * This test has the ConsumerStateManager (a mock) return ConsumerState for every partition on the topic.
      * We verify that our internal kafka client then knows to start reading from the previously saved consumer state
      * offsets
+     *
+     * We setup this test with 4 partitions in our topic, 0 -> 3
+     *
+     * We setup Partitions 0 and 2 to have previously saved state -- We should resume from this previous state
+     * We setup Partitions 1 and 3 to have no previously saved state -- We should resume from the earliest offset in the partition.
      */
     @Test
     public void testConnectWithMultiplePartitionsOnTopicWithSomePreviouslySavedState() {
@@ -635,10 +640,11 @@ public class SidelineConsumerTest {
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
-                partition0,
-                partition1,
-                partition2,
-                partition3)));
+            partition0,
+            partition1,
+            partition2,
+            partition3
+        )));
 
         // Since ConsumerStateManager has state for only 2 partitions, we should call seekToBeginning on partitions 1 and 3.
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
@@ -1501,6 +1507,10 @@ public class SidelineConsumerTest {
         // How many msgs we should expect, 2 for partition 0, 4 from partition1
         final int numberOfExpectedMessages = 6;
 
+        // Define our topic/partitions
+        final TopicPartition topicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition topicPartition1 = new TopicPartition(topicName, 1);
+
         // Define starting offsets for partitions
         final long partition0StartingOffset = 1L;
         final long partition1StartingOffset = 20L;
@@ -1531,6 +1541,11 @@ public class SidelineConsumerTest {
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
         sidelineConsumer.open();
+
+        // Validate PartitionOffsetManager is correctly setup
+        ConsumerState consumerState = sidelineConsumer.getCurrentState();
+        assertEquals("Partition 0's last committed offset should be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition0));
+        assertEquals("Partition 1's last committed offset should be its starting offset", (Long) partition1StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition1));
 
         // Define the values we expect to get
         // Ugh this is hacky, whatever
@@ -1564,6 +1579,14 @@ public class SidelineConsumerTest {
         for (int x=0; x<2; x++) {
             assertNull("Should be null", sidelineConsumer.nextRecord());
         }
+
+        // Validate PartitionOffsetManager is correctly setup
+        // We have not acked anything,
+        consumerState = sidelineConsumer.getCurrentState();
+        assertEquals("Partition 0's last committed offset should still be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition0));
+
+        // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
+        assertEquals("Partition 1's last committed offset should be reset to earliest, or -1 in our case", (Long)(-1L), consumerState.getOffsetForTopicAndPartition(topicPartition1));
     }
 
     /**
