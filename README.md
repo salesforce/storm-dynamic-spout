@@ -45,6 +45,53 @@ messages which got filtered.
 
 ## No really... How does it work?
 
+Lets define our major components of the Spout and give a brief explanation of what their role is.  Then we'll
+build up how they all work together.
+
+
+[SidelineSpout]() - Implements Storm's spout interface.  Everything starts and stops here.  
+
+[SidelineConsumer]() - This is our high-level Kafka consumer built ontop of [KafkaConsumer]() that handles consuming from
+Kafka topics as well as maintaining consumer state information.  It wraps KafkaConsumer
+giving it semantics that play nicely with Storm.  As SidelineConsumer consumes messages from Kafka, and those messages
+eventually get emitted into your topology, Storm provides no guarantee that those messages will get processed in order.
+Because of this, tracking which offsets within your Kafka topic have and have not been processed in not entirely trivial.
+
+[VirtualSidelineSpout]() - Within a SidelineSpout instance, you will have one or more VirtualSidelineSpout instances.
+These wrap SidelineConsumer instances in order to consume messages from Kafka, and layers on functionality to determine
+which should be emitted into the topology, tracking which tuples have been ack'd, and which have failed.  
+
+[SpoutRunner]() - VirtualSidelineSpout instances are always run within their own processing Thread.  SpoutRunner is
+the wrapper around VirtualSidelineSpout that manages the Thead it runs within.
+
+[SpoutMonitor]() - This monitors new SidelineRequests via your implemented [Triggers]().  
+
+When a [StartSidelineRequest] is triggered, it will start applying filter criteria to tuples being emitted
+from the spout.  Additionally it will track offsets within your topic of where it started filtering.
+
+When a [StopSidelineRequest] is triggered, it will stop applying the filter criteria to tuples being emitted from the
+spout. Additionally it will determine which offsets the filtering criteria were applied at and use this information
+to start a new VirtualSidelineSpout instance.  This VirtualSidelineSpout instance will be configured to start
+consuming at these offsets, and stop consuming once it reaches the offsets in which the filtering criteria was removed.
+The VirtualSidelineSpout instance will only emit messages from Kafka that were filtered during this period.  Once
+the VirtualSidelineSpout has processed all of the offsets within the topic, SpoutMonitor will shut it down.
+
+
+[SpoutCoordinator]() - This bridges the gap between our SidelineSpout and its internal VirtualSidelineSpouts.  
+
+As nextTuple() is called on SidelineSpout, it asks SpoutCoordinator for the next kafka message that should be emitted. 
+The SpoutCoordinator gets the next message from one of its many VirtualSidelineSpout instances.
+
+As fail() is called on SidelineSpout, the SpoutCoordinator determines which VirtualSidelineSpout instance
+the failed tuple originated from and passes it to the correct instance's fail() method.
+
+As ack() is called on SidelineSpout, the SpoutCoordinator determines which VirtualSidelineSpout instance
+the acked tuple originated from and passes it to the correct instance's ack() method.
+
+[PersistenceManager]() - This provides a persistence layer for storing SidelineSpout's metadata.  It stores things
+such as consumer state/offsets for consuming, as well as metadata about SidelineRequests.
+ 
+
 # Getting started
 ## Dependencies
 Using the default straight-out-of-the-box configuration, this spout has the following dependencies:
