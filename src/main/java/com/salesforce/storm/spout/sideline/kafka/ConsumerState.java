@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * This represents the State of a Consumer.  Immutable, use Builder to construct an instance.
  */
-public class ConsumerState implements Map<TopicPartition, Long> {
+public final class ConsumerState implements Map<TopicPartition, Long> {
     private final Map<TopicPartition, Long> state;
 
     /**
@@ -100,35 +100,49 @@ public class ConsumerState implements Map<TopicPartition, Long> {
     @Override
     public String toString() {
         return "ConsumerState{"
-                + "state=" + state
-                + '}';
+            + state
+            + '}';
     }
-// Unsupported Map interface methods.
 
+    /**
+     * Unsupported operation for this implementation.
+     */
     @Override
     public void putAll(Map<? extends TopicPartition, ? extends Long> map) {
         throw new UnsupportedOperationException("Immutable map");
     }
 
+    /**
+     * Unsupported operation for this implementation.
+     */
     @Override
     public void clear() {
         throw new UnsupportedOperationException("Immutable map");
     }
 
     /**
-     * ConsumerState builder.
+     * Builder for ConsumerState.
      */
     public static final class ConsumerStateBuilder {
-        private Map<TopicPartition, Long> state = Maps.newHashMap();
+        private final Map<TopicPartition, Long> state = Maps.newHashMap();
 
         public ConsumerStateBuilder() {
         }
 
+        /**
+         * Add a new entry into the builder.
+         * @param topicPartition TopicPartition for the entry.
+         * @param offset Offset for the given TopicPartition
+         * @return Builder instance for chaining.
+         */
         public ConsumerStateBuilder withPartition(TopicPartition topicPartition, long offset) {
             state.put(topicPartition, offset);
             return this;
         }
 
+        /**
+         * @return Built ConsumerState instance.
+         */
         public ConsumerState build() {
             return new ConsumerState(state);
         }

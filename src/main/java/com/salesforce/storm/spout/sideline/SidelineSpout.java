@@ -318,14 +318,14 @@ public class SidelineSpout extends BaseRichSpout {
                 // Generate our virtualSpoutId using the payload id.
                 final String virtualSpoutId = generateVirtualSpoutId(payload.id.toString());
 
-                // TODO: Lemon - Bug - What if we've previously processed this virtual spout before...?
+                // What if we've previously processed this virtual spout before...?
                 // If we tell it start at the payloads start... it won't resume where it left off.
-                // Lets hack this in for now..is there a better way?
+                // So first lets ask the persistence manager and see if we have a stored state
                 ConsumerState startingState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
 
-                // If our starting state is null or empty
+                // If we have no starting state in the persistence manager yet
                 if (startingState == null || startingState.isEmpty()) {
-                    // THen we have no previously stored state, so use the payload state
+                    // Then we should use the payload state
                     startingState = payload.startingState;
                 }
 

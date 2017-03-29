@@ -20,11 +20,12 @@ that a subset of your tenants database infrastructure requires downtime for main
 implementation you really only have two options to deal with this situation.  
 
 You could stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
-Or you could filter these tenants out from being processed by your topology, then after the maintenance is complete start
-a separate topology/Kafka-Spout instance that knows where to start and stop consuming, and re-process the events for those 
-tenants that were previously filtered.  
 
-Unfortunately both of these solutions are complicated, error prone, and down right painful.
+Or you could filter these tenants out from being processed by your topology, then after the maintenance is complete start
+a separate topology/Kafka-Spout instance that somehow knows where to start and stop consuming, and by way of down-stream filter bolts
+re-process only the events for the tenants that were previously filtered.  
+
+Unfortunately both of these solutions are either not acceptable, complicated, error prone, not to mention down right painful.
 
 #### Some other use case here
 Surely we can come up with another use case.
@@ -42,6 +43,8 @@ The spout implementation handles the rest for you!  It tracks your filter criter
 Kafka topics to know where it started and stopped filtering.  It then uses this metadata to replay only those 
 messages which got filtered.
 
+## No really... How does it work?
+
 # Getting started
 ## Dependencies
 Using the default straight-out-of-the-box configuration, this spout has the following dependencies:
@@ -58,7 +61,7 @@ any where you would like.  Mysql? Redis? Sure!  Contribute an adapter to the pro
 The Deserializer interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple. It also 
 controls the naming of your output field(s).
 
-```
+```java
     /**
      * This is the method your implementation would need define.
      * A null return value from here will result in this message being ignored.
@@ -87,7 +90,7 @@ and use an existing implementation.
 The StartingTrigger interface dictates how your running spout instance gets notified of new requests to filter and sideline
 messages being consumed from Kafka.
 
-```
+```java
 void setSidelineSpout(SpoutTriggerProxy spout);
 ```
 
@@ -95,14 +98,14 @@ void setSidelineSpout(SpoutTriggerProxy spout);
 The StoppingTrigger interface dictates how your running spout instance gets notified of new requests to remove a previously
 started filter and start reprocessing any messages that were previously skipped.
 
-```
+```java
 void setSidelineSpout(SpoutTriggerProxy spout);
 ```
 
 ### [FilterChainStep](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java)
 The FilterChainStep interface dictates how you want to filter messages being consumed from kafka.
 
-```
+```java
     /**
      * Inputs an object, performs some business logic on it and then returns the result.
      *
@@ -113,24 +116,94 @@ The FilterChainStep interface dictates how you want to filter messages being con
 ```
 
 ## Optional Interfaces for Overachievers
+For most use cases the above interfaces are all that are required to get going.  But..sometimes your use case requires
+you to do do something just a little special of different.  If that's the case with you, we provide the following 
+configurable interfaces to hopefully ease the pain.
+
 ### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
-#### Current Implementations
-##### [ZookeeperPersistenceManager]()
-##### [InMemoryPersistenceManager]()
+This interface dictates how and where metadata gets stored such that it lives between topology deploys.
+In an attempt to decouple this data storage layer from the spout, we have this interface.  Currently we have
+one implementation backed by Zookeeper.
+
+###### Configuration
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface. | *null* 
+
+
+#### Provided Implementations
+##### [ZookeeperPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceManager.java)
+This is our default implementation, it uses a Zookeeper cluster to persist the required metadata.
+
+###### Configuration
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.persistence.zk_servers | List\<String\> | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | *null* 
+sideline_spout.persistence.zk_root | String | Defines the root path to persist state under.  Example: "/sideline-consumer-state" | *null*
+
+##### [InMemoryPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceManager.java)
+This implementation only stores metadata within memory.  This is useful for tests, but has no real world use case as all state will be lost between topology deploys.
 
 ### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)
-#### Current Implementations
+Interface for handling failed tuples.  By creating an implementation of this interface you can control how the spout deals with tuples that have failed within the topology. Currently we have
+three implementations bundled with the spout which should cover most standard use cases.
+
+###### Configuration
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.retry_manager.class | String | Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface. |"com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
+
+#### Provided Implementations
 ##### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
+This is our default implementation for the spout.  It attempts retries of failed tuples a maximum of MAX_RETRIES times.
+After a tuple fails more than that, it will be "acked" or marked as completed and never tried again.
+Each retry is attempted using an exponential back-off time period.  The first retry will be attempted within MIN_RETRY_TIME_MS milliseconds.  Each attempt
+after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
+
+###### Configuration
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.failed_msg_retry_manager.max_retries | int | Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. | 25
+sideline_spout.failed_msg_retry_manager.min_retry_time_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
+
 ##### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
+This implementation will always retry failed tuples at the earliest chance it can.  No back-off strategy, no maximum times a tuple can fail.
+
 ##### [NeverRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java)
+This implementation will never retry failed messages.  One and done.
 
 ### [TupleBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java)
-#### Current Implementations
+This interface defines an abstraction around essentially a concurrent queue.  Abstracting this instead of using directly a queue object allows us to do things like
+implement a "fairness" algorithm on the poll() method for pulling off of the queue. Using a straight ConcurrentQueue would give us FIFO semantics 
+but with an abstraction we could implement round robin across kafka consumers, or any scheduling algorithm that you'd like.
+
+This is getting into the nitty-gritty internals of the spout here, you would need a pretty special use case to mess around
+with this one.
+
+###### Configuration
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.coordinator.tuple_buffer.class | String | Defines which TupleBuffer implementation to use. Should be a full classpath to a class that implements the TupleBuffer interface. | "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer"
+
+#### Provided Implementations
 ##### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
+This is our default implementation, which is essentially round-robin.  Each virtual spout has its own queue that gets added too.  A very chatty
+virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR through all the available
+queues to get the next msg.
+ 
+Internally we make use of BlockingQueues so that we can put an upper bound on the queue size.
+Once a queue is full, any producer attempting to put more messages onto the queue will block and wait
+for available space in the queue.  This acts to throttle producers of messages.
+Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
+This means consuming from the queue will always be fast.
+ 
 ##### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java)
+FIFO implementation.  Has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### [MetricsRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java)
-#### Current Implementations
+This is still a work in progress.  More details to come.
+
+#### Provided Implementations
 ##### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
 ##### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
 
