@@ -143,14 +143,14 @@ public class SidelineSpoutTest {
     @Test
     public void testGenerateVirtualSpoutId() {
         final String expectedPrefix = "MyVirtualSpoutPrefix";
-        final int expectedTaskIndex = 10;
+        final int expectedTaskIndex = 0;
 
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(expectedPrefix, null);
 
         // Setup our mock TopologyContext
         final MockTopologyContext topologyContext = new MockTopologyContext();
-        topologyContext.taskId = 100;
+        topologyContext.taskId = 0;
         topologyContext.taskIndex = expectedTaskIndex;
 
         // Mock output collector
