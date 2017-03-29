@@ -155,7 +155,7 @@ public class SidelineConsumer {
             Long offset = persistenceManager.retrieveConsumerState(getConsumerId(), topicPartition.partition());
 
             if (offset == null) {
-                // We do not have an existing offset saved, so start from the tail
+                // We do not have an existing offset saved, so start from the head
                 logger.info("Starting at the beginning of topic {} partition {}", topicPartition.topic(), topicPartition.partition());
                 kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
 
