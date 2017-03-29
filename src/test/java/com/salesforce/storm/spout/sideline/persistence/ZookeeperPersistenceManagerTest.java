@@ -508,7 +508,6 @@ public class ZookeeperPersistenceManagerTest {
         final String topicName = "MyTopic";
 
         // Define our expected result that will be stored in zookeeper
-        // TODO: I hate this, let's build the damn map...
         final String expectedStoredState = "{\"filterChainSteps\":\"rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==\",\"type\":\"START\",\"startingState\":{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}}";
 
         final ConsumerState consumerState = ConsumerState.builder()

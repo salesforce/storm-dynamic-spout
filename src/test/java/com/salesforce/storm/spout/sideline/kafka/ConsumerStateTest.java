@@ -139,10 +139,6 @@ public class ConsumerStateTest {
         final TopicPartition topicPartition = new TopicPartition("MyTopic", 2);
         final long offset = 23L;
 
-        // Our null case
-        final TopicPartition topicPartition2 = new TopicPartition("MyTopic", 3);
-
-
         final ConsumerState consumerState = ConsumerState.builder()
                 .withPartition(topicPartition, offset)
                 .build();

@@ -314,7 +314,7 @@ public class SpoutMonitor implements Runnable {
 
         // Wait for the executor to cleanly shut down
         try {
-            logger.info("Waiting a maximum of {} ms for threadpool to shutdown", getMaxTerminationWaitTimeMs());
+            logger.info("Waiting a maximum of {} ms for thread pool to shutdown", getMaxTerminationWaitTimeMs());
             executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException ex) {
             logger.error("Interrupted while stopping: {}", ex);
@@ -323,7 +323,7 @@ public class SpoutMonitor implements Runnable {
         // If we didn't shut down cleanly
         if (!executor.isTerminated()) {
             // Force a shut down
-            logger.warn("Forcing unclean shutdown of threadpool");
+            logger.warn("Forcing unclean shutdown of thread pool");
             executor.shutdownNow();
         }
 
