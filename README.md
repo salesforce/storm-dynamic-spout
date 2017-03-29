@@ -99,7 +99,7 @@ such as consumer state/offsets for consuming, as well as metadata about Sideline
 #### First Deploy
 When the SidelineSpout is first deployed to your Topology it starts the SpoutMonitor.  The SpoutMonitor then
 creates the *main* VirtualSidelineSpout instance.  This *main* VirtualSidelineSpout instance is always running within
-the spout, and its job is to consume from your configured Kafka topic.  As it consumes messages from Kafka, it deserializes
+the spout, and its job is to consume from your Kafka topic.  As it consumes messages from Kafka, it deserializes
 them using your [Deserializer]() implementation.  It then runs it thru a [FilterChain](), which is a collection of
 [FilterChainSteps]().  These filters determine what messages should be *sidelined* and which should be emitted out.
 When no [StartSidelineRequests]() are active, this FilterChain is empty, and all messages consumed from
