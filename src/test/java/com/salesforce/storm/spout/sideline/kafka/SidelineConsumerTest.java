@@ -1503,10 +1503,6 @@ public class SidelineConsumerTest {
         // Create our multi-partition topic.
         kafkaTestServer.createTopic(topicName, numberOfPartitions);
 
-        // Define our expected topic/partitions
-        final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
-        final TopicPartition expectedTopicPartition1 = new TopicPartition(topicName, 1);
-
         // Produce messages into both topics
         produceRecords(numberOfMsgsPerPartition, 0);
         produceRecords(numberOfMsgsPerPartition, 1);
@@ -1519,11 +1515,13 @@ public class SidelineConsumerTest {
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
         persistenceManager.open(Maps.newHashMap());
 
-        // Create starting state
-        final ConsumerState startingState = ConsumerState.builder()
-                .withPartition(expectedTopicPartition0, partition0StartingOffset)
-                .withPartition(expectedTopicPartition1, partition1StartingOffset)
-                .build();
+        // Create & persist the starting state for our test
+        // Partition 0 has starting offset = 1
+        persistenceManager.persistConsumerState("MyConsumerId", 0, partition0StartingOffset);
+
+        // Partition 1 has starting offset = 21, which is invalid.  If our sideline consumer is configured properly,
+        // it should reset to earliest, meaning offset 0 in this case.
+        persistenceManager.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
