@@ -151,16 +151,16 @@ public class SidelineConsumerTest {
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
 
-        Set<TopicPartition> mockPartitionInfos = Sets.newHashSet(
-            new TopicPartition(topicName, 1)
-        );
-
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
-        when(mockKafkaConsumer.assignment()).thenReturn(mockPartitionInfos);
+
+        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
+        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // Call constructor
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
         sidelineConsumer.setClock(mockClock);
+
+        sidelineConsumer.open();
 
         // Call our method once
         sidelineConsumer.timedFlushConsumerState();
@@ -226,9 +226,16 @@ public class SidelineConsumerTest {
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
 
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+
+        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
+        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
+
         // Call constructor
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager);
         sidelineConsumer.setClock(mockClock);
+
+        sidelineConsumer.open();
 
         // Call our method once
         sidelineConsumer.timedFlushConsumerState();
