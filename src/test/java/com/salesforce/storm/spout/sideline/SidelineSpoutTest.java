@@ -401,9 +401,7 @@ public class SidelineSpoutTest {
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
-        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
-
-        final SidelineRequest request = new SidelineRequest(staticMessageFilter);
+        final SidelineRequest request = new SidelineRequest(new StaticMessageFilter());
 
         // Send a new start request with our filter.
         // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
@@ -420,7 +418,11 @@ public class SidelineSpoutTest {
         // Send a stop sideline request
         staticTrigger.sendStopRequest(request);
 
-        // We need to wait a bit for the sideline spout instance to spin up and start consuming
+        // We need to wait a bit for the sideline spout instance to spin up
+        waitForVirtualSpouts(spout, 2);
+
+        // Then ask the spout for tuples, we should get back the tuples that were produced while
+        // sidelining was active.  These tuples should come from the VirtualSpout started by the Stop request.
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // We should validate these emissions
