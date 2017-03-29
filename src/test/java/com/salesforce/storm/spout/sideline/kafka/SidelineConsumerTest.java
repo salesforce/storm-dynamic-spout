@@ -173,7 +173,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Sleep for 1.5 seconds
         Thread.sleep(1500);
@@ -182,7 +182,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 2 seconds.
         instant = instant.plus(2000, ChronoUnit.MILLIS);
@@ -193,13 +193,13 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer WAS hit because we adjust our mock clock ahead 2 secs
-        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyObject());
+        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyLong());
 
         // Call our method again, it shouldn't fire.
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit again because we're using a mocked clock that has not changed since the last call :p
-        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 1.5 seconds.
         instant = instant.plus(1500, ChronoUnit.MILLIS);
@@ -210,7 +210,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer WAS hit a 2nd time because we adjust our mock clock ahead
-        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyObject());
+        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyLong());
     }
 
     /**
@@ -409,9 +409,14 @@ public class SidelineConsumerTest {
 
         // Since ConsumerStateManager has no state for partition 0, we should call seekToBeginning on that partition
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
-                new TopicPartition(topicName, 0),
-                new TopicPartition(topicName, 1),
-                new TopicPartition(topicName, 2))));
+            new TopicPartition(topicName, 0)
+        )));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
+            new TopicPartition(topicName, 1)
+        )));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
+            new TopicPartition(topicName, 2)
+        )));
 
         // Validate we got our calls for the current position
         verify(mockKafkaConsumer, times(1)).position(partition0);
@@ -535,9 +540,9 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition0.partition())).thenReturn(lastCommittedOffsetPartition0);
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition1.partition())).thenReturn(lastCommittedOffsetPartition1);
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition2.partition())).thenReturn(lastCommittedOffsetPartition2);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(lastCommittedOffsetPartition1);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
@@ -601,6 +606,8 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        config.setNumberOfConsumers(1);
+        config.setIndexOfConsumer(0);
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -618,8 +625,8 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state for partitions 0 and 2.
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition0.partition())).thenReturn(lastCommittedOffsetPartition0);
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition2.partition())).thenReturn(lastCommittedOffsetPartition2);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
 
         // Define values returned for partitions without state
         when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);

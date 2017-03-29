@@ -157,7 +157,7 @@ public class SidelineConsumer {
             if (offset == null) {
                 // We do not have an existing offset saved, so start from the tail
                 logger.info("Starting at the beginning of topic {} partition {}", topicPartition.topic(), topicPartition.partition());
-                kafkaConsumer.seekToBeginning(topicPartitions);
+                kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
 
                 offset = getKafkaConsumer().position(topicPartition) - 1;
             } else {
@@ -274,7 +274,7 @@ public class SidelineConsumer {
         final Set<TopicPartition> partitions = getKafkaConsumer().assignment();
 
         for (TopicPartition partition : partitions) {
-            persistenceManager.persistConsumerState(getConsumerId(), partition.partition(), consumerState.getOffsetForTopicAndPartition(partition));
+            persistenceManager.persistConsumerState(getConsumerId(), partition.partition(), getKafkaConsumer().position(partition));
         }
 
         // Return the state that was persisted.
