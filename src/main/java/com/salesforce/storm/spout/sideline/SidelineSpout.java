@@ -598,8 +598,6 @@ public class SidelineSpout extends BaseRichSpout {
             // append it
             newId += "-" + optionalPostfix;
         }
-        // Always append the task index
-        newId += "-" + getTopologyContext().getThisTaskIndex();
 
         // return it
         return newId;

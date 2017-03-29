@@ -162,15 +162,15 @@ public class SidelineSpoutTest {
 
         // Now call our method with empty string
         String result = spout.generateVirtualSpoutId("");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-" + expectedTaskIndex);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix);
 
         // Call our method with null
         result = spout.generateVirtualSpoutId(null);
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-" + expectedTaskIndex);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix);
 
         // Call our method with a postfix
         result = spout.generateVirtualSpoutId("PostFix");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-PostFix-"  + expectedTaskIndex);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-PostFix");
 
         // Call close.
         spout.close();
