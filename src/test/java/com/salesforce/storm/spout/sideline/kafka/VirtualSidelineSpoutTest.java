@@ -204,8 +204,11 @@ public class VirtualSidelineSpoutTest {
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
+        final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
+
         // Create a mock SidelineConsumer
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(partitions);
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
@@ -222,7 +225,7 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open(null, Collections.emptyList());
+        verify(mockSidelineConsumer, times(1)).open(null, partitions);
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -240,8 +243,11 @@ public class VirtualSidelineSpoutTest {
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
+        final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
+
         // Create a mock SidelineConsumer
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(partitions);
 
         // Create a mock Deserializer
         Deserializer mockDeserializer = mock(Deserializer.class);
@@ -271,7 +277,7 @@ public class VirtualSidelineSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open(null, Collections.emptyList());
+        verify(mockSidelineConsumer, times(1)).open(null, partitions);
     }
 
     /**
@@ -291,6 +297,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
@@ -362,6 +371,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // TODO: Validate metric collection here
         when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
@@ -416,6 +428,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // TODO: Validate metric collection here
         when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
@@ -482,6 +497,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
@@ -562,6 +580,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // TODO: Validate metric collection here
         when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
@@ -681,6 +702,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord);
@@ -796,6 +820,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -838,6 +865,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -878,6 +908,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -919,6 +952,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -961,6 +997,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // TODO: Validate metric collection here
         when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
@@ -1011,6 +1050,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
@@ -1045,6 +1087,9 @@ public class VirtualSidelineSpoutTest {
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1090,6 +1135,9 @@ public class VirtualSidelineSpoutTest {
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1135,6 +1183,9 @@ public class VirtualSidelineSpoutTest {
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1182,6 +1233,9 @@ public class VirtualSidelineSpoutTest {
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1233,6 +1287,9 @@ public class VirtualSidelineSpoutTest {
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
         when(mockSidelineConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1277,6 +1334,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
@@ -1336,6 +1396,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
@@ -1392,6 +1455,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
@@ -1472,6 +1538,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Create a mock RetryManager
         RetryManager mockRetryManager = mock(RetryManager.class);
@@ -1521,6 +1590,9 @@ public class VirtualSidelineSpoutTest {
 
         // Create a mock SidelineConsumer
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        when(mockSidelineConsumer.getPartitions()).thenReturn(
+            Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}))
+        );
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();

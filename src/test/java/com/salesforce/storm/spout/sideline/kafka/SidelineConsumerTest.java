@@ -146,8 +146,15 @@ public class SidelineConsumerTest {
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
 
+        Set<TopicPartition> mockPartitionInfos = Sets.newHashSet(
+            new TopicPartition(topicName, 1)
+        );
+
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        when(mockKafkaConsumer.assignment()).thenReturn(mockPartitionInfos);
+
         // Call constructor
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager);
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
         sidelineConsumer.setClock(mockClock);
 
         // Call our method once
