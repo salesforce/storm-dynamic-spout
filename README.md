@@ -43,6 +43,8 @@ The spout implementation handles the rest for you!  It tracks your filter criter
 Kafka topics to know where it started and stopped filtering.  It then uses this metadata to replay only those 
 messages which got filtered.
 
+## No really... How does it work?
+
 # Getting started
 ## Dependencies
 Using the default straight-out-of-the-box configuration, this spout has the following dependencies:
@@ -114,8 +116,8 @@ The FilterChainStep interface dictates how you want to filter messages being con
 ```
 
 ## Optional Interfaces for Overachievers
-Forst most use cases the above interfaces are all that are required to get going.  But..sometimes your use case requires
-you to do do something just a little special of different.  If thats the case with you, we provide the following 
+For most use cases the above interfaces are all that are required to get going.  But..sometimes your use case requires
+you to do do something just a little special of different.  If that's the case with you, we provide the following 
 configurable interfaces to hopefully ease the pain.
 
 ### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
