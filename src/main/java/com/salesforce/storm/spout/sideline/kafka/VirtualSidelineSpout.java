@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -246,12 +247,32 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
         final List<PartitionInfo> allPartitions = sidelineConsumer.getPartitions();
 
+        // We have more instances than partitions, we don't want that!
+        if (numInstances > allPartitions.size()) {
+            throw new RuntimeException("You have more instances than partitions, trying toning it back a bit!");
+        }
+
+        // If we only have one instance, we return all of the partitions
+        if (numInstances == 1) {
+            return allPartitions;
+        }
+
+        // If we have the same number of partitions as instances, we return the matching partition
+        if (allPartitions.size() == numInstances) {
+            return Collections.singletonList(allPartitions.get(instanceIndex));
+        }
+
+        final int partitionsPerInstance = (int) Math.ceil((double) allPartitions.size() / numInstances);
+
+        final int startingPartition = instanceIndex == 0 ? 0 : partitionsPerInstance * instanceIndex;
+
+        final int endingPartition = startingPartition + partitionsPerInstance > allPartitions.size() ?
+            allPartitions.size() : startingPartition + partitionsPerInstance;
+
         final List<PartitionInfo> myPartitions = new ArrayList<>();
 
-        for (PartitionInfo partition : allPartitions) {
-            if (partition.partition() % numInstances == instanceIndex) {
-                myPartitions.add(partition);
-            }
+        for (int i = startingPartition; i < endingPartition; i++) {
+            myPartitions.add(allPartitions.get(i));
         }
 
         return myPartitions;
