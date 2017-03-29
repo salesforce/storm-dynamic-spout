@@ -53,9 +53,10 @@ build up how they all work together.
 
 [SidelineConsumer]() - This is our high-level Kafka consumer built ontop of [KafkaConsumer]() that handles consuming from
 Kafka topics as well as maintaining consumer state information.  It wraps KafkaConsumer
-giving it semantics that play nicely with Storm.  As SidelineConsumer consumes messages from Kafka, and those messages
-eventually get emitted into your topology, Storm provides no guarantee that those messages will get processed in order.
-Because of this, tracking which offsets within your Kafka topic have and have not been processed in not entirely trivial.
+giving it semantics that play nicely with Storm.  KafkaConsumer assumes messages from a given partition are always
+consumed in order and processed in order.  As we know Storm provides no guarantee that as those messages get converted to tuples
+and emitted into your topology, they may get processed in no particular order.  Because of this, tracking which offsets
+within your Kafka topic have or have not been processed is not entirely trivial.  
 
 [VirtualSidelineSpout]() - Within a SidelineSpout instance, you will have one or more VirtualSidelineSpout instances.
 These wrap SidelineConsumer instances in order to consume messages from Kafka, and layers on functionality to determine
