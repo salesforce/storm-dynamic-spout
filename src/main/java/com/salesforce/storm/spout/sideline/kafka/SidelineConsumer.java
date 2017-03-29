@@ -270,13 +270,15 @@ public class SidelineConsumer {
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
             TopicPartition topicPartition = entry.getKey();
 
+            long lastFinishedOffset = entry.getValue().lastFinishedOffset();
+
             // Get the current offset for each partition.
-            builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
+            builder.withPartition(entry.getKey(), lastFinishedOffset);
 
             persistenceManager.persistConsumerState(
                 getConsumerId(),
                 topicPartition.partition(),
-                getKafkaConsumer().position(topicPartition)
+                lastFinishedOffset
             );
         }
 
