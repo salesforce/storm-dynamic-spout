@@ -202,13 +202,19 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
             final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
             final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
+            consumerConfig.setNumberOfConsumers(
+                topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
+            );
+            consumerConfig.setIndexOfConsumer(
+                topologyContext.getThisTaskIndex()
+            );
 
             // Create sideline consumer
             sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
         }
 
         // Open the consumer
-        sidelineConsumer.open(startingState, getPartitions());
+        sidelineConsumer.open();
 
         // If we have an ending state, we set some metrics.
         if (endingState != null) {
@@ -234,48 +240,6 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         ackTimeBuckets.put("RemoveTracked", 0L);
         ackTimeBuckets.put("CommitOffset", 0L);
         ackTimeBuckets.put("TupleMessageId", 0L);
-    }
-
-    /**
-     * Get the partitions that this particular spout instance should consume from.
-     * @return List of partitions to consume from
-     */
-    List<PartitionInfo> getPartitions() {
-        final int numInstances = topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size();
-
-        final int instanceIndex = topologyContext.getThisTaskIndex();
-
-        final List<PartitionInfo> allPartitions = sidelineConsumer.getPartitions();
-
-        // We have more instances than partitions, we don't want that!
-        if (numInstances > allPartitions.size()) {
-            throw new RuntimeException("You have more instances than partitions, trying toning it back a bit!");
-        }
-
-        // If we only have one instance, we return all of the partitions
-        if (numInstances == 1) {
-            return allPartitions;
-        }
-
-        // If we have the same number of partitions as instances, we return the matching partition
-        if (allPartitions.size() == numInstances) {
-            return Collections.singletonList(allPartitions.get(instanceIndex));
-        }
-
-        final int partitionsPerInstance = (int) Math.ceil((double) allPartitions.size() / numInstances);
-
-        final int startingPartition = instanceIndex == 0 ? 0 : partitionsPerInstance * instanceIndex;
-
-        final int endingPartition = startingPartition + partitionsPerInstance > allPartitions.size() ?
-            allPartitions.size() : startingPartition + partitionsPerInstance;
-
-        final List<PartitionInfo> myPartitions = new ArrayList<>();
-
-        for (int i = startingPartition; i < endingPartition; i++) {
-            myPartitions.add(allPartitions.get(i));
-        }
-
-        return myPartitions;
     }
 
     @Override

@@ -29,17 +29,17 @@ public interface PersistenceManager {
      * Pass in the consumer state that you'd like persisted.
      * @param consumerId The consumer's id.
      * @param partitionId The partition id
-     * @param consumerState Consumer state to be persisted.
+     * @param offset Offset of the consumer on the given partition
      */
-    void persistConsumerState(final String consumerId, final int partitionId, final ConsumerState consumerState);
+    void persistConsumerState(final String consumerId, final int partitionId, final long offset);
 
     /**
      * Retrieves the consumer state from the persistence layer.
      * @param consumerId The consumer's id.
      * @param partitionId The partition id
-     * @return ConsumerState Consumer state that was persisted
+     * @return Offset of the consumer on the given partition
      */
-    ConsumerState retrieveConsumerState(final String consumerId, final int partitionId);
+    Long retrieveConsumerState(final String consumerId, final int partitionId);
 
     /**
      * Removes consumer state from the persistence layer.

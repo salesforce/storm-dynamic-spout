@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Strings;
+import com.google.common.primitives.Longs;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,15 +97,15 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      * Pass in the consumer state that you'd like persisted.
      * @param consumerId The consumer's id.
      * @param partitionId The partition id
-     * @param consumerState Consumer state to be persisted.
+     * @param offset Offset for the partition to be persisted
      */
     @Override
-    public void persistConsumerState(final String consumerId, final int partitionId, final ConsumerState consumerState) {
+    public void persistConsumerState(final String consumerId, final int partitionId, final long offset) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Persist!
-        writeJson(getZkConsumerStatePath(consumerId, partitionId), consumerState);
+        writeBytes(getZkConsumerStatePath(consumerId, partitionId), Longs.toByteArray(offset));
     }
 
     /**
@@ -113,17 +115,20 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      * @return ConsumerState Consumer state that was persisted
      */
     @Override
-    public ConsumerState retrieveConsumerState(final String consumerId, final int partitionId) {
+    public Long retrieveConsumerState(final String consumerId, final int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Read!
         final String path = getZkConsumerStatePath(consumerId, partitionId);
-        Map<Object, Object> json = readJson(path);
-        logger.debug("Read state from Zookeeper at {}: {}", path, json);
 
-        // Parse to ConsumerState
-        return parseJsonToConsumerState(json);
+        final byte[] bytes = readBytes(path);
+
+        if (bytes == null) {
+            return null;
+        }
+
+        return Longs.fromByteArray(bytes);
     }
 
     /**

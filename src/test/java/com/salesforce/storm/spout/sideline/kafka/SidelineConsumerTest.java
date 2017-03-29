@@ -3,10 +3,18 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.FactoryManager;
+import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
 import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.Node;
@@ -17,6 +25,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +34,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -50,6 +61,7 @@ import static org.mockito.Mockito.when;
 /**
  * Validates that our SidelineConsumer works as we expect under various scenarios.
  */
+@RunWith(DataProviderRunner.class)
 public class SidelineConsumerTest {
 
     private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerTest.class);
@@ -306,14 +318,13 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        final ConsumerState emptyConsumerState = ConsumerState.builder().build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(emptyConsumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
@@ -377,8 +388,7 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        ConsumerState emptyConsumerState = ConsumerState.builder().build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(emptyConsumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // When we ask for the positions for each partition return mocked values
         when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPositionPartition0);
@@ -389,7 +399,7 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -458,17 +468,13 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        final ConsumerState consumerState = ConsumerState
-            .builder()
-            .withPartition(new TopicPartition(topicName, 0), lastCommittedOffset)
-            .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(lastCommittedOffset);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
@@ -529,19 +535,15 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        final ConsumerState consumerState = ConsumerState
-            .builder()
-            .withPartition(partition0, lastCommittedOffsetPartition0)
-            .withPartition(partition1, lastCommittedOffsetPartition1)
-            .withPartition(partition2, lastCommittedOffsetPartition2)
-            .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition0.partition())).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition1.partition())).thenReturn(lastCommittedOffsetPartition1);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition2.partition())).thenReturn(lastCommittedOffsetPartition2);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -616,12 +618,8 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state for partitions 0 and 2.
-        final ConsumerState consumerState = ConsumerState
-                .builder()
-                .withPartition(partition0, lastCommittedOffsetPartition0)
-                .withPartition(partition2, lastCommittedOffsetPartition2)
-                .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition0.partition())).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), partition2.partition())).thenReturn(lastCommittedOffsetPartition2);
 
         // Define values returned for partitions without state
         when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);
@@ -631,7 +629,7 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -690,7 +688,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -723,7 +721,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -756,7 +754,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -804,7 +802,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -881,7 +879,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -927,7 +925,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -976,7 +974,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -1036,7 +1034,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -1127,14 +1125,11 @@ public class SidelineConsumerTest {
 
         // Create a state in which we have already acked the first 5 messages
         // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
-        final ConsumerState consumerState = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 4L)
-            .build();
-        persistenceManager.persistConsumerState(config.getConsumerId(), 0, consumerState);
+        persistenceManager.persistConsumerState(config.getConsumerId(), 0, 4L);
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect, we should only get the last 5 records.
         for (int x=0; x<numberOfRecordsToConsume; x++) {
@@ -1188,7 +1183,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1310,7 +1305,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1389,7 +1384,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1532,7 +1527,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(startingState);
+        sidelineConsumer.open();
 
         // Define the values we expect to get
         // Ugh this is hacky, whatever
@@ -1566,6 +1561,59 @@ public class SidelineConsumerTest {
         for (int x=0; x<2; x++) {
             assertNull("Should be null", sidelineConsumer.nextRecord());
         }
+    }
+
+    /**
+     * Test the number of partitions consumed from for a multi-instance spout
+     *
+     * @param numInstances Number of instances
+     * @param numPartitions Number of partitions
+     * @param instanceIndex The instances index (starts at 0)
+     * @param partitionCount Number of partitions to expect
+     */
+    @Test
+    @UseDataProvider("dataProviderForGetPartitions")
+    public void testGetPartitions(int numInstances, int numPartitions, int instanceIndex, int partitionCount) {
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        config.setNumberOfConsumers(numInstances);
+        config.setIndexOfConsumer(instanceIndex);
+
+        final Node leader = new Node(1, "localhost", 1234);
+        final List<PartitionInfo> mockPartitions = new ArrayList<>();
+
+        for (int i=1; i<=numPartitions; i++) {
+            mockPartitions.add(new PartitionInfo(config.getTopic(), i, leader, new Node[]{}, new Node[]{}));
+        }
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        when(mockKafkaConsumer.partitionsFor(config.getTopic())).thenReturn(mockPartitions);
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager, mockKafkaConsumer);
+        sidelineConsumer.open();
+
+        List<TopicPartition> topicPartitions = sidelineConsumer.getPartitions();
+
+        assertEquals(partitionCount, topicPartitions.size());
+    }
+
+    @DataProvider
+    public static Object[][] dataProviderForGetPartitions() {
+        return new Object[][]{
+            // One instance, three partitions, first instance, expect 3 partitions for this spout
+            { 1, 3, 0, 3 },
+            // Two instances, three partitions, first instance, expect 2 partitions for this spout
+            { 2, 3, 0, 2 },
+            // Two instances, three partitions, second instance, expect 1 partition for this spout
+            { 2, 3, 1, 1 },
+            // Three instances, three partitions, third instance, expect 1 partitions for this spout
+            { 3, 3, 2, 1 },
+
+        };
     }
 
     /**
