@@ -98,11 +98,12 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testOpen() {
+        final int partitionId = 1;
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
         final String expectedZkRoot = getRandomZkRootNode();
         final String expectedConsumerId = "MyConsumerId";
-        final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
+        final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId + "/" + String.valueOf(partitionId);
         final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
 
         // Create our config
@@ -117,7 +118,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
 
         // Validate that getZkXXXXStatePath returns the expected value
-        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId));
+        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId, partitionId));
         assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceManager.getZkRequestStatePath(expectedConsumerId));
 
         // Close everyone out

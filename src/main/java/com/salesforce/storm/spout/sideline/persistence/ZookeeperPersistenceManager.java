@@ -103,7 +103,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Persist!
-        writeJson(getZkConsumerStatePath(consumerId), consumerState);
+        writeJson(getZkConsumerStatePath(consumerId, partitionId), consumerState);
     }
 
     /**
@@ -118,7 +118,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Read!
-        final String path = getZkConsumerStatePath(consumerId);
+        final String path = getZkConsumerStatePath(consumerId, partitionId);
         Map<Object, Object> json = readJson(path);
         logger.debug("Read state from Zookeeper at {}: {}", path, json);
 
@@ -137,7 +137,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Delete!
-        final String path = getZkConsumerStatePath(consumerId);
+        final String path = getZkConsumerStatePath(consumerId, partitionId);
         logger.info("Delete state from Zookeeper at {}", path);
         deleteNode(path);
     }
@@ -371,8 +371,8 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
-    String getZkConsumerStatePath(final String consumerId) {
-        return getZkRoot() + "/consumers/" + consumerId;
+    String getZkConsumerStatePath(final String consumerId, final int partitionId) {
+        return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
     }
 
     /**
