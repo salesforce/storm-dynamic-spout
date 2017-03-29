@@ -133,12 +133,11 @@ Once the VirtualSidelineSpout has completed consuming the skipped offsets, it wi
 [Insert info graphic here]
 
 #### What happens if I stop and redeploy the topology?
-The SidelineSpout has several moving pieces, all of which should properly handle resuming in the state that they were
-when the topology was halted.  The *main* VirtualSidelineSpout will continue consuming from the last ack'd offsets within your topic.
+The SidelineSpout has several moving pieces, all of which will properly handle resuming in the state that they were
+when the topology was halted.  The *main* VirtualSidelineSpout will continue consuming from the last acked offsets within your topic.
 Metadata about active StartSidelineRequests are retrieved via [PersistenceManager]() and resumed on start, properly filtering
-messages as they should.  Metadata about active StopSidelineRequests are retrieved via [PersistenceManager]() and resumed on start,
-continuing to consume messages at the last previously acked offsets.
-
+messages from being emitted into the topology.  Metadata about active StopSidelineRequests are retrieved via [PersistenceManager](), and VirtualSidelineSpout instances are
+started and resume consuming messages at the last previously acked offsets.
 
 # Getting started
 ## Dependencies
