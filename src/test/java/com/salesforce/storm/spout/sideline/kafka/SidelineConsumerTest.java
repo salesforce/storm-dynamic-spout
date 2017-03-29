@@ -48,7 +48,6 @@ import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -241,7 +240,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Sleep for 1.5 seconds
         Thread.sleep(1500);
@@ -250,7 +249,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 2 seconds.
         instant = instant.plus(2000, ChronoUnit.MILLIS);
@@ -261,13 +260,13 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Call our method again, it shouldn't fire.
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 1.5 seconds.
         instant = instant.plus(1500, ChronoUnit.MILLIS);
@@ -278,7 +277,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
     }
 
     /**
