@@ -261,26 +261,26 @@ public class SidelineConsumer {
      * @return - A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
+        // TODO: Does it make sense to return ConsumerState here even though we don't use it elsewhere?
+
         // Create a consumer state builder.
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         // Loop through all of our partition managers
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
+            TopicPartition topicPartition = entry.getKey();
+
             // Get the current offset for each partition.
             builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
+
+            persistenceManager.persistConsumerState(
+                getConsumerId(),
+                topicPartition.partition(),
+                getKafkaConsumer().position(topicPartition)
+            );
         }
 
-        // Build
-        final ConsumerState consumerState = builder.build();
-
-        final Set<TopicPartition> partitions = getKafkaConsumer().assignment();
-
-        for (TopicPartition partition : partitions) {
-            persistenceManager.persistConsumerState(getConsumerId(), partition.partition(), getKafkaConsumer().position(partition));
-        }
-
-        // Return the state that was persisted.
-        return consumerState;
+        return builder.build();
     }
 
     /**
