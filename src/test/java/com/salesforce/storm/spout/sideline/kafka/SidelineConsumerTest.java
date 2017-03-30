@@ -7,6 +7,9 @@ import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManage
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
 import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.Node;
@@ -17,6 +20,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +38,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -49,6 +53,7 @@ import static org.mockito.Mockito.when;
 /**
  * Validates that our SidelineConsumer works as we expect under various scenarios.
  */
+@RunWith(DataProviderRunner.class)
 public class SidelineConsumerTest {
 
     private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerTest.class);
@@ -131,8 +136,7 @@ public class SidelineConsumerTest {
         final String expectedConsumerId = "MyConsumerId";
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Enable auto commit and Set timeout to 1 second.
         config.setConsumerStateAutoCommit(true);
@@ -145,15 +149,22 @@ public class SidelineConsumerTest {
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
 
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+
+        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
+        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
+
         // Call constructor
-        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager);
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
         sidelineConsumer.setClock(mockClock);
+
+        sidelineConsumer.open();
 
         // Call our method once
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Sleep for 1.5 seconds
         Thread.sleep(1500);
@@ -162,7 +173,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 2 seconds.
         instant = instant.plus(2000, ChronoUnit.MILLIS);
@@ -173,13 +184,13 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer WAS hit because we adjust our mock clock ahead 2 secs
-        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyObject());
+        verify(mockPersistenceManager, times(1)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyLong());
 
         // Call our method again, it shouldn't fire.
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit again because we're using a mocked clock that has not changed since the last call :p
-        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, times(1)).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 1.5 seconds.
         instant = instant.plus(1500, ChronoUnit.MILLIS);
@@ -190,7 +201,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer WAS hit a 2nd time because we adjust our mock clock ahead
-        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyObject());
+        verify(mockPersistenceManager, times(2)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyLong());
     }
 
     /**
@@ -213,15 +224,22 @@ public class SidelineConsumerTest {
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
 
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+
+        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
+        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
+
         // Call constructor
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager);
         sidelineConsumer.setClock(mockClock);
+
+        sidelineConsumer.open();
 
         // Call our method once
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Sleep for 1.5 seconds
         Thread.sleep(1500);
@@ -230,7 +248,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 2 seconds.
         instant = instant.plus(2000, ChronoUnit.MILLIS);
@@ -241,13 +259,13 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Call our method again, it shouldn't fire.
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
 
         // Now lets adjust our mock clock up by 1.5 seconds.
         instant = instant.plus(1500, ChronoUnit.MILLIS);
@@ -258,7 +276,7 @@ public class SidelineConsumerTest {
         sidelineConsumer.timedFlushConsumerState();
 
         // Make sure persistence layer was not hit
-        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyObject());
+        verify(mockPersistenceManager, never()).persistConsumerState(anyString(), anyInt(), anyLong());
     }
 
     /**
@@ -281,8 +299,7 @@ public class SidelineConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -298,14 +315,13 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        final ConsumerState emptyConsumerState = ConsumerState.builder().build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
@@ -351,8 +367,7 @@ public class SidelineConsumerTest {
         final long earliestPositionPartition2 = 2324L;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -369,8 +384,7 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        ConsumerState emptyConsumerState = ConsumerState.builder().build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(emptyConsumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // When we ask for the positions for each partition return mocked values
         when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPositionPartition0);
@@ -381,7 +395,7 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -391,9 +405,14 @@ public class SidelineConsumerTest {
 
         // Since ConsumerStateManager has no state for partition 0, we should call seekToBeginning on that partition
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
-                new TopicPartition(topicName, 0),
-                new TopicPartition(topicName, 1),
-                new TopicPartition(topicName, 2))));
+            new TopicPartition(topicName, 0)
+        )));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
+            new TopicPartition(topicName, 1)
+        )));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
+            new TopicPartition(topicName, 2)
+        )));
 
         // Validate we got our calls for the current position
         verify(mockKafkaConsumer, times(1)).position(partition0);
@@ -436,8 +455,7 @@ public class SidelineConsumerTest {
         final long expectedOffsetToStartConsumeFrom = lastCommittedOffset + 1;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -450,17 +468,13 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        final ConsumerState consumerState = ConsumerState
-            .builder()
-            .withPartition(new TopicPartition(topicName, 0), lastCommittedOffset)
-            .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(0))).thenReturn(lastCommittedOffset);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
@@ -503,8 +517,7 @@ public class SidelineConsumerTest {
         final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -521,19 +534,15 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        final ConsumerState consumerState = ConsumerState
-            .builder()
-            .withPartition(partition0, lastCommittedOffsetPartition0)
-            .withPartition(partition1, lastCommittedOffsetPartition1)
-            .withPartition(partition2, lastCommittedOffsetPartition2)
-            .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(lastCommittedOffsetPartition1);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -558,6 +567,11 @@ public class SidelineConsumerTest {
      * This test has the ConsumerStateManager (a mock) return ConsumerState for every partition on the topic.
      * We verify that our internal kafka client then knows to start reading from the previously saved consumer state
      * offsets
+     *
+     * We setup this test with 4 partitions in our topic, 0 -> 3
+     *
+     * We setup Partitions 0 and 2 to have previously saved state -- We should resume from this previous state
+     * We setup Partitions 1 and 3 to have no previously saved state -- We should resume from the earliest offset in the partition.
      */
     @Test
     public void testConnectWithMultiplePartitionsOnTopicWithSomePreviouslySavedState() {
@@ -591,6 +605,8 @@ public class SidelineConsumerTest {
         // Setup our config
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
         final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        config.setNumberOfConsumers(1);
+        config.setIndexOfConsumer(0);
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -608,12 +624,10 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state for partitions 0 and 2.
-        final ConsumerState consumerState = ConsumerState
-                .builder()
-                .withPartition(partition0, lastCommittedOffsetPartition0)
-                .withPartition(partition2, lastCommittedOffsetPartition2)
-                .build();
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId))).thenReturn(consumerState);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(null);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(partition3.partition()))).thenReturn(null);
 
         // Define values returned for partitions without state
         when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);
@@ -623,18 +637,22 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
 
         // Now call open
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
-                partition0,
-                partition1,
-                partition2,
-                partition3)));
+            partition0,
+            partition1,
+            partition2,
+            partition3
+        )));
 
         // Since ConsumerStateManager has state for only 2 partitions, we should call seekToBeginning on partitions 1 and 3.
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
-                partition1, partition3
+            partition1
+        )));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
+            partition3
         )));
 
         // Verify we asked for the positions for 2 unknown state partitions
@@ -682,7 +700,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -715,7 +733,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -748,7 +766,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -774,6 +792,18 @@ public class SidelineConsumerTest {
         assertTrue("Should be empty", assignedPartitions.isEmpty());
         assertEquals("Should contain 0 entries", 0, assignedPartitions.size());
         assertFalse("Should NOT contain our expected topic/partition 0", assignedPartitions.contains(expectedTopicPartition));
+
+        // Now we want to validate that removeConsumerState() removes all state, even for unassigned partitions.
+
+        // Call flush and ensure we have persisted state on partition 0
+        sidelineConsumer.flushConsumerState();
+        assertNotNull("Should have state persisted for this partition", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), 0));
+
+        // If we call removeConsumerState, it should remove all state from the persistence layer
+        sidelineConsumer.removeConsumerState();
+
+        // Validate no more state persisted for partition 0
+        assertNull("Should have null state", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), 0));
     }
 
     /**
@@ -796,7 +826,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -850,6 +880,22 @@ public class SidelineConsumerTest {
         assertEquals("Should contain entries", (expectedNumberOfPartitions - 2), assignedPartitions.size());
         assertFalse("Should NOT contain our removed topic/partition 1", assignedPartitions.contains(toRemoveTopicPartition));
         assertFalse("Should NOT contain our removed topic/partition 2", assignedPartitions.contains(toRemoveTopicPartition2));
+
+        // Now we want to validate that removeConsumerState() removes all state, even for unassigned partitions.
+
+        // Call flush and ensure we have persisted state on all partitions
+        sidelineConsumer.flushConsumerState();
+        for (int partitionId=0; partitionId<expectedNumberOfPartitions; partitionId++) {
+            assertNotNull("Should have state persisted for this partition", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), partitionId));
+        }
+
+        // If we call removeConsumerState, it should remove all state from the persistence layer
+        sidelineConsumer.removeConsumerState();
+
+        // Validate we dont have state on any partitions now
+        for (int partitionId=0; partitionId<expectedNumberOfPartitions; partitionId++) {
+            assertNull("Should not have state persisted for this partition", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), partitionId));
+        }
     }
 
     /**
@@ -873,7 +919,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -910,8 +956,7 @@ public class SidelineConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -919,7 +964,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -959,8 +1004,7 @@ public class SidelineConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -968,7 +1012,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -1019,8 +1063,7 @@ public class SidelineConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -1028,7 +1071,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect
         List<ConsumerRecord> foundRecords = Lists.newArrayList();
@@ -1119,14 +1162,11 @@ public class SidelineConsumerTest {
 
         // Create a state in which we have already acked the first 5 messages
         // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
-        final ConsumerState consumerState = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 4L)
-            .build();
-        persistenceManager.persistConsumerState(config.getConsumerId(), consumerState);
+        persistenceManager.persistConsumerState(config.getConsumerId(), 0, 4L);
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect, we should only get the last 5 records.
         for (int x=0; x<numberOfRecordsToConsume; x++) {
@@ -1180,7 +1220,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1281,6 +1321,293 @@ public class SidelineConsumerTest {
     }
 
     /**
+     * This is an integration test of multiple SidelineConsumers.
+     * We stand up a topic with 4 partitions.
+     * We then have a consumer size of 2.
+     * We run the test once using consumerIndex 0
+     *   - Verify we only consume from partitions 0 and 1
+     * We run the test once using consumerIndex 1
+     *   - Verify we only consume from partitions 2 and 3
+     * @param consumerIndex What consumerIndex to run the test with.
+     */
+    @Test
+    @UseDataProvider("providerOfConsumerIndexes")
+    public void testConsumeWithConsumerGroupEvenNumberOfPartitions(final int consumerIndex) {
+        final int numberOfMsgsPerPartition = 10;
+
+        // Create a topic with 4 partitions
+        topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
+        kafkaTestServer.createTopic(topicName, 4);
+
+        // Define some topicPartitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+
+        // produce 10 msgs into even partitions, 11 into odd partitions
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition + 1, 1);
+        produceRecords(numberOfMsgsPerPartition, 2);
+        produceRecords(numberOfMsgsPerPartition + 1, 3);
+
+        // Some initial setup
+        final List<TopicPartition> expectedPartitions;
+        if (consumerIndex == 0) {
+            // If we're consumerIndex 0, we expect partitionIds 0 or 1
+            expectedPartitions = Lists.newArrayList(partition0 , partition1);
+        } else if (consumerIndex == 1) {
+            // If we're consumerIndex 0, we expect partitionIds 2 or 3
+            expectedPartitions = Lists.newArrayList(partition2 , partition3);
+        } else {
+            throw new RuntimeException("Invalid input to test");
+        }
+
+        // Setup our config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
+        config.setIndexOfConsumer(consumerIndex);
+        config.setNumberOfConsumers(2);
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
+        sidelineConsumer.open();
+
+        // Ask the underlying consumer for our assigned partitions.
+        Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
+        logger.info("Assigned partitions: {}", assignedPartitions);
+
+        // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
+        assertNotNull("Should be non-null", assignedPartitions);
+        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+        assertEquals("Should be assigned 2 partitions", 2, assignedPartitions.size());
+        assertTrue("Should contain first expected partition", assignedPartitions.contains(expectedPartitions.get(0)));
+        assertTrue("Should contain 2nd partition", assignedPartitions.contains(expectedPartitions.get(1)));
+
+        // Attempt to consume 21 records
+        // Read from topic, verify we get what we expect
+        for (int x=0; x<(numberOfMsgsPerPartition * 2) + 1; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Validate its from partition 0 or 1
+            final int foundPartitionId = foundRecord.partition();
+            assertTrue("Should be from one of our expected partitions", foundPartitionId == expectedPartitions.get(0).partition() || foundPartitionId == expectedPartitions.get(1).partition());
+
+            // Lets ack the tuple as we go
+            sidelineConsumer.commitOffset(foundRecord);
+        }
+
+        // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
+        for (int x=0; x<2; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNull("Should have nothing new to consume and be null", foundRecord);
+        }
+
+        // Now lets flush state
+        final ConsumerState consumerState = sidelineConsumer.flushConsumerState();
+
+        // validate the state only has data for our partitions
+        assertNotNull("Should not be null", consumerState);
+        assertEquals("Should only have 2 entries", 2, consumerState.size());
+        assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartitions.get(0)));
+        assertTrue("Should contain for 2nd expected partition", consumerState.containsKey(expectedPartitions.get(1)));
+        assertEquals("Offset stored should be 9 on first expected partition", (Long) 9L, consumerState.getOffsetForTopicAndPartition(expectedPartitions.get(0)));
+        assertEquals("Offset stored should be 10 on 2nd expected partition", (Long) 10L, consumerState.getOffsetForTopicAndPartition(expectedPartitions.get(1)));
+
+        // And double check w/ persistence manager directly
+        final Long partition0Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 0);
+        final Long partition1Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 1);
+        final Long partition2Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 2);
+        final Long partition3Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 3);
+
+        if (consumerIndex == 0) {
+            assertNotNull("Partition0 offset should be not null", partition0Offset);
+            assertNotNull("Partition1 offset should be not null", partition1Offset);
+            assertNull("Partition2 offset should be null", partition2Offset);
+            assertNull("Partition3 offset should be null", partition3Offset);
+
+            assertEquals("Offset should be 9", (Long) 9L, partition0Offset);
+            assertEquals("Offset should be 10", (Long) 10L, partition1Offset);
+        } else {
+            assertNotNull("Partition2 offset should be not null", partition2Offset);
+            assertNotNull("Partition3 offset should be not null", partition3Offset);
+            assertNull("Partition0 offset should be null", partition0Offset);
+            assertNull("Partition1 offset should be null", partition1Offset);
+
+            assertEquals("Offset should be 9", (Long) 9L, partition2Offset);
+            assertEquals("Offset should be 10", (Long) 10L, partition3Offset);
+        }
+
+        // Close it.
+        sidelineConsumer.close();
+    }
+
+    /**
+     * This is an integration test of multiple SidelineConsumers.
+     * We stand up a topic with 5 partitions.
+     * We then have a consumer size of 2.
+     * We run the test once using consumerIndex 0
+     *   - Verify we only consume from partitions 0,1,2
+     * We run the test once using consumerIndex 1
+     *   - Verify we only consume from partitions 3 and 4
+     * @param consumerIndex What consumerIndex to run the test with.
+     */
+    @Test
+    @UseDataProvider("providerOfConsumerIndexes")
+    public void testConsumeWithConsumerGroupOddNumberOfPartitions(final int consumerIndex) {
+        final int numberOfMsgsPerPartition = 10;
+
+        // Create a topic with 4 partitions
+        topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
+        kafkaTestServer.createTopic(topicName, 5);
+
+        // Define some topicPartitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+        final TopicPartition partition4 = new TopicPartition(topicName, 4);
+
+        // produce 10 msgs into even partitions, 11 into odd partitions
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition + 1, 1);
+        produceRecords(numberOfMsgsPerPartition, 2);
+        produceRecords(numberOfMsgsPerPartition + 1, 3);
+        produceRecords(numberOfMsgsPerPartition, 4);
+
+        // Some initial setup
+        final List<TopicPartition> expectedPartitions;
+        final int expectedRecordsToConsume;
+        if (consumerIndex == 0) {
+            // If we're consumerIndex 0, we expect partitionIds 0,1, or 2
+            expectedPartitions = Lists.newArrayList(partition0 , partition1, partition2);
+
+            // We expect to get out 31 records
+            expectedRecordsToConsume = 31;
+        } else if (consumerIndex == 1) {
+            // If we're consumerIndex 0, we expect partitionIds 3 or 4
+            expectedPartitions = Lists.newArrayList(partition3 , partition4);
+
+            // We expect to get out 21 records
+            expectedRecordsToConsume = 21;
+        } else {
+            throw new RuntimeException("Invalid input to test");
+        }
+
+        // Setup our config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
+        config.setIndexOfConsumer(consumerIndex);
+        config.setNumberOfConsumers(2);
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
+        sidelineConsumer.open();
+
+        // Ask the underlying consumer for our assigned partitions.
+        Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
+        logger.info("Assigned partitions: {}", assignedPartitions);
+
+        // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
+        assertNotNull("Should be non-null", assignedPartitions);
+        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+        assertEquals("Should be assigned correct number of partitions", expectedPartitions.size(), assignedPartitions.size());
+        for (TopicPartition expectedTopicPartition : expectedPartitions) {
+            assertTrue("Should contain expected partition", assignedPartitions.contains(expectedTopicPartition));
+        }
+
+        // Attempt to consume records
+        // Read from topic, verify we get what we expect
+        for (int x=0; x<expectedRecordsToConsume; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Validate its from a partition we expect
+            final int foundPartitionId = foundRecord.partition();
+            assertTrue("Should be from one of our expected partitions", expectedPartitions.contains(new TopicPartition(topicName, foundPartitionId)));
+
+            // Lets ack the tuple as we go
+            sidelineConsumer.commitOffset(foundRecord);
+        }
+
+        // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
+        for (int x=0; x<2; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNull("Should have nothing new to consume and be null", foundRecord);
+        }
+
+        // Now lets flush state
+        final ConsumerState consumerState = sidelineConsumer.flushConsumerState();
+
+        // validate the state only has data for our partitions
+        assertNotNull("Should not be null", consumerState);
+        assertEquals("Should only have correct number of entries", expectedPartitions.size(), consumerState.size());
+
+        for (TopicPartition expectedPartition: expectedPartitions) {
+            assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartition));
+
+            if (expectedPartition.partition() % 2 == 0) {
+                assertEquals("Offset stored should be 9 on even partitions", (Long) 9L, consumerState.getOffsetForTopicAndPartition(expectedPartition));
+            } else {
+                assertEquals("Offset stored should be 10 on odd partitions", (Long) 10L, consumerState.getOffsetForTopicAndPartition(expectedPartition));
+            }
+        }
+
+        // And double check w/ persistence manager directly
+        final Long partition0Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 0);
+        final Long partition1Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 1);
+        final Long partition2Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 2);
+        final Long partition3Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 3);
+        final Long partition4Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 4);
+
+        if (consumerIndex == 0) {
+            assertNotNull("Partition0 offset should be not null", partition0Offset);
+            assertNotNull("Partition1 offset should be not null", partition1Offset);
+            assertNotNull("Partition2 offset should be not null", partition2Offset);
+            assertNull("Partition3 offset should be null", partition3Offset);
+            assertNull("Partition4 offset should be null", partition4Offset);
+
+            assertEquals("Offset should be 9", (Long) 9L, partition0Offset);
+            assertEquals("Offset should be 10", (Long) 10L, partition1Offset);
+            assertEquals("Offset should be 9", (Long) 9L, partition2Offset);
+        } else {
+            assertNotNull("Partition3 offset should be not null", partition3Offset);
+            assertNotNull("Partition4 offset should be not null", partition4Offset);
+            assertNull("Partition0 offset should be null", partition0Offset);
+            assertNull("Partition1 offset should be null", partition1Offset);
+            assertNull("Partition2 offset should be null", partition2Offset);
+
+            assertEquals("Offset should be 10", (Long) 10L, partition3Offset);
+            assertEquals("Offset should be 9", (Long) 9L, partition4Offset);
+        }
+
+        // Close it.
+        sidelineConsumer.close();
+    }
+
+    /**
+     * Provides consumer indexes 0 and 1.
+     */
+    @DataProvider
+    public static Object[][] providerOfConsumerIndexes() {
+        return new Object[][]{
+                {0},
+                {1}
+        };
+    }
+
+    /**
      * 1. Setup a consumer to consume from a topic with 1 partition.
      * 2. Produce several messages into that partition.
      * 3. Consume all of the msgs from the topic.
@@ -1302,7 +1629,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1381,7 +1708,7 @@ public class SidelineConsumerTest {
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(null);
+        sidelineConsumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
@@ -1493,16 +1820,16 @@ public class SidelineConsumerTest {
         // How many msgs we should expect, 2 for partition 0, 4 from partition1
         final int numberOfExpectedMessages = 6;
 
+        // Define our topic/partitions
+        final TopicPartition topicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition topicPartition1 = new TopicPartition(topicName, 1);
+
         // Define starting offsets for partitions
         final long partition0StartingOffset = 1L;
         final long partition1StartingOffset = 20L;
 
         // Create our multi-partition topic.
         kafkaTestServer.createTopic(topicName, numberOfPartitions);
-
-        // Define our expected topic/partitions
-        final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
-        final TopicPartition expectedTopicPartition1 = new TopicPartition(topicName, 1);
 
         // Produce messages into both topics
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -1516,15 +1843,22 @@ public class SidelineConsumerTest {
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
         persistenceManager.open(Maps.newHashMap());
 
-        // Create starting state
-        final ConsumerState startingState = ConsumerState.builder()
-                .withPartition(expectedTopicPartition0, partition0StartingOffset)
-                .withPartition(expectedTopicPartition1, partition1StartingOffset)
-                .build();
+        // Create & persist the starting state for our test
+        // Partition 0 has starting offset = 1
+        persistenceManager.persistConsumerState("MyConsumerId", 0, partition0StartingOffset);
+
+        // Partition 1 has starting offset = 21, which is invalid.  If our sideline consumer is configured properly,
+        // it should reset to earliest, meaning offset 0 in this case.
+        persistenceManager.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
-        sidelineConsumer.open(startingState);
+        sidelineConsumer.open();
+
+        // Validate PartitionOffsetManager is correctly setup
+        ConsumerState consumerState = sidelineConsumer.getCurrentState();
+        assertEquals("Partition 0's last committed offset should be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition0));
+        assertEquals("Partition 1's last committed offset should be its starting offset", (Long) partition1StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition1));
 
         // Define the values we expect to get
         // Ugh this is hacky, whatever
@@ -1558,6 +1892,14 @@ public class SidelineConsumerTest {
         for (int x=0; x<2; x++) {
             assertNull("Should be null", sidelineConsumer.nextRecord());
         }
+
+        // Validate PartitionOffsetManager is correctly setup
+        // We have not acked anything,
+        consumerState = sidelineConsumer.getCurrentState();
+        assertEquals("Partition 0's last committed offset should still be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition0));
+
+        // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
+        assertEquals("Partition 1's last committed offset should be reset to earliest, or -1 in our case", (Long)(-1L), consumerState.getOffsetForTopicAndPartition(topicPartition1));
     }
 
     /**
@@ -1585,6 +1927,12 @@ public class SidelineConsumerTest {
 
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        return new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+
+        // Set values for consumer count and index
+        config.setNumberOfConsumers(1);
+        config.setIndexOfConsumer(0);
+
+        return config;
     }
 }

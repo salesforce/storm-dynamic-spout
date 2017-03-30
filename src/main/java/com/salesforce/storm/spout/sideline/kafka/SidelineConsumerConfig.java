@@ -11,11 +11,12 @@ import java.util.stream.Collectors;
  * TODO: should probably be immutable and use the builder pattern.
  */
 public class SidelineConsumerConfig {
+
     private final Properties kafkaConsumerProperties = new Properties();
     private final String topic;
     private final String consumerId;
-    private ConsumerState startState = null;
-    private ConsumerState stopState = null;
+    private int numberOfConsumers;
+    private int indexOfConsumer;
 
     /**
      * Settings for consumer state auto commit.  Defaulted to off.
@@ -107,22 +108,6 @@ public class SidelineConsumerConfig {
         return consumerId;
     }
 
-    public ConsumerState getStartState() {
-        return startState;
-    }
-
-    public void setStartState(ConsumerState startState) {
-        this.startState = startState;
-    }
-
-    public ConsumerState getStopState() {
-        return stopState;
-    }
-
-    public void setStopState(ConsumerState stopState) {
-        this.stopState = stopState;
-    }
-
     public String getTopic() {
         return topic;
     }
@@ -153,5 +138,21 @@ public class SidelineConsumerConfig {
 
     public void setConsumerStateAutoCommitIntervalMs(long consumerStateAutoCommitIntervalMs) {
         this.consumerStateAutoCommitIntervalMs = consumerStateAutoCommitIntervalMs;
+    }
+
+    public int getNumberOfConsumers() {
+        return numberOfConsumers;
+    }
+
+    public void setNumberOfConsumers(int numberOfConsumers) {
+        this.numberOfConsumers = numberOfConsumers;
+    }
+
+    public int getIndexOfConsumer() {
+        return indexOfConsumer;
+    }
+
+    public void setIndexOfConsumer(int indexOfConsumer) {
+        this.indexOfConsumer = indexOfConsumer;
     }
 }

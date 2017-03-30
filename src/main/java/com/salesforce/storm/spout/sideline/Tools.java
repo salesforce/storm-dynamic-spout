@@ -2,9 +2,13 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.map.UnmodifiableMap;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**

@@ -4,12 +4,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
+import com.salesforce.storm.spout.sideline.kafka.SidelineConsumer;
+import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerConfig;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
@@ -17,6 +22,8 @@ import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
@@ -40,6 +47,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -48,6 +56,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -86,7 +95,7 @@ public class SidelineSpoutTest {
      * Create a new empty topic with randomly generated name.
      */
     @Before
-    public void beforeTest() {
+    public void beforeTest() throws InterruptedException {
         // Generate topic name
         topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
@@ -143,14 +152,14 @@ public class SidelineSpoutTest {
     @Test
     public void testGenerateVirtualSpoutId() {
         final String expectedPrefix = "MyVirtualSpoutPrefix";
-        final int expectedTaskIndex = 10;
+        final int expectedTaskIndex = 0;
 
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(expectedPrefix, null);
 
         // Setup our mock TopologyContext
         final MockTopologyContext topologyContext = new MockTopologyContext();
-        topologyContext.taskId = 100;
+        topologyContext.taskId = 0;
         topologyContext.taskIndex = expectedTaskIndex;
 
         // Mock output collector
@@ -162,15 +171,15 @@ public class SidelineSpoutTest {
 
         // Now call our method with empty string
         String result = spout.generateVirtualSpoutId("");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-" + expectedTaskIndex);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix);
 
         // Call our method with null
         result = spout.generateVirtualSpoutId(null);
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-" + expectedTaskIndex);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix);
 
         // Call our method with a postfix
         result = spout.generateVirtualSpoutId("PostFix");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-PostFix-"  + expectedTaskIndex);
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-PostFix");
 
         // Call close.
         spout.close();
@@ -221,7 +230,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 2, 0L);
 
         // Lets produce some data into the topic
-        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
 
         // Now consume tuples generated from the messages we published into kafka.
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
@@ -282,7 +291,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
 
         // Lets produce some data into the topic
-        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
 
         // Now loop and get our tuples
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
@@ -381,7 +390,7 @@ public class SidelineSpoutTest {
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Produce records into kafka
-        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // Wait for our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
         // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
@@ -401,16 +410,14 @@ public class SidelineSpoutTest {
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
-        final StaticMessageFilter staticMessageFilter = new StaticMessageFilter();
-
-        final SidelineRequest request = new SidelineRequest(staticMessageFilter);
+        final SidelineRequest request = new SidelineRequest(new StaticMessageFilter());
 
         // Send a new start request with our filter.
         // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
         staticTrigger.sendStartRequest(request);
 
         // Produce another 3 records into kafka.
-        producedRecords = produceRecords(numberOfRecordsToPublish);
+        producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // We basically want the time that would normally pass before we check that there are no new tuples
         // Call next tuple, it should NOT receive any tuples because
@@ -420,7 +427,11 @@ public class SidelineSpoutTest {
         // Send a stop sideline request
         staticTrigger.sendStopRequest(request);
 
-        // We need to wait a bit for the sideline spout instance to spin up and start consuming
+        // We need to wait a bit for the sideline spout instance to spin up
+        waitForVirtualSpouts(spout, 2);
+
+        // Then ask the spout for tuples, we should get back the tuples that were produced while
+        // sidelining was active.  These tuples should come from the VirtualSpout started by the Stop request.
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // We should validate these emissions
@@ -441,7 +452,7 @@ public class SidelineSpoutTest {
         waitForVirtualSpouts(spout, 1);
 
         // Produce some more records, verify they come in the firehose.
-        producedRecords = produceRecords(numberOfRecordsToPublish);
+        producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
@@ -468,7 +479,7 @@ public class SidelineSpoutTest {
     @Test
     public void testResumingForFirehoseVirtualSpout() throws InterruptedException, IOException, KeeperException {
         // Produce 10 messages into kafka (offsets 0->9)
-        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10, 0));
 
         // Create spout
         // Define our output stream id
@@ -571,7 +582,7 @@ public class SidelineSpoutTest {
     @Test
     public void testResumingSpoutWhileSidelinedVirtualSpoutIsActive() throws InterruptedException {
         // Produce 10 messages into kafka (offsets 0->9)
-        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10, 0));
 
         // Create spout
         // Define our output stream id
@@ -628,7 +639,7 @@ public class SidelineSpoutTest {
         staticTrigger.sendStartRequest(request);
 
         // Produce 5 more messages into kafka, should be offsets [10,11,12,13,14]
-        List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5);
+        List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 4 more times, we should get the remaining first 10 records because they were already buffered.
         spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
@@ -740,7 +751,7 @@ public class SidelineSpoutTest {
         logger.info("=== Virtual Spout should be closed now... just fire hose left!");
 
         // Produce 5 messages into Kafka topic with offsets [15,16,17,18,19]
-        List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5);
+        List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 5 times,
         List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 5);
@@ -793,6 +804,218 @@ public class SidelineSpoutTest {
 
         // Stop spout.
         spout.close();
+    }
+
+    /**
+     * This is an integration test of multiple SidelineConsumers.
+     * We stand up a topic with 4 partitions.
+     * We then have a consumer size of 2.
+     * We run the test once using consumerIndex 0
+     *   - Verify we only consume from partitions 0 and 1
+     * We run the test once using consumerIndex 1
+     *   - Verify we only consume from partitions 2 and 3
+     * @param taskIndex What taskIndex to run the test with.
+     */
+    @Test
+    @UseDataProvider("providerOfTaskIds")
+    public void testConsumeWithConsumerGroupEvenNumberOfPartitions(final int taskIndex) {
+        final int numberOfMsgsPerPartition = 10;
+
+        // Create a topic with 4 partitions
+        topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
+        kafkaTestServer.createTopic(topicName, 4);
+
+        // Define some topicPartitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+
+        // produce 10 msgs into even partitions, 11 into odd partitions
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition + 1, 1);
+        produceRecords(numberOfMsgsPerPartition, 2);
+        produceRecords(numberOfMsgsPerPartition + 1, 3);
+
+        // Some initial setup
+        final List<TopicPartition> expectedPartitions;
+        if (taskIndex == 0) {
+            // If we're consumerIndex 0, we expect partitionIds 0 or 1
+            expectedPartitions = Lists.newArrayList(partition0 , partition1);
+        } else if (taskIndex == 1) {
+            // If we're consumerIndex 0, we expect partitionIds 2 or 3
+            expectedPartitions = Lists.newArrayList(partition2 , partition3);
+        } else {
+            throw new RuntimeException("Invalid input to test");
+        }
+
+        // Create spout
+        // Define our output stream id
+        final String expectedStreamId = "default";
+        final String consumerIdPrefix = "TestSidelineSpout";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Use zookeeper persistence manager
+        config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager");
+
+        // Create topology context, set our task index
+        MockTopologyContext topologyContext = new MockTopologyContext();
+        topologyContext.taskId = taskIndex;
+        topologyContext.taskIndex = taskIndex;
+
+        // Say that we have 2 tasks, ids 0 and 1
+        topologyContext.componentTasks = Collections.unmodifiableList(Lists.newArrayList(0,1));
+
+        MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create our spout, add references to our static trigger, and call open().
+        SidelineSpout spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+
+        // Wait for our virtual spout to start
+        waitForVirtualSpouts(spout, 1);
+
+        // Call next tuple 21 times, getting offsets 0-9 on the first partition, 0-10 on the 2nd partition
+        final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, (numberOfMsgsPerPartition * 2) + 1);
+
+        // Validate they all came from the correct partitions
+        for (SpoutEmission spoutEmission : spoutEmissions) {
+            assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
+
+            // Validate it came from the right place
+            final TupleMessageId tupleMessageId = (TupleMessageId) spoutEmission.getMessageId();
+            assertTrue("Came from expected partition", expectedPartitions.contains(tupleMessageId.getTopicPartition()));
+        }
+
+        // Validate we don't have any other emissions
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 5, 0L);
+
+        // Lets ack our tuples
+        ackTuples(spout, spoutEmissions);
+
+        // Close
+        spout.close();
+    }
+
+    /**
+     * This is an integration test of multiple SidelineConsumers.
+     * We stand up a topic with 4 partitions.
+     * We then have a consumer size of 2.
+     * We run the test once using consumerIndex 0
+     *   - Verify we only consume from partitions 0 and 1
+     * We run the test once using consumerIndex 1
+     *   - Verify we only consume from partitions 2 and 3
+     * @param taskIndex What taskIndex to run the test with.
+     */
+    @Test
+    @UseDataProvider("providerOfTaskIds")
+    public void testConsumeWithConsumerGroupOddNumberOfPartitions(final int taskIndex) {
+        final int numberOfMsgsPerPartition = 10;
+
+        // Create a topic with 4 partitions
+        topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
+        kafkaTestServer.createTopic(topicName, 5);
+
+        // Define some topicPartitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+        final TopicPartition partition4 = new TopicPartition(topicName, 4);
+
+        // produce 10 msgs into even partitions, 11 into odd partitions
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition + 1, 1);
+        produceRecords(numberOfMsgsPerPartition, 2);
+        produceRecords(numberOfMsgsPerPartition + 1, 3);
+        produceRecords(numberOfMsgsPerPartition, 4);
+
+        // Some initial setup
+        final List<TopicPartition> expectedPartitions;
+        final int expectedNumberOfTuplesToConsume;
+        if (taskIndex == 0) {
+            // If we're consumerIndex 0, we expect partitionIds 0,1, or 2
+            expectedPartitions = Lists.newArrayList(partition0 , partition1, partition2);
+
+            // We expect to get out 31 tuples
+            expectedNumberOfTuplesToConsume = 31;
+        } else if (taskIndex == 1) {
+            // If we're consumerIndex 0, we expect partitionIds 3 or 4
+            expectedPartitions = Lists.newArrayList(partition3 , partition4);
+
+            // We expect to get out 21 tuples
+            expectedNumberOfTuplesToConsume = 21;
+        } else {
+            throw new RuntimeException("Invalid input to test");
+        }
+
+        // Create spout
+        // Define our output stream id
+        final String expectedStreamId = "default";
+        final String consumerIdPrefix = "TestSidelineSpout";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Use zookeeper persistence manager
+        config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager");
+
+        // Create topology context, set our task index
+        MockTopologyContext topologyContext = new MockTopologyContext();
+        topologyContext.taskId = taskIndex;
+        topologyContext.taskIndex = taskIndex;
+
+        // Say that we have 2 tasks, ids 0 and 1
+        topologyContext.componentTasks = Collections.unmodifiableList(Lists.newArrayList(0,1));
+
+        MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create our spout, add references to our static trigger, and call open().
+        SidelineSpout spout = new SidelineSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+
+        // Wait for our virtual spout to start
+        waitForVirtualSpouts(spout, 1);
+
+        // Call next tuple , getting offsets 0-9 on the even partitions, 0-10 on the odd partitions
+        final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, expectedNumberOfTuplesToConsume);
+
+        // Validate they all came from the correct partitions
+        for (SpoutEmission spoutEmission : spoutEmissions) {
+            assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
+
+            // Validate it came from the right place
+            final TupleMessageId tupleMessageId = (TupleMessageId) spoutEmission.getMessageId();
+            assertTrue("Came from expected partition", expectedPartitions.contains(tupleMessageId.getTopicPartition()));
+        }
+
+        // Validate we don't have any other emissions
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 5, 0L);
+
+        // Lets ack our tuples
+        ackTuples(spout, spoutEmissions);
+
+        // Close
+        spout.close();
+    }
+
+    /**
+     * Provides task ids 0 and 1.
+     */
+    @DataProvider
+    public static Object[][] providerOfTaskIds() {
+        return new Object[][]{
+                {0},
+                {1}
+        };
     }
 
     // Helper methods
@@ -1093,9 +1316,9 @@ public class SidelineSpoutTest {
     /**
      * helper method to produce records into kafka.
      */
-    private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
+    private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords, int partitionId) {
         KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(kafkaTestServer);
-        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, 0);
+        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
     }
 
     /**
@@ -1105,6 +1328,9 @@ public class SidelineSpoutTest {
      * @param configuredStreamId - What streamId we should emit tuples out of.
      */
     private Map<String, Object> getDefaultConfig(final String consumerIdPrefix, final String configuredStreamId) {
+        // Generate a unique zkRootNode for each test
+        final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
+
         final Map<String, Object> config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
         config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager");
@@ -1112,7 +1338,7 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager");

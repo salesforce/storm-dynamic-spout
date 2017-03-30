@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Spout instance.
@@ -271,7 +272,8 @@ public class SidelineSpout extends BaseRichSpout {
                 getTopologyConfig(),
                 getTopologyContext(),
                 getFactoryManager(),
-                metricsRecorder);
+                metricsRecorder
+        );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Create TupleBuffer
@@ -318,24 +320,13 @@ public class SidelineSpout extends BaseRichSpout {
                 // Generate our virtualSpoutId using the payload id.
                 final String virtualSpoutId = generateVirtualSpoutId(payload.id.toString());
 
-                // What if we've previously processed this virtual spout before...?
-                // If we tell it start at the payloads start... it won't resume where it left off.
-                // So first lets ask the persistence manager and see if we have a stored state
-                ConsumerState startingState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
-
-                // If we have no starting state in the persistence manager yet
-                if (startingState == null || startingState.isEmpty()) {
-                    // Then we should use the payload state
-                    startingState = payload.startingState;
-                }
-
                 // Create spout instance.
                 final VirtualSidelineSpout spout = new VirtualSidelineSpout(
                     getTopologyConfig(),
                     getTopologyContext(),
                     getFactoryManager(),
                     metricsRecorder,
-                    startingState,
+                    payload.startingState,
                     payload.endingState
                 );
                 spout.setVirtualSpoutId(virtualSpoutId);
@@ -594,8 +585,6 @@ public class SidelineSpout extends BaseRichSpout {
             // append it
             newId += "-" + optionalPostfix;
         }
-        // Always append the task index
-        newId += "-" + getTopologyContext().getThisTaskIndex();
 
         // return it
         return newId;

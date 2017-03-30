@@ -176,8 +176,9 @@ public class KafkaPersistenceManager implements PersistenceManager {
         }
     }
 
+    // TODO: Powis - implement partition id
     @Override
-    public void persistConsumerState(String consumerId, ConsumerState consumerState) {
+    public void persistConsumerState(String consumerId, int partitionId, long offset) {
         // Ensure offset metadata has been loaded.
         loadOffsetMetadata(consumerId);
 
@@ -189,12 +190,15 @@ public class KafkaPersistenceManager implements PersistenceManager {
 
         // Build Topic And Partitions
         final Map<TopicAndPartition, OffsetAndMetadata> offsets = Maps.newHashMap();
+        // TODO: Powis fix
+        /*
         for (TopicPartition topicPartition : consumerState.getTopicPartitions()) {
             final long offset = consumerState.getOffsetForTopicAndPartition(topicPartition);
             final TopicAndPartition topicAndPartition = new TopicAndPartition(topicPartition.topic(), topicPartition.partition());
             logger.info("Committing offset {} => {}", topicPartition, offset);
             offsets.put(topicAndPartition, new OffsetAndMetadata(new OffsetMetadata(offset, "my-metadata"), now, expiresAt));
         }
+        */
         OffsetCommitRequest commitRequest = new OffsetCommitRequest(
                 consumerId,
                 offsets,
@@ -225,8 +229,9 @@ public class KafkaPersistenceManager implements PersistenceManager {
         }
     }
 
+    // TODO: Powis - implement partition id
     @Override
-    public ConsumerState retrieveConsumerState(String consumerId) {
+    public Long retrieveConsumerState(String consumerId, int partitionId) {
         // Ensure offset metadata has been loaded.
         loadOffsetMetadata(consumerId);
 
@@ -263,12 +268,13 @@ public class KafkaPersistenceManager implements PersistenceManager {
             }
         }
 
-        // return result
-        return builder.build();
+        // TODO: Powis fix
+        return 1L;
     }
 
+    // TODO: Powis - implement partition id
     @Override
-    public void clearConsumerState(String consumerId) {
+    public void clearConsumerState(String consumerId, int partitionId) {
         // Not implemented?
         throw new RuntimeException("Not implemented yet..");
     }
