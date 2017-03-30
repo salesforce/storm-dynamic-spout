@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Longs;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -281,15 +282,15 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Child Node name not correct", consumerId, childNodeName);
 
         // 5. Grab the value and validate it
-        final byte[] storedDataBytes = zookeeperClient.getData(zkConsumersRootNodePath + "/" + consumerId, false, null);
+        final byte[] storedDataBytes = zookeeperClient.getData(zkConsumersRootNodePath + "/" + consumerId + "/" + String.valueOf(partitionId), false, null);
         logger.debug("Stored data bytes {}", storedDataBytes);
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        final String storedDataStr = new String(storedDataBytes, Charsets.UTF_8);
-        logger.info("Stored data string {}", storedDataStr);
-        assertNotNull("Stored data string should be non-null", storedDataStr);
-        assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
+        final Long storedData = Longs.fromByteArray(storedDataBytes);
+        logger.info("Stored data {}", storedData);
+        assertNotNull("Stored data should be non-null", storedData);
+        assertEquals("Got unexpected state", offset, (long) storedData);
 
         // Test clearing state actually clears state.
         persistenceManager.clearConsumerState(consumerId, partitionId);
@@ -298,7 +299,7 @@ public class ZookeeperPersistenceManagerTest {
         // Since this is an async operation, use await() to watch for the change
         await()
             .atMost(6, TimeUnit.SECONDS)
-            .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId, false), nullValue());
+            .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId + "/" + partitionId, false), nullValue());
 
         // Close everyone out
         persistenceManager.close();
