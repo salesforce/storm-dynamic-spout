@@ -214,7 +214,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         }
 
         // Open the consumer
-        sidelineConsumer.open();
+        sidelineConsumer.open(startingState);
 
         // If we have an ending state, we set some metrics.
         if (endingState != null) {

@@ -131,6 +131,15 @@ public class SidelineConsumer {
      * each partition.
      */
     public void open() {
+        open(null);
+    }
+
+    /**
+     * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
+     * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
+     * each partition.
+     */
+    public void open(final ConsumerState startingState) {
         // Simple state enforcement.
         if (isOpen) {
             throw new RuntimeException("Cannot call open more than once...");
@@ -151,21 +160,30 @@ public class SidelineConsumer {
         kafkaConsumer.assign(topicPartitions);
 
         for (TopicPartition topicPartition : topicPartitions) {
+            Long startingOffset = null;
+
+            if (startingState != null) {
+                startingOffset = startingState.getOffsetForTopicAndPartition(topicPartition);
+            }
+
             // Check to see if we have an existing offset saved for this partition
             Long offset = persistenceManager.retrieveConsumerState(getConsumerId(), topicPartition.partition());
 
-            if (offset == null) {
+            if (offset == null && startingOffset != null) {
+                offset = startingOffset;
+            }
+
+            if (offset != null) {
+                // We have a stored offset, so pick up on the partition where we left off
+                logger.info("Resuming topic {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
+                getKafkaConsumer().seek(topicPartition, (offset + 1));
+            } else {
                 // We do not have an existing offset saved, so start from the head
                 logger.info("Starting at the beginning of topic {} partition {}", topicPartition.topic(), topicPartition.partition());
                 kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
 
                 offset = getKafkaConsumer().position(topicPartition) - 1;
                 logger.info("Starting at the beginning of topic {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
-
-            } else {
-                // Pick up on the partition where we left off
-                logger.info("Resuming topic {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
-                getKafkaConsumer().seek(topicPartition, (offset + 1));
             }
 
             partitionStateManagers.put(
