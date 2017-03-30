@@ -14,11 +14,16 @@ public class PartitionDistributor {
      * @return List of partition ids for assignment
      */
     public static int[] calculatePartitionAssignment(final int totalConsumers, final int consumerIndex, final int[] allPartitionIds) {
+        // If total consumers is 0, that's not possible!
+        if (totalConsumers <= 0) {
+            throw new IllegalArgumentException("You cannot have less than 1 totalConsumers!");
+        }
+
         // We have more instances than partitions, we don't want that!
         if (totalConsumers > allPartitionIds.length) {
             throw new IllegalArgumentException("You have more instances than partitions, trying toning it back a bit!");
         }
-        // We have a consumer index thats invalid
+        // We have a consumer index that's invalid
         if (consumerIndex >= totalConsumers || consumerIndex < 0) {
             throw new IllegalArgumentException("Your consumerIndex is invalid! Range should be [0 -> " + (totalConsumers-1) + "]");
         }

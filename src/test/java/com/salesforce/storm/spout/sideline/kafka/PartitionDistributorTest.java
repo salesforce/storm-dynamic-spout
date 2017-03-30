@@ -120,4 +120,44 @@ public class PartitionDistributorTest {
                 new int[] { 0, 1, 2, 3 }
         );
     }
+
+    /**
+     * Test that when we have a zero total consumers value that we toss an exception.
+     */
+    @Test
+    public void testCalculatePartitionAssignmentWithTotalConsumersZero() {
+
+        // We expect exceptions on this one.
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("totalConsumers");
+
+        PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                0,
+                // Current instance index
+                2,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+        );
+    }
+
+    /**
+     * Test that when we have a negative total consumers value that we toss an exception.
+     */
+    @Test
+    public void testCalculatePartitionAssignmentWithTotalConsumersNegative() {
+
+        // We expect exceptions on this one.
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("totalConsumers");
+
+        PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                -2,
+                // Current instance index
+                2,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+        );
+    }
 }

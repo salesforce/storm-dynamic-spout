@@ -136,8 +136,7 @@ public class SidelineConsumerTest {
         final String expectedConsumerId = "MyConsumerId";
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, expectedConsumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Enable auto commit and Set timeout to 1 second.
         config.setConsumerStateAutoCommit(true);
@@ -300,8 +299,7 @@ public class SidelineConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -369,8 +367,7 @@ public class SidelineConsumerTest {
         final long earliestPositionPartition2 = 2324L;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -458,8 +455,7 @@ public class SidelineConsumerTest {
         final long expectedOffsetToStartConsumeFrom = lastCommittedOffset + 1;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -521,8 +517,7 @@ public class SidelineConsumerTest {
         final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -933,8 +928,7 @@ public class SidelineConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -982,8 +976,7 @@ public class SidelineConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -1042,8 +1035,7 @@ public class SidelineConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
@@ -1907,6 +1899,12 @@ public class SidelineConsumerTest {
 
     private SidelineConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
         List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        return new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+        SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+
+        // Set values for consumer count and index
+        config.setNumberOfConsumers(1);
+        config.setIndexOfConsumer(0);
+
+        return config;
     }
 }
