@@ -792,6 +792,18 @@ public class SidelineConsumerTest {
         assertTrue("Should be empty", assignedPartitions.isEmpty());
         assertEquals("Should contain 0 entries", 0, assignedPartitions.size());
         assertFalse("Should NOT contain our expected topic/partition 0", assignedPartitions.contains(expectedTopicPartition));
+
+        // Now we want to validate that removeConsumerState() removes all state, even for unassigned partitions.
+
+        // Call flush and ensure we have persisted state on partition 0
+        sidelineConsumer.flushConsumerState();
+        assertNotNull("Should have state persisted for this partition", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), 0));
+
+        // If we call removeConsumerState, it should remove all state from the persistence layer
+        sidelineConsumer.removeConsumerState();
+
+        // Validate no more state persisted for partition 0
+        assertNull("Should have null state", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), 0));
     }
 
     /**
@@ -868,6 +880,22 @@ public class SidelineConsumerTest {
         assertEquals("Should contain entries", (expectedNumberOfPartitions - 2), assignedPartitions.size());
         assertFalse("Should NOT contain our removed topic/partition 1", assignedPartitions.contains(toRemoveTopicPartition));
         assertFalse("Should NOT contain our removed topic/partition 2", assignedPartitions.contains(toRemoveTopicPartition2));
+
+        // Now we want to validate that removeConsumerState() removes all state, even for unassigned partitions.
+
+        // Call flush and ensure we have persisted state on all partitions
+        sidelineConsumer.flushConsumerState();
+        for (int partitionId=0; partitionId<expectedNumberOfPartitions; partitionId++) {
+            assertNotNull("Should have state persisted for this partition", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), partitionId));
+        }
+
+        // If we call removeConsumerState, it should remove all state from the persistence layer
+        sidelineConsumer.removeConsumerState();
+
+        // Validate we dont have state on any partitions now
+        for (int partitionId=0; partitionId<expectedNumberOfPartitions; partitionId++) {
+            assertNull("Should not have state persisted for this partition", persistenceManager.retrieveConsumerState(sidelineConsumer.getConsumerId(), partitionId));
+        }
     }
 
     /**
