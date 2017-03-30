@@ -1,27 +1,26 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Strings;
-import com.google.common.primitives.Longs;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +104,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Persist!
-        writeBytes(getZkConsumerStatePath(consumerId, partitionId), Longs.toByteArray(offset));
+        writeBytes(getZkConsumerStatePath(consumerId, partitionId), String.valueOf(offset).getBytes(Charsets.UTF_8));
     }
 
     /**
@@ -127,8 +126,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         if (bytes == null) {
             return null;
         }
-
-        return Longs.fromByteArray(bytes);
+        return Long.valueOf(new String(bytes, Charsets.UTF_8));
     }
 
     /**
@@ -145,6 +143,11 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         final String path = getZkConsumerStatePath(consumerId, partitionId);
         logger.info("Delete state from Zookeeper at {}", path);
         deleteNode(path);
+
+        // Attempt to delete the parent path.
+        // This is a noop if the parent path is not empty.
+        final String parentPath = path.substring(0, path.lastIndexOf('/'));
+        deleteNodeIfNoChildren(parentPath);
     }
 
     @Override
@@ -296,7 +299,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      */
     private void writeJson(String path, Map data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charset.forName("UTF-8")));
+        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charsets.UTF_8));
     }
 
     /**
@@ -310,7 +313,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             if (bytes == null) {
                 return null;
             }
-            return (Map<Object, Object>) JSONValue.parse(new String(bytes, "UTF-8"));
+            return (Map<Object, Object>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -368,6 +371,29 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
             // Delete.
             curator.delete().forPath(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Removes a path only if it has no children.
+     * @param path - path to remove.
+     */
+    private void deleteNodeIfNoChildren(final String path) {
+        try {
+            // If it doesn't exist,
+            if (curator.checkExists().forPath(path) == null) {
+                // Nothing to do!
+                return;
+            }
+
+            // Delete.
+            List<String> children = curator.getChildren().forPath(path);
+            if (children.isEmpty()) {
+                logger.info("Removing empty path {}", path);
+                curator.delete().forPath(path);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
