@@ -527,9 +527,7 @@ public class SidelineConsumer {
         final List<PartitionInfo> allPartitionInfos = getKafkaConsumer().partitionsFor(consumerConfig.getTopic());
 
         // Convert all of our partition info objects into a primitive list of the partition ids
-        final int[] allPartitionIds = ArrayUtils.toPrimitive(
-            (Integer[]) allPartitionInfos.stream().map(PartitionInfo::partition).collect(Collectors.toList()).toArray()
-        );
+        final int[] allPartitionIds = allPartitionInfos.stream().map(PartitionInfo::partition).mapToInt(i -> i).toArray();
 
         // Perform our calculation
         final int[] partitionsIds = PartitionDistributor.calculatePartitionAssignment(
