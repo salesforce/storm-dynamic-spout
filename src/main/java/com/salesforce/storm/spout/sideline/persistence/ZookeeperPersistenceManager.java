@@ -14,6 +14,7 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,6 +143,11 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         final String path = getZkConsumerStatePath(consumerId, partitionId);
         logger.info("Delete state from Zookeeper at {}", path);
         deleteNode(path);
+
+        // Attempt to delete the parent path.
+        // This is a noop if the parent path is not empty.
+        final String parentPath = path.substring(0, path.lastIndexOf('/'));
+        deleteNodeIfNoChildren(parentPath);
     }
 
     @Override
@@ -365,6 +371,29 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
             // Delete.
             curator.delete().forPath(path);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Removes a path only if it has no children.
+     * @param path - path to remove.
+     */
+    private void deleteNodeIfNoChildren(final String path) {
+        try {
+            // If it doesn't exist,
+            if (curator.checkExists().forPath(path) == null) {
+                // Nothing to do!
+                return;
+            }
+
+            // Delete.
+            List<String> children = curator.getChildren().forPath(path);
+            if (children.isEmpty()) {
+                logger.info("Removing empty path {}", path);
+                curator.delete().forPath(path);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
