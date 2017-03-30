@@ -5,20 +5,21 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,49 +94,60 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
 
     /**
      * Pass in the consumer state that you'd like persisted.
-     * @param consumerId - The consumer's id.
-     * @param consumerState - ConsumerState to be persisted.
+     * @param consumerId The consumer's id.
+     * @param partitionId The partition id
+     * @param offset Offset for the partition to be persisted
      */
     @Override
-    public void persistConsumerState(final String consumerId, final ConsumerState consumerState) {
+    public void persistConsumerState(final String consumerId, final int partitionId, final long offset) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Persist!
-        writeJson(getZkConsumerStatePath(consumerId), consumerState);
+        writeBytes(getZkConsumerStatePath(consumerId, partitionId), String.valueOf(offset).getBytes(Charsets.UTF_8));
     }
 
     /**
      * Retrieves the consumer state from the persistence layer.
-     * @return ConsumerState
+     * @param consumerId The consumer's id.
+     * @param partitionId The partition id
+     * @return ConsumerState Consumer state that was persisted
      */
     @Override
-    public ConsumerState retrieveConsumerState(final String consumerId) {
+    public Long retrieveConsumerState(final String consumerId, final int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Read!
-        final String path = getZkConsumerStatePath(consumerId);
-        Map<Object, Object> json = readJson(path);
-        logger.debug("Read state from Zookeeper at {}: {}", path, json);
+        final String path = getZkConsumerStatePath(consumerId, partitionId);
 
-        // Parse to ConsumerState
-        return parseJsonToConsumerState(json);
+        final byte[] bytes = readBytes(path);
+
+        if (bytes == null) {
+            return null;
+        }
+        return Long.valueOf(new String(bytes, Charsets.UTF_8));
     }
 
     /**
      * Removes consumer state.
-     * @param consumerId - consumerId to remove state for.
+     * @param consumerId The consumer's id
+     * @param partitionId The partition id
      */
     @Override
-    public void clearConsumerState(String consumerId) {
+    public void clearConsumerState(final String consumerId, final int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Delete!
-        final String path = getZkConsumerStatePath(consumerId);
+        final String path = getZkConsumerStatePath(consumerId, partitionId);
         logger.info("Delete state from Zookeeper at {}", path);
         deleteNode(path);
+
+        // Attempt to delete the parent path.
+        // This is a noop if the parent path is not empty.
+        final String parentPath = path.substring(0, path.lastIndexOf('/'));
+        deleteNodeIfNoChildren(parentPath);
     }
 
     @Override
@@ -287,7 +299,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      */
     private void writeJson(String path, Map data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charset.forName("UTF-8")));
+        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charsets.UTF_8));
     }
 
     /**
@@ -301,7 +313,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             if (bytes == null) {
                 return null;
             }
-            return (Map<Object, Object>) JSONValue.parse(new String(bytes, "UTF-8"));
+            return (Map<Object, Object>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -365,10 +377,33 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
     }
 
     /**
+     * Removes a path only if it has no children.
+     * @param path - path to remove.
+     */
+    private void deleteNodeIfNoChildren(final String path) {
+        try {
+            // If it doesn't exist,
+            if (curator.checkExists().forPath(path) == null) {
+                // Nothing to do!
+                return;
+            }
+
+            // Delete.
+            List<String> children = curator.getChildren().forPath(path);
+            if (children.isEmpty()) {
+                logger.info("Removing empty path {}", path);
+                curator.delete().forPath(path);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
-    String getZkConsumerStatePath(final String consumerId) {
-        return getZkRoot() + "/consumers/" + consumerId;
+    String getZkConsumerStatePath(final String consumerId, final int partitionId) {
+        return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
     }
 
     /**

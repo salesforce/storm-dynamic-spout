@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Longs;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -98,11 +99,12 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testOpen() {
+        final int partitionId = 1;
         final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
         final String expectedZkRoot = getRandomZkRootNode();
         final String expectedConsumerId = "MyConsumerId";
-        final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId;
+        final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId + "/" + String.valueOf(partitionId);
         final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
 
         // Create our config
@@ -117,7 +119,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
 
         // Validate that getZkXXXXStatePath returns the expected value
-        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId));
+        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId, partitionId));
         assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceManager.getZkRequestStatePath(expectedConsumerId));
 
         // Close everyone out
@@ -134,9 +136,10 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testEndToEndConsumerStatePersistence() throws InterruptedException {
-        final String topicName = "MyTopic";
         final String zkRootPath = getRandomZkRootNode();
         final String consumerId = "myConsumer" + Clock.systemUTC().millis();
+        final int partitionId1 = 1;
+        final int partitionId2 = 2;
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
@@ -145,32 +148,15 @@ public class ZookeeperPersistenceManagerTest {
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
         persistenceManager.open(topologyConfig);
 
-        // Create state
-        final ConsumerState consumerState = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 0L)
-            .withPartition(new TopicPartition(topicName, 1), 100L)
-            .withPartition(new TopicPartition(topicName, 3), 300L)
-            .build();
+        final Long offset1 = 100L;
 
-        // Persist it
-        logger.info("Persisting {}", consumerState);
-        persistenceManager.persistConsumerState(consumerId, consumerState);
+        persistenceManager.persistConsumerState(consumerId, partitionId1, offset1);
 
-        // Attempt to read it?
-        ConsumerState result = persistenceManager.retrieveConsumerState(consumerId);
-        logger.info("Result {}", result);
+        final Long actual1 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
 
         // Validate result
-        assertNotNull("Got an object back", result);
-
-        // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.size());
-        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
+        assertNotNull("Got an object back", actual1);
+        assertEquals(offset1, actual1);
 
         // Close outs
         persistenceManager.close();
@@ -180,95 +166,40 @@ public class ZookeeperPersistenceManagerTest {
         persistenceManager.open(topologyConfig);
 
         // Re-retrieve, should still be there.
-        // Attempt to read it?
-        result = persistenceManager.retrieveConsumerState(consumerId);
-        logger.info("Result {}", result);
+        final Long actual2 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
 
-        // Validate result
-        assertNotNull("Got an object back", result);
+        assertNotNull("Got an object back", actual2);
+        assertEquals(offset1, actual2);
 
-        // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.size());
-        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
+        final Long offset2 = 101L;
 
-        // Close outs
-        persistenceManager.close();
-    }
+        // Update our existing state
+        persistenceManager.persistConsumerState(consumerId, partitionId1, offset2);
 
-    /**
-     * Tests storing state for a consumer, then updating that state and storing the updated entry.
-     * Verifies that the entry is updated as we'd expect.
-     */
-    @Test
-    public void testEndToEndConsumerStatePersistenceUpdatingEntryForSameConsumerId() throws InterruptedException {
-        final String topicName = "MyTopic";
-        final String zkRootPath = getRandomZkRootNode();
-        final String consumerId = "myConsumer" + Clock.systemUTC().millis();
+        // Re-retrieve, should still be there.
+        final Long actual3 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
 
-        // Create our config
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
+        assertNotNull("Got an object back", actual3);
+        assertEquals(offset2, actual3);
 
-        // Create instance and open it.
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        final Long actual4 = persistenceManager.retrieveConsumerState(consumerId, partitionId2);
 
-        // Create state
-        final ConsumerState consumerStateOriginal = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 0L)
-            .withPartition(new TopicPartition(topicName, 1), 100L)
-            .withPartition(new TopicPartition(topicName, 3), 300L)
-            .build();
+        assertNull("Partition hasn't been set yet", actual4);
 
-        // Persist it
-        logger.info("Persisting {}", consumerStateOriginal);
-        persistenceManager.persistConsumerState(consumerId, consumerStateOriginal);
+        final Long offset3 = 102L;
 
-        // Attempt to read it?
-        ConsumerState result = persistenceManager.retrieveConsumerState(consumerId);
-        logger.info("Result {}", result);
+        persistenceManager.persistConsumerState(consumerId, partitionId2, offset3);
 
-        // Validate result
-        assertNotNull("Got an object back", result);
+        final Long actual5 = persistenceManager.retrieveConsumerState(consumerId, partitionId2);
 
-        // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.size());
-        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 0L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 300L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
+        assertNotNull("Got an object back", actual5);
+        assertEquals(offset3, actual5);
 
-        // Now attempt to update the state
-        final ConsumerState consumerStateUpdated = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 100L)
-            .withPartition(new TopicPartition(topicName, 1), 120L)
-            .withPartition(new TopicPartition(topicName, 3), 320L)
-            .build();
+        // Re-retrieve, should still be there.
+        final Long actual6 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
 
-        // Persisted the updated state
-        persistenceManager.persistConsumerState(consumerId, consumerStateUpdated);
-
-        // Attempt to read it?
-        result = persistenceManager.retrieveConsumerState(consumerId);
-        logger.info("Result {}", result);
-
-        // Validate result
-        assertNotNull("Got an object back", result);
-
-        // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.size());
-        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 100L", 100L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 120L", 120L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 320L", 320L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
+        assertNotNull("Got an object back", actual3);
+        assertEquals(offset2, actual6);
 
         // Close outs
         persistenceManager.close();
@@ -292,14 +223,10 @@ public class ZookeeperPersistenceManagerTest {
         final String zkRootNodePath = getRandomZkRootNode();
         final String zkConsumersRootNodePath = zkRootNodePath + "/consumers";
         final String consumerId = "MyConsumer" + Clock.systemUTC().millis();
+        final int partitionId = 1;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {
-                logger.info("Got event {}", event);
-            }
-        });
+        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -320,28 +247,17 @@ public class ZookeeperPersistenceManagerTest {
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
         persistenceManager.open(topologyConfig);
 
-        // 3. Attempt to persist some state.
-        final String topicName = "MyTopic";
-
-        // Define our expected result that will be stored in zookeeper
-        final String expectedStoredState = "{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}";
-
-        final ConsumerState consumerState = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 0L)
-            .withPartition(new TopicPartition(topicName, 1), 100L)
-            .withPartition(new TopicPartition(topicName, 3), 300L)
-            .build();
+        // Define the offset we are storing
+        final long offset = 100L;
 
         // Persist it
-        logger.info("Persisting {}", consumerState);
-        persistenceManager.persistConsumerState(consumerId, consumerState);
+        logger.info("Persisting {}", offset);
+        persistenceManager.persistConsumerState(consumerId, partitionId, offset);
 
         // Since this is an async operation, use await() to watch for the change
         await()
-                .atMost(6, TimeUnit.SECONDS)
-                .until(() -> {
-                    return zookeeperClient.exists(zkConsumersRootNodePath, false);
-                }, notNullValue());
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkConsumersRootNodePath, false), notNullValue());
 
         // 4. Go into zookeeper and see where data got written
         doesNodeExist = zookeeperClient.exists(zkConsumersRootNodePath, false);
@@ -361,26 +277,188 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Child Node name not correct", consumerId, childNodeName);
 
         // 5. Grab the value and validate it
-        final byte[] storedDataBytes = zookeeperClient.getData(zkConsumersRootNodePath + "/" + consumerId, false, null);
+        final byte[] storedDataBytes = zookeeperClient.getData(zkConsumersRootNodePath + "/" + consumerId + "/" + String.valueOf(partitionId), false, null);
         logger.debug("Stored data bytes {}", storedDataBytes);
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        final String storedDataStr = new String(storedDataBytes, Charsets.UTF_8);
-        logger.info("Stored data string {}", storedDataStr);
-        assertNotNull("Stored data string should be non-null", storedDataStr);
-        assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
+        final Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        logger.info("Stored data {}", storedData);
+        assertNotNull("Stored data should be non-null", storedData);
+        assertEquals("Got unexpected state", offset, (long) storedData);
 
         // Test clearing state actually clears state.
-        persistenceManager.clearConsumerState(consumerId);
+        persistenceManager.clearConsumerState(consumerId, partitionId);
 
         // Validate the node no longer exists
         // Since this is an async operation, use await() to watch for the change
         await()
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId + "/" + partitionId, false), nullValue());
+
+        // Make sure the top level key no longer exists
+        await()
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId , false), nullValue());
+
+        // Close everyone out
+        persistenceManager.close();
+        zookeeperClient.close();
+    }
+
+    /**
+     * Tests end to end persistence of Consumer state, using an independent ZK client to verify things are written
+     * into zookeeper as we expect.
+     *
+     * We do the following:
+     * 1 - Connect to ZK and ensure that the zkRootNode path does NOT exist in Zookeeper yet
+     *     If it does, we'll clean it up.
+     * 2 - Create an instance of our state manager passing an expected root node
+     * 3 - Attempt to persist some state
+     * 4 - Go into zookeeper directly and verify the state got written under the appropriate prefix path (zkRootNode).
+     * 5 - Read the stored value directly out of zookeeper and verify the right thing got written.
+     */
+    @Test
+    public void testEndToEndConsumerStatePersistenceMultipleValuesWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
+        // Define our ZK Root Node
+        final String zkRootNodePath = getRandomZkRootNode();
+        final String zkConsumersRootNodePath = zkRootNodePath + "/consumers";
+        final String virtualSpoutId = "MyConsumer" + Clock.systemUTC().millis();
+        final String zkVirtualSpoutIdNodePath = zkConsumersRootNodePath + "/" + virtualSpoutId;
+
+        // Define partitionIds
+        final int partition0 = 0;
+        final int partition1 = 1;
+        final int partition2 = 2;
+
+        // Define the offset we are storing
+        final long partition0Offset = 100L;
+        final long partition1Offset = 200L;
+        final long partition2Offset = 300L;
+
+        // 1 - Connect to ZK directly
+        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
+
+        // Ensure that our node does not exist before we run test,
+        // Validate that our assumption that this node does not exist!
+        Stat doesNodeExist = zookeeperClient.exists(zkRootNodePath, false);
+        // We need to clean up
+        if (doesNodeExist != null) {
+            zookeeperClient.delete(zkRootNodePath, doesNodeExist.getVersion());
+
+            // Check again
+            doesNodeExist = zookeeperClient.exists(zkRootNodePath, false);
+            if (doesNodeExist != null) {
+                throw new RuntimeException("Failed to ensure zookeeper was clean before running test");
+            }
+        }
+
+        // 2. Create our instance and open it
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
+        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        persistenceManager.open(topologyConfig);
+
+        // Persist it
+        persistenceManager.persistConsumerState(virtualSpoutId, partition0, partition0Offset);
+        persistenceManager.persistConsumerState(virtualSpoutId, partition1, partition1Offset);
+        persistenceManager.persistConsumerState(virtualSpoutId, partition2, partition2Offset);
+
+        // Since this is an async operation, use await() to watch for the change
+        await()
                 .atMost(6, TimeUnit.SECONDS)
-                .until(() -> {
-                    return zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId, false);
-                }, nullValue());
+                .until(() -> zookeeperClient.exists(zkConsumersRootNodePath, false), notNullValue());
+
+        // 4. Go into zookeeper and see where data got written
+        doesNodeExist = zookeeperClient.exists(zkConsumersRootNodePath, false);
+        logger.debug("Result {}", doesNodeExist);
+        assertNotNull("Our root node should now exist", doesNodeExist);
+
+        // Now attempt to read our state
+        List<String> virtualSpoutIdNodes = zookeeperClient.getChildren(zkConsumersRootNodePath, false);
+        logger.debug("VirtualSpoutId Node Names {}", virtualSpoutIdNodes);
+
+        // We should have a single child
+        assertEquals("Should have a single VirtualSpoutId", 1, virtualSpoutIdNodes.size());
+
+        // Grab the virtualSpoutId
+        final String foundVirtualSpoutIdNode = virtualSpoutIdNodes.get(0);
+        assertNotNull("foundVirtualSpoutIdNode entry should not be null", foundVirtualSpoutIdNode);
+        assertEquals("foundVirtualSpoutIdNode name not correct", virtualSpoutId, foundVirtualSpoutIdNode);
+
+        // Grab entries under that virtualSpoutId
+        List<String> partitionIdNodes = zookeeperClient.getChildren(zkVirtualSpoutIdNodePath, false);
+
+        // We should have a 3 children
+        logger.info("PartitionId nodes: {}", partitionIdNodes);
+        assertEquals("Should have 3 partitions", 3, partitionIdNodes.size());
+        assertTrue("Should contain partition 0", partitionIdNodes.contains(String.valueOf(partition0)));
+        assertTrue("Should contain partition 1", partitionIdNodes.contains(String.valueOf(partition1)));
+        assertTrue("Should contain partition 2", partitionIdNodes.contains(String.valueOf(partition2)));
+
+        // Grab each partition and validate it
+        byte[] storedDataBytes = zookeeperClient.getData(zkVirtualSpoutIdNodePath + "/" + partition0, false, null);
+        logger.debug("Stored data bytes {}", storedDataBytes);
+        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+
+        // Convert to a string
+        Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        logger.info("Stored data {}", storedData);
+        assertNotNull("Stored data should be non-null", storedData);
+        assertEquals("Got unexpected state", partition0Offset, (long) storedData);
+
+        // Now remove partition0 from persistence
+        persistenceManager.clearConsumerState(virtualSpoutId, partition0);
+
+        // Validate the node no longer exists
+        // Since this is an async operation, use await() to watch for the change
+        await()
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkVirtualSpoutIdNodePath + "/" + partition0, false), nullValue());
+
+        // Validation partition1
+        storedDataBytes = zookeeperClient.getData(zkVirtualSpoutIdNodePath + "/" + partition1, false, null);
+        logger.debug("Stored data bytes {}", storedDataBytes);
+        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+
+        // Convert to a string
+        storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        logger.info("Stored data {}", storedData);
+        assertNotNull("Stored data should be non-null", storedData);
+        assertEquals("Got unexpected state", partition1Offset, (long) storedData);
+
+        // Now remove partition1 from persistence
+        persistenceManager.clearConsumerState(virtualSpoutId, partition1);
+
+        // Validate the node no longer exists
+        // Since this is an async operation, use await() to watch for the change
+        await()
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkVirtualSpoutIdNodePath + "/" + partition1, false), nullValue());
+
+        // Validation partition2
+        storedDataBytes = zookeeperClient.getData(zkVirtualSpoutIdNodePath + "/" + partition2, false, null);
+        logger.debug("Stored data bytes {}", storedDataBytes);
+        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+
+        // Convert to a string
+        storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        logger.info("Stored data {}", storedData);
+        assertNotNull("Stored data should be non-null", storedData);
+        assertEquals("Got unexpected state", partition2Offset, (long) storedData);
+
+        // Now remove partition1 from persistence
+        persistenceManager.clearConsumerState(virtualSpoutId, partition2);
+
+        // Validate the node no longer exists
+        // Since this is an async operation, use await() to watch for the change
+        await()
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkVirtualSpoutIdNodePath + "/" + partition1, false), nullValue());
+
+        // Make sure the top level key no longer exists
+        await()
+            .atMost(6, TimeUnit.SECONDS)
+                .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + virtualSpoutId , false), nullValue());
 
         // Close everyone out
         persistenceManager.close();
@@ -485,12 +563,7 @@ public class ZookeeperPersistenceManagerTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {
-                logger.info("Got event {}", event);
-            }
-        });
+        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -580,12 +653,14 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testPersistConsumerStateBeforeBeingOpened() {
+        final int partitionId = 1;
+
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistConsumerState("MyConsumerId", ConsumerState.builder().build());
+        persistenceManager.persistConsumerState("MyConsumerId", partitionId, 100L);
     }
 
     /**
@@ -593,12 +668,14 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testRetrieveConsumerStateBeforeBeingOpened() {
+        final int partitionId = 1;
+
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.retrieveConsumerState("MyConsumerId");
+        persistenceManager.retrieveConsumerState("MyConsumerId", partitionId);
     }
 
     /**
@@ -606,12 +683,14 @@ public class ZookeeperPersistenceManagerTest {
      */
     @Test
     public void testClearConsumerStateBeforeBeingOpened() {
+        final int partitionId = 1;
+
         // Create our instance
         ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.clearConsumerState("MyConsumerId");
+        persistenceManager.clearConsumerState("MyConsumerId", partitionId);
     }
 
     /**

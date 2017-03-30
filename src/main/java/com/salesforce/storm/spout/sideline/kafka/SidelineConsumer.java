@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
@@ -14,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -108,14 +109,6 @@ public class SidelineConsumer {
     }
 
     /**
-     * Get a list of the partition for the given kafka topic.
-     * @return List of partition for the topic
-     */
-    public List<PartitionInfo> getPartitions() {
-        return getKafkaConsumer().partitionsFor(getConsumerConfig().getTopic());
-    }
-
-    /**
      * Get the kafka consumer, if it has been retried yet, set it up.
      * @return Kafka consumer
      */
@@ -135,80 +128,69 @@ public class SidelineConsumer {
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
-     *
-     * Warning: Consumes from ALL partitions.
-     *
-     * @param startingState Starting state of the consumer
      */
-    public void open(ConsumerState startingState) {
-        open(
-            startingState,
-            getPartitions()
-        );
+    public void open() {
+        open(null);
     }
 
     /**
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
-     *
-     * Warning: Consumes from ALL partitions.
-     *
-     * @param startingState Starting state of the consumer
-     * @param partitions The partitions to consume from
      */
-    public void open(ConsumerState startingState, List<PartitionInfo> partitions) {
+    public void open(final ConsumerState startingState) {
         // Simple state enforcement.
         if (isOpen) {
             throw new RuntimeException("Cannot call open more than once...");
         }
         isOpen = true;
 
-        // If we have a starting offset, lets persist it
-        if (startingState != null) {
-            // If we persist it here, when sideline consumer starts up, it should start from this position
-            // when it reads out its state from persistenceManager.
-            persistenceManager.persistConsumerState(getConsumerId(), startingState);
-        }
+        List<TopicPartition> topicPartitions = getPartitions();
 
-        // Load initial positions,
-        ConsumerState initialState = persistenceManager.retrieveConsumerState(getConsumerId());
-        if (initialState == null) {
-            // if null returned, use an empty ConsumerState instance.
-            initialState = ConsumerState.builder().build();
+        if (topicPartitions.isEmpty()) {
+            throw new RuntimeException("Cannot assign partitions when there are none!");
         }
 
         final KafkaConsumer kafkaConsumer = getKafkaConsumer();
 
-        // Assign them all to this consumer
-        List<TopicPartition> allTopicPartitions = Lists.newArrayList();
-        for (PartitionInfo partition : partitions) {
-            allTopicPartitions.add(new TopicPartition(partition.topic(), partition.partition()));
-        }
-        kafkaConsumer.assign(allTopicPartitions);
+        logger.info("Assigning topic and partitions = {}", topicPartitions);
 
-        // Seek to specific positions based on our initial state
-        List<TopicPartition> noStatePartitions = Lists.newArrayList();
-        for (PartitionInfo partition : partitions) {
-            final TopicPartition availableTopicPartition = new TopicPartition(partition.topic(), partition.partition());
-            Long offset = initialState.getOffsetForTopicAndPartition(availableTopicPartition);
-            if (offset == null) {
-                // Un-started partitions should "begin" at the earliest available offset
-                // We determine this in the resetPartitionsToEarliest() method.
-                noStatePartitions.add(availableTopicPartition);
-            } else {
-                // We start consuming at our offset + 1, otherwise we'd replay a previously "finished" offset.
-                logger.info("Resuming topic {} partition {} at offset {}", availableTopicPartition.topic(), availableTopicPartition.partition(), (offset + 1));
-                getKafkaConsumer().seek(availableTopicPartition, (offset + 1));
+        // Assign our consumer to the given partitions
+        kafkaConsumer.assign(topicPartitions);
 
-                // Starting managing offsets for this partition
-                // Set our completed offset to our 'completed' offset, not it + 1, otherwise we could skip the next uncompleted offset.
-                partitionStateManagers.put(availableTopicPartition, new PartitionOffsetManager(availableTopicPartition.topic(), availableTopicPartition.partition(), offset));
+        for (TopicPartition topicPartition : topicPartitions) {
+            Long startingOffset = null;
+
+            if (startingState != null) {
+                startingOffset = startingState.getOffsetForTopicAndPartition(topicPartition);
             }
-        }
-        if (!noStatePartitions.isEmpty()) {
-            logger.info("Starting from earliest on TopicPartitions(s): {}", noStatePartitions);
-            resetPartitionsToEarliest(noStatePartitions);
+
+            // Check to see if we have an existing offset saved for this partition
+            Long offset = persistenceManager.retrieveConsumerState(getConsumerId(), topicPartition.partition());
+
+            if (offset == null && startingOffset != null) {
+                offset = startingOffset;
+            }
+
+            if (offset != null) {
+                // We have a stored offset, so pick up on the partition where we left off
+                logger.info("Resuming topic {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
+                getKafkaConsumer().seek(topicPartition, (offset + 1));
+            } else {
+                // We do not have an existing offset saved, so start from the head
+                kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
+                offset = getKafkaConsumer().position(topicPartition) - 1;
+                logger.info("Starting at the beginning of topic {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
+            }
+
+            partitionStateManagers.put(
+                topicPartition,
+                new PartitionOffsetManager(
+                    topicPartition.topic(),
+                    topicPartition.partition(),
+                    offset
+                )
+            );
         }
     }
 
@@ -294,23 +276,28 @@ public class SidelineConsumer {
      * @return - A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
+        // TODO: Does it make sense to return ConsumerState here even though we don't use it elsewhere?
+
         // Create a consumer state builder.
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         // Loop through all of our partition managers
         for (Map.Entry<TopicPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
+            TopicPartition topicPartition = entry.getKey();
+
+            long lastFinishedOffset = entry.getValue().lastFinishedOffset();
+
             // Get the current offset for each partition.
-            builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
+            builder.withPartition(entry.getKey(), lastFinishedOffset);
+
+            persistenceManager.persistConsumerState(
+                getConsumerId(),
+                topicPartition.partition(),
+                lastFinishedOffset
+            );
         }
 
-        // Build
-        final ConsumerState consumerState = builder.build();
-
-        // Persist state.
-        persistenceManager.persistConsumerState(getConsumerId(), consumerState);
-
-        // Return the state that was persisted.
-        return consumerState;
+        return builder.build();
     }
 
     /**
@@ -322,7 +309,7 @@ public class SidelineConsumer {
         if (buffer == null || !bufferIterator.hasNext()) {
             // Time to refill the buffer
             try {
-                buffer = kafkaConsumer.poll(500);
+                buffer = kafkaConsumer.poll(3000);
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
                 handleOffsetOutOfRange(outOfRangeException);
@@ -517,6 +504,46 @@ public class SidelineConsumer {
      */
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
-        getPersistenceManager().clearConsumerState(getConsumerId());
+
+        final Set<TopicPartition> topicPartitions = partitionStateManagers.keySet();
+
+        for (TopicPartition topicPartition : topicPartitions) {
+            getPersistenceManager().clearConsumerState(getConsumerId(), topicPartition.partition());
+        }
+    }
+
+
+    /**
+     * Get the partitions that this particular consumer instance should consume from.
+     * @return List of partitions to consume from
+     */
+    private List<TopicPartition> getPartitions() {
+        // Ask Kafka for all of the partitions that are available
+        final List<PartitionInfo> allPartitionInfos = getKafkaConsumer().partitionsFor(consumerConfig.getTopic());
+
+        // Convert all of our partition info objects into a primitive list of the partition ids
+        final int[] allPartitionIds = allPartitionInfos.stream().map(PartitionInfo::partition).mapToInt(i -> i).toArray();
+
+        // Perform our calculation
+        final int[] partitionsIds = PartitionDistributor.calculatePartitionAssignment(
+            consumerConfig.getNumberOfConsumers(),
+            consumerConfig.getIndexOfConsumer(),
+            allPartitionIds
+        );
+
+        // Convert our partition ids back to a list of TopicPartition records
+        final List<TopicPartition> topicPartitions = new ArrayList<>();
+
+        for (final int partitonId : partitionsIds) {
+            topicPartitions.add(
+                new TopicPartition(
+                    consumerConfig.getTopic(),
+                    partitonId
+                )
+            );
+        }
+
+        // Return TopicPartitions for our assigned partitions
+        return topicPartitions;
     }
 }

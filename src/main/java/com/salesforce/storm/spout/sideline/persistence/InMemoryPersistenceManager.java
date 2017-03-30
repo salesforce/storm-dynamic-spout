@@ -1,8 +1,8 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public class InMemoryPersistenceManager implements PersistenceManager {
     // "Persists" consumer state in memory.
-    private Map<String, ConsumerState> storedConsumerState;
+    private Map<String, Long> storedConsumerState;
 
     // "Persists" side line request states in memory.
     private Map<SidelineRequestIdentifier, SidelinePayload> storedSidelineRequests;
@@ -44,8 +44,8 @@ public class InMemoryPersistenceManager implements PersistenceManager {
      * @param consumerState - ConsumerState to be persisted.
      */
     @Override
-    public void persistConsumerState(String consumerId, ConsumerState consumerState) {
-        storedConsumerState.put(consumerId, consumerState);
+    public void persistConsumerState(String consumerId, int partitionId, long offset) {
+        storedConsumerState.put(getConsumerStateKey(consumerId, partitionId), offset);
     }
 
     /**
@@ -53,13 +53,13 @@ public class InMemoryPersistenceManager implements PersistenceManager {
      * @return ConsumerState
      */
     @Override
-    public ConsumerState retrieveConsumerState(String consumerId) {
-        return storedConsumerState.get(consumerId);
+    public Long retrieveConsumerState(String consumerId, int partitionId) {
+        return storedConsumerState.get(getConsumerStateKey(consumerId, partitionId));
     }
 
     @Override
-    public void clearConsumerState(String consumerId) {
-        storedConsumerState.remove(consumerId);
+    public void clearConsumerState(String consumerId, int partitionId) {
+        storedConsumerState.remove(getConsumerStateKey(consumerId, partitionId));
     }
 
     /**
@@ -90,5 +90,9 @@ public class InMemoryPersistenceManager implements PersistenceManager {
     @Override
     public List<SidelineRequestIdentifier> listSidelineRequests() {
         return new ArrayList<>(storedSidelineRequests.keySet());
+    }
+
+    private String getConsumerStateKey(final String consumerId, final int partitionId) {
+        return consumerId.concat(String.valueOf(partitionId));
     }
 }

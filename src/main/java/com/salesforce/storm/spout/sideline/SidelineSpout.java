@@ -11,8 +11,8 @@ import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
@@ -271,7 +271,8 @@ public class SidelineSpout extends BaseRichSpout {
                 getTopologyConfig(),
                 getTopologyContext(),
                 getFactoryManager(),
-                metricsRecorder);
+                metricsRecorder
+        );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Create TupleBuffer
@@ -318,24 +319,13 @@ public class SidelineSpout extends BaseRichSpout {
                 // Generate our virtualSpoutId using the payload id.
                 final String virtualSpoutId = generateVirtualSpoutId(payload.id.toString());
 
-                // What if we've previously processed this virtual spout before...?
-                // If we tell it start at the payloads start... it won't resume where it left off.
-                // So first lets ask the persistence manager and see if we have a stored state
-                ConsumerState startingState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
-
-                // If we have no starting state in the persistence manager yet
-                if (startingState == null || startingState.isEmpty()) {
-                    // Then we should use the payload state
-                    startingState = payload.startingState;
-                }
-
                 // Create spout instance.
                 final VirtualSidelineSpout spout = new VirtualSidelineSpout(
                     getTopologyConfig(),
                     getTopologyContext(),
                     getFactoryManager(),
                     metricsRecorder,
-                    startingState,
+                    payload.startingState,
                     payload.endingState
                 );
                 spout.setVirtualSpoutId(virtualSpoutId);
@@ -594,8 +584,6 @@ public class SidelineSpout extends BaseRichSpout {
             // append it
             newId += "-" + optionalPostfix;
         }
-        // Always append the task index
-        newId += "-" + getTopologyContext().getThisTaskIndex();
 
         // return it
         return newId;

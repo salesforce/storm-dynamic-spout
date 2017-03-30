@@ -50,26 +50,23 @@ public class SidelineConsumerMonitor {
         final ConsumerState startingState = payload.startingState;
         final ConsumerState endingState = payload.endingState;
 
-        // Get the state
-        ConsumerState currentState = getPersistenceManager().retrieveConsumerState(virtualSpoutId);
-        if (currentState == null) {
-            logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
-            currentState = endingState;
-        }
-
         // Create return map
         Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
         // Calculate the progress
         for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
+            // Get the state
+            // TODO: Powis review
+            Long currentOffset = getPersistenceManager().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
+            if (currentOffset == null) {
+                logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
+                continue;
+            }
+
             // Make sure no nulls
             boolean hasError = false;
             if (startingState.getOffsetForTopicAndPartition(topicPartition) == null) {
                 logger.warn("No starting state found for {}", topicPartition);
-                hasError = true;
-            }
-            if (currentState.getOffsetForTopicAndPartition(topicPartition) == null) {
-                logger.warn("No current state found for {}", topicPartition);
                 hasError = true;
             }
             if (endingState.getOffsetForTopicAndPartition(topicPartition) == null) {
@@ -82,9 +79,9 @@ public class SidelineConsumerMonitor {
             }
 
             final PartitionProgress partitionProgress = new PartitionProgress(
-                    startingState.getOffsetForTopicAndPartition(topicPartition),
-                    currentState.getOffsetForTopicAndPartition(topicPartition),
-                    endingState.getOffsetForTopicAndPartition(topicPartition)
+                startingState.getOffsetForTopicAndPartition(topicPartition),
+                currentOffset,
+                endingState.getOffsetForTopicAndPartition(topicPartition)
             );
 
             progressMap.put(topicPartition, partitionProgress);
