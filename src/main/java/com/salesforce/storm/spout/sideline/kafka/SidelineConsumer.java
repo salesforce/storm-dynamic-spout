@@ -178,9 +178,7 @@ public class SidelineConsumer {
                 getKafkaConsumer().seek(topicPartition, (offset + 1));
             } else {
                 // We do not have an existing offset saved, so start from the head
-                logger.info("Starting at the beginning of topic {} partition {}", topicPartition.topic(), topicPartition.partition());
                 kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
-
                 offset = getKafkaConsumer().position(topicPartition) - 1;
                 logger.info("Starting at the beginning of topic {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
             }
