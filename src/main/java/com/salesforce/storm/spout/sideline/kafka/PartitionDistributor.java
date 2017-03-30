@@ -5,22 +5,26 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Utility for calculating the distribution of a set of partition ids to a given consumer
+ * Utility for calculating the distribution of a set of partition ids to a given consumer.
  */
 public class PartitionDistributor {
 
     /**
-     * Get partition ids for assignment based upon the number of consumers give one of those consumers
+     * Get partition ids for assignment based upon the number of consumers give one of those consumers.
      * @return List of partition ids for assignment
      */
     public static int[] calculatePartitionAssignment(final int totalConsumers, final int consumerIndex, final int[] allPartitionIds) {
-        // Sort our partitions
-        Arrays.sort(allPartitionIds);
-
         // We have more instances than partitions, we don't want that!
         if (totalConsumers > allPartitionIds.length) {
-            throw new RuntimeException("You have more instances than partitions, trying toning it back a bit!");
+            throw new IllegalArgumentException("You have more instances than partitions, trying toning it back a bit!");
         }
+        // We have a consumer index thats invalid
+        if (consumerIndex >= totalConsumers || consumerIndex < 0) {
+            throw new IllegalArgumentException("Your consumerIndex is invalid! Range should be [0 -> " + (totalConsumers-1) + "]");
+        }
+
+        // Sort our partitions
+        Arrays.sort(allPartitionIds);
 
         // Determine the maximum number of partitions that a given consumer instance should have
         final int partitionsPerInstance = (int) Math.ceil((double) allPartitionIds.length / totalConsumers);

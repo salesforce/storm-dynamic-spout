@@ -3,13 +3,21 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(DataProviderRunner.class)
 public class PartitionDistributorTest {
+
+    /**
+     * By default, no exceptions should be thrown.
+     */
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Test that given a number of consumer instances the current instance gets distributed the correct set of partition ids
@@ -56,8 +64,13 @@ public class PartitionDistributorTest {
     /**
      * Test that when we have more consumer instances than partition ids that an exception is thrown.
      */
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testCalculatePartitionAssignmentWithMorePartitionsThanInstances() {
+
+        // We expect exceptions on this one.
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("partitions");
+
         PartitionDistributor.calculatePartitionAssignment(
             // Number of consumer instances
             4,
@@ -66,6 +79,45 @@ public class PartitionDistributorTest {
             // Partition ids to distribute
             new int[] { 0, 1, 2 }
         );
+    }
 
+    /**
+     * Test that when we have more consumer instances than partition ids that an exception is thrown.
+     */
+    @Test
+    public void testCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers() {
+
+        // We expect exceptions on this one.
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("consumerIndex");
+
+        PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                4,
+                // Current instance index
+                5,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+        );
+    }
+
+    /**
+     * Test that when we have more consumer instances than partition ids that an exception is thrown.
+     */
+    @Test
+    public void testCalculatePartitionAssignmentWithConsumerIndexBelowZero() {
+
+        // We expect exceptions on this one.
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("consumerIndex");
+
+        PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                4,
+                // Current instance index
+                -2,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+        );
     }
 }
