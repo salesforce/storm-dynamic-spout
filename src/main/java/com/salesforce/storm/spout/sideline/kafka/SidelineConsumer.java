@@ -505,10 +505,10 @@ public class SidelineConsumer {
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
 
-        final Set<TopicPartition> partitions = getKafkaConsumer().assignment();
+        final Set<TopicPartition> topicPartitions = partitionStateManagers.keySet();
 
-        for (TopicPartition partition : partitions) {
-            getPersistenceManager().clearConsumerState(getConsumerId(), partition.partition());
+        for (TopicPartition topicPartition : topicPartitions) {
+            getPersistenceManager().clearConsumerState(getConsumerId(), topicPartition.partition());
         }
     }
 
