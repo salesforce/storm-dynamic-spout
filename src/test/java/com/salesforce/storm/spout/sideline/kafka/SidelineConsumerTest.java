@@ -473,7 +473,7 @@ public class SidelineConsumerTest {
         PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
 
         // When getState is called, return the following state
-        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(lastCommittedOffset);
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), eq(0))).thenReturn(lastCommittedOffset);
 
         // Call constructor injecting our mocks
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
