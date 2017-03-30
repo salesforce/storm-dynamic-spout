@@ -14,7 +14,6 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

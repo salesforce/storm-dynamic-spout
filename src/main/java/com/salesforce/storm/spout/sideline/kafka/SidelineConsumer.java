@@ -141,7 +141,7 @@ public class SidelineConsumer {
     public void open(final ConsumerState startingState) {
         // Simple state enforcement.
         if (isOpen) {
-            throw new RuntimeException("Cannot call open more than once...");
+            throw new IllegalStateException("Cannot call open more than once.");
         }
         isOpen = true;
 
@@ -276,8 +276,6 @@ public class SidelineConsumer {
      * @return - A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
-        // TODO: Does it make sense to return ConsumerState here even though we don't use it elsewhere?
-
         // Create a consumer state builder.
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 

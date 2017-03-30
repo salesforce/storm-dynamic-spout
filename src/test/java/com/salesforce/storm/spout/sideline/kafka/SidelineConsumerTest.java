@@ -19,7 +19,9 @@ import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.slf4j.Logger;
@@ -55,10 +57,18 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(DataProviderRunner.class)
 public class SidelineConsumerTest {
+    // TODO: these test cases
+    // test calling open() w/ a starting state.
 
     private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerTest.class);
     private static KafkaTestServer kafkaTestServer;
     private String topicName;
+
+    /**
+     * By default, no exceptions should be thrown.
+     */
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Here we stand up an internal test kafka and zookeeper service.
@@ -123,9 +133,54 @@ public class SidelineConsumerTest {
         assertEquals(persistenceManager, sidelineConsumer.getPersistenceManager());
     }
 
-    // TODO: these test cases
-    // test calling connect twice throws exception.
-    // test calling connect w/ a starting state.
+    /**
+     * test calling connect twice throws exception.
+     * This test uses mocks so we don't have dangling connections things sticking around
+     * after the exception.
+     */
+    @Test
+    public void testCallConnectMultipleTimes() {
+        // Define our ConsumerId
+        final String consumerId = "MyConsumerId";
+
+        // Create re-usable TopicPartition instance
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+
+        // Define partition 0's earliest position at 1000L
+        final long earliestPosition = 1000L;
+
+        // Setup our config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig();
+
+        // Create mock KafkaConsumer instance
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+
+        // When we call partitionsFor(), we should return a single partition number 0 for our topic.
+        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
+        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
+
+        // When we ask for the position of partition 0, we should return 1000L
+        when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPosition);
+
+        // Create instance of a StateConsumer, we'll just use a dummy instance.
+        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
+
+        // When getState is called, return the following state
+        when(mockPersistenceManager.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
+
+        // Call constructor injecting our mocks
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, mockPersistenceManager, mockKafkaConsumer);
+
+        // Now call open
+        sidelineConsumer.open();
+
+        // Now call open again, we expect this to throw an exception
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage("open more than once");
+
+        // Call it
+        sidelineConsumer.open();
+    }
 
     /**
      * Tests that our logic for flushing consumer state works if auto commit is enabled.
