@@ -10,6 +10,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.shade.org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A high level kafka consumer that handles state/log offset management in a way that supports
@@ -517,39 +519,38 @@ public class SidelineConsumer {
 
 
     /**
-     * Get the partitions that this particular spout instance should consume from.
+     * Get the partitions that this particular consumer instance should consume from.
      * @return List of partitions to consume from
      */
-    List<TopicPartition> getPartitions() {
-        final int numInstances = consumerConfig.getNumberOfConsumers();
+    private List<TopicPartition> getPartitions() {
+        // Ask Kafka for all of the partitions that are available
+        final List<PartitionInfo> allPartitionInfos = getKafkaConsumer().partitionsFor(consumerConfig.getTopic());
 
-        final int instanceIndex = consumerConfig.getIndexOfConsumer();
+        // Convert all of our partition info objects into a primitive list of the partition ids
+        final int[] allPartitionIds = ArrayUtils.toPrimitive(
+            (Integer[]) allPartitionInfos.stream().map(PartitionInfo::partition).collect(Collectors.toList()).toArray()
+        );
 
+        // Perform our calculation
+        final int[] partitionsIds = PartitionDistributor.calculatePartitionAssignment(
+            consumerConfig.getNumberOfConsumers(),
+            consumerConfig.getIndexOfConsumer(),
+            allPartitionIds
+        );
 
-        final List<PartitionInfo> allPartitions = getKafkaConsumer().partitionsFor(consumerConfig.getTopic());
-
-        // We have more instances than partitions, we don't want that!
-        if (numInstances > allPartitions.size()) {
-            throw new RuntimeException("You have more instances than partitions, trying toning it back a bit!");
-        }
-
-        final int partitionsPerInstance = (int) Math.ceil((double) allPartitions.size() / numInstances);
-
-        final int startingPartition = instanceIndex == 0 ? 0 : partitionsPerInstance * instanceIndex;
-
-        final int endingPartition = startingPartition + partitionsPerInstance > allPartitions.size() ? allPartitions.size() : startingPartition + partitionsPerInstance;
-
+        // Convert our partition ids back to a list of TopicPartition records
         final List<TopicPartition> topicPartitions = new ArrayList<>();
 
-        for (int i = startingPartition; i < endingPartition; i++) {
+        for (final int partitonId : partitionsIds) {
             topicPartitions.add(
                 new TopicPartition(
                     consumerConfig.getTopic(),
-                    allPartitions.get(i).partition()
+                    partitonId
                 )
             );
         }
 
-        return Collections.unmodifiableList(topicPartitions);
+        // Return TopicPartitions for our assigned partitions
+        return topicPartitions;
     }
 }
