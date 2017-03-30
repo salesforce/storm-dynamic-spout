@@ -287,7 +287,7 @@ public class ZookeeperPersistenceManagerTest {
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        final Long storedData = Longs.fromByteArray(storedDataBytes);
+        final Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
         logger.info("Stored data {}", storedData);
         assertNotNull("Stored data should be non-null", storedData);
         assertEquals("Got unexpected state", offset, (long) storedData);

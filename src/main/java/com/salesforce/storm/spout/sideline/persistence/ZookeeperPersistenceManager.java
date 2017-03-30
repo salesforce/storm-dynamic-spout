@@ -13,6 +13,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.zookeeper.CreateMode;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
@@ -105,7 +106,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         verifyHasBeenOpened();
 
         // Persist!
-        writeBytes(getZkConsumerStatePath(consumerId, partitionId), Longs.toByteArray(offset));
+        writeBytes(getZkConsumerStatePath(consumerId, partitionId), String.valueOf(offset).getBytes(Charsets.UTF_8));
     }
 
     /**
@@ -127,8 +128,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
         if (bytes == null) {
             return null;
         }
-
-        return Longs.fromByteArray(bytes);
+        return Long.valueOf(new String(bytes, Charsets.UTF_8));
     }
 
     /**
@@ -296,7 +296,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
      */
     private void writeJson(String path, Map data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charset.forName("UTF-8")));
+        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charsets.UTF_8));
     }
 
     /**
@@ -310,7 +310,7 @@ public class ZookeeperPersistenceManager implements PersistenceManager, Serializ
             if (bytes == null) {
                 return null;
             }
-            return (Map<Object, Object>) JSONValue.parse(new String(bytes, "UTF-8"));
+            return (Map<Object, Object>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
