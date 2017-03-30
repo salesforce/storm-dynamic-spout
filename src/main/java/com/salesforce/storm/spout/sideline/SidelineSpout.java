@@ -572,18 +572,18 @@ public class SidelineSpout extends BaseRichSpout {
      * Generates a VirtualSpoutId using an optional postfix.  It also appends
      * the Task index id.  This will probably cause problems if you decrease the number of instances of the spout.
      *
-     * @param optionalPostfix - Optional postfix to add.
+     * @param id - Id to add after the prefix
      * @return - Generates VirtualSpoutId.
      */
-    String generateVirtualSpoutId(String optionalPostfix) {
+    String generateVirtualSpoutId(final String id) {
+        if (Strings.isNullOrEmpty(id)) {
+            throw new IllegalArgumentException("Id cannot be null or empty!");
+        }
+
         // Also prefixed with our configured prefix
         String newId = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
-
-        // If we have an optional postfix
-        if (!Strings.isNullOrEmpty(optionalPostfix)) {
-            // append it
-            newId += "-" + optionalPostfix;
-        }
+        // append it
+        newId += ":" + id;
 
         // return it
         return newId;

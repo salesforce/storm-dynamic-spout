@@ -12,10 +12,14 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Extremely hacky way to monitor VirtualSpout progress.
+ */
 public class SidelineConsumerMonitor {
     private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerMonitor.class);
 
     final PersistenceManager persistenceManager;
+    final Map<TopicPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
 
     public SidelineConsumerMonitor(PersistenceManager persistenceManager) {
         this.persistenceManager = persistenceManager;
@@ -31,15 +35,50 @@ public class SidelineConsumerMonitor {
 
     public Map<TopicPartition, PartitionProgress> getStatus(final String virtualSpoutId) {
         // Parse out the SidelineRequestId, this is hacky
-        final String[] bits = virtualSpoutId.split("_");
-        if (bits.length < 2) {
-            // Silently fail
-            //logger.warn("Unable to parse virtualSpoutId: {}", virtualSpoutId);
+        final String[] bits = virtualSpoutId.split(":");
+        if (bits.length != 2) {
+            logger.warn("Unable to parse virtualSpoutId: {}", virtualSpoutId);
             return null;
         }
-        final String sidelineRequestIdStr = bits[bits.length - 1];
-        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdStr));
 
+        // Grab 2nd bit.
+        final String sidelineRequestIdStr = bits[1];
+
+        if (sidelineRequestIdStr.equals("main")) {
+            // This is the main
+            return handleMainVirtualSpout(virtualSpoutId);
+        } else {
+            // This is a sideline request virtual spout
+            return handleSidelineVirtualSpout(virtualSpoutId, new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdStr)));
+        }
+    }
+
+    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final String virtualSpoutId) {
+        // We have no idea how many partitions there are... so start at 0 and go up to a max value
+        // until we get a null back.  Kind of hacky.
+        for (int partitionId = 0; partitionId < 100; partitionId++) {
+            final Long currentOffset = getPersistenceManager().retrieveConsumerState(virtualSpoutId, partitionId);
+            if (currentOffset == null) {
+                // break out of loop;
+                break;
+            }
+
+            final TopicPartition topicPartition = new TopicPartition("Topic", partitionId);
+
+            // Get previous progress
+            PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
+            if (previousProgress == null) {
+                mainProgressMap.put(topicPartition, new PartitionProgress(currentOffset, currentOffset, currentOffset));
+                continue;
+            }
+            // Build new progress
+            mainProgressMap.put(topicPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, currentOffset));
+        }
+
+        return Collections.unmodifiableMap(mainProgressMap);
+    }
+
+    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final String virtualSpoutId, final SidelineRequestIdentifier sidelineRequestIdentifier) {
         // Retrieve status
         final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(sidelineRequestIdentifier);
         if (payload == null) {
@@ -56,7 +95,6 @@ public class SidelineConsumerMonitor {
         // Calculate the progress
         for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
             // Get the state
-            // TODO: Powis review
             Long currentOffset = getPersistenceManager().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
             if (currentOffset == null) {
                 logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
@@ -79,17 +117,18 @@ public class SidelineConsumerMonitor {
             }
 
             final PartitionProgress partitionProgress = new PartitionProgress(
-                startingState.getOffsetForTopicAndPartition(topicPartition),
-                currentOffset,
-                endingState.getOffsetForTopicAndPartition(topicPartition)
+                    startingState.getOffsetForTopicAndPartition(topicPartition),
+                    currentOffset,
+                    endingState.getOffsetForTopicAndPartition(topicPartition)
             );
 
             progressMap.put(topicPartition, partitionProgress);
         }
 
         return Collections.unmodifiableMap(progressMap);
-
     }
+
+
 
     public void printStatus(final String virtualSpoutId) {
         Map<TopicPartition, PartitionProgress> progressMap = getStatus(virtualSpoutId);
@@ -117,17 +156,12 @@ public class SidelineConsumerMonitor {
     }
 
     public static class PartitionProgress {
-        final long totalMessages;
-        final long totalUnprocessed;
-        final long totalProcessed;
-        final float percentageComplete;
+        private final long startingOffset;
+        private final long totalMessages;
+        private final long totalUnprocessed;
+        private final long totalProcessed;
+        private final float percentageComplete;
 
-        public PartitionProgress(long totalMessages, long totalUnprocessed, long totalProcessed, float percentageComplete) {
-            this.totalMessages = totalMessages;
-            this.totalUnprocessed = totalUnprocessed;
-            this.totalProcessed = totalProcessed;
-            this.percentageComplete = percentageComplete;
-        }
 
         public PartitionProgress(long startingOffset, long currentOffset, long endingOffset) {
             // Calculate total number of messages between starting and ending
@@ -145,6 +179,8 @@ public class SidelineConsumerMonitor {
             } else {
                 percentageComplete = ((float) totalProcessed / totalMessages) * 100;
             }
+
+            this.startingOffset = startingOffset;
         }
 
         public long getTotalMessages() {
@@ -163,14 +199,19 @@ public class SidelineConsumerMonitor {
             return percentageComplete;
         }
 
+        public long getStartingOffset() {
+            return startingOffset;
+        }
+
         @Override
         public String toString() {
             return "PartitionProgress{"
-                    + "totalMessages=" + totalMessages
-                    + ", totalUnprocessed=" + totalUnprocessed
-                    + ", totalProcessed=" + totalProcessed
-                    + ", percentageComplete=" + percentageComplete
-                    + '}';
+                + "startingOffset=" + startingOffset
+                + ", totalMessages=" + totalMessages
+                + ", totalUnprocessed=" + totalUnprocessed
+                + ", totalProcessed=" + totalProcessed
+                + ", percentageComplete=" + percentageComplete
+                + '}';
         }
     }
 }

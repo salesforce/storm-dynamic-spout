@@ -144,15 +144,12 @@ public class SidelineSpoutTest {
     @Test
     public void testGenerateVirtualSpoutId() {
         final String expectedPrefix = "MyVirtualSpoutPrefix";
-        final int expectedTaskIndex = 0;
 
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(expectedPrefix, null);
 
         // Setup our mock TopologyContext
         final MockTopologyContext topologyContext = new MockTopologyContext();
-        topologyContext.taskId = 0;
-        topologyContext.taskIndex = expectedTaskIndex;
 
         // Mock output collector
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
@@ -162,16 +159,26 @@ public class SidelineSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Now call our method with empty string
-        String result = spout.generateVirtualSpoutId("");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix);
+        boolean threwException = false;
+        try {
+            String result = spout.generateVirtualSpoutId("");
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue("Should have thrown an IllegalArguementException", threwException);
 
         // Call our method with null
-        result = spout.generateVirtualSpoutId(null);
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix);
+        threwException = false;
+        try {
+            String result = spout.generateVirtualSpoutId(null);
+        } catch (IllegalArgumentException e) {
+            threwException = true;
+        }
+        assertTrue("Should have thrown an IllegalArguementException", threwException);
 
         // Call our method with a postfix
-        result = spout.generateVirtualSpoutId("PostFix");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + "-PostFix");
+        String result = spout.generateVirtualSpoutId("main");
+        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + ":main");
 
         // Call close.
         spout.close();
