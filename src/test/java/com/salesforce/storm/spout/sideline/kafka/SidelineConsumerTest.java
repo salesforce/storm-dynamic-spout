@@ -1576,7 +1576,9 @@ public class SidelineConsumerTest {
         sidelineConsumer.close();
     }
 
-
+    /**
+     * Provides consumer indexes 0 and 1.
+     */
     @DataProvider
     public static Object[][] providerOfConsumerIndexes() {
         return new Object[][]{
