@@ -82,7 +82,7 @@ public class PartitionDistributorTest {
     }
 
     /**
-     * Test that when we have more consumer instances than partition ids that an exception is thrown.
+     * Test that when we have an invalid consumerIndex, we toss an exception.
      */
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers() {
@@ -102,7 +102,7 @@ public class PartitionDistributorTest {
     }
 
     /**
-     * Test that when we have more consumer instances than partition ids that an exception is thrown.
+     * Test that when we have a negative consumerIndex value we toss an exception.
      */
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexBelowZero() {
