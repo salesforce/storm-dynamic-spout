@@ -4,17 +4,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
-import com.salesforce.storm.spout.sideline.kafka.SidelineConsumer;
-import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerConfig;
 import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
-import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
@@ -22,7 +17,6 @@ import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.shade.com.google.common.base.Charsets;
@@ -47,7 +41,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -56,7 +49,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -657,10 +649,6 @@ public class SidelineSpoutTest {
         // A graceful shutdown of the spout should have the consumer state flushed to the persistence layer.
         spout.close();
         spout = null;
-
-        // TODO:
-        // Inspect Firehose consumer state, it should show largest offset being 3
-        // Inspect Sideline Request: It should show starting at offset #3
 
         // A little debug log
         logger.info("=== Starting spout again");

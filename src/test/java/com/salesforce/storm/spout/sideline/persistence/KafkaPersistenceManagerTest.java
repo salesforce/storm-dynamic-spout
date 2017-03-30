@@ -16,9 +16,6 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 public class KafkaPersistenceManagerTest {
 
     // Our internal Kafka and Zookeeper Server, used to test against.
