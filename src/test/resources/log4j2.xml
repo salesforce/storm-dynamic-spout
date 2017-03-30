@@ -7,6 +7,7 @@
     </Appenders>
     <Loggers>
         <Logger name="com.salesforce.storm.spout.sideline" level="INFO"/>
+        <Logger name="com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig" level="ERROR"/>
         <Logger name="org.apache.kafka" level="WARN"/>
         <Root level="ERROR">
             <AppenderRef ref="Console"/>
