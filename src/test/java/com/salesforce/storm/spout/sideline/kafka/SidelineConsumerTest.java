@@ -1301,6 +1301,58 @@ public class SidelineConsumerTest {
         sidelineConsumer.close();
     }
 
+    @Test
+    public void testConsumeWithConsumerGroupEvenNumberOfPartitions() {
+        final int numberOfMsgsPerPartition = 10;
+
+        // Create a topic with 4 partitions
+        topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
+        kafkaTestServer.createTopic(topicName, 4);
+
+        // produce 10 msgs into each partition
+        List<ProducedKafkaRecord<byte[], byte[]>> partition0Records = produceRecords(numberOfMsgsPerPartition, 0);
+        List<ProducedKafkaRecord<byte[], byte[]>> partition1Records = produceRecords(numberOfMsgsPerPartition, 1);
+        List<ProducedKafkaRecord<byte[], byte[]>> partition2Records = produceRecords(numberOfMsgsPerPartition, 2);
+        List<ProducedKafkaRecord<byte[], byte[]>> partition3Records = produceRecords(numberOfMsgsPerPartition, 3);
+
+        // Setup our config
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Adjust the config so that we have 2 consumers, and we are consumer index 0
+        config.setIndexOfConsumer(0);
+        config.setNumberOfConsumers(2);
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
+        sidelineConsumer.open();
+
+        // Ask the underlying consumer for our assigned partitions.
+        Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
+        logger.info("Assigned partitions: {}", assignedPartitions);
+
+        sidelineConsumer.close();
+//
+//        // Validate setup
+//        assertNotNull("Should be non-null", assignedPartitions);
+//        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+//        assertEquals("Should contain 2 entries", expectedNumberOfPartitions, assignedPartitions.size());
+//        assertTrue("Should contain our expected topic/partition 0", assignedPartitions.contains(partition0));
+//        assertTrue("Should contain our expected topic/partition 1", assignedPartitions.contains(partition1));
+
+
+        // Configure it to have a ConsumerGroup size of 2, and its index set to 0
+        // Start it up, validate that it consumes from the correct partitions
+        // Close it.
+
+        // Create new sideline consumer
+        // Configure it to have a ConsumerGroup size of 2, and its index set to 1
+        // Start it up, validate that it consumes from the correct partitions
+        // Close it.
+    }
+
     /**
      * 1. Setup a consumer to consume from a topic with 1 partition.
      * 2. Produce several messages into that partition.
@@ -1597,16 +1649,16 @@ public class SidelineConsumerTest {
     }
 
     /**
-     * Test the number of partitions consumed from for a multi-instance spout
+     * Test which partitionIds get assigned under various scenarios.
      *
      * @param numInstances Number of instances
      * @param numPartitions Number of partitions
      * @param instanceIndex The instances index (starts at 0)
-     * @param partitionCount Number of partitions to expect
+     * @param expectedPartitionIds Which partitionIds we expect to get
      */
     @Test
     @UseDataProvider("dataProviderForGetPartitions")
-    public void testGetPartitions(int numInstances, int numPartitions, int instanceIndex, int partitionCount) {
+    public void testGetPartitions(int numInstances, int numPartitions, int instanceIndex, int[] expectedPartitionIds) {
         SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
         config.setNumberOfConsumers(numInstances);
         config.setIndexOfConsumer(instanceIndex);
@@ -1614,7 +1666,7 @@ public class SidelineConsumerTest {
         final Node leader = new Node(1, "localhost", 1234);
         final List<PartitionInfo> mockPartitions = new ArrayList<>();
 
-        for (int i=1; i<=numPartitions; i++) {
+        for (int i=0; i<numPartitions; i++) {
             mockPartitions.add(new PartitionInfo(config.getTopic(), i, leader, new Node[]{}, new Node[]{}));
         }
 
@@ -1629,23 +1681,122 @@ public class SidelineConsumerTest {
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager, mockKafkaConsumer);
         sidelineConsumer.open();
 
+        // Ask the sideline consumer to give us the partitions we should get assigned.
         List<TopicPartition> topicPartitions = sidelineConsumer.getPartitions();
 
-        assertEquals(partitionCount, topicPartitions.size());
+        // Collect out the unique partitionIds
+        Set<Integer> foundPartitionIds = Sets.newHashSet();
+        for (TopicPartition topicPartition: topicPartitions) {
+            foundPartitionIds.add(topicPartition.partition());
+        }
+
+        // Debug logging
+        logger.info("Expected Partitions: {}, Found Partitions: {}", expectedPartitionIds, foundPartitionIds);
+
+        // Validate we got the expected number of partitions
+        assertEquals("We should have the expected number of partitions", expectedPartitionIds.length, foundPartitionIds.size());
+
+        // Validate we got the expected partitionIds
+        for (int expectedPartitionId : expectedPartitionIds) {
+            assertTrue("We expected to get partitionId " + expectedPartitionId, foundPartitionIds.contains(expectedPartitionId));
+        }
+
+        // Close
+        sidelineConsumer.close();
     }
 
     @DataProvider
     public static Object[][] dataProviderForGetPartitions() {
         return new Object[][]{
-            // One instance, three partitions, first instance, expect 3 partitions for this spout
-            { 1, 3, 0, 3 },
-            // Two instances, three partitions, first instance, expect 2 partitions for this spout
-            { 2, 3, 0, 2 },
-            // Two instances, three partitions, second instance, expect 1 partition for this spout
-            { 2, 3, 1, 1 },
-            // Three instances, three partitions, third instance, expect 1 partitions for this spout
-            { 3, 3, 2, 1 },
+                // One instance, three partitions, first instance, expect 3 partitions for this spout
+                { 1, 3, 0, new int[] {0,1,2} },
 
+                // Two instances, three partitions, first instance, expect 2 partitions for this spout
+                { 2, 3, 0, new int[] {0, 1} },
+
+                // Two instances, three partitions, second instance, expect 1 partition for this spout
+                { 2, 3, 1, new int[] {2} },
+
+                // Three instances, three partitions, third instance, expect 1 partitions for this spout
+                { 3, 3, 0, new int[] {0} },
+                { 3, 3, 1, new int[] {1} },
+                { 3, 3, 2, new int[] {2} },
+        };
+    }
+
+    /**
+     * Tests various error scenarios for getting assigned partitions.
+     *
+     * @param numInstances Number of instances
+     * @param numPartitions Number of partitions
+     * @param instanceIndex The instances index (starts at 0)
+     * @param expectedPartitionIds Which partitionIds we expect to get
+     */
+    @Test
+    @UseDataProvider("dataProviderForGetPartitionsErrorConditions")
+    public void testGetPartitionsWithErrors(int numInstances, int numPartitions, int instanceIndex) {
+        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        config.setNumberOfConsumers(numInstances);
+        config.setIndexOfConsumer(instanceIndex);
+
+        final Node leader = new Node(1, "localhost", 1234);
+        final List<PartitionInfo> mockPartitions = new ArrayList<>();
+
+        for (int i=0; i<numPartitions; i++) {
+            mockPartitions.add(new PartitionInfo(config.getTopic(), i, leader, new Node[]{}, new Node[]{}));
+        }
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        when(mockKafkaConsumer.partitionsFor(config.getTopic())).thenReturn(mockPartitions);
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager, mockKafkaConsumer);
+        sidelineConsumer.open();
+
+        // Ask the sideline consumer to give us the partitions we should get assigned.
+        List<TopicPartition> topicPartitions = sidelineConsumer.getPartitions();
+
+        // Collect out the unique partitionIds
+        Set<Integer> foundPartitionIds = Sets.newHashSet();
+        for (TopicPartition topicPartition: topicPartitions) {
+            foundPartitionIds.add(topicPartition.partition());
+        }
+
+//        // Debug logging
+//        logger.info("Expected Partitions: {}, Found Partitions: {}", expectedPartitionIds, foundPartitionIds);
+//
+//        // Validate we got the expected number of partitions
+//        assertEquals("We should have the expected number of partitions", expectedPartitionIds.length, foundPartitionIds.size());
+//
+//        // Validate we got the expected partitionIds
+//        for (int expectedPartitionId : expectedPartitionIds) {
+//            assertTrue("We expected to get partitionId " + expectedPartitionId, foundPartitionIds.contains(expectedPartitionId));
+//        }
+
+        // Close
+        sidelineConsumer.close();
+    }
+
+    @DataProvider
+    public static Object[][] dataProviderForGetPartitionsErrorConditions() {
+        return new Object[][]{
+                // Two instances, 1 partition, first instance,
+                { 2, 1, 0 },
+
+//                // Two instances, three partitions, first instance, expect 2 partitions for this spout
+//                { 2, 3, 0, new int[] {0, 1} },
+//
+//                // Two instances, three partitions, second instance, expect 1 partition for this spout
+//                { 2, 3, 1, new int[] {2} },
+//
+//                // Three instances, three partitions, third instance, expect 1 partitions for this spout
+//                { 3, 3, 0, new int[] {0} },
+//                { 3, 3, 1, new int[] {1} },
+//                { 3, 3, 2, new int[] {2} },
         };
     }
 

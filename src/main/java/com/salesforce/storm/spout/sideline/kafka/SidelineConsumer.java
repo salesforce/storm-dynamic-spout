@@ -537,8 +537,7 @@ public class SidelineConsumer {
 
         final int startingPartition = instanceIndex == 0 ? 0 : partitionsPerInstance * instanceIndex;
 
-        final int endingPartition = startingPartition + partitionsPerInstance > allPartitions.size() ?
-            allPartitions.size() : startingPartition + partitionsPerInstance;
+        final int endingPartition = startingPartition + partitionsPerInstance > allPartitions.size() ? allPartitions.size() : startingPartition + partitionsPerInstance;
 
         final List<TopicPartition> topicPartitions = new ArrayList<>();
 

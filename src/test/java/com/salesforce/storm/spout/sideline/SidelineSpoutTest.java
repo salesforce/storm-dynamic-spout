@@ -221,7 +221,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 2, 0L);
 
         // Lets produce some data into the topic
-        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
 
         // Now consume tuples generated from the messages we published into kafka.
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
@@ -282,7 +282,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
 
         // Lets produce some data into the topic
-        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
 
         // Now loop and get our tuples
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
@@ -381,7 +381,7 @@ public class SidelineSpoutTest {
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Produce records into kafka
-        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish);
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // Wait for our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
         // Consuming from kafka is an async process de-coupled from the call to nextTuple().  Because of this it could
@@ -408,7 +408,7 @@ public class SidelineSpoutTest {
         staticTrigger.sendStartRequest(request);
 
         // Produce another 3 records into kafka.
-        producedRecords = produceRecords(numberOfRecordsToPublish);
+        producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // We basically want the time that would normally pass before we check that there are no new tuples
         // Call next tuple, it should NOT receive any tuples because
@@ -443,7 +443,7 @@ public class SidelineSpoutTest {
         waitForVirtualSpouts(spout, 1);
 
         // Produce some more records, verify they come in the firehose.
-        producedRecords = produceRecords(numberOfRecordsToPublish);
+        producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
@@ -470,7 +470,7 @@ public class SidelineSpoutTest {
     @Test
     public void testResumingForFirehoseVirtualSpout() throws InterruptedException, IOException, KeeperException {
         // Produce 10 messages into kafka (offsets 0->9)
-        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10, 0));
 
         // Create spout
         // Define our output stream id
@@ -573,7 +573,7 @@ public class SidelineSpoutTest {
     @Test
     public void testResumingSpoutWhileSidelinedVirtualSpoutIsActive() throws InterruptedException {
         // Produce 10 messages into kafka (offsets 0->9)
-        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10));
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = Collections.unmodifiableList(produceRecords(10, 0));
 
         // Create spout
         // Define our output stream id
@@ -630,7 +630,7 @@ public class SidelineSpoutTest {
         staticTrigger.sendStartRequest(request);
 
         // Produce 5 more messages into kafka, should be offsets [10,11,12,13,14]
-        List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5);
+        List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 4 more times, we should get the remaining first 10 records because they were already buffered.
         spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
@@ -742,7 +742,7 @@ public class SidelineSpoutTest {
         logger.info("=== Virtual Spout should be closed now... just fire hose left!");
 
         // Produce 5 messages into Kafka topic with offsets [15,16,17,18,19]
-        List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5);
+        List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 5 times,
         List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 5);
@@ -1095,9 +1095,9 @@ public class SidelineSpoutTest {
     /**
      * helper method to produce records into kafka.
      */
-    private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords) {
+    private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords, int partitionId) {
         KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(kafkaTestServer);
-        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, 0);
+        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
     }
 
     /**
