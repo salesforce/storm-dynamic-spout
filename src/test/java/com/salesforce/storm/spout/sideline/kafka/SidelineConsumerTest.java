@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
@@ -31,9 +32,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1224,12 +1229,11 @@ public class SidelineConsumerTest {
         sidelineConsumer.open();
 
         // Read from topic, verify we get what we expect, we should only get the last 5 records.
-        for (int x=0; x<numberOfRecordsToConsume; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
-            assertNotNull(foundRecord);
-
+        List<ConsumerRecord<byte[], byte[]>> consumedRecords = asyncConsumeMessages(sidelineConsumer, 5);
+        Iterator<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecordsIterator = expectedProducedRecords.iterator();
+        for (ConsumerRecord<byte[], byte[]> foundRecord: consumedRecords) {
             // Get the produced record we expected to get back.
-            ProducedKafkaRecord<byte[], byte[]> expectedRecord = expectedProducedRecords.get(x);
+            ProducedKafkaRecord<byte[], byte[]> expectedRecord = expectedProducedRecordsIterator.next();
 
             // Validate it
             logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
@@ -1989,5 +1993,20 @@ public class SidelineConsumerTest {
         config.setIndexOfConsumer(0);
 
         return config;
+    }
+
+    private List<ConsumerRecord<byte[], byte[]>> asyncConsumeMessages(final SidelineConsumer consumer, final int numberOfMessagesToConsume) {
+        List<ConsumerRecord<byte[], byte[]>> consumedMessages = Lists.newArrayList();
+
+        await()
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> {
+                ConsumerRecord<byte[], byte[]> nextRecord = consumer.nextRecord();
+                if (nextRecord != null) {
+                    consumedMessages.add(nextRecord);
+                }
+                return consumedMessages.size();
+            }, equalTo(numberOfMessagesToConsume));
+        return consumedMessages;
     }
 }

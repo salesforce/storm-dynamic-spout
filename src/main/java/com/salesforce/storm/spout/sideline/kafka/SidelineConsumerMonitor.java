@@ -141,7 +141,7 @@ public class SidelineConsumerMonitor {
             final TopicPartition topicPartition = entry.getKey();
             final PartitionProgress partitionProgress = entry.getValue();
 
-            logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
+            logger.info("{} => {}% complete [{} of {} processed, {} remaining]",
                 topicPartition,
                 partitionProgress.getPercentageComplete(),
                 partitionProgress.getTotalProcessed(),

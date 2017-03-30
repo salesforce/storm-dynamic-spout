@@ -307,7 +307,7 @@ public class SidelineConsumer {
         if (buffer == null || !bufferIterator.hasNext()) {
             // Time to refill the buffer
             try {
-                buffer = kafkaConsumer.poll(3000);
+                buffer = kafkaConsumer.poll(300);
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
                 handleOffsetOutOfRange(outOfRangeException);
