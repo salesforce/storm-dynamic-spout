@@ -1301,29 +1301,59 @@ public class SidelineConsumerTest {
         sidelineConsumer.close();
     }
 
+    /**
+     * This is an integration test of multiple SidelineConsumers.
+     * We stand up a topic with 4 partitions.
+     * We then have a consumer size of 2.
+     * We run the test once using consumerIndex 0
+     *   - Verify we only consume from partitions 0 and 1
+     * We run the test once using consumerIndex 1
+     *   - Verify we only consume from partitions 2 and 3
+     * @param consumerIndex What consumerIndex to run the test with.
+     */
     @Test
-    public void testConsumeWithConsumerGroupEvenNumberOfPartitions() {
+    @UseDataProvider("providerOfConsumerIndexes")
+    public void testConsumeWithConsumerGroupEvenNumberOfPartitions(final int consumerIndex) {
         final int numberOfMsgsPerPartition = 10;
 
         // Create a topic with 4 partitions
         topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
         kafkaTestServer.createTopic(topicName, 4);
 
-        // produce 10 msgs into each partition
-        List<ProducedKafkaRecord<byte[], byte[]>> partition0Records = produceRecords(numberOfMsgsPerPartition, 0);
-        List<ProducedKafkaRecord<byte[], byte[]>> partition1Records = produceRecords(numberOfMsgsPerPartition, 1);
-        List<ProducedKafkaRecord<byte[], byte[]>> partition2Records = produceRecords(numberOfMsgsPerPartition, 2);
-        List<ProducedKafkaRecord<byte[], byte[]>> partition3Records = produceRecords(numberOfMsgsPerPartition, 3);
+        // Define some topicPartitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+
+        // produce 10 msgs into even partitions, 11 into odd partitions
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition + 1, 1);
+        produceRecords(numberOfMsgsPerPartition, 2);
+        produceRecords(numberOfMsgsPerPartition + 1, 3);
+
+        // Some initial setup
+        final List<TopicPartition> expectedPartitions;
+        if (consumerIndex == 0) {
+            // If we're consumerIndex 0, we expect partitionIds 0 or 1
+            expectedPartitions = Lists.newArrayList(partition0 , partition1);
+        } else if (consumerIndex == 1) {
+            // If we're consumerIndex 0, we expect partitionIds 2 or 3
+            expectedPartitions = Lists.newArrayList(partition2 , partition3);
+        } else {
+            throw new RuntimeException("Invalid input to test");
+        }
 
         // Setup our config
-        SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
-        // Adjust the config so that we have 2 consumers, and we are consumer index 0
-        config.setIndexOfConsumer(0);
+        // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
+        config.setIndexOfConsumer(consumerIndex);
         config.setNumberOfConsumers(2);
 
         // Create our Persistence Manager
         PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
 
         // Create our consumer
         SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
@@ -1333,24 +1363,78 @@ public class SidelineConsumerTest {
         Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
+        // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
+        assertNotNull("Should be non-null", assignedPartitions);
+        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+        assertEquals("Should be assigned 2 partitions", 2, assignedPartitions.size());
+        assertTrue("Should contain first expected partition", assignedPartitions.contains(expectedPartitions.get(0)));
+        assertTrue("Should contain 2nd partition", assignedPartitions.contains(expectedPartitions.get(1)));
+
+        // Attempt to consume 21 records
+        // Read from topic, verify we get what we expect
+        for (int x=0; x<(numberOfMsgsPerPartition * 2) + 1; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Validate its from partition 0 or 1
+            final int foundPartitionId = foundRecord.partition();
+            assertTrue("Should be from one of our expected partitions", foundPartitionId == expectedPartitions.get(0).partition() || foundPartitionId == expectedPartitions.get(1).partition());
+
+            // Lets ack the tuple as we go
+            sidelineConsumer.commitOffset(foundRecord);
+        }
+
+        // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
+        for (int x=0; x<2; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNull("Should have nothing new to consume and be null", foundRecord);
+        }
+
+        // Now lets flush state
+        final ConsumerState consumerState = sidelineConsumer.flushConsumerState();
+
+        // validate the state only has data for our partitions
+        assertNotNull("Should not be null", consumerState);
+        assertEquals("Should only have 2 entries", 2, consumerState.size());
+        assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartitions.get(0)));
+        assertTrue("Should contain for 2nd expected partition", consumerState.containsKey(expectedPartitions.get(1)));
+        assertEquals("Offset stored should be 9 on first expected partition", (Long) 9L, consumerState.getOffsetForTopicAndPartition(expectedPartitions.get(0)));
+        assertEquals("Offset stored should be 10 on 2nd expected partition", (Long) 10L, consumerState.getOffsetForTopicAndPartition(expectedPartitions.get(1)));
+
+        // And double check w/ persistence manager directly
+        final Long partition0Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 0);
+        final Long partition1Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 1);
+        final Long partition2Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 2);
+        final Long partition3Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 3);
+
+        if (consumerIndex == 0) {
+            assertNotNull("Partition0 offset should be not null", partition0Offset);
+            assertNotNull("Partition1 offset should be not null", partition1Offset);
+            assertNull("Partition2 offset should be null", partition2Offset);
+            assertNull("Partition3 offset should be null", partition3Offset);
+
+            assertEquals("Offset should be 9", (Long) 9L, partition0Offset);
+            assertEquals("Offset should be 10", (Long) 10L, partition1Offset);
+        } else {
+            assertNotNull("Partition2 offset should be not null", partition2Offset);
+            assertNotNull("Partition3 offset should be not null", partition3Offset);
+            assertNull("Partition0 offset should be null", partition0Offset);
+            assertNull("Partition1 offset should be null", partition1Offset);
+
+            assertEquals("Offset should be 9", (Long) 9L, partition2Offset);
+            assertEquals("Offset should be 10", (Long) 10L, partition3Offset);
+        }
+
+        // Close it.
         sidelineConsumer.close();
-//
-//        // Validate setup
-//        assertNotNull("Should be non-null", assignedPartitions);
-//        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-//        assertEquals("Should contain 2 entries", expectedNumberOfPartitions, assignedPartitions.size());
-//        assertTrue("Should contain our expected topic/partition 0", assignedPartitions.contains(partition0));
-//        assertTrue("Should contain our expected topic/partition 1", assignedPartitions.contains(partition1));
+    }
 
-
-        // Configure it to have a ConsumerGroup size of 2, and its index set to 0
-        // Start it up, validate that it consumes from the correct partitions
-        // Close it.
-
-        // Create new sideline consumer
-        // Configure it to have a ConsumerGroup size of 2, and its index set to 1
-        // Start it up, validate that it consumes from the correct partitions
-        // Close it.
+    @DataProvider
+    public static Object[][] providerOfConsumerIndexes() {
+        return new Object[][]{
+                {0},
+                {1}
+        };
     }
 
     /**
