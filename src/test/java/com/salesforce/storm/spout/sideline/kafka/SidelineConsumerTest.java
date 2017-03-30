@@ -29,7 +29,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -1428,6 +1427,155 @@ public class SidelineConsumerTest {
         // Close it.
         sidelineConsumer.close();
     }
+
+    /**
+     * This is an integration test of multiple SidelineConsumers.
+     * We stand up a topic with 5 partitions.
+     * We then have a consumer size of 2.
+     * We run the test once using consumerIndex 0
+     *   - Verify we only consume from partitions 0,1,2
+     * We run the test once using consumerIndex 1
+     *   - Verify we only consume from partitions 3 and 4
+     * @param consumerIndex What consumerIndex to run the test with.
+     */
+    @Test
+    @UseDataProvider("providerOfConsumerIndexes")
+    public void testConsumeWithConsumerGroupOddNumberOfPartitions(final int consumerIndex) {
+        final int numberOfMsgsPerPartition = 10;
+
+        // Create a topic with 4 partitions
+        topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
+        kafkaTestServer.createTopic(topicName, 5);
+
+        // Define some topicPartitions
+        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+        final TopicPartition partition4 = new TopicPartition(topicName, 4);
+
+        // produce 10 msgs into even partitions, 11 into odd partitions
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition + 1, 1);
+        produceRecords(numberOfMsgsPerPartition, 2);
+        produceRecords(numberOfMsgsPerPartition + 1, 3);
+        produceRecords(numberOfMsgsPerPartition, 4);
+
+        // Some initial setup
+        final List<TopicPartition> expectedPartitions;
+        final int expectedRecordsToConsume;
+        if (consumerIndex == 0) {
+            // If we're consumerIndex 0, we expect partitionIds 0,1, or 2
+            expectedPartitions = Lists.newArrayList(partition0 , partition1, partition2);
+
+            // We expect to get out 31 records
+            expectedRecordsToConsume = 31;
+        } else if (consumerIndex == 1) {
+            // If we're consumerIndex 0, we expect partitionIds 3 or 4
+            expectedPartitions = Lists.newArrayList(partition3 , partition4);
+
+            // We expect to get out 21 records
+            expectedRecordsToConsume = 21;
+        } else {
+            throw new RuntimeException("Invalid input to test");
+        }
+
+        // Setup our config
+        final SidelineConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+
+        // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
+        config.setIndexOfConsumer(consumerIndex);
+        config.setNumberOfConsumers(2);
+
+        // Create our Persistence Manager
+        PersistenceManager persistenceManager = new InMemoryPersistenceManager();
+        persistenceManager.open(Maps.newHashMap());
+
+        // Create our consumer
+        SidelineConsumer sidelineConsumer = new SidelineConsumer(config, persistenceManager);
+        sidelineConsumer.open();
+
+        // Ask the underlying consumer for our assigned partitions.
+        Set<TopicPartition> assignedPartitions = sidelineConsumer.getAssignedPartitions();
+        logger.info("Assigned partitions: {}", assignedPartitions);
+
+        // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
+        assertNotNull("Should be non-null", assignedPartitions);
+        assertFalse("Should not be empty", assignedPartitions.isEmpty());
+        assertEquals("Should be assigned correct number of partitions", expectedPartitions.size(), assignedPartitions.size());
+        for (TopicPartition expectedTopicPartition : expectedPartitions) {
+            assertTrue("Should contain expected partition", assignedPartitions.contains(expectedTopicPartition));
+        }
+
+        // Attempt to consume records
+        // Read from topic, verify we get what we expect
+        for (int x=0; x<expectedRecordsToConsume; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNotNull(foundRecord);
+
+            // Validate its from a partition we expect
+            final int foundPartitionId = foundRecord.partition();
+            assertTrue("Should be from one of our expected partitions", expectedPartitions.contains(new TopicPartition(topicName, foundPartitionId)));
+
+            // Lets ack the tuple as we go
+            sidelineConsumer.commitOffset(foundRecord);
+        }
+
+        // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
+        for (int x=0; x<2; x++) {
+            ConsumerRecord<byte[], byte[]> foundRecord = sidelineConsumer.nextRecord();
+            assertNull("Should have nothing new to consume and be null", foundRecord);
+        }
+
+        // Now lets flush state
+        final ConsumerState consumerState = sidelineConsumer.flushConsumerState();
+
+        // validate the state only has data for our partitions
+        assertNotNull("Should not be null", consumerState);
+        assertEquals("Should only have correct number of entries", expectedPartitions.size(), consumerState.size());
+
+        for (TopicPartition expectedPartition: expectedPartitions) {
+            assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartition));
+
+            if (expectedPartition.partition() % 2 == 0) {
+                assertEquals("Offset stored should be 9 on even partitions", (Long) 9L, consumerState.getOffsetForTopicAndPartition(expectedPartition));
+            } else {
+                assertEquals("Offset stored should be 10 on odd partitions", (Long) 10L, consumerState.getOffsetForTopicAndPartition(expectedPartition));
+            }
+        }
+
+        // And double check w/ persistence manager directly
+        final Long partition0Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 0);
+        final Long partition1Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 1);
+        final Long partition2Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 2);
+        final Long partition3Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 3);
+        final Long partition4Offset = persistenceManager.retrieveConsumerState(config.getConsumerId(), 4);
+
+        if (consumerIndex == 0) {
+            assertNotNull("Partition0 offset should be not null", partition0Offset);
+            assertNotNull("Partition1 offset should be not null", partition1Offset);
+            assertNotNull("Partition2 offset should be not null", partition2Offset);
+            assertNull("Partition3 offset should be null", partition3Offset);
+            assertNull("Partition4 offset should be null", partition4Offset);
+
+            assertEquals("Offset should be 9", (Long) 9L, partition0Offset);
+            assertEquals("Offset should be 10", (Long) 10L, partition1Offset);
+            assertEquals("Offset should be 9", (Long) 9L, partition2Offset);
+        } else {
+            assertNotNull("Partition3 offset should be not null", partition3Offset);
+            assertNotNull("Partition4 offset should be not null", partition4Offset);
+            assertNull("Partition0 offset should be null", partition0Offset);
+            assertNull("Partition1 offset should be null", partition1Offset);
+            assertNull("Partition2 offset should be null", partition2Offset);
+
+            assertEquals("Offset should be 10", (Long) 10L, partition3Offset);
+            assertEquals("Offset should be 9", (Long) 9L, partition4Offset);
+        }
+
+        // Close it.
+        sidelineConsumer.close();
+    }
+
 
     @DataProvider
     public static Object[][] providerOfConsumerIndexes() {
