@@ -223,7 +223,7 @@ public class VirtualSidelineSpoutTest {
         virtualSidelineSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open();
+        verify(mockSidelineConsumer, times(1)).open(eq(null));
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -274,7 +274,7 @@ public class VirtualSidelineSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open();
+        verify(mockSidelineConsumer, times(1)).open(eq(null));
     }
 
     /**
