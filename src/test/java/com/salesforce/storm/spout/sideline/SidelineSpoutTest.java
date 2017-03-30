@@ -1328,6 +1328,9 @@ public class SidelineSpoutTest {
      * @param configuredStreamId - What streamId we should emit tuples out of.
      */
     private Map<String, Object> getDefaultConfig(final String consumerIdPrefix, final String configuredStreamId) {
+        // Generate a unique zkRootNode for each test
+        final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
+
         final Map<String, Object> config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
         config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager");
@@ -1335,7 +1338,7 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceManager");
