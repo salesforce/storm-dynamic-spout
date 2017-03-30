@@ -1,7 +1,5 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import org.apache.storm.shade.org.apache.commons.lang.ArrayUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +41,6 @@ public class PartitionDistributor {
         }
 
         // Convert to an array of primitive ints and return them
-        return ArrayUtils.toPrimitive(partitionIds.toArray(new Integer[0]));
+        return partitionIds.stream().mapToInt(i -> i).toArray();
     }
 }
