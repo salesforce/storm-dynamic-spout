@@ -92,7 +92,7 @@
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
             <version>${curatorVersion}</version>
-            <!--<optional>true</optional>-->
+            <optional>true</optional>
         </dependency>
 
         <!-- For simple Json Serialization -->
