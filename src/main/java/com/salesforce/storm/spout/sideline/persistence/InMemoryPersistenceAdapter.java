@@ -1,12 +1,12 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +25,10 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     public void open(Map topologyConfig) {
         // Allow non-destructive re-opening
         if (storedConsumerState == null) {
-            storedConsumerState = new HashMap<>();
+            storedConsumerState = Maps.newHashMap();
         }
         if (storedSidelineRequests == null) {
-            storedSidelineRequests = new HashMap<>();
+            storedSidelineRequests = Maps.newHashMap();
         }
     }
 
@@ -41,7 +41,9 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
     /**
      * Pass in the consumer state that you'd like persisted.
-     * @param consumerState - ConsumerState to be persisted.
+     * @param consumerId Id of consumer to persist partition offset for.
+     * @param partitionId The partitionId to persist an offset for.
+     * @param offset The offset to persist.
      */
     @Override
     public void persistConsumerState(String consumerId, int partitionId, long offset) {
@@ -89,7 +91,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
     @Override
     public List<SidelineRequestIdentifier> listSidelineRequests() {
-        return new ArrayList<>(storedSidelineRequests.keySet());
+        return Lists.newArrayList(storedSidelineRequests.keySet());
     }
 
     private String getConsumerStateKey(final String consumerId, final int partitionId) {

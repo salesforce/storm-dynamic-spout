@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -13,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -530,7 +530,7 @@ public class SidelineConsumer {
         );
 
         // Convert our partition ids back to a list of TopicPartition records
-        final List<TopicPartition> topicPartitions = new ArrayList<>();
+        final List<TopicPartition> topicPartitions = Lists.newArrayList();
 
         for (final int partitonId : partitionsIds) {
             topicPartitions.add(

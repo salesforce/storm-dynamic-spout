@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import java.util.ArrayList;
+import com.google.common.collect.Lists;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class PartitionDistributor {
             allPartitionIds.length : startingPartition + partitionsPerInstance;
 
         // Make a new array of integers for the partition ids
-        List<Integer> partitionIds = new ArrayList<>();
+        List<Integer> partitionIds = Lists.newArrayList();
 
         // Loop over our segment of all the partitions and add just the ones we need to our array
         for (int i = startingPartition; i < endingPartition; i++) {

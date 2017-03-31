@@ -1,6 +1,8 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
@@ -19,8 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -160,7 +160,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = Maps.newHashMap();
         data.put("type", type.toString());
         data.put("startingState", startingState);
         if (endingState != null) { // Optional
@@ -224,7 +224,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     public List<SidelineRequestIdentifier> listSidelineRequests() {
         verifyHasBeenOpened();
 
-        final List<SidelineRequestIdentifier> ids = new ArrayList<>();
+        final List<SidelineRequestIdentifier> ids = Lists.newArrayList();
 
         try {
             // TODO: This should be moved to it's own method
@@ -250,7 +250,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
     private List<FilterChainStep> parseJsonToFilterChainSteps(final Map<Object, Object> json) {
         if (json == null) {
-            return new ArrayList<>();
+            return Lists.newArrayList();
         }
 
         final String chainStepData = (String) json.get("filterChainSteps");

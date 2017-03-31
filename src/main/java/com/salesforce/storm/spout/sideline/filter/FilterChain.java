@@ -1,11 +1,11 @@
 package com.salesforce.storm.spout.sideline.filter;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    private final Map<SidelineRequestIdentifier,List<FilterChainStep>> steps = new HashMap<>();
+    private final Map<SidelineRequestIdentifier,List<FilterChainStep>> steps = Maps.newHashMap();
 
     public FilterChain() {
     }

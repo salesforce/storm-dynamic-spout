@@ -5,7 +5,6 @@ import com.google.common.collect.Lists;
 import org.apache.storm.task.IOutputCollector;
 import org.apache.storm.tuple.Tuple;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -14,10 +13,10 @@ import java.util.List;
  * simple getters so those results can be retrieved and asserted in your tests.
  */
 public class MockOutputCollector implements IOutputCollector {
-    private List<Tuple> ackedTuples = new ArrayList<>();
-    private List<Emission> emissions = new ArrayList<>();
-    private List<Tuple> failedTuples = new ArrayList<>();
-    private List<Throwable> reportedErrors = new ArrayList<>();
+    private List<Tuple> ackedTuples = Lists.newArrayList();
+    private List<Emission> emissions = Lists.newArrayList();
+    private List<Tuple> failedTuples = Lists.newArrayList();
+    private List<Throwable> reportedErrors = Lists.newArrayList();
 
     public List<Tuple> getAckedTuples() {
         // Clone the list

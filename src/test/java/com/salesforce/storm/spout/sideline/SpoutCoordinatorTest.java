@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
@@ -12,7 +13,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -36,7 +36,7 @@ public class SpoutCoordinatorTest {
         // Define how long we'll wait for internal operations to complete
         final long waitTime = internalOperationsIntervalMs * 4;
 
-        final List<KafkaMessage> expected = new ArrayList<>();
+        final List<KafkaMessage> expected = Lists.newArrayList();
 
         final MockDelegateSidelineSpout fireHoseSpout = new MockDelegateSidelineSpout();
         final MockDelegateSidelineSpout sidelineSpout1 = new MockDelegateSidelineSpout();

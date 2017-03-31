@@ -25,7 +25,6 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +172,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         logger.info("Received STOP sideline request");
 
-        List<FilterChainStep> negatedSteps = new ArrayList<>();
+        List<FilterChainStep> negatedSteps = Lists.newArrayList();
 
         List<FilterChainStep> steps = fireHoseSpout.getFilterChain().removeSteps(id);
 
