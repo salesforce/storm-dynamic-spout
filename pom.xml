@@ -282,7 +282,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <argLine>${argLine} -Xmx512m</argLine>
+                    <argLine>${argLine} -Xmx1g</argLine>
                     <skipTests>${skipTests}</skipTests>
                     <runOrder>alphabetical</runOrder>
                 </configuration>
