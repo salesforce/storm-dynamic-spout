@@ -372,7 +372,7 @@ public class SpoutMonitor implements Runnable {
      * @return - the maximum amount of concurrently running VirtualSpouts we'll start.
      */
     int getMaxConcurrentVirtualSpouts() {
-        return (int) getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
     }
 
     /**
