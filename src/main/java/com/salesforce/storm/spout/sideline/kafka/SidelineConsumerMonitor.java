@@ -151,6 +151,9 @@ public class SidelineConsumerMonitor {
         }
     }
 
+    /**
+     * @return - Return the persistence adapter.
+     */
     private PersistenceAdapter getPersistenceAdapter() {
         return persistenceAdapter;
     }
