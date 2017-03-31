@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Interface that controls persistence of state.
  */
-public interface PersistenceManager {
+public interface PersistenceAdapter {
     /**
      * Performs any required initialization/connection/setup required for
      * the implementation.  By contract, this will be called once prior to calling

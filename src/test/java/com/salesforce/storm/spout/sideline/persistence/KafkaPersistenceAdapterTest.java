@@ -16,7 +16,7 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.Map;
 
-public class KafkaPersistenceManagerTest {
+public class KafkaPersistenceAdapterTest {
 
     // Our internal Kafka and Zookeeper Server, used to test against.
     private static KafkaTestServer kafkaTestServer;
@@ -89,8 +89,8 @@ public class KafkaPersistenceManagerTest {
         // Create our config
         final Map topologyConfig = getDefaultConfig(consumerIdPrefix);
 
-        KafkaPersistenceManager persistenceManager = new KafkaPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        KafkaPersistenceAdapter persistenceAdapter = new KafkaPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Create state
         final ConsumerState consumerState = ConsumerState
@@ -102,11 +102,11 @@ public class KafkaPersistenceManagerTest {
 
         // Persist it
         // TODO: Fix partition id
-        //persistenceManager.persistConsumerState(consumerIdPrefix, 1, consumerState);
+        //persistenceAdapter.persistConsumerState(consumerIdPrefix, 1, consumerState);
 
         // Now attempt to retrieve it
         // TODO: Fix partition id
-        final Long result = persistenceManager.retrieveConsumerState(consumerIdPrefix, 1);
+        final Long result = persistenceAdapter.retrieveConsumerState(consumerIdPrefix, 1);
 
         // TODO: Validate it
     }
@@ -116,7 +116,7 @@ public class KafkaPersistenceManagerTest {
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.persistence.KafkaPersistenceManager");
+        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.KafkaPersistenceAdapter");
 
         return config;
     }

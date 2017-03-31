@@ -14,7 +14,7 @@ import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.Node;
@@ -1275,8 +1275,8 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
-        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
-        when(mockSidelineConsumer.getPersistenceManager()).thenReturn(mockPersistenceManager);
+        PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
+        when(mockSidelineConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1316,7 +1316,7 @@ public class VirtualSidelineSpoutTest {
         verify(mockSidelineConsumer, never()).removeConsumerState();
 
         // Never remove sideline request state
-        verify(mockPersistenceManager, never()).clearSidelineRequest(anyObject());
+        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject());
     }
 
     /**
@@ -1334,8 +1334,8 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
-        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
-        when(mockSidelineConsumer.getPersistenceManager()).thenReturn(mockPersistenceManager);
+        PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
+        when(mockSidelineConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1369,7 +1369,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceManager, times(1)).clearSidelineRequest(sidelineRequestId);
+        verify(mockPersistenceAdapter, times(1)).clearSidelineRequest(sidelineRequestId);
         verify(mockSidelineConsumer, times(1)).close();
 
         // But we never called flush consumer state.
@@ -1390,8 +1390,8 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
-        PersistenceManager mockPersistenceManager = mock(PersistenceManager.class);
-        when(mockSidelineConsumer.getPersistenceManager()).thenReturn(mockPersistenceManager);
+        PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
+        when(mockSidelineConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1424,7 +1424,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceManager, never()).clearSidelineRequest(anyObject());
+        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject());
         verify(mockSidelineConsumer, times(1)).close();
 
         // But we never called flush consumer state.

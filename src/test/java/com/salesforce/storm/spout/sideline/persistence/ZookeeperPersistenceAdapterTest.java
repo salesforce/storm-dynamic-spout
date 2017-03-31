@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests our Zookeeper Persistence layer.
  */
-public class ZookeeperPersistenceManagerTest {
+public class ZookeeperPersistenceAdapterTest {
     /**
      * By default, no exceptions should be thrown.
      */
@@ -49,7 +49,7 @@ public class ZookeeperPersistenceManagerTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     // For logging within test.
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManagerTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceAdapterTest.class);
 
     // An internal zookeeper server used for testing.
     private static TestingServer zkServer;
@@ -85,10 +85,10 @@ public class ZookeeperPersistenceManagerTest {
         final Map topologyConfig = createDefaultConfig(inputHosts, null);
 
         // Create instance and open it.
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.open(topologyConfig);
+        persistenceAdapter.open(topologyConfig);
     }
 
     /**
@@ -108,19 +108,19 @@ public class ZookeeperPersistenceManagerTest {
         final Map topologyConfig = createDefaultConfig(inputHosts, expectedZkRoot);
 
         // Create instance and open it.
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Validate
-        assertEquals("Unexpected zk connection string", expectedZkConnectionString, persistenceManager.getZkConnectionString());
-        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceManager.getZkRoot());
+        assertEquals("Unexpected zk connection string", expectedZkConnectionString, persistenceAdapter.getZkConnectionString());
+        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceAdapter.getZkRoot());
 
         // Validate that getZkXXXXStatePath returns the expected value
-        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceManager.getZkConsumerStatePath(expectedConsumerId, partitionId));
-        assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceManager.getZkRequestStatePath(expectedConsumerId));
+        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePath(expectedConsumerId, partitionId));
+        assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceAdapter.getZkRequestStatePath(expectedConsumerId));
 
         // Close everyone out
-        persistenceManager.close();
+        persistenceAdapter.close();
     }
 
     /**
@@ -142,28 +142,28 @@ public class ZookeeperPersistenceManagerTest {
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
 
         // Create instance and open it.
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         final Long offset1 = 100L;
 
-        persistenceManager.persistConsumerState(consumerId, partitionId1, offset1);
+        persistenceAdapter.persistConsumerState(consumerId, partitionId1, offset1);
 
-        final Long actual1 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
+        final Long actual1 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
         // Validate result
         assertNotNull("Got an object back", actual1);
         assertEquals(offset1, actual1);
 
         // Close outs
-        persistenceManager.close();
+        persistenceAdapter.close();
 
         // Create new instance, reconnect to ZK, make sure we can still read it out with our new instance.
-        persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Re-retrieve, should still be there.
-        final Long actual2 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
+        final Long actual2 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
         assertNotNull("Got an object back", actual2);
         assertEquals(offset1, actual2);
@@ -171,35 +171,35 @@ public class ZookeeperPersistenceManagerTest {
         final Long offset2 = 101L;
 
         // Update our existing state
-        persistenceManager.persistConsumerState(consumerId, partitionId1, offset2);
+        persistenceAdapter.persistConsumerState(consumerId, partitionId1, offset2);
 
         // Re-retrieve, should still be there.
-        final Long actual3 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
+        final Long actual3 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
         assertNotNull("Got an object back", actual3);
         assertEquals(offset2, actual3);
 
-        final Long actual4 = persistenceManager.retrieveConsumerState(consumerId, partitionId2);
+        final Long actual4 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId2);
 
         assertNull("Partition hasn't been set yet", actual4);
 
         final Long offset3 = 102L;
 
-        persistenceManager.persistConsumerState(consumerId, partitionId2, offset3);
+        persistenceAdapter.persistConsumerState(consumerId, partitionId2, offset3);
 
-        final Long actual5 = persistenceManager.retrieveConsumerState(consumerId, partitionId2);
+        final Long actual5 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId2);
 
         assertNotNull("Got an object back", actual5);
         assertEquals(offset3, actual5);
 
         // Re-retrieve, should still be there.
-        final Long actual6 = persistenceManager.retrieveConsumerState(consumerId, partitionId1);
+        final Long actual6 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
         assertNotNull("Got an object back", actual3);
         assertEquals(offset2, actual6);
 
         // Close outs
-        persistenceManager.close();
+        persistenceAdapter.close();
     }
 
     /**
@@ -241,15 +241,15 @@ public class ZookeeperPersistenceManagerTest {
 
         // 2. Create our instance and open it
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Define the offset we are storing
         final long offset = 100L;
 
         // Persist it
         logger.info("Persisting {}", offset);
-        persistenceManager.persistConsumerState(consumerId, partitionId, offset);
+        persistenceAdapter.persistConsumerState(consumerId, partitionId, offset);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -285,7 +285,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Got unexpected state", offset, (long) storedData);
 
         // Test clearing state actually clears state.
-        persistenceManager.clearConsumerState(consumerId, partitionId);
+        persistenceAdapter.clearConsumerState(consumerId, partitionId);
 
         // Validate the node no longer exists
         // Since this is an async operation, use await() to watch for the change
@@ -299,7 +299,7 @@ public class ZookeeperPersistenceManagerTest {
             .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + consumerId , false), nullValue());
 
         // Close everyone out
-        persistenceManager.close();
+        persistenceAdapter.close();
         zookeeperClient.close();
     }
 
@@ -352,13 +352,13 @@ public class ZookeeperPersistenceManagerTest {
 
         // 2. Create our instance and open it
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Persist it
-        persistenceManager.persistConsumerState(virtualSpoutId, partition0, partition0Offset);
-        persistenceManager.persistConsumerState(virtualSpoutId, partition1, partition1Offset);
-        persistenceManager.persistConsumerState(virtualSpoutId, partition2, partition2Offset);
+        persistenceAdapter.persistConsumerState(virtualSpoutId, partition0, partition0Offset);
+        persistenceAdapter.persistConsumerState(virtualSpoutId, partition1, partition1Offset);
+        persistenceAdapter.persistConsumerState(virtualSpoutId, partition2, partition2Offset);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -404,7 +404,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Got unexpected state", partition0Offset, (long) storedData);
 
         // Now remove partition0 from persistence
-        persistenceManager.clearConsumerState(virtualSpoutId, partition0);
+        persistenceAdapter.clearConsumerState(virtualSpoutId, partition0);
 
         // Validate the node no longer exists
         // Since this is an async operation, use await() to watch for the change
@@ -424,7 +424,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Got unexpected state", partition1Offset, (long) storedData);
 
         // Now remove partition1 from persistence
-        persistenceManager.clearConsumerState(virtualSpoutId, partition1);
+        persistenceAdapter.clearConsumerState(virtualSpoutId, partition1);
 
         // Validate the node no longer exists
         // Since this is an async operation, use await() to watch for the change
@@ -444,7 +444,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Got unexpected state", partition2Offset, (long) storedData);
 
         // Now remove partition1 from persistence
-        persistenceManager.clearConsumerState(virtualSpoutId, partition2);
+        persistenceAdapter.clearConsumerState(virtualSpoutId, partition2);
 
         // Validate the node no longer exists
         // Since this is an async operation, use await() to watch for the change
@@ -458,7 +458,7 @@ public class ZookeeperPersistenceManagerTest {
                 .until(() -> zookeeperClient.exists(zkConsumersRootNodePath + "/" + virtualSpoutId , false), nullValue());
 
         // Close everyone out
-        persistenceManager.close();
+        persistenceAdapter.close();
         zookeeperClient.close();
     }
 
@@ -481,8 +481,8 @@ public class ZookeeperPersistenceManagerTest {
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
 
         // Create instance and open it.
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Create state
         final ConsumerState consumerState = ConsumerState.builder()
@@ -493,10 +493,10 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
 
         // Attempt to read it?
-        ConsumerState result = persistenceManager.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
+        ConsumerState result = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
         logger.info("Result {}", result);
 
         // Validate result
@@ -512,15 +512,15 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
-        persistenceManager.close();
+        persistenceAdapter.close();
 
         // Create new instance, reconnect to ZK, make sure we can still read it out with our new instance.
-        persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
-        result = persistenceManager.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
+        result = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
         logger.info("Result {}", result);
 
         // Validate result
@@ -536,7 +536,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
 
         // Close outs
-        persistenceManager.close();
+        persistenceAdapter.close();
     }
 
     /**
@@ -578,8 +578,8 @@ public class ZookeeperPersistenceManagerTest {
 
         // 2. Create our instance and open it
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootNodePath);
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
-        persistenceManager.open(topologyConfig);
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
 
         // 3. Attempt to persist some state.
         final String topicName = "MyTopic";
@@ -595,7 +595,7 @@ public class ZookeeperPersistenceManagerTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -633,7 +633,7 @@ public class ZookeeperPersistenceManagerTest {
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
 
         // Now test clearing
-        persistenceManager.clearSidelineRequest(sidelineRequestIdentifier);
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier);
 
         // Validate in the Zk Client.
         doesNodeExist = zookeeperClient.exists(zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(), false);
@@ -641,7 +641,7 @@ public class ZookeeperPersistenceManagerTest {
         assertNull("Our root node should No longer exist", doesNodeExist);
 
         // Close everyone out
-        persistenceManager.close();
+        persistenceAdapter.close();
         zookeeperClient.close();
     }
 
@@ -653,11 +653,11 @@ public class ZookeeperPersistenceManagerTest {
         final int partitionId = 1;
 
         // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistConsumerState("MyConsumerId", partitionId, 100L);
+        persistenceAdapter.persistConsumerState("MyConsumerId", partitionId, 100L);
     }
 
     /**
@@ -668,11 +668,11 @@ public class ZookeeperPersistenceManagerTest {
         final int partitionId = 1;
 
         // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.retrieveConsumerState("MyConsumerId", partitionId);
+        persistenceAdapter.retrieveConsumerState("MyConsumerId", partitionId);
     }
 
     /**
@@ -683,11 +683,11 @@ public class ZookeeperPersistenceManagerTest {
         final int partitionId = 1;
 
         // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.clearConsumerState("MyConsumerId", partitionId);
+        persistenceAdapter.clearConsumerState("MyConsumerId", partitionId);
     }
 
     /**
@@ -696,13 +696,13 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testPersistSidelineRequestStateBeforeBeingOpened() {
         // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, ConsumerState.builder().build(), null);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, ConsumerState.builder().build(), null);
     }
 
     /**
@@ -711,11 +711,11 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testRetrieveSidelineRequestStateBeforeBeingOpened() {
         // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.retrieveSidelineRequest(new SidelineRequestIdentifier());
+        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier());
     }
 
     /**
@@ -724,11 +724,11 @@ public class ZookeeperPersistenceManagerTest {
     @Test
     public void testClearSidelineRequestBeforeBeingOpened() {
         // Create our instance
-        ZookeeperPersistenceManager persistenceManager = new ZookeeperPersistenceManager();
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceManager.clearSidelineRequest(new SidelineRequestIdentifier());
+        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier());
     }
 
     /**

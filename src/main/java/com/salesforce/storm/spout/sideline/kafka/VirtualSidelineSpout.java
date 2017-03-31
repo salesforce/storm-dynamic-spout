@@ -11,7 +11,7 @@ import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
@@ -192,8 +192,8 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // The only time this would be non-null would be if it was injected for tests.
         if (sidelineConsumer == null) {
             // Create persistence manager instance and open.
-            final PersistenceManager persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
-            persistenceManager.open(getTopologyConfig());
+            final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
+            persistenceAdapter.open(getTopologyConfig());
 
             // Construct SidelineConsumerConfig based on topology config.
             final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
@@ -207,7 +207,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             );
 
             // Create sideline consumer
-            sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceManager);
+            sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceAdapter);
         }
 
         // Open the consumer
@@ -248,7 +248,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
 
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null) {
-                sidelineConsumer.getPersistenceManager().clearSidelineRequest(getSidelineRequestIdentifier());
+                sidelineConsumer.getPersistenceAdapter().clearSidelineRequest(getSidelineRequestIdentifier());
             }
         } else {
             // We are just closing up shop,

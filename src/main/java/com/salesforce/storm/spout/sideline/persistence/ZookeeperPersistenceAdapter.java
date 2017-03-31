@@ -29,9 +29,9 @@ import java.util.UUID;
  * Persistence layer implemented using Zookeeper.
  * Why Zookeeper?  Because its easy, and you most likely have it around.
  */
-public class ZookeeperPersistenceManager implements PersistenceManager, Serializable {
+public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializable {
     // Logger
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceAdapter.class);
 
     // Config
     private String zkConnectionString;

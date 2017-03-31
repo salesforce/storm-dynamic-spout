@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -67,7 +67,7 @@ public class SidelineConsumer {
      * ConsumerStateManager - Used to manage persisting consumer state, and when the consumer is restarted,
      * loading the last known consumer state back in.
      */
-    private final PersistenceManager persistenceManager;
+    private final PersistenceAdapter persistenceAdapter;
 
     /**
      * Since offsets are managed on a per partition basis, each topic/partition has its own ConsumerPartitionStateManagers
@@ -82,7 +82,7 @@ public class SidelineConsumer {
     private Iterator<ConsumerRecord<byte[], byte[]>> bufferIterator = null;
 
     /**
-     * Used to control how often we flush state using PersistenceManager.
+     * Used to control how often we flush state using PersistenceAdapter.
      */
     private transient Clock clock = Clock.systemUTC();
     private long lastFlushTime = 0;
@@ -90,21 +90,21 @@ public class SidelineConsumer {
     /**
      * Constructor.
      * @param consumerConfig - Configuration for our consumer
-     * @param persistenceManager - Implementation of PersistenceManager to use for storing consumer state.
+     * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
      */
-    public SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceManager persistenceManager) {
+    public SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter) {
         this.consumerConfig = consumerConfig;
-        this.persistenceManager = persistenceManager;
+        this.persistenceAdapter = persistenceAdapter;
     }
 
     /**
      * This constructor is used to inject a mock KafkaConsumer for tests.
      * @param consumerConfig - Configuration for our consumer
-     * @param persistenceManager - Implementation of PersistenceManager to use for storing consumer state.
+     * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
      * @param kafkaConsumer - Inject a mock KafkaConsumer for tests.
      */
-    protected SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceManager persistenceManager, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
-        this(consumerConfig, persistenceManager);
+    protected SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+        this(consumerConfig, persistenceAdapter);
         this.kafkaConsumer = kafkaConsumer;
     }
 
@@ -166,7 +166,7 @@ public class SidelineConsumer {
             }
 
             // Check to see if we have an existing offset saved for this partition
-            Long offset = persistenceManager.retrieveConsumerState(getConsumerId(), topicPartition.partition());
+            Long offset = persistenceAdapter.retrieveConsumerState(getConsumerId(), topicPartition.partition());
 
             if (offset == null && startingOffset != null) {
                 offset = startingOffset;
@@ -288,7 +288,7 @@ public class SidelineConsumer {
             // Get the current offset for each partition.
             builder.withPartition(entry.getKey(), lastFinishedOffset);
 
-            persistenceManager.persistConsumerState(
+            persistenceAdapter.persistConsumerState(
                 getConsumerId(),
                 topicPartition.partition(),
                 lastFinishedOffset
@@ -405,7 +405,7 @@ public class SidelineConsumer {
         }
 
         // Close out persistence manager.
-        persistenceManager.close();
+        persistenceAdapter.close();
 
         // Call close on underlying consumer
         kafkaConsumer.close();
@@ -420,10 +420,10 @@ public class SidelineConsumer {
     }
 
     /**
-     * @return PersistenceManager instance.
+     * @return PersistenceAdapter instance.
      */
-    public PersistenceManager getPersistenceManager() {
-        return persistenceManager;
+    public PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
     }
 
     /**
@@ -506,7 +506,7 @@ public class SidelineConsumer {
         final Set<TopicPartition> topicPartitions = partitionStateManagers.keySet();
 
         for (TopicPartition topicPartition : topicPartitions) {
-            getPersistenceManager().clearConsumerState(getConsumerId(), topicPartition.partition());
+            getPersistenceAdapter().clearConsumerState(getConsumerId(), topicPartition.partition());
         }
     }
 

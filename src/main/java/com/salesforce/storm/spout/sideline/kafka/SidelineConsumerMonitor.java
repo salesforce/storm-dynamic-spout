@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.common.TopicPartition;
@@ -18,19 +18,19 @@ import java.util.UUID;
 public class SidelineConsumerMonitor {
     private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerMonitor.class);
 
-    final PersistenceManager persistenceManager;
+    final PersistenceAdapter persistenceAdapter;
     final Map<TopicPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
 
-    public SidelineConsumerMonitor(PersistenceManager persistenceManager) {
-        this.persistenceManager = persistenceManager;
+    public SidelineConsumerMonitor(PersistenceAdapter persistenceAdapter) {
+        this.persistenceAdapter = persistenceAdapter;
     }
 
     public void open(Map topologyConfig) {
-        persistenceManager.open(topologyConfig);
+        persistenceAdapter.open(topologyConfig);
     }
 
     public void close() {
-        persistenceManager.close();
+        persistenceAdapter.close();
     }
 
     public Map<TopicPartition, PartitionProgress> getStatus(final String virtualSpoutId) {
@@ -57,7 +57,7 @@ public class SidelineConsumerMonitor {
         // We have no idea how many partitions there are... so start at 0 and go up to a max value
         // until we get a null back.  Kind of hacky.
         for (int partitionId = 0; partitionId < 100; partitionId++) {
-            final Long currentOffset = getPersistenceManager().retrieveConsumerState(virtualSpoutId, partitionId);
+            final Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, partitionId);
             if (currentOffset == null) {
                 // break out of loop;
                 break;
@@ -80,7 +80,7 @@ public class SidelineConsumerMonitor {
 
     private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final String virtualSpoutId, final SidelineRequestIdentifier sidelineRequestIdentifier) {
         // Retrieve status
-        final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(sidelineRequestIdentifier);
+        final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(sidelineRequestIdentifier);
         if (payload == null) {
             // Nothing to do?
             logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
@@ -95,7 +95,7 @@ public class SidelineConsumerMonitor {
         // Calculate the progress
         for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
             // Get the state
-            Long currentOffset = getPersistenceManager().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
+            Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
             if (currentOffset == null) {
                 logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
                 continue;
@@ -151,8 +151,11 @@ public class SidelineConsumerMonitor {
         }
     }
 
-    private PersistenceManager getPersistenceManager() {
-        return persistenceManager;
+    /**
+     * @return - Return the persistence adapter.
+     */
+    private PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
     }
 
     public static class PartitionProgress {

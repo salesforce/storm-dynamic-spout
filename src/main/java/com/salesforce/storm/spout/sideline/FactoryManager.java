@@ -5,7 +5,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 
 import java.io.Serializable;
@@ -36,9 +36,9 @@ public class FactoryManager implements Serializable {
     private transient Class<? extends RetryManager> failedMsgRetryManagerClass;
 
     /**
-     * Class instance of our PersistenceManager.
+     * Class instance of our PersistenceAdapter.
      */
-    private transient Class<? extends PersistenceManager> persistenceManagerClass;
+    private transient Class<? extends PersistenceAdapter> persistenceAdapterClass;
 
     /**
      * Class instance of our Metrics Recorder.
@@ -104,21 +104,21 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured persistence manager.
      */
-    public synchronized PersistenceManager createNewPersistenceManagerInstance() {
-        if (persistenceManagerClass == null) {
-            final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS);
+    public synchronized PersistenceAdapter createNewPersistenceAdapterInstance() {
+        if (persistenceAdapterClass == null) {
+            final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_MANAGER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
             }
 
             try {
-                persistenceManagerClass = (Class<? extends PersistenceManager>) Class.forName(classStr);
+                persistenceAdapterClass = (Class<? extends PersistenceAdapter>) Class.forName(classStr);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
         try {
-            return persistenceManagerClass.newInstance();
+            return persistenceAdapterClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }
