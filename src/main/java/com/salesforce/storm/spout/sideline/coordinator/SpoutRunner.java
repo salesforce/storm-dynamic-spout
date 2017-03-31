@@ -207,7 +207,7 @@ public class SpoutRunner implements Runnable {
      * @return - How frequently, in milliseconds, we should flush consumer state.
      */
     long getConsumerStateFlushIntervalMs() {
-        return (long) getTopologyConfig().get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS);
+        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS)).longValue();
     }
 
     DelegateSidelineSpout getSpout() {

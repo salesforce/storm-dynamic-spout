@@ -240,7 +240,7 @@ public class SpoutCoordinator {
      * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     private long getMaxTerminationWaitTimeMs() {
-        return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
+        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**
