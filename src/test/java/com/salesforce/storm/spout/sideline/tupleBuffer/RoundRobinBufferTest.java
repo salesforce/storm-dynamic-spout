@@ -138,6 +138,26 @@ public class RoundRobinBufferTest {
         }
     }
 
+    /**
+     * Makes sure that we can properly parse long config values on open().
+     */
+    @Test
+    public void testConstructorWithConfigValueBeingLongInsteadOfInt() throws InterruptedException {
+        // numberOfVSpoutIds * numberOfMessagesPer should be less than the configured
+        // max buffer size.
+        final int numberOfVSpoutIds = 5;
+        final int numberOfMessagesPer = 1500;
+        final long maxBufferSize = (numberOfMessagesPer * numberOfVSpoutIds) + 1;
+
+        // Create config
+        Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+
+        // Create buffer
+        TupleBuffer tupleBuffer = new RoundRobinBuffer();
+        tupleBuffer.open(config);
+    }
+
 /**
  *  The following tests are just sanity checks around Iterators.cycle()'s behavior.
  *  Currently we don't make use of it in our implementation, but it looks like we could
