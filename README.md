@@ -323,5 +323,6 @@ This is still a work in progress.  More details to come.
 # Metrics
 
 # Releases & Changelog 
+[CHANGELOG.md](CHANGELOG.md)
 
 
