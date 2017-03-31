@@ -205,7 +205,7 @@ public class SidelineConsumer {
         // Check our iterator for the next message
         if (!bufferIterator.hasNext()) {
             // Oh no!  No new msg found.
-            logger.info("Unable to fill buffer...nothing new!");
+            logger.debug("Unable to fill buffer...nothing new!");
             return null;
         }
 

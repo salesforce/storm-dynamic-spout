@@ -452,7 +452,7 @@ public class SidelineSpout extends BaseRichSpout {
      */
     @Override
     public void activate() {
-        logger.info("Activating spout");
+        logger.debug("Activating spout");
     }
 
     /**
@@ -460,7 +460,7 @@ public class SidelineSpout extends BaseRichSpout {
      */
     @Override
     public void deactivate() {
-        logger.info("Deactivate spout");
+        logger.debug("Deactivate spout");
     }
 
     /**

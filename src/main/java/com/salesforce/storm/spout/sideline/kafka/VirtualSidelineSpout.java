@@ -290,7 +290,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         startTime = System.currentTimeMillis();
         ConsumerRecord<byte[], byte[]> record = sidelineConsumer.nextRecord();
         if (record == null) {
-            logger.warn("Unable to find any new messages from consumer");
+            logger.debug("Unable to find any new messages from consumer");
             return null;
         }
         nextTupleTimeBuckets.put("nextRecord", nextTupleTimeBuckets.get("nextRecord") + (System.currentTimeMillis() - startTime));

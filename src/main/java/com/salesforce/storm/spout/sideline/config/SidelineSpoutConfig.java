@@ -180,43 +180,43 @@ public class SidelineSpoutConfig {
         // Add in defaults where needed.
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
-            logger.info("Missing configuration {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
+            logger.warn("Missing configuration {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
         }
         if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
             clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, 25);
-            logger.info("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES));
+            logger.warn("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES));
         }
         if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
             clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, 1000L);
-            logger.info("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS));
+            logger.warn("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS));
         }
         if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
             clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
-            logger.info("Missing configuration {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
+            logger.warn("Missing configuration {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
         }
         if (!clonedConfig.containsKey(MONITOR_THREAD_INTERVAL_MS)) {
             clonedConfig.put(MONITOR_THREAD_INTERVAL_MS, 2000L);
-            logger.info("Missing configuration {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
+            logger.warn("Missing configuration {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
         }
         if (!clonedConfig.containsKey(MAX_SPOUT_SHUTDOWN_TIME_MS)) {
             clonedConfig.put(MAX_SPOUT_SHUTDOWN_TIME_MS, 10000L);
-            logger.info("Missing configuration {} using default value {}", MAX_SPOUT_SHUTDOWN_TIME_MS, clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS));
+            logger.warn("Missing configuration {} using default value {}", MAX_SPOUT_SHUTDOWN_TIME_MS, clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS));
         }
         if (!clonedConfig.containsKey(CONSUMER_STATE_FLUSH_INTERVAL_MS)) {
             clonedConfig.put(CONSUMER_STATE_FLUSH_INTERVAL_MS, 30000L);
-            logger.info("Missing configuration {} using default value {}", CONSUMER_STATE_FLUSH_INTERVAL_MS, clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS));
+            logger.warn("Missing configuration {} using default value {}", CONSUMER_STATE_FLUSH_INTERVAL_MS, clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS));
         }
         if (!clonedConfig.containsKey(MAX_CONCURRENT_VIRTUAL_SPOUTS)) {
             clonedConfig.put(MAX_CONCURRENT_VIRTUAL_SPOUTS, 10);
-            logger.info("Missing configuration {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
+            logger.warn("Missing configuration {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_CLASS)) {
             clonedConfig.put(TUPLE_BUFFER_CLASS, "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer");
-            logger.info("Missing configuration {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
+            logger.warn("Missing configuration {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
             clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 2000);
-            logger.info("Missing configuration {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
+            logger.warn("Missing configuration {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
         }
 
         return clonedConfig;
