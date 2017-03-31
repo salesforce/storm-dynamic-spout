@@ -91,7 +91,7 @@ the failed tuple originated from and passes it to the correct instance's fail() 
 As ack() is called on SidelineSpout, the SpoutCoordinator determines which VirtualSidelineSpout instance
 the acked tuple originated from and passes it to the correct instance's ack() method.
 
-[PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java) - This provides a persistence layer for storing SidelineSpout's metadata.  It stores things
+[PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java) - This provides a persistence layer for storing SidelineSpout's metadata.  It stores things
 such as consumer state/offsets for consuming, as well as metadata about SidelineRequests.
  
 ### So....How does it work?
@@ -112,7 +112,7 @@ Kafka will be converted to Tuples and emitted to your topology.
 #### Start Sideline Request
 Your implemented [Trigger]() will notify the [SpoutMonitor]() that a new Start Sidelining Request has occurred.  The SpoutMonitor
 will record the *main* VirtualSidelineSpout's current offsets within the topic and record them with request via
-your configured [PersistenceManager]() implementation.  The SpoutMonitor will then take the FilterChainStep associated with the request and attach it to the *main* VirtualSidelineSpout's FilterChain.
+your configured [PersistenceAdapter]() implementation.  The SpoutMonitor will then take the FilterChainStep associated with the request and attach it to the *main* VirtualSidelineSpout's FilterChain.
 At this point any new messages from Kafka that the *main* VirtualSidelineSpout consumes will pass through this modified FilterChain.
 ANY messages that match the criteria will be skipped, while messages that do not match the criteria will pass through and
 get processed.
@@ -123,7 +123,7 @@ get processed.
 Your implemented [Trigger]() will notify the [SpoutMonitor]() that it would like to stop a Sideline Request.  The SpoutMonitor
 will first determine which [FilterChainStep]() was associated with the request and remove it from the *main* VirtualSidelineSpout instance's
 [FilterChain]().  It will also record the *main* VirtualSidelineSpout's current offsets within the topic and record them via your
-configured [PersistenceManager]() implementation.  At this point messages consumed from the Kafka topic will no longer be filtered.
+configured [PersistenceAdapter]() implementation.  At this point messages consumed from the Kafka topic will no longer be filtered.
 The SpoutMonitor will create a new instance of VirtualSidelineSpout configured to start consuming from the offsets
 recorded during the Start Sideline Request when filtering first began, and stop consuming once it's reached the offsets where
 filtering was stopped.  Additionally it will take the [FilterChainStep]() that was used to filter the *main* VirtualSidelineSpout
@@ -137,8 +137,8 @@ Once the VirtualSidelineSpout has completed consuming the skipped offsets, it wi
 #### What happens if I stop and redeploy the topology?
 The SidelineSpout has several moving pieces, all of which will properly handle resuming in the state that they were
 when the topology was halted.  The *main* VirtualSidelineSpout will continue consuming from the last acked offsets within your topic.
-Metadata about active StartSidelineRequests are retrieved via [PersistenceManager]() and resumed on start, properly filtering
-messages from being emitted into the topology.  Metadata about active StopSidelineRequests are retrieved via [PersistenceManager](), and VirtualSidelineSpout instances are
+Metadata about active StartSidelineRequests are retrieved via [PersistenceAdapter]() and resumed on start, properly filtering
+messages from being emitted into the topology.  Metadata about active StopSidelineRequests are retrieved via [PersistenceAdapter](), and VirtualSidelineSpout instances are
 started and resume consuming messages at the last previously acked offsets.
 
 # Getting started
@@ -147,7 +147,7 @@ Using the default straight-out-of-the-box configuration, this spout has the foll
 - [Apache Storm 1.0.x](https://storm.apache.org/) - This one should be self explanatory.
 - [Apache Kafka 0.10.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
 - [Zookeeper](https://zookeeper.apache.org/) - Metadata the spout tracks has to be persisted somewhere, by default we use Zookeeper.  This is not
-a hard dependency as you can write your own [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java) implementation to store this metadata
+a hard dependency as you can write your own [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java) implementation to store this metadata
 any where you would like.  Mysql? Redis? Sure!  Contribute an adapter to the project!
 
 ## Configuration
@@ -163,7 +163,7 @@ sideline_spout.kafka.brokers | List\<String\> | Holds a list of Kafka Broker hos
 sideline_spout.consumer_id_prefix | String | Defines a consumerId prefix to use for all consumers created by the spout.  This must be unique to your spout instance, and must not change between deploys. | *null*
 sideline_spout.output_stream_id | String | Defines the name of the output stream tuples will be emitted out of. | "default"
 sideline_spout.deserializer.class | String | Defines which Deserializer implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | *null*
-sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.  Should be a full classpath to a class that implements the PersistenceManager interface. | *null* 
+sideline_spout.persistence_adapter.class | String | Defines which PersistenceAdapter implementation to use.  Should be a full classpath to a class that implements the PersistenceAdapter interface. | *null* 
 
 
 ### Optional Configuration for Overachievers
@@ -233,7 +233,7 @@ For most use cases the above interfaces are all that are required to get going. 
 you to do do something just a little special of different.  If that's the case with you, we provide the following 
 configurable interfaces to hopefully ease the pain.
 
-### [PersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceManager.java)
+### [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java)
 This interface dictates how and where metadata gets stored such that it lives between topology deploys.
 In an attempt to decouple this data storage layer from the spout, we have this interface.  Currently we have
 one implementation backed by Zookeeper.
@@ -241,11 +241,11 @@ one implementation backed by Zookeeper.
 ###### Configuration
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.    Should be a full classpath to a class that implements the PersistenceManager interface. | *null* 
+sideline_spout.persistence_adapter.class | String | Defines which PersistenceAdapter implementation to use.    Should be a full classpath to a class that implements the PersistenceAdapter interface. | *null* 
 
 
 #### Provided Implementations
-##### [ZookeeperPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceManager.java)
+##### [ZookeeperPersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceAdapter.java)
 This is our default implementation, it uses a Zookeeper cluster to persist the required metadata.
 
 ###### Configuration
@@ -254,7 +254,7 @@ Config Key   | Type | Description | Default Value |
 sideline_spout.persistence.zk_servers | List\<String\> | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | *null* 
 sideline_spout.persistence.zk_root | String | Defines the root path to persist state under.  Example: "/sideline-consumer-state" | *null*
 
-##### [InMemoryPersistenceManager](src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceManager.java)
+##### [InMemoryPersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceAdapter.java)
 This implementation only stores metadata within memory.  This is useful for tests, but has no real world use case as all state will be lost between topology deploys.
 
 ### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)

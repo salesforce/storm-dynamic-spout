@@ -257,7 +257,7 @@ public class SpoutMonitor implements Runnable {
         // Loop through spouts instances
         if (consumerMonitor == null) {
             // Create consumer monitor instance
-            consumerMonitor = new SidelineConsumerMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceManagerInstance());
+            consumerMonitor = new SidelineConsumerMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceAdapterInstance());
             consumerMonitor.open(getTopologyConfig());
         }
 

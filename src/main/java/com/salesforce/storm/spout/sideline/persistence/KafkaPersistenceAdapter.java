@@ -38,9 +38,9 @@ import java.util.concurrent.TimeUnit;
  * Kafka based Persistence adapter.
  * This is NOT fully implemented.
  */
-public class KafkaPersistenceManager implements PersistenceManager {
+public class KafkaPersistenceAdapter implements PersistenceAdapter {
     // Logger
-    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceAdapter.class);
 
     // Kafka client configuration, to be moved into a configuration setting.
     private static final int readTimeoutMs = 5000;

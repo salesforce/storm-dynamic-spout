@@ -9,7 +9,7 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceManager;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -79,7 +79,7 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * Stores state about starting/stopping sideline requests.
      */
-    private PersistenceManager persistenceManager;
+    private PersistenceAdapter persistenceAdapter;
 
     /**
      * For collecting metrics.
@@ -138,7 +138,7 @@ public class SidelineSpout extends BaseRichSpout {
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
         // Store in request manager
-        getPersistenceManager().persistSidelineRequestState(
+        getPersistenceAdapter().persistSidelineRequestState(
             SidelineType.START,
             id,
             sidelineRequest,
@@ -182,13 +182,13 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // This is the state that the VirtualSidelineSpout should start with
-        final ConsumerState startingState = getPersistenceManager().retrieveSidelineRequest(id).startingState;
+        final ConsumerState startingState = getPersistenceAdapter().retrieveSidelineRequest(id).startingState;
 
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
 
         // Persist the side line request state with the new negated version of the steps.
-        persistenceManager.persistSidelineRequestState(
+        persistenceAdapter.persistSidelineRequestState(
             SidelineType.STOP,
             id,
             // TODO: Lemon - Is this a bug?  We're persisting the non-negated steps here!
@@ -263,8 +263,8 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Create and open() persistence manager passing appropriate configuration.
-        persistenceManager = getFactoryManager().createNewPersistenceManagerInstance();
-        getPersistenceManager().open(getTopologyConfig());
+        persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
+        getPersistenceAdapter().open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSidelineSpout(
@@ -295,11 +295,11 @@ public class SidelineSpout extends BaseRichSpout {
         getCoordinator().open(getTopologyConfig());
 
         // TODO: LEMON - We should build the full payload here rather than individual requests later on
-        final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceManager().listSidelineRequests();
+        final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
         for (SidelineRequestIdentifier id : existingRequestIds) {
-            final SidelinePayload payload = getPersistenceManager().retrieveSidelineRequest(id);
+            final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(id);
 
             // Resuming a start request means we apply the previous filter chain to the fire hose
             if (payload.type.equals(SidelineType.START)) {
@@ -428,9 +428,9 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Close persistence manager
-        if (getPersistenceManager() != null) {
-            getPersistenceManager().close();
-            persistenceManager = null;
+        if (getPersistenceAdapter() != null) {
+            getPersistenceAdapter().close();
+            persistenceAdapter = null;
         }
 
         if (startingTrigger != null) {
@@ -548,8 +548,8 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * @return - The persistence manager.
      */
-    PersistenceManager getPersistenceManager() {
-        return persistenceManager;
+    PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
     }
 
     /**

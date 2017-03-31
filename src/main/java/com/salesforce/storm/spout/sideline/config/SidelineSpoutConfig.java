@@ -53,11 +53,11 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (String) Defines which PersistenceManager implementation to use.
-     * Should be a full classpath to a class that implements the PersistenceManager interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceManager"
+     * (String) Defines which PersistenceAdapter implementation to use.
+     * Should be a full classpath to a class that implements the PersistenceAdapter interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter"
      */
-    public static final String PERSISTENCE_MANAGER_CLASS = "sideline_spout.persistence_manager.class";
+    public static final String PERSISTENCE_ADAPTER_CLASS = "sideline_spout.persistence_adapter.class";
 
     /**
      * (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format:

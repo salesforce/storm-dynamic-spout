@@ -14,7 +14,7 @@ import java.util.Map;
  * In memory persistence layer implementation. useful for tests.
  * NOT for production use as all state will be lost between JVM restarts.
  */
-public class InMemoryPersistenceManager implements PersistenceManager {
+public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     // "Persists" consumer state in memory.
     private Map<String, Long> storedConsumerState;
 
