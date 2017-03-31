@@ -152,6 +152,23 @@ any where you would like.  Mysql? Redis? Sure!  Contribute an adapter to the pro
 
 ## Configuration
 
+[SidelineSpoutConfig](src/main/java/com/salesforce/storm/spout/sideline/config/SidelineSpoutConfig.java) contains a complete list of configuration options.
+
+### Required Configuration
+
+Config Key   | Type | Description | Default Value |
+------------ | ---- | ----------- | --------------
+sideline_spout.kafka.topic | String | Defines which Kafka topic we will consume messages from. | *null*
+sideline_spout.kafka.brokers | List\<String\> | Holds a list of Kafka Broker hostnames + ports in the following format: ["broker1:9092", "broker2:9092", ...] | *null*
+sideline_spout.consumer_id_prefix | String | Defines a consumerId prefix to use for all consumers created by the spout.  This must be unique to your spout instance, and must not change between deploys. | *null*
+sideline_spout.output_stream_id | String | Defines the name of the output stream tuples will be emitted out of. | "default"
+sideline_spout.deserializer.class | String | Defines which Deserializer implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | *null*
+sideline_spout.persistence_manager.class | String | Defines which PersistenceManager implementation to use.  Should be a full classpath to a class that implements the PersistenceManager interface. | *null* 
+
+
+### Optional Configuration for Overachievers
+
+
 ## Required Interface Implementations
 ### [Deserializer](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java)
 The Deserializer interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple. It also 

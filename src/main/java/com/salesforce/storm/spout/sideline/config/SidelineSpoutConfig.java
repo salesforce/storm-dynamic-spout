@@ -17,7 +17,7 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (String) Defines the output stream id to use on the spout.
+     * (String) Defines the name of the output stream tuples will be emitted out of.
      */
     public static final String OUTPUT_STREAM_ID = "sideline_spout.output_stream_id";
 
@@ -32,7 +32,7 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (String) Holds which topic we should be consuming from.
+     * (String) Defines which Kafka topic we will consume messages from.
      */
     public static final String KAFKA_TOPIC = "sideline_spout.kafka.topic";
 
@@ -44,6 +44,7 @@ public class SidelineSpoutConfig {
 
     /**
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
+     * This must be unique to your spout instance, and must not change between deploys.
      */
     public static final String CONSUMER_ID_PREFIX = "sideline_spout.consumer_id_prefix";
 
