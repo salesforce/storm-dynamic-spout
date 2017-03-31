@@ -29,6 +29,7 @@
         <stormVersion>1.0.3</stormVersion>
 
         <!-- Define which kafka version -->
+        <kafkaVersion>0.10.0.1</kafkaVersion>
 
         <!-- Define which Curator version (was 2.11.1) -->
         <curatorVersion>2.11.1</curatorVersion>
@@ -68,7 +69,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>0.10.0.1</version>
+            <version>${kafkaVersion}</version>
         </dependency>
 
         <!-- Google Commons -->
@@ -85,11 +86,13 @@
             <version>20.0</version>
         </dependency>
 
-        <!-- Apache Curator -->
+        <!-- Apache Curator - Optional Dependency -->
+        <!-- Only required if you make use of the ZookeeperPersistenceAdapter-->
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
             <version>${curatorVersion}</version>
+            <!--<optional>true</optional>-->
         </dependency>
 
         <!-- For simple Json Serialization -->
@@ -109,7 +112,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
+            <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
         <dependency>
