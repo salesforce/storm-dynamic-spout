@@ -68,14 +68,8 @@ public class RoundRobinBuffer implements TupleBuffer {
             return;
         }
 
-        if (maxBufferSizeObj instanceof Long) {
-            maxBufferSizePerVirtualSpout = ((Long) maxBufferSizeObj).intValue();
-        } else if (maxBufferSizeObj instanceof Integer) {
-            maxBufferSizePerVirtualSpout = (int) maxBufferSizeObj;
-        } else if (maxBufferSizeObj instanceof Number) {
+        if (maxBufferSizeObj instanceof Number) {
             maxBufferSizePerVirtualSpout = ((Number) maxBufferSizeObj).intValue();
-        } else {
-            // Use default?
         }
     }
 
@@ -170,6 +164,13 @@ public class RoundRobinBuffer implements TupleBuffer {
      * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
     private BlockingQueue<KafkaMessage> createNewEmptyQueue() {
-        return new LinkedBlockingQueue<>(maxBufferSizePerVirtualSpout);
+        return new LinkedBlockingQueue<>(getMaxBufferSizePerVirtualSpout());
+    }
+
+    /**
+     * @return - returns the configured max buffer size.
+     */
+    int getMaxBufferSizePerVirtualSpout() {
+        return maxBufferSizePerVirtualSpout;
     }
 }

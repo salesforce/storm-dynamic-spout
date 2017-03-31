@@ -13,6 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * "scheduling."
  */
 public class FIFOBuffer implements TupleBuffer {
+    private static final int DEFAULT_MAX_SIZE = 10_000;
 
     /**
      * This implementation uses a simple Blocking Queue in a FIFO manner.
@@ -27,7 +28,7 @@ public class FIFOBuffer implements TupleBuffer {
      */
     public static FIFOBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
-        map.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        map.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
 
         FIFOBuffer buffer = new FIFOBuffer();
         buffer.open(map);
@@ -38,7 +39,11 @@ public class FIFOBuffer implements TupleBuffer {
     @Override
     public void open(Map topologyConfig) {
         // Defines the bounded size of our buffer.  Ideally this would be configurable.
-        final int maxBufferSize = (int) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object maxBufferSizeObj = topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        int maxBufferSize = DEFAULT_MAX_SIZE;
+        if (maxBufferSizeObj != null && maxBufferSizeObj instanceof Number) {
+            maxBufferSize = ((Number) maxBufferSizeObj).intValue();
+        }
 
         // Create buffer.
         tupleBuffer = new LinkedBlockingQueue<>(maxBufferSize);

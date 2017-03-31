@@ -5,12 +5,17 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -19,6 +24,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Kind of silly.  Basically just testing a FIFO buffer.
  */
+@RunWith(DataProviderRunner.class)
 public class FIFOBufferTest {
     /**
      * Basically just tests that this does FIFO.
@@ -88,5 +94,37 @@ public class FIFOBufferTest {
         for (int x=0; x<64; x++) {
             assertNull("Should be null", tupleBuffer.poll());
         }
+    }
+
+    /**
+     * Makes sure that we can properly parse long config values on open().
+     */
+    @Test
+    @UseDataProvider("provideConfigObjects")
+    public void testConstructorWithConfigValue(Number inputValue) throws InterruptedException {
+        // Create config
+        Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+
+        // Create buffer
+        FIFOBuffer tupleBuffer = new FIFOBuffer();
+        tupleBuffer.open(config);
+
+        // Validate
+        assertEquals("Set correct", inputValue.intValue(), ((LinkedBlockingQueue)tupleBuffer.getUnderlyingQueue()).remainingCapacity());
+    }
+
+    /**
+     * Provides various tuple buffer implementation.
+     */
+    @DataProvider
+    public static Object[][] provideConfigObjects() throws InstantiationException, IllegalAccessException {
+        return new Object[][]{
+                // Integer
+                { 200 },
+
+                // Long
+                { 2000L }
+        };
     }
 }

@@ -7,8 +7,12 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +34,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+@RunWith(DataProviderRunner.class)
 public class RoundRobinBufferTest {
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinBufferTest.class);
 
@@ -142,20 +147,34 @@ public class RoundRobinBufferTest {
      * Makes sure that we can properly parse long config values on open().
      */
     @Test
-    public void testConstructorWithConfigValueBeingLongInsteadOfInt() throws InterruptedException {
-        // numberOfVSpoutIds * numberOfMessagesPer should be less than the configured
-        // max buffer size.
-        final int numberOfVSpoutIds = 5;
-        final int numberOfMessagesPer = 1500;
-        final long maxBufferSize = (numberOfMessagesPer * numberOfVSpoutIds) + 1;
+    @UseDataProvider("provideConfigObjects")
+    public void testConstructorWithConfigValue(Number inputValue) throws InterruptedException {
+        logger.info("Testing with object type {} and value {}", inputValue.getClass().getSimpleName(), inputValue);
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
-        TupleBuffer tupleBuffer = new RoundRobinBuffer();
+        RoundRobinBuffer tupleBuffer = new RoundRobinBuffer();
         tupleBuffer.open(config);
+
+        // Validate
+        assertEquals("Set correct", inputValue.intValue(), tupleBuffer.getMaxBufferSizePerVirtualSpout());
+    }
+
+    /**
+     * Provides various tuple buffer implementation.
+     */
+    @DataProvider
+    public static Object[][] provideConfigObjects() throws InstantiationException, IllegalAccessException {
+        return new Object[][]{
+                // Integer
+                { 200 },
+
+                // Long
+                { 2000L }
+        };
     }
 
 /**
