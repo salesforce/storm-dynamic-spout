@@ -358,14 +358,14 @@ public class SpoutMonitor implements Runnable {
      * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
      */
     long getMonitorThreadIntervalMs() {
-        return (long) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS);
+        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS)).longValue();
     }
 
     /**
      * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     long getMaxTerminationWaitTimeMs() {
-        return (long) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
+        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**
