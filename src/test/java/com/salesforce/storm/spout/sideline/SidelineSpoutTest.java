@@ -44,7 +44,6 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -131,7 +130,7 @@ public class SidelineSpoutTest {
 
         // When we call open, we expect illegal state exception about our missing configuration item
         expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(containsString(SidelineSpoutConfig.CONSUMER_ID_PREFIX));
+        expectedException.expectMessage(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);
