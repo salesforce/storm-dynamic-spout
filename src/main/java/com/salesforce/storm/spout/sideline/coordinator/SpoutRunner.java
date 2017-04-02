@@ -189,6 +189,7 @@ public class SpoutRunner implements Runnable {
     public boolean isStopRequested() {
         return requestedStop;
     }
+
     /**
      * @return - our System clock instance.
      */
