@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.util.List;
 import java.util.Properties;
@@ -49,8 +50,8 @@ public class SidelineConsumerConfig {
         setKafkaConsumerProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "10000");
 
         // We use our own deserializer interface, so force ByteArray deserialization.
-        setKafkaConsumerProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-        setKafkaConsumerProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        setKafkaConsumerProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
+        setKafkaConsumerProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
 
         // Other random tunings
         // Default is 65536 bytes, we 4x'd it
