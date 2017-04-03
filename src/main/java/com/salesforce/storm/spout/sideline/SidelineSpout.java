@@ -158,7 +158,7 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Add our new filter steps
-        fireHoseSpout.getFilterChain().addSteps(id, sidelineRequest.steps);
+        fireHoseSpout.getFilterChain().addStep(id, sidelineRequest.step);
 
         // Update start count metric
         metricsRecorder.count(getClass(), "start-sideline", 1L);
@@ -171,12 +171,12 @@ public class SidelineSpout extends BaseRichSpout {
      * @param sidelineRequest A representation of the request that is being stopped
      */
     public void stopSidelining(SidelineRequest sidelineRequest) {
-        final SidelineRequestIdentifier id = fireHoseSpout.getFilterChain().findSteps(sidelineRequest.steps);
+        final SidelineRequestIdentifier id = fireHoseSpout.getFilterChain().findStep(sidelineRequest.step);
 
         if (id == null) {
             logger.error(
                 "Received STOP sideline request, but I don't actually have any filter chain steps for it! Make sure you check that your filter implements an equals() method. {} {}",
-                sidelineRequest.steps,
+                sidelineRequest.step,
                 fireHoseSpout.getFilterChain().getSteps()
             );
             return;
@@ -185,7 +185,7 @@ public class SidelineSpout extends BaseRichSpout {
         logger.info("Received STOP sideline request");
 
         // Remove the steps associated with this sideline request
-        final List<FilterChainStep> steps = fireHoseSpout.getFilterChain().removeSteps(id);
+        final FilterChainStep step = fireHoseSpout.getFilterChain().removeSteps(id);
 
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
@@ -206,7 +206,7 @@ public class SidelineSpout extends BaseRichSpout {
             persistenceAdapter.persistSidelineRequestState(
                 SidelineType.STOP,
                 id,
-                new SidelineRequest(steps), // Persist the non-negated steps, we'll always apply negation at runtime
+                new SidelineRequest(step), // Persist the non-negated steps, we'll always apply negation at runtime
                 topicPartition.partition(),
                 sidelinePayload.startingOffset,
                 endingState.getOffsetForTopicAndPartition(topicPartition)
@@ -218,7 +218,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         openVirtualSpout(
             id,
-            steps,
+            step,
             startingState,
             endingState
         );
@@ -326,11 +326,11 @@ public class SidelineSpout extends BaseRichSpout {
 
             // Resuming a start request means we apply the previous filter chain to the fire hose
             if (payload.type.equals(SidelineType.START)) {
-                logger.info("Resuming START sideline {} {}", payload.id, payload.request.steps);
+                logger.info("Resuming START sideline {} {}", payload.id, payload.request.step);
 
-                fireHoseSpout.getFilterChain().addSteps(
+                fireHoseSpout.getFilterChain().addStep(
                     payload.id,
-                    payload.request.steps
+                    payload.request.step
                 );
             }
 
@@ -338,7 +338,7 @@ public class SidelineSpout extends BaseRichSpout {
             if (payload.type.equals(SidelineType.STOP)) {
                 openVirtualSpout(
                     payload.id,
-                    payload.request.steps,
+                    payload.request.step,
                     startingStateBuilder.build(),
                     endingStateStateBuilder.build()
                 );
@@ -366,13 +366,13 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * Open a virtual spout (like when a sideline stop request is made)
      * @param id Id of the sideline request
-     * @param steps List of filter chains steps (these will be negated)
+     * @param step Filter chain step (it will be negate)
      * @param startingState Starting consumer state
      * @param endingState Ending consumer state
      */
     private void openVirtualSpout(
         final SidelineRequestIdentifier id,
-        final List<FilterChainStep> steps,
+        final FilterChainStep step,
         final ConsumerState startingState,
         final ConsumerState endingState
     ) {
@@ -394,12 +394,8 @@ public class SidelineSpout extends BaseRichSpout {
         spout.setVirtualSpoutId(virtualSpoutId);
         spout.setSidelineRequestIdentifier(id);
 
-        // Add and negate the request's filter steps, we store them in their original form and negate them at runtime
-        final List<FilterChainStep> negatedSteps = Lists.newArrayList();
-        for (FilterChainStep step : steps) {
-            negatedSteps.add(new NegatingFilterChainStep(step));
-        }
-        spout.getFilterChain().addSteps(id, negatedSteps);
+        // Add and negate the request's filter step, we leave them stored in their original form and negate them at runtime
+        spout.getFilterChain().addStep(id, new NegatingFilterChainStep(step));
 
         // Now pass the new "resumed" spout over to the coordinator to open and run
         getCoordinator().addSidelineSpout(spout);

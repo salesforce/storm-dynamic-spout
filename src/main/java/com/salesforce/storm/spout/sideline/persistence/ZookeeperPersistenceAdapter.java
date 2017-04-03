@@ -169,7 +169,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         if (endingOffset != null) { // Optional
             data.put("endingOffset", endingOffset);
         }
-        data.put("filterChainSteps", Serializer.serialize(request.steps));
+        data.put("filterChainStep", Serializer.serialize(request.step));
 
         // Persist!
         writeJson(getZkRequestStatePath(id.toString(), partitionId), data);
@@ -193,7 +193,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         final SidelineType type = typeString.equals(SidelineType.STOP.toString()) ? SidelineType.STOP : SidelineType.START;
 
-        final List<FilterChainStep> steps = parseJsonToFilterChainSteps(json);
+        final FilterChainStep step = parseJsonToFilterChainSteps(json);
 
         final Long startingOffset = (Long) json.get("startingOffset");
         final Long endingOffset = (Long) json.get("endingOffset");
@@ -201,7 +201,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return new SidelinePayload(
             type,
             id,
-            new SidelineRequest(steps),
+            new SidelineRequest(step),
             startingOffset,
             endingOffset
         );
@@ -253,12 +253,12 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return ids;
     }
 
-    private List<FilterChainStep> parseJsonToFilterChainSteps(final Map<Object, Object> json) {
+    private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
         if (json == null) {
-            return Lists.newArrayList();
+            return null;
         }
 
-        final String chainStepData = (String) json.get("filterChainSteps");
+        final String chainStepData = (String) json.get("filterChainStep");
 
         return Serializer.deserialize(chainStepData);
     }

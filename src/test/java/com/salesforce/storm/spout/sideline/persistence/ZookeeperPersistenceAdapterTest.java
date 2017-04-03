@@ -477,7 +477,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String topicName = "MyTopic1";
         final String zkRootPath = getRandomZkRootNode();
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
+        final SidelineRequest sidelineRequest = new SidelineRequest(null);
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
@@ -585,7 +585,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String zkRootNodePath = getRandomZkRootNode();
         final String zkRequestsRootNodePath = zkRootNodePath + "/requests";
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
+        final SidelineRequest sidelineRequest = new SidelineRequest(null);
 
         // 1 - Connect to ZK directly
         ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
@@ -616,7 +616,7 @@ public class ZookeeperPersistenceAdapterTest {
         final Map<String,Object> expectedJsonMap = Maps.newHashMap();
         expectedJsonMap.put("startingOffset", 1L);
         expectedJsonMap.put("endingOffset", 2L);
-        expectedJsonMap.put("filterChainSteps", "rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==");
+        expectedJsonMap.put("filterChainStep", "rO0ABXA=");
         expectedJsonMap.put("type", SidelineType.START.toString());
 
         final String expectedStoredState = JSONValue.toJSONString(expectedJsonMap);
@@ -731,7 +731,7 @@ public class ZookeeperPersistenceAdapterTest {
         // Create our instance
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        final SidelineRequest sidelineRequest = new SidelineRequest(Collections.emptyList());
+        final SidelineRequest sidelineRequest = new SidelineRequest(null);
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
@@ -773,18 +773,18 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.open(topologyConfig);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest1 = new SidelineRequest(Collections.emptyList());
+        final SidelineRequest sidelineRequest1 = new SidelineRequest(null);
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest2 = new SidelineRequest(Collections.emptyList());
+        final SidelineRequest sidelineRequest2 = new SidelineRequest(null);
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest2, 0, 100L, 101L);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier3 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest3 = new SidelineRequest(Collections.emptyList());
+        final SidelineRequest sidelineRequest3 = new SidelineRequest(null);
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 0, 1000L, 1001L);
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 1, 1000L, 1001L);

@@ -1,12 +1,9 @@
 package com.salesforce.storm.spout.sideline.filter;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,14 +11,7 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    private final Map<SidelineRequestIdentifier,List<FilterChainStep>> steps = Maps.newHashMap();
-
-    public FilterChain() {
-    }
-
-    public boolean hasSteps(final SidelineRequestIdentifier id) {
-        return this.steps.containsKey(id);
-    }
+    final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newHashMap();
 
     /**
      * Fluent method for adding steps to the chain (must be done in order).
@@ -30,15 +20,11 @@ public class FilterChain {
      * @return The chain instance
      */
     public FilterChain addStep(final SidelineRequestIdentifier id, final FilterChainStep step) {
-        return addSteps(id, Lists.newArrayList(step));
-    }
-
-    public FilterChain addSteps(final SidelineRequestIdentifier id, final List<FilterChainStep> steps) {
-        this.steps.put(id, steps);
+        this.steps.put(id, step);
         return this;
     }
 
-    public List<FilterChainStep> removeSteps(final SidelineRequestIdentifier id) {
+    public FilterChainStep removeSteps(final SidelineRequestIdentifier id) {
         return this.steps.remove(id);
     }
 
@@ -46,7 +32,7 @@ public class FilterChain {
      * Process a filter through the chain, get the resulting filter.
      *
      * @param message The filter to be processed by this step of the chain
-     * @return The resulting filter after being processed
+     * @return Should this message be filtered out? True means yes.
      */
     public boolean filter(KafkaMessage message) {
         // No steps = nothing to filter by
@@ -54,15 +40,13 @@ public class FilterChain {
             return false;
         }
 
-        for (List<FilterChainStep> listOfSteps : steps.values()) {
-            for (FilterChainStep step : listOfSteps) {
-                if (!step.filter(message)) {
-                    return false;
-                }
+        for (FilterChainStep step : steps.values()) {
+            if (step.filter(message)) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -71,11 +55,11 @@ public class FilterChain {
      * @param seek The list of steps to find
      * @return Identifier for the steps in the chain
      */
-    public SidelineRequestIdentifier findSteps(List<FilterChainStep> seek) {
-        for (Map.Entry<SidelineRequestIdentifier, List<FilterChainStep>> entry : steps.entrySet()) {
-            List<FilterChainStep> listOfSteps = entry.getValue();
+    public SidelineRequestIdentifier findStep(FilterChainStep seek) {
+        for (Map.Entry<SidelineRequestIdentifier, FilterChainStep> entry : steps.entrySet()) {
+            FilterChainStep step = entry.getValue();
 
-            if (listOfSteps.equals(seek)) {
+            if (step.equals(seek)) {
                 return entry.getKey();
             }
         }
@@ -83,17 +67,7 @@ public class FilterChain {
         return null;
     }
 
-    /**
-     * Find the identifier for a set that only had one step.
-     *
-     * @param seek The step to find
-     * @return Identifier for the steps in the chain
-     */
-    public SidelineRequestIdentifier findStep(FilterChainStep seek) {
-        return findSteps(Collections.singletonList(seek));
-    }
-
-    public Map<SidelineRequestIdentifier,List<FilterChainStep>> getSteps() {
+    public Map<SidelineRequestIdentifier,FilterChainStep> getSteps() {
         return steps;
     }
 
