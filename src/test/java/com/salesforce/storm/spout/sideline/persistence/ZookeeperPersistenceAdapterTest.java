@@ -775,15 +775,18 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest1 = new SidelineRequest(Collections.emptyList());
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
         final SidelineRequest sidelineRequest2 = new SidelineRequest(Collections.emptyList());
 
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest2, 1, 100L, 101L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest2, 0, 100L, 101L);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier3 = new SidelineRequestIdentifier();
         final SidelineRequest sidelineRequest3 = new SidelineRequest(Collections.emptyList());
 
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 0, 1000L, 1001L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 1, 1000L, 1001L);
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 2, 1000L, 1001L);
 
         final List<SidelineRequestIdentifier> ids = persistenceAdapter.listSidelineRequests();
