@@ -60,9 +60,17 @@ public class SidelineSpout extends BaseRichSpout {
     private SpoutCoordinator coordinator;
 
     /**
-     * TODO: Lemon - Add some descriptions to these guys.
+     * Starting Trigger
+     *
+     * This is an instance that is responsible for telling the sideline spout when to begin sidelining.
      */
     private StartingTrigger startingTrigger;
+
+    /**
+     * Stopping Trigger
+     *
+     * This is an instance is responsible for telling the sideline spout when to stop sidelining
+     */
     private StoppingTrigger stoppingTrigger;
 
     /**
@@ -208,35 +216,12 @@ public class SidelineSpout extends BaseRichSpout {
         // Build our starting state, this is a map of partition and offset
         final ConsumerState startingState = startingStateBuilder.build();
 
-        // Generate our virtualSpoutId using the payload id.
-        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
-
-        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
-        logger.debug("Starting VirtualSidelineSpout with starting state {}", startingState);
-        logger.debug("Starting VirtualSidelineSpout with ending state {}", endingState);
-
-        // Take the steps and apply a negation to each one, reversing the filter
-        final List<FilterChainStep> negatedSteps = Lists.newArrayList();
-
-        for (FilterChainStep step : steps) {
-            negatedSteps.add(new NegatingFilterChainStep(step));
-        }
-
-        // Construct a new spout to process our sideline request
-        final VirtualSidelineSpout spout = new VirtualSidelineSpout(
-            topologyConfig,
-            topologyContext,
-            factoryManager,
-            metricsRecorder,
-            startingState, // Starting offset by partition of the sideline request
-            endingState // Ending offset by partition of the sideline request
+        openVirtualSpout(
+            id,
+            steps,
+            startingState,
+            endingState
         );
-        spout.setVirtualSpoutId(virtualSpoutId);
-        spout.setSidelineRequestIdentifier(id);
-        spout.getFilterChain().addSteps(id, negatedSteps);
-
-        // Tell the coordinator to open this sideline request spout, which is when it will begin processing
-        getCoordinator().addSidelineSpout(spout);
 
         // Update stop count metric
         metricsRecorder.count(getClass(), "stop-sideline", 1L);
@@ -266,15 +251,13 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
         metricsRecorder.open(getTopologyConfig(), getTopologyContext());
 
-        // TODO: LEMON - should this be removed?
-        // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
+        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
         if (startingTrigger != null) {
             startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
-        // TODO: LEMON - should this be removed?
-        // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
-        if (stoppingTrigger != null) {
+        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
+       if (stoppingTrigger != null) {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
@@ -312,7 +295,6 @@ public class SidelineSpout extends BaseRichSpout {
 
         final ConsumerState currentState = fireHoseSpout.getCurrentState();
 
-        // TODO: LEMON - We should build the full payload here rather than individual requests later on
         final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
@@ -354,36 +336,12 @@ public class SidelineSpout extends BaseRichSpout {
 
             // Resuming a stopped request means we spin up a new sideline spout
             if (payload.type.equals(SidelineType.STOP)) {
-                // TODO: refactor this and stopSidelining() method to de-duplicate code.
-                logger.info("Resuming STOP sideline {} {}", payload.id, payload.request.steps);
-
-                // Generate our virtualSpoutId using the payload id.
-                final String virtualSpoutId = generateVirtualSpoutId(payload.id.toString());
-
-                // Create spout instance.
-                final VirtualSidelineSpout spout = new VirtualSidelineSpout(
-                    getTopologyConfig(),
-                    getTopologyContext(),
-                    getFactoryManager(),
-                    metricsRecorder,
+                openVirtualSpout(
+                    payload.id,
+                    payload.request.steps,
                     startingStateBuilder.build(),
                     endingStateStateBuilder.build()
                 );
-                spout.setVirtualSpoutId(virtualSpoutId);
-                spout.setSidelineRequestIdentifier(id);
-
-                // Add the request's filter steps
-                // TODO: But we never persisted the negated steps?  So we have to negate them here.
-                // TODO: Is this a bug? see my TODO note in stopSidelining() method.
-                // TODO: Note - Steviep added this next loop to negate steps, was not here previously
-                final List<FilterChainStep> negatedSteps = Lists.newArrayList();
-                for (FilterChainStep step : payload.request.steps) {
-                    negatedSteps.add(new NegatingFilterChainStep(step));
-                }
-                spout.getFilterChain().addSteps(payload.id, negatedSteps);
-
-                // Now pass the new "resumed" spout over to the coordinator to open and run
-                getCoordinator().addSidelineSpout(spout);
             }
         }
 
@@ -403,6 +361,48 @@ public class SidelineSpout extends BaseRichSpout {
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
+    }
+
+    /**
+     * Open a virtual spout (like when a sideline stop request is made)
+     * @param id Id of the sideline request
+     * @param steps List of filter chains steps (these will be negated)
+     * @param startingState Starting consumer state
+     * @param endingState Ending consumer state
+     */
+    private void openVirtualSpout(
+        final SidelineRequestIdentifier id,
+        final List<FilterChainStep> steps,
+        final ConsumerState startingState,
+        final ConsumerState endingState
+    ) {
+        // Generate our virtualSpoutId using the payload id.
+        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
+
+        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
+        logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
+
+        // Create spout instance.
+        final VirtualSidelineSpout spout = new VirtualSidelineSpout(
+            getTopologyConfig(),
+            getTopologyContext(),
+            getFactoryManager(),
+            metricsRecorder,
+            startingState,
+            endingState
+        );
+        spout.setVirtualSpoutId(virtualSpoutId);
+        spout.setSidelineRequestIdentifier(id);
+
+        // Add and negate the request's filter steps, we store them in their original form and negate them at runtime
+        final List<FilterChainStep> negatedSteps = Lists.newArrayList();
+        for (FilterChainStep step : steps) {
+            negatedSteps.add(new NegatingFilterChainStep(step));
+        }
+        spout.getFilterChain().addSteps(id, negatedSteps);
+
+        // Now pass the new "resumed" spout over to the coordinator to open and run
+        getCoordinator().addSidelineSpout(spout);
     }
 
     @Override
@@ -478,10 +478,12 @@ public class SidelineSpout extends BaseRichSpout {
             persistenceAdapter = null;
         }
 
+        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), close it
         if (startingTrigger != null) {
             startingTrigger.close();
         }
 
+        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), close it
         if (stoppingTrigger != null) {
             stoppingTrigger.close();
         }
