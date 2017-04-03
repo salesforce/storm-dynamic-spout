@@ -37,13 +37,6 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     private String zkConnectionString;
     private String zkRoot;
 
-    // Additional Config
-    // TODO - Move into some kind of config/properties class/map/thing.
-    private final int zkSessionTimeout = 6000;
-    private final int zkConnectionTimeout = 6000;
-    private final int zkRetryAttempts = 10;
-    private final int zkRetryInterval = 10;
-
     // Zookeeper connection
     private CuratorFramework curator;
 
@@ -72,7 +65,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         this.zkRoot = zkRoot;
 
         try {
-            curator = newCurator();
+            curator = newCurator(topologyConfig);
             curator.start();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -273,8 +266,16 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     /**
      * Internal method to create a new Curator connection.
      */
-    private CuratorFramework newCurator() {
-        return CuratorFrameworkFactory.newClient(zkConnectionString, zkSessionTimeout, zkConnectionTimeout, new RetryNTimes(zkRetryAttempts, zkRetryInterval));
+    private CuratorFramework newCurator(final Map topologyConfig) {
+        return CuratorFrameworkFactory.newClient(
+            zkConnectionString,
+            (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT),
+            (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT),
+            new RetryNTimes(
+                (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS),
+                (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)
+            )
+        );
     }
 
     /**

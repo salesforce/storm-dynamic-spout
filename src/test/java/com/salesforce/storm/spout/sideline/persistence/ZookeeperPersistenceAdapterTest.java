@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -805,7 +806,8 @@ public class ZookeeperPersistenceAdapterTest {
         Map config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
-        return config;
+
+        return Tools.immutableCopy(SidelineSpoutConfig.setDefaults(config));
     }
 
     /**
