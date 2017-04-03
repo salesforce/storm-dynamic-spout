@@ -10,20 +10,20 @@ public class SidelinePayload {
     public final SidelineType type;
     public final SidelineRequestIdentifier id;
     public final SidelineRequest request;
-    public final ConsumerState startingState;
-    public final ConsumerState endingState;
+    public final Long startingOffset;
+    public final Long endingOffset;
 
     SidelinePayload(
         final SidelineType type,
         final SidelineRequestIdentifier id,
         final SidelineRequest request,
-        final ConsumerState startingState,
-        final ConsumerState endingState
+        final Long startingOffset,
+        final Long endingOffset
     ) {
         this.type = type;
         this.id = id;
         this.request = request;
-        this.startingState = startingState;
-        this.endingState = endingState;
+        this.startingOffset = startingOffset;
+        this.endingOffset = endingOffset;
     }
 }

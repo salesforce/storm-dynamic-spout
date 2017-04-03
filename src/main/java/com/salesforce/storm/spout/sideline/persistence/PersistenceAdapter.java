@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -51,22 +50,33 @@ public interface PersistenceAdapter {
     /**
      * @param type - Sideline Type (Start/Stop)
      * @param id - unique identifier for the sideline request.
-     * @param endingState - The consumer state we will stop at.
+     * @param partitionId Partition id
+     * @param startingOffset Ending offset
+     * @param endingOffset Starting offset
      */
-    void persistSidelineRequestState(SidelineType type, final SidelineRequestIdentifier id, final SidelineRequest request, final ConsumerState startingState, ConsumerState endingState);
+    void persistSidelineRequestState(
+        final SidelineType type,
+        final SidelineRequestIdentifier id,
+        final SidelineRequest request,
+        final int partitionId,
+        final Long startingOffset,
+        final Long endingOffset
+    );
 
     /**
      * Retrieves a sideline request state for the given SidelineRequestIdentifier.
      * @param id - SidelineRequestIdentifier you want to retrieve the state for.
+     * @param partitionId
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
-    SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id);
+    SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id, int partitionId);
 
     /**
      * Removes a sideline request from the persistence layer.
      * @param id - SidelineRequestIdentifier you want to clear.
+     * @param partitionId - Partition of the sideline request you want to clear
      */
-    void clearSidelineRequest(SidelineRequestIdentifier id);
+    void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId);
 
     /**
      * Lists existing sideline requests.

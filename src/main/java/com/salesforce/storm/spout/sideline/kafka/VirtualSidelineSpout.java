@@ -247,8 +247,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer.removeConsumerState();
 
             // Clean up sideline request
-            if (getSidelineRequestIdentifier() != null) {
-                sidelineConsumer.getPersistenceAdapter().clearSidelineRequest(getSidelineRequestIdentifier());
+            if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
+                for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+                    sidelineConsumer.getPersistenceAdapter().clearSidelineRequest(
+                        getSidelineRequestIdentifier(),
+                        topicPartition.partition()
+                    );
+                }
             }
         } else {
             // We are just closing up shop,
@@ -258,6 +263,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Call close & null reference.
         sidelineConsumer.close();
         sidelineConsumer = null;
+
+        startingState = null;
+        endingState = null;
     }
 
     /**

@@ -39,6 +39,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
@@ -1316,7 +1317,7 @@ public class VirtualSidelineSpoutTest {
         verify(mockSidelineConsumer, never()).removeConsumerState();
 
         // Never remove sideline request state
-        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject());
+        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
     }
 
     /**
@@ -1344,14 +1345,20 @@ public class VirtualSidelineSpoutTest {
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
+        ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
+        startingStateBuilder.withPartition(new TopicPartition("foobar", 0), 1L);
+        ConsumerState startingState = startingStateBuilder.build();
+
         // Create spout
         VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
-                topologyConfig,
-                mockTopologyContext,
-                factoryManager,
-                metricsRecorder,
-                mockSidelineConsumer,
-                null, null);
+            topologyConfig,
+            mockTopologyContext,
+            factoryManager,
+            metricsRecorder,
+            mockSidelineConsumer,
+            startingState,
+            null
+        );
         virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
         virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
         virtualSidelineSpout.open();
@@ -1369,7 +1376,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceAdapter, times(1)).clearSidelineRequest(sidelineRequestId);
+        verify(mockPersistenceAdapter, times(1)).clearSidelineRequest(eq(sidelineRequestId), eq(0));
         verify(mockSidelineConsumer, times(1)).close();
 
         // But we never called flush consumer state.
@@ -1424,7 +1431,7 @@ public class VirtualSidelineSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject());
+        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
         verify(mockSidelineConsumer, times(1)).close();
 
         // But we never called flush consumer state.

@@ -149,38 +149,52 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         deleteNodeIfNoChildren(parentPath);
     }
 
+    /**
+     * Persist a sideline request
+     * @param type Sideline Type (Start/Stop)
+     * @param id Unique identifier for the sideline request.
+     * @param request Sideline Request
+     * @param partitionId Partition id
+     * @param startingOffset Ending offset
+     * @param endingOffset Starting offset
+     */
     @Override
     public void persistSidelineRequestState(
         SidelineType type,
         SidelineRequestIdentifier id,
         SidelineRequest request,
-        ConsumerState startingState,
-        ConsumerState endingState
+        int partitionId,
+        Long startingOffset,
+        Long endingOffset
     ) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         Map<String, Object> data = Maps.newHashMap();
         data.put("type", type.toString());
-        data.put("startingState", startingState);
-        if (endingState != null) { // Optional
-            data.put("endingState", endingState);
+        data.put("startingOffset", startingOffset);
+        if (endingOffset != null) { // Optional
+            data.put("endingOffset", endingOffset);
         }
         data.put("filterChainSteps", Serializer.serialize(request.steps));
 
         // Persist!
-        writeJson(getZkRequestStatePath(id.toString()), data);
+        writeJson(getZkRequestStatePath(id.toString(), partitionId), data);
     }
 
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Read!
-        final String path = getZkRequestStatePath(id.toString());
+        final String path = getZkRequestStatePath(id.toString(), partitionId);
         Map<Object, Object> json = readJson(path);
         logger.debug("Read request state from Zookeeper at {}: {}", path, json);
+
+        if (json == null) {
+            return null;
+        }
 
         final String typeString = (String) json.get("type");
 
@@ -188,34 +202,30 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         final List<FilterChainStep> steps = parseJsonToFilterChainSteps(json);
 
-        final ConsumerState startingState = parseJsonToConsumerState(
-            (Map<Object, Object>) json.get("startingState")
-        );
-
-        final ConsumerState endingState = parseJsonToConsumerState(
-            (Map<Object, Object>) json.get("endingState")
-        );
+        final Long startingOffset = (Long) json.get("startingOffset");
+        final Long endingOffset = (Long) json.get("endingOffset");
 
         return new SidelinePayload(
             type,
             id,
             new SidelineRequest(steps),
-            startingState,
-            endingState
+            startingOffset,
+            endingOffset
         );
     }
 
     /**
      * Removes a sideline request from the persistence layer.
      * @param id - SidelineRequestIdentifier you want to clear.
+     * @param partitionId
      */
     @Override
-    public void clearSidelineRequest(SidelineRequestIdentifier id) {
+    public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Delete!
-        final String path = getZkRequestStatePath(id.toString());
+        final String path = getZkRequestStatePath(id.toString(), partitionId);
         logger.info("Delete request from Zookeeper at {}", path);
         deleteNode(path);
     }
@@ -408,8 +418,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
-    String getZkRequestStatePath(final String sidelineIdentifierStr) {
-        return getZkRoot() + "/requests/" + sidelineIdentifierStr;
+    String getZkRequestStatePath(final String sidelineIdentifierStr, final int partitionId) {
+        return getZkRoot() + "/requests/" + sidelineIdentifierStr + "/" + partitionId;
     }
 
     /**

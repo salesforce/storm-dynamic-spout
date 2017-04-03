@@ -54,6 +54,7 @@ public class SidelineConsumerMonitor {
     }
 
     private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final String virtualSpoutId) {
+        // TODO: This is super hacky and should be changed
         // We have no idea how many partitions there are... so start at 0 and go up to a max value
         // until we get a null back.  Kind of hacky.
         for (int partitionId = 0; partitionId < 100; partitionId++) {
@@ -79,21 +80,22 @@ public class SidelineConsumerMonitor {
     }
 
     private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final String virtualSpoutId, final SidelineRequestIdentifier sidelineRequestIdentifier) {
+        // Create return map
+        Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
+
         // Retrieve status
-        final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(sidelineRequestIdentifier);
+        /*
+        final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(sidelineRequestIdentifier, );
         if (payload == null) {
             // Nothing to do?
             logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
             return null;
         }
-        final ConsumerState startingState = payload.startingState;
-        final ConsumerState endingState = payload.endingState;
-
-        // Create return map
-        Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
         // Calculate the progress
         for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
+            final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(sidelineRequestIdentifier, topicPartition.partition());
+
             // Get the state
             Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
             if (currentOffset == null) {
@@ -103,11 +105,11 @@ public class SidelineConsumerMonitor {
 
             // Make sure no nulls
             boolean hasError = false;
-            if (startingState.getOffsetForTopicAndPartition(topicPartition) == null) {
+            if (payload.startingOffset == null) {
                 logger.warn("No starting state found for {}", topicPartition);
                 hasError = true;
             }
-            if (endingState.getOffsetForTopicAndPartition(topicPartition) == null) {
+            if (payload.endingOffset) {
                 logger.warn("No end state found for {}", topicPartition);
                 hasError = true;
             }
@@ -117,13 +119,14 @@ public class SidelineConsumerMonitor {
             }
 
             final PartitionProgress partitionProgress = new PartitionProgress(
-                    startingState.getOffsetForTopicAndPartition(topicPartition),
-                    currentOffset,
-                    endingState.getOffsetForTopicAndPartition(topicPartition)
+                payload.startingOffset,
+                currentOffset,
+                payload.endingOffset
             );
 
             progressMap.put(topicPartition, partitionProgress);
         }
+        */
 
         return Collections.unmodifiableMap(progressMap);
     }

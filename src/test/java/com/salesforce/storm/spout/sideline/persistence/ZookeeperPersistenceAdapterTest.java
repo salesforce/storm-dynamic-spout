@@ -14,6 +14,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.json.simple.JSONValue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -102,7 +103,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String expectedZkRoot = getRandomZkRootNode();
         final String expectedConsumerId = "MyConsumerId";
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId + "/" + String.valueOf(partitionId);
-        final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId;
+        final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId + "/" + String.valueOf(partitionId);
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(inputHosts, expectedZkRoot);
@@ -117,7 +118,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Validate that getZkXXXXStatePath returns the expected value
         assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePath(expectedConsumerId, partitionId));
-        assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceAdapter.getZkRequestStatePath(expectedConsumerId));
+        assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceAdapter.getZkRequestStatePath(expectedConsumerId, partitionId));
 
         // Close everyone out
         persistenceAdapter.close();
@@ -493,23 +494,29 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Persist it
         logger.info("Persisting {}", consumerState);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
+
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 0, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 1, 100L, 101L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 2, 1000L, 1001L);
 
         // Attempt to read it?
-        ConsumerState result = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
-        logger.info("Result {}", result);
+        SidelinePayload result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
+        SidelinePayload result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 1);
+        SidelinePayload result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 2);
 
-        // Validate result
-        assertNotNull("Got an object back", result);
+        logger.info("Result {} {} {}", result1, result2, result3);
 
-        // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.size());
-        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 10L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 1000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
+        assertNotNull("Got an object back", result1);
+        assertEquals("Starting offset matches", Long.valueOf(10L), result1.startingOffset);
+        assertEquals("Ending offset matches", Long.valueOf(11L), result1.endingOffset);
+
+        assertNotNull("Got an object back", result2);
+        assertEquals("Starting offset matches", Long.valueOf(100L), result2.startingOffset);
+        assertEquals("Ending offset matches", Long.valueOf(101L), result2.endingOffset);
+
+        assertNotNull("Got an object back", result3);
+        assertEquals("Starting offset matches", Long.valueOf(1000L), result3.startingOffset);
+        assertEquals("Ending offset matches", Long.valueOf(1001L), result3.endingOffset);
 
         // Close outs
         persistenceAdapter.close();
@@ -520,20 +527,40 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
-        result = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier).startingState;
-        logger.info("Result {}", result);
+        // Attempt to read it?
+        result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
+        result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 1);
+        result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 2);
 
-        // Validate result
-        assertNotNull("Got an object back", result);
+        logger.info("Result {} {} {}", result1, result2, result3);
 
-        // Should have 3 entries
-        assertEquals("Should have 3 entries", 3, result.size());
-        assertTrue("Contains Partition 0", result.containsKey(new TopicPartition(topicName, 0)));
-        assertEquals("Contains Partition 0 with value 0L", 10L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 0)));
-        assertTrue("Contains Partition 1", result.containsKey(new TopicPartition(topicName, 1)));
-        assertEquals("Contains Partition 1 with value 100L", 1000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 1)));
-        assertTrue("Contains Partition 3", result.containsKey(new TopicPartition(topicName, 3)));
-        assertEquals("Contains Partition 3 with value 300L", 3000L, (long) result.getOffsetForTopicAndPartition(new TopicPartition(topicName, 3)));
+        assertNotNull("Got an object back", result1);
+        assertEquals("Starting offset matches", Long.valueOf(10L), result1.startingOffset);
+        assertEquals("Ending offset matches", Long.valueOf(11L), result1.endingOffset);
+
+        assertNotNull("Got an object back", result2);
+        assertEquals("Starting offset matches", Long.valueOf(100L), result2.startingOffset);
+        assertEquals("Ending offset matches", Long.valueOf(101L), result2.endingOffset);
+
+        assertNotNull("Got an object back", result3);
+        assertEquals("Starting offset matches", Long.valueOf(1000L), result3.startingOffset);
+        assertEquals("Ending offset matches", Long.valueOf(1001L), result3.endingOffset);
+
+        // Clear out hose requests
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 0);
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 1);
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 2);
+
+        // Attempt to retrieve those sideline requests, they should come back null
+        result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
+        result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 1);
+        result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 2);
+
+        logger.info("Result {} {} {}", result1, result2, result3);
+
+        assertNull("Sideline request was cleared", result1);
+        assertNull("Sideline request was cleared", result2);
+        assertNull("Sideline request was cleared", result3);
 
         // Close outs
         persistenceAdapter.close();
@@ -585,24 +612,22 @@ public class ZookeeperPersistenceAdapterTest {
         final String topicName = "MyTopic";
 
         // Define our expected result that will be stored in zookeeper
-        final String expectedStoredState = "{\"filterChainSteps\":\"rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==\",\"type\":\"START\",\"startingState\":{\""+topicName+"-0\":0,\""+topicName+"-1\":100,\""+topicName+"-3\":300}}";
+        final Map<String,Object> expectedJsonMap = Maps.newHashMap();
+        expectedJsonMap.put("startingOffset", 1L);
+        expectedJsonMap.put("endingOffset", 2L);
+        expectedJsonMap.put("filterChainSteps", "rO0ABXNyAB9qYXZhLnV0aWwuQ29sbGVjdGlvbnMkRW1wdHlMaXN0ergXtDynnt4CAAB4cA==");
+        expectedJsonMap.put("type", SidelineType.START.toString());
 
-        final ConsumerState consumerState = ConsumerState.builder()
-            .withPartition(new TopicPartition(topicName, 0), 0L)
-            .withPartition(new TopicPartition(topicName, 1), 100L)
-            .withPartition(new TopicPartition(topicName, 3), 300L)
-            .build();
+        final String expectedStoredState = JSONValue.toJSONString(expectedJsonMap);
 
-        // Persist it
-        logger.info("Persisting {}", consumerState);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, consumerState, null);
+        logger.info("expectedStoredState = {}", expectedStoredState);
+
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 0, 1L, 2L);
 
         // Since this is an async operation, use await() to watch for the change
         await()
-                .atMost(6, TimeUnit.SECONDS)
-                .until(() -> {
-                    return zookeeperClient.exists(zkRequestsRootNodePath, false);
-                }, notNullValue());
+            .atMost(6, TimeUnit.SECONDS)
+            .until(() -> zookeeperClient.exists(zkRequestsRootNodePath, false), notNullValue());
 
         // 4. Go into zookeeper and see where data got written
         doesNodeExist = zookeeperClient.exists(zkRequestsRootNodePath, false);
@@ -622,7 +647,11 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals("Child Node name not correct", sidelineRequestIdentifier.toString(), childNodeName);
 
         // 5. Grab the value and validate it
-        final byte[] storedDataBytes = zookeeperClient.getData(zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(), false, null);
+        final byte[] storedDataBytes = zookeeperClient.getData(
+            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + 0,
+            false,
+            null
+        );
         logger.debug("Stored data bytes {}", storedDataBytes);
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
@@ -633,10 +662,13 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
 
         // Now test clearing
-        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier);
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 0);
 
         // Validate in the Zk Client.
-        doesNodeExist = zookeeperClient.exists(zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(), false);
+        doesNodeExist = zookeeperClient.exists(
+            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + 0,
+            false
+        );
         logger.debug("Result {}", doesNodeExist);
         assertNull("Our root node should No longer exist", doesNodeExist);
 
@@ -702,7 +734,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, ConsumerState.builder().build(), null);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, 0, 1L, 2L);
     }
 
     /**
@@ -715,7 +747,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier());
+        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier(), 0);
     }
 
     /**
@@ -728,7 +760,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedException.expect(IllegalStateException.class);
-        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier());
+        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier(), 0);
     }
 
     /**

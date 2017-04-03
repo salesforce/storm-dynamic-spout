@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -19,7 +18,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<String, Long> storedConsumerState;
 
     // "Persists" side line request states in memory.
-    private Map<SidelineRequestIdentifier, SidelinePayload> storedSidelineRequests;
+    private Map<String, SidelinePayload> storedSidelineRequests;
 
     @Override
     public void open(Map topologyConfig) {
@@ -67,34 +66,47 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     /**
      * @param type - SidelineType (Start or Stop)
      * @param id - unique identifier for the sideline request.
-     * @param endingState - The state when we can stop consuming.
+     * @param partitionId
+     * @param startingOffset
+     * @param endingOffset
      */
     @Override
-    public void persistSidelineRequestState(SidelineType type, SidelineRequestIdentifier id, SidelineRequest request, ConsumerState startingState, ConsumerState endingState) {
-        storedSidelineRequests.put(id, new SidelinePayload(type, id, request, startingState, null));
+    public void persistSidelineRequestState(SidelineType type, SidelineRequestIdentifier id, SidelineRequest request, int partitionId, Long startingOffset, Long endingOffset) {
+        storedSidelineRequests.put(getSidelineRequestStateKey(id, partitionId), new SidelinePayload(type, id, request, startingOffset, endingOffset));
     }
 
     /**
      * Retrieves a sideline request state for the given SidelineRequestIdentifier.
      * @param id - SidelineRequestIdentifier you want to retrieve the state for.
+     * @param partitionId
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id) {
-        return storedSidelineRequests.get(id);
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
+        return storedSidelineRequests.get(getSidelineRequestStateKey(id, partitionId));
     }
 
     @Override
-    public void clearSidelineRequest(SidelineRequestIdentifier id) {
-        storedSidelineRequests.remove(id);
+    public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
+        storedSidelineRequests.remove(getSidelineRequestStateKey(id, partitionId));
     }
 
     @Override
     public List<SidelineRequestIdentifier> listSidelineRequests() {
-        return Lists.newArrayList(storedSidelineRequests.keySet());
+        List<SidelineRequestIdentifier> ids = Lists.newArrayList();
+
+        for (SidelinePayload sidelinePayload : storedSidelineRequests.values()) {
+            ids.add(sidelinePayload.id);
+        }
+
+        return ids;
     }
 
     private String getConsumerStateKey(final String consumerId, final int partitionId) {
-        return consumerId.concat(String.valueOf(partitionId));
+        return consumerId.concat("/").concat(String.valueOf(partitionId));
+    }
+
+    private String getSidelineRequestStateKey(final SidelineRequestIdentifier id, final int partitionId) {
+        return id.toString().concat("/").concat(String.valueOf(partitionId));
     }
 }
