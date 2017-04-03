@@ -230,7 +230,10 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         deleteNode(path);
     }
 
-    // TODO: this needs a test, and javadoc
+    /**
+     * Lists out a unique list of current sideline requests
+     * @return List of sideline request identifier objects
+     */
     public List<SidelineRequestIdentifier> listSidelineRequests() {
         verifyHasBeenOpened();
 

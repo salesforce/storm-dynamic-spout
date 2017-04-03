@@ -131,8 +131,6 @@ public class SidelineConsumerMonitor {
         return Collections.unmodifiableMap(progressMap);
     }
 
-
-
     public void printStatus(final String virtualSpoutId) {
         Map<TopicPartition, PartitionProgress> progressMap = getStatus(virtualSpoutId);
         if (progressMap == null) {
