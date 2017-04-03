@@ -21,4 +21,6 @@ public interface DelegateSidelineSpout {
     void requestStop();
 
     boolean isStopRequested();
+
+    ConsumerState getCurrentState();
 }

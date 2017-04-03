@@ -3,9 +3,9 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.sideline.mocks.MockDelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import org.apache.storm.tuple.Values;
@@ -15,9 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -75,13 +72,13 @@ public class SpoutCoordinatorTest {
         logger.info("Coordinator now has {} spout instances", coordinator.getTotalSpouts());
 
         // Add 1 message to each spout
-        fireHoseSpout.addMessage(message1);
+        fireHoseSpout.emitQueue.add(message1);
         expected.add(message1);
 
-        sidelineSpout1.addMessage(message2);
+        sidelineSpout1.emitQueue.add(message2);
         expected.add(message2);
 
-        fireHoseSpout.addMessage(message3);
+        fireHoseSpout.emitQueue.add(message3);
         expected.add(message3);
 
         // The SpoutRunner threads should pop these messages off.
@@ -95,20 +92,20 @@ public class SpoutCoordinatorTest {
         coordinator.fail(message3.getTupleMessageId());
 
         // Wait for those to come through to the correct VirtualSpouts.
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.acks.size(), equalTo(1));
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.fails.size(), equalTo(1));
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.acks.size(), equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.ackedTupleIds.size(), equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.failedTupleIds.size(), equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.ackedTupleIds.size(), equalTo(1));
 
         assertTrue(
-            message1.getTupleMessageId().equals(fireHoseSpout.acks.poll())
+            message1.getTupleMessageId().equals(fireHoseSpout.ackedTupleIds.toArray()[0])
         );
 
         assertTrue(
-            message3.getTupleMessageId().equals(fireHoseSpout.fails.poll())
+            message3.getTupleMessageId().equals(fireHoseSpout.failedTupleIds.toArray()[0])
         );
 
         assertTrue(
-            message2.getTupleMessageId().equals(sidelineSpout1.acks.poll())
+            message2.getTupleMessageId().equals(sidelineSpout1.ackedTupleIds.toArray()[0])
         );
 
         coordinator.close();
@@ -132,76 +129,5 @@ public class SpoutCoordinatorTest {
 
         // Verify the executor is terminated, and has no active tasks
         assertTrue("Executor is terminated", coordinator.getExecutor().isTerminated());
-    }
-
-
-    private static class MockDelegateSidelineSpout implements DelegateSidelineSpout {
-
-        private static final Logger logger = LoggerFactory.getLogger(MockDelegateSidelineSpout.class);
-
-        private String consumerId;
-        private boolean requestedStop = false;
-        private Queue<TupleMessageId> acks = new ConcurrentLinkedQueue<>();
-        private Queue<TupleMessageId> fails = new ConcurrentLinkedQueue<>();
-        private Queue<KafkaMessage> messages = new ConcurrentLinkedQueue<>();
-
-        public MockDelegateSidelineSpout() {
-            this.consumerId = this.getClass().getSimpleName() + UUID.randomUUID().toString();
-            logger.info("Creating spout {}", consumerId);
-        }
-
-        public void addMessage(KafkaMessage message) {
-            this.messages.add(message);
-        }
-
-        @Override
-        public void open() {
-
-        }
-
-        @Override
-        public void close() {
-            logger.info("Closing spout {}", getVirtualSpoutId());
-        }
-
-        @Override
-        public KafkaMessage nextTuple() {
-            if (!this.messages.isEmpty()) {
-                return this.messages.poll();
-            }
-            return null;
-        }
-
-        @Override
-        public void ack(Object id) {
-            this.acks.add((TupleMessageId) id);
-        }
-
-        @Override
-        public void fail(Object id) {
-            this.fails.add((TupleMessageId) id);
-        }
-
-
-
-        @Override
-        public void flushState() {
-
-        }
-
-        @Override
-        public void requestStop() {
-            requestedStop = true;
-        }
-
-        @Override
-        public boolean isStopRequested() {
-            return requestedStop;
-        }
-
-        @Override
-        public String getVirtualSpoutId() {
-            return consumerId;
-        }
     }
 }
