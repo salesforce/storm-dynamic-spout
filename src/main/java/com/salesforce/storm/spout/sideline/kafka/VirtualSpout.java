@@ -65,11 +65,19 @@ public class VirtualSpout implements DelegateSidelineSpout {
      */
     private Deserializer deserializer;
 
-
+    /**
+     * Filter chain applied to messages for this virtual spout
+     */
     private final FilterChain filterChain = new FilterChain();
 
-    // Define starting and ending offsets.
+    /**
+     * Starting point for the partitions for this spouts consumer
+     */
     private ConsumerState startingState = null;
+
+    /**
+     * Ending point for the partitions for this spouts consumer
+     */
     private ConsumerState endingState = null;
 
     /**
