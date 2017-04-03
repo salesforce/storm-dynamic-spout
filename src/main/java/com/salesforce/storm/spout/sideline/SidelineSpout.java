@@ -7,7 +7,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
@@ -77,7 +77,7 @@ public class SidelineSpout extends BaseRichSpout {
      * This is our main Virtual Spout instance which consumes from the configured topic.
      * TODO: Do we need access to this here?  Could this be moved into the Coordinator?
      */
-    private VirtualSidelineSpout fireHoseSpout;
+    private VirtualSpout fireHoseSpout;
 
     /**
      * Manages creating implementation instances.
@@ -266,7 +266,7 @@ public class SidelineSpout extends BaseRichSpout {
         getPersistenceAdapter().open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(
+        fireHoseSpout = new VirtualSpout(
                 getTopologyConfig(),
                 getTopologyContext(),
                 getFactoryManager(),
@@ -383,7 +383,7 @@ public class SidelineSpout extends BaseRichSpout {
         logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
-        final VirtualSidelineSpout spout = new VirtualSidelineSpout(
+        final VirtualSpout spout = new VirtualSpout(
             getTopologyConfig(),
             getTopologyContext(),
             getFactoryManager(),
@@ -426,7 +426,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.count(getClass(), "emit", 1L);
 
         // Update emit count metric for VirtualSidelineSpout this tuple originated from
-        metricsRecorder.count(VirtualSidelineSpout.class, kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId() + ".emit", 1);
+        metricsRecorder.count(VirtualSpout.class, kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId() + ".emit", 1);
 
         // Everything below is temporary emit metrics for debugging.
 
@@ -526,7 +526,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.count(getClass(), "ack", 1L);
 
         // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".ack", 1);
+        metricsRecorder.count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".ack", 1);
     }
 
     /**
@@ -545,7 +545,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.count(getClass(), "fail", 1L);
 
         // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".fail", 1);
+        metricsRecorder.count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".fail", 1);
     }
 
     /**

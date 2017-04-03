@@ -36,9 +36,9 @@ import java.util.Map;
  * As acks/fails come into SidelineSpout, they will be routed to the appropriate VirtualSidelineSpout instance
  * and handled by the {@link #ack(Object)} and {@link #fail(Object)} methods.
  */
-public class VirtualSidelineSpout implements DelegateSidelineSpout {
+public class VirtualSpout implements DelegateSidelineSpout {
     // Logging
-    private static final Logger logger = LoggerFactory.getLogger(VirtualSidelineSpout.class);
+    private static final Logger logger = LoggerFactory.getLogger(VirtualSpout.class);
 
     /**
      * Holds reference to our topologyContext.
@@ -122,7 +122,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param factoryManager - FactoryManager instance.
      * @param metricsRecorder - For recording metrics.
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
         this(topologyConfig, topologyContext, factoryManager, metricsRecorder, null, null);
     }
 
@@ -137,7 +137,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param startingState - Where the underlying consumer should start from, Null if start from head.
      * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -158,7 +158,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
+    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
         this(topologyConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
         // Inject the sideline consumer.

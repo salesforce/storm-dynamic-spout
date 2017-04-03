@@ -49,7 +49,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class VirtualSidelineSpoutTest {
+public class VirtualSpoutTest {
 
     /**
      * By default, no exceptions should be thrown.
@@ -75,23 +75,23 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(expectedTopologyConfig);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, factoryManager, new LogRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(expectedTopologyConfig, mockTopologyContext, factoryManager, new LogRecorder());
 
         // Verify things got set
-        assertNotNull("TopologyConfig should be non-null", virtualSidelineSpout.getTopologyConfig());
-        assertNotNull("TopologyContext should be non-null", virtualSidelineSpout.getTopologyContext());
+        assertNotNull("TopologyConfig should be non-null", virtualSpout.getTopologyConfig());
+        assertNotNull("TopologyContext should be non-null", virtualSpout.getTopologyContext());
 
         // Verify the config is correct (and not some empty map)
-        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSidelineSpout.getTopologyConfig().size());
-        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSidelineSpout.getTopologyConfig());
+        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getTopologyConfig().size());
+        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getTopologyConfig());
 
         // Verify factory manager set
-        assertNotNull("Should have non-null factory manager", virtualSidelineSpout.getFactoryManager());
-        assertEquals("Should be our instance passed in", factoryManager, virtualSidelineSpout.getFactoryManager());
+        assertNotNull("Should have non-null factory manager", virtualSpout.getFactoryManager());
+        assertEquals("Should be our instance passed in", factoryManager, virtualSpout.getFactoryManager());
 
         // Verify the config is immutable and throws exception when you try to modify it
         expectedException.expect(UnsupportedOperationException.class);
-        virtualSidelineSpout.getTopologyConfig().put("MyKey", "MyValue");
+        virtualSpout.getTopologyConfig().put("MyKey", "MyValue");
     }
 
     /**
@@ -112,22 +112,22 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(expectedTopologyConfig);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(expectedTopologyConfig, mockTopologyContext, factoryManager, new LogRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(expectedTopologyConfig, mockTopologyContext, factoryManager, new LogRecorder());
 
         // Verify things got set
-        assertNotNull("TopologyConfig should be non-null", virtualSidelineSpout.getTopologyConfig());
+        assertNotNull("TopologyConfig should be non-null", virtualSpout.getTopologyConfig());
 
         // Verify the config is correct (and not some empty map)
-        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSidelineSpout.getTopologyConfig().size());
-        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSidelineSpout.getTopologyConfig());
+        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getTopologyConfig().size());
+        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getTopologyConfig());
 
         // Check each item
-        assertEquals("Value1", virtualSidelineSpout.getTopologyConfigItem("Key1"));
-        assertEquals("Value2", virtualSidelineSpout.getTopologyConfigItem("Key2"));
-        assertEquals("Value3", virtualSidelineSpout.getTopologyConfigItem("Key3"));
+        assertEquals("Value1", virtualSpout.getTopologyConfigItem("Key1"));
+        assertEquals("Value2", virtualSpout.getTopologyConfigItem("Key2"));
+        assertEquals("Value3", virtualSpout.getTopologyConfigItem("Key3"));
 
         // Check a random key that doesn't exist
-        assertNull(virtualSidelineSpout.getTopologyConfigItem("Random Key"));
+        assertNull(virtualSpout.getTopologyConfigItem("Random Key"));
     }
 
     /**
@@ -140,13 +140,13 @@ public class VirtualSidelineSpoutTest {
         final String expectedConsumerId = "myConsumerId";
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
 
         // Set it
-        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
+        virtualSpout.setVirtualSpoutId(expectedConsumerId);
 
         // Verify it
-        assertEquals("Got expected consumer id", expectedConsumerId, virtualSidelineSpout.getVirtualSpoutId());
+        assertEquals("Got expected consumer id", expectedConsumerId, virtualSpout.getVirtualSpoutId());
     }
 
     /**
@@ -158,16 +158,16 @@ public class VirtualSidelineSpoutTest {
         final SidelineRequestIdentifier expectedId = new SidelineRequestIdentifier();
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
 
         // Defaults null
-        assertNull("should be null", virtualSidelineSpout.getSidelineRequestIdentifier());
+        assertNull("should be null", virtualSpout.getSidelineRequestIdentifier());
 
         // Set it
-        virtualSidelineSpout.setSidelineRequestIdentifier(expectedId);
+        virtualSpout.setSidelineRequestIdentifier(expectedId);
 
         // Verify it
-        assertEquals("Got expected requext id", expectedId, virtualSidelineSpout.getSidelineRequestIdentifier());
+        assertEquals("Got expected requext id", expectedId, virtualSpout.getSidelineRequestIdentifier());
     }
 
     /**
@@ -176,14 +176,14 @@ public class VirtualSidelineSpoutTest {
     @Test
     public void testSetAndGetStopRequested() {
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), new LogRecorder());
 
         // Should default to false
-        assertFalse("Should default to false", virtualSidelineSpout.isStopRequested());
+        assertFalse("Should default to false", virtualSpout.isStopRequested());
 
         // Set to true
-        virtualSidelineSpout.requestStop();
-        assertTrue("Should be true", virtualSidelineSpout.isStopRequested());
+        virtualSpout.requestStop();
+        assertTrue("Should be true", virtualSpout.isStopRequested());
     }
 
     /**
@@ -210,18 +210,18 @@ public class VirtualSidelineSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create spout
-        final VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
+        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
 
         // Call it once.
-        virtualSidelineSpout.open();
+        virtualSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
         verify(mockSidelineConsumer, times(1)).open(eq(null));
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
-        virtualSidelineSpout.open();
+        virtualSpout.open();
     }
 
     /**
@@ -252,11 +252,11 @@ public class VirtualSidelineSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create spout
-        final VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
+        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
 
         // Call open
-        virtualSidelineSpout.open();
+        virtualSpout.open();
 
         // Validate that we asked factory manager for a deserializer
         verify(mockFactoryManager, times(1)).createNewDeserializerInstance();
@@ -300,12 +300,12 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSidelineSpout.nextTuple();
+        KafkaMessage result = virtualSpout.nextTuple();
 
         // Verify its null
         assertNull("Should be null",  result);
@@ -367,12 +367,12 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSidelineSpout.nextTuple();
+        KafkaMessage result = virtualSpout.nextTuple();
 
         // Verify its null
         assertNull("Should be null",  result);
@@ -423,7 +423,7 @@ public class VirtualSidelineSpoutTest {
         final StaticMessageFilter filterStep = new StaticMessageFilter();
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
@@ -431,12 +431,12 @@ public class VirtualSidelineSpoutTest {
                 mockSidelineConsumer,
                 null, null
         );
-        virtualSidelineSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
-        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
-        virtualSidelineSpout.open();
+        virtualSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
+        virtualSpout.setVirtualSpoutId(expectedConsumerId);
+        virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSidelineSpout.nextTuple();
+        KafkaMessage result = virtualSpout.nextTuple();
 
         // Check result
         assertNull("Should be null", result);
@@ -484,18 +484,18 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId(expectedConsumerId);
+        virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSidelineSpout.nextTuple();
+        KafkaMessage result = virtualSpout.nextTuple();
 
         // Check result
         assertNotNull("Should not be null", result);
@@ -567,18 +567,18 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setVirtualSpoutId("ConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("ConsumerId");
+        virtualSpout.open();
 
         // Call nextTuple(), this should return our entry BEFORE the ending offset
-        KafkaMessage result = virtualSidelineSpout.nextTuple();
+        KafkaMessage result = virtualSpout.nextTuple();
 
         // Check result
         assertNotNull("Should not be null because the offset is under the limit.", result);
@@ -592,7 +592,7 @@ public class VirtualSidelineSpoutTest {
 
         // Call nextTuple(), this offset should be equal to our ending offset
         // Equal to the end offset should still get emitted.
-        result = virtualSidelineSpout.nextTuple();
+        result = virtualSpout.nextTuple();
 
         // Check result
         assertNotNull("Should not be null because the offset is under the limit.", result);
@@ -606,14 +606,14 @@ public class VirtualSidelineSpoutTest {
 
         // Call nextTuple(), this offset should be greater than our ending offset
         // and thus should return null.
-        result = virtualSidelineSpout.nextTuple();
+        result = virtualSpout.nextTuple();
 
         // Check result
         assertNull("Should be null because the offset is greater than the limit.", result);
 
         // Call nextTuple(), again the offset should be greater than our ending offset
         // and thus should return null.
-        result = virtualSidelineSpout.nextTuple();
+        result = virtualSpout.nextTuple();
 
         // Check result
         assertNull("Should be null because the offset is greater than the limit.", result);
@@ -694,18 +694,18 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId(expectedConsumerId);
+        virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSidelineSpout.nextTuple();
+        KafkaMessage result = virtualSpout.nextTuple();
 
         // Verify we asked the failed message manager, but got nothing back
         verify(mockRetryManager, times(1)).nextFailedMessageToRetry();
@@ -730,13 +730,13 @@ public class VirtualSidelineSpoutTest {
         verify(mockRetryManager, never()).failed(anyObject());
 
         // call fail on our message id
-        virtualSidelineSpout.fail(failedMessageId);
+        virtualSpout.fail(failedMessageId);
 
         // Verify failed calls
         verify(mockRetryManager, times(1)).failed(failedMessageId);
 
         // Call nextTuple, we should get our failed tuple back.
-        result = virtualSidelineSpout.nextTuple();
+        result = virtualSpout.nextTuple();
 
         // verify we got the tuple from failed manager
         verify(mockRetryManager, times(2)).nextFailedMessageToRetry();
@@ -754,7 +754,7 @@ public class VirtualSidelineSpoutTest {
         // And call nextTuple() one more time, this time failed manager should return null
         // and sideline consumer returns our unexpected result
         // Call nextTuple, we should get our failed tuple back.
-        result = virtualSidelineSpout.nextTuple();
+        result = virtualSpout.nextTuple();
 
         // verify we got the tuple from failed manager
         verify(mockRetryManager, times(3)).nextFailedMessageToRetry();
@@ -795,18 +795,18 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call ack with null, nothing should explode.
-        virtualSidelineSpout.fail(null);
+        virtualSpout.fail(null);
 
         // No interactions w/ our mocks
         verify(mockRetryManager, never()).retryFurther(anyObject());
@@ -837,19 +837,19 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
-        virtualSidelineSpout.fail("This is a String!");
+        virtualSpout.fail("This is a String!");
     }
 
     /**
@@ -877,18 +877,18 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call ack with null, nothing should explode.
-        virtualSidelineSpout.ack(null);
+        virtualSpout.ack(null);
 
         // No interactions w/ our mock sideline consumer for committing offsets
         verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
@@ -918,19 +918,19 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
         expectedException.expect(IllegalArgumentException.class);
-        virtualSidelineSpout.ack("This is my String!");
+        virtualSpout.ack("This is my String!");
     }
 
     /**
@@ -963,22 +963,22 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Never called yet
         verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
 
         // Call ack with a string object, it should throw an exception.
-        virtualSidelineSpout.ack(tupleMessageId);
+        virtualSpout.ack(tupleMessageId);
 
         // Verify mock gets called with appropriate arguments
         verify(mockSidelineConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
@@ -1010,15 +1010,15 @@ public class VirtualSidelineSpoutTest {
         SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1028,7 +1028,7 @@ public class VirtualSidelineSpoutTest {
         final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Call our method & validate.
-        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
         assertFalse("Should always be false", result);
     }
 
@@ -1063,18 +1063,18 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call our method & validate.
-        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
         assertFalse("Should be false", result);
     }
 
@@ -1108,18 +1108,18 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call our method & validate.
-        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
         assertTrue("Should be true", result);
     }
 
@@ -1153,18 +1153,18 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call our method & validate.
-        final boolean result = virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
         assertFalse("Should be false", result);
     }
 
@@ -1200,19 +1200,19 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout passing in ending state.
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, endingState);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Call our method & validate exception is thrown
         expectedException.expect(IllegalStateException.class);
-        virtualSidelineSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
     }
 
     /**
@@ -1239,15 +1239,15 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1255,7 +1255,7 @@ public class VirtualSidelineSpoutTest {
         final TopicPartition topicPartition = new TopicPartition(expectedTopic, expectedPartition);
 
         // Call our method & validate.
-        final boolean result = virtualSidelineSpout.unsubscribeTopicPartition(topicPartition);
+        final boolean result = virtualSpout.unsubscribeTopicPartition(topicPartition);
         assertEquals("Got expected result from our method", expectedResult, result);
 
         // Validate mock call
@@ -1287,27 +1287,27 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
+        virtualSpout.open();
 
         // Mark sure is completed field is set to false before calling close
-        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        Field isCompletedField = virtualSpout.getClass().getDeclaredField("isCompleted");
         isCompletedField.setAccessible(true);
-        isCompletedField.set(virtualSidelineSpout, false);
+        isCompletedField.set(virtualSpout, false);
 
         // Verify close hasn't been called yet.
         verify(mockSidelineConsumer, never()).close();
 
         // Call close
-        virtualSidelineSpout.close();
+        virtualSpout.close();
 
         // Verify close was called, and state was flushed
         verify(mockSidelineConsumer, times(1)).flushConsumerState();
@@ -1350,7 +1350,7 @@ public class VirtualSidelineSpoutTest {
         ConsumerState startingState = startingStateBuilder.build();
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
             topologyConfig,
             mockTopologyContext,
             factoryManager,
@@ -1359,20 +1359,20 @@ public class VirtualSidelineSpoutTest {
             startingState,
             null
         );
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.setSidelineRequestIdentifier(sidelineRequestId);
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
+        virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
-        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        Field isCompletedField = virtualSpout.getClass().getDeclaredField("isCompleted");
         isCompletedField.setAccessible(true);
-        isCompletedField.set(virtualSidelineSpout, true);
+        isCompletedField.set(virtualSpout, true);
 
         // Verify close hasn't been called yet.
         verify(mockSidelineConsumer, never()).close();
 
         // Call close
-        virtualSidelineSpout.close();
+        virtualSpout.close();
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
@@ -1408,26 +1408,26 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         // Create spout
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
-        Field isCompletedField = virtualSidelineSpout.getClass().getDeclaredField("isCompleted");
+        Field isCompletedField = virtualSpout.getClass().getDeclaredField("isCompleted");
         isCompletedField.setAccessible(true);
-        isCompletedField.set(virtualSidelineSpout, true);
+        isCompletedField.set(virtualSpout, true);
 
         // Verify close hasn't been called yet.
         verify(mockSidelineConsumer, never()).close();
 
         // Call close
-        virtualSidelineSpout.close();
+        virtualSpout.close();
 
         // Verify close was called, and state was cleared
         verify(mockSidelineConsumer, times(1)).removeConsumerState();
@@ -1487,15 +1487,15 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId(expectedConsumerId);
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId(expectedConsumerId);
+        virtualSpout.open();
 
         // Now call fail on this
         final TupleMessageId failedMessageId = expectedKafkaMessage.getTupleMessageId();
@@ -1504,7 +1504,7 @@ public class VirtualSidelineSpoutTest {
         when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
 
         // call fail on our message id
-        virtualSidelineSpout.fail(failedMessageId);
+        virtualSpout.fail(failedMessageId);
 
         // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
         verify(mockRetryManager, times(1)).acked(failedMessageId);
@@ -1533,15 +1533,15 @@ public class VirtualSidelineSpoutTest {
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
 
         // Create spout & open
-        VirtualSidelineSpout virtualSidelineSpout = new VirtualSidelineSpout(
+        VirtualSpout virtualSpout = new VirtualSpout(
                 topologyConfig,
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
                 mockSidelineConsumer,
                 null, null);
-        virtualSidelineSpout.setVirtualSpoutId("MyConsumerId");
-        virtualSidelineSpout.open();
+        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.open();
 
         final ConsumerState expectedConsumerState = ConsumerState
             .builder()
@@ -1552,7 +1552,7 @@ public class VirtualSidelineSpoutTest {
         when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
 
         // Call get current state.
-        final ConsumerState result = virtualSidelineSpout.getCurrentState();
+        final ConsumerState result = virtualSpout.getCurrentState();
 
         // Verify mock interactions
         verify(mockSidelineConsumer, times(1)).getCurrentState();
