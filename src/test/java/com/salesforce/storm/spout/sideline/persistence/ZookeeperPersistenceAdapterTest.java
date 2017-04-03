@@ -763,6 +763,38 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier(), 0);
     }
 
+    @Test
+    public void testListSidelineRequests() {
+        final String zkRootPath = getRandomZkRootNode();
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), zkRootPath);
+
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest1 = new SidelineRequest(Collections.emptyList());
+
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest2 = new SidelineRequest(Collections.emptyList());
+
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest2, 1, 100L, 101L);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier3 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest3 = new SidelineRequest(Collections.emptyList());
+
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 2, 1000L, 1001L);
+
+        final List<SidelineRequestIdentifier> ids = persistenceAdapter.listSidelineRequests();
+
+        assertNotNull(ids);
+        assertTrue(ids.size() == 3);
+        assertTrue(ids.contains(sidelineRequestIdentifier1));
+        assertTrue(ids.contains(sidelineRequestIdentifier2));
+        assertTrue(ids.contains(sidelineRequestIdentifier3));
+    }
+
     /**
      * Helper method.
      */

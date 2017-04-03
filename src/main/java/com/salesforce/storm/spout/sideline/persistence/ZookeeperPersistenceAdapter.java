@@ -269,32 +269,6 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     }
 
     /**
-     * Internal method to take a map representing JSON of a consumer state and hydrate
-     * it into a proper ConsumerState object.
-     * @param json - Map representation of stored JSON
-     * @return - A hydrated ConsumerState object from the passed in Json Map.
-     */
-    private ConsumerState parseJsonToConsumerState(final Map<Object, Object> json) {
-        // Create new ConsumerState instance.
-        final ConsumerState.ConsumerStateBuilder builder = new ConsumerState.ConsumerStateBuilder();
-
-        // If no state is stored yet.
-        if (json == null) {
-            // Return empty consumerState
-            return builder.build();
-        }
-
-        // Otherwise parse the stored json
-        for (Map.Entry<Object, Object> entry: json.entrySet()) {
-            String[] bits = ((String)entry.getKey()).split("-");
-
-            // Populate consumerState.
-            builder.withPartition(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
-        }
-        return builder.build();
-    }
-
-    /**
      * Internal method to create a new Curator connection.
      */
     private CuratorFramework newCurator() {
