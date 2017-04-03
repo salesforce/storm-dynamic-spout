@@ -240,8 +240,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         final List<SidelineRequestIdentifier> ids = Lists.newArrayList();
 
         try {
-            // TODO: This should be moved to it's own method
-            final String path = getZkRoot() + "/requests";
+            final String path = getZkRequestStateRoot();
 
             if (curator.checkExists().forPath(path) == null) {
                 return ids;
@@ -397,6 +396,13 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
      */
     String getZkRequestStatePath(final String sidelineIdentifierStr, final int partitionId) {
         return getZkRoot() + "/requests/" + sidelineIdentifierStr + "/" + partitionId;
+    }
+
+    /**
+     * @return - The full zookeeper root to where our request state is stored.
+     */
+    String getZkRequestStateRoot() {
+        return getZkRoot() + "/requests";
     }
 
     /**
