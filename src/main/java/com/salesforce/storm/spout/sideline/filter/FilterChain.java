@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newHashMap();
+    final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
 
     /**
      * Fluent method for adding steps to the chain (must be done in order).
