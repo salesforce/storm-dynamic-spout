@@ -58,7 +58,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
     /**
      * Our underlying Kafka Consumer.
      */
-    private SidelineConsumer sidelineConsumer;
+    private Consumer consumer;
 
     /**
      * Our Deserializer, it deserializes messages from Kafka into objects.
@@ -166,11 +166,11 @@ public class VirtualSpout implements DelegateSidelineSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
+    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
         this(topologyConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
         // Inject the sideline consumer.
-        this.sidelineConsumer = sidelineConsumer;
+        this.consumer = consumer;
     }
 
     /**
@@ -198,7 +198,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
-        if (sidelineConsumer == null) {
+        if (consumer == null) {
             // Create persistence manager instance and open.
             final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
             persistenceAdapter.open(getTopologyConfig());
@@ -206,7 +206,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
             // Construct SidelineConsumerConfig based on topology config.
             final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
             final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-            final SidelineConsumerConfig consumerConfig = new SidelineConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
+            final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
             consumerConfig.setNumberOfConsumers(
                 topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
             );
@@ -215,11 +215,11 @@ public class VirtualSpout implements DelegateSidelineSpout {
             );
 
             // Create sideline consumer
-            sidelineConsumer = new SidelineConsumer(consumerConfig, persistenceAdapter);
+            consumer = new Consumer(consumerConfig, persistenceAdapter);
         }
 
         // Open the consumer
-        sidelineConsumer.open(startingState);
+        consumer.open(startingState);
 
         // If we have an ending state, we set some metrics.
         if (endingState != null) {
@@ -252,12 +252,12 @@ public class VirtualSpout implements DelegateSidelineSpout {
         // If we've successfully completed processing
         if (isCompleted()) {
             // We should clean up consumer state
-            sidelineConsumer.removeConsumerState();
+            consumer.removeConsumerState();
 
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
                 for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
-                    sidelineConsumer.getPersistenceAdapter().clearSidelineRequest(
+                    consumer.getPersistenceAdapter().clearSidelineRequest(
                         getSidelineRequestIdentifier(),
                         topicPartition.partition()
                     );
@@ -266,11 +266,11 @@ public class VirtualSpout implements DelegateSidelineSpout {
         } else {
             // We are just closing up shop,
             // First flush our current consumer state.
-            sidelineConsumer.flushConsumerState();
+            consumer.flushConsumerState();
         }
         // Call close & null reference.
-        sidelineConsumer.close();
-        sidelineConsumer = null;
+        consumer.close();
+        consumer = null;
 
         startingState = null;
         endingState = null;
@@ -304,7 +304,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // Grab the next message from kafka
         startTime = System.currentTimeMillis();
-        ConsumerRecord<byte[], byte[]> record = sidelineConsumer.nextRecord();
+        ConsumerRecord<byte[], byte[]> record = consumer.nextRecord();
         if (record == null) {
             logger.debug("Unable to find any new messages from consumer");
             return null;
@@ -428,7 +428,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // Talk to sidelineConsumer and mark the offset completed.
         start = System.currentTimeMillis();
-        sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
+        consumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
         ackTimeBuckets.put("CommitOffset", ackTimeBuckets.get("CommitOffset") + (System.currentTimeMillis() - start));
 
         // Remove this tuple from the spout where we track things in-case the tuple fails.
@@ -490,7 +490,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
             retryManager.acked(tupleMessageId);
 
             // Ack it in the consumer
-            sidelineConsumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
+            consumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
 
             // Done.
             return;
@@ -583,7 +583,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
     }
 
     public ConsumerState getCurrentState() {
-        return sidelineConsumer.getCurrentState();
+        return consumer.getCurrentState();
     }
 
     public Map<String, Object> getTopologyConfig() {
@@ -612,7 +612,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
      * @return boolean - true if successfully unsubscribed, false if not.
      */
     public boolean unsubscribeTopicPartition(TopicPartition topicPartition) {
-        final boolean result = sidelineConsumer.unsubscribeTopicPartition(topicPartition);
+        final boolean result = consumer.unsubscribeTopicPartition(topicPartition);
         if (result) {
             logger.info("Unsubscribed from partition {}", topicPartition);
         }
@@ -625,7 +625,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
     @Override
     public void flushState() {
         // Flush consumer state to our persistence layer.
-        sidelineConsumer.flushConsumerState();
+        consumer.flushConsumerState();
 
         // See if we can finish and close out this VirtualSidelineConsumer.
         attemptToComplete();
@@ -648,7 +648,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
         }
 
         // Get current state and compare it against our ending state
-        final ConsumerState currentState = sidelineConsumer.getCurrentState();
+        final ConsumerState currentState = consumer.getCurrentState();
 
         // Compare it against our ending state
         for (TopicPartition topicPartition: currentState.getTopicPartitions()) {
@@ -664,7 +664,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            if (sidelineConsumer.unsubscribeTopicPartition(topicPartition)) {
+            if (consumer.unsubscribeTopicPartition(topicPartition)) {
                 logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
             }
         }

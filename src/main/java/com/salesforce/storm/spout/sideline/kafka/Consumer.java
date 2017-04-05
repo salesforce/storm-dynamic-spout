@@ -49,12 +49,12 @@ import java.util.Set;
  *
  * Internally the consumer will recognize that 3 -> 5 are all complete, and now mark offset #5 as the last finished offset.
  */
-public class SidelineConsumer {
+public class Consumer {
     // For logging.
-    private static final Logger logger = LoggerFactory.getLogger(SidelineConsumer.class);
+    private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
     // Kafka Consumer Instance and its Config.
-    private final SidelineConsumerConfig consumerConfig;
+    private final ConsumerConfig consumerConfig;
     private KafkaConsumer<byte[], byte[]> kafkaConsumer;
 
     /**
@@ -92,7 +92,7 @@ public class SidelineConsumer {
      * @param consumerConfig - Configuration for our consumer
      * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
      */
-    public SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter) {
+    public Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter) {
         this.consumerConfig = consumerConfig;
         this.persistenceAdapter = persistenceAdapter;
     }
@@ -103,7 +103,7 @@ public class SidelineConsumer {
      * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
      * @param kafkaConsumer - Inject a mock KafkaConsumer for tests.
      */
-    protected SidelineConsumer(SidelineConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+    protected Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
         this(consumerConfig, persistenceAdapter);
         this.kafkaConsumer = kafkaConsumer;
     }
@@ -415,7 +415,7 @@ public class SidelineConsumer {
     /**
      * @return - get the defined consumer config.
      */
-    public SidelineConsumerConfig getConsumerConfig() {
+    public ConsumerConfig getConsumerConfig() {
         return consumerConfig;
     }
 
