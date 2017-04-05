@@ -4,16 +4,18 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.KafkaMessage;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * A test mock.
  */
 public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
-    final String virtualSpoutId;
+    private final String virtualSpoutId;
     public volatile boolean requestedStop = false;
     public volatile boolean wasOpenCalled = false;
     public volatile boolean wasCloseCalled = false;
@@ -23,6 +25,10 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
     public volatile Set<TupleMessageId> ackedTupleIds = Sets.newConcurrentHashSet();
 
     public volatile Queue<KafkaMessage> emitQueue = Queues.newConcurrentLinkedQueue();
+
+    public MockDelegateSidelineSpout() {
+        this.virtualSpoutId = this.getClass().getSimpleName() + UUID.randomUUID().toString();
+    }
 
     public MockDelegateSidelineSpout(final String virtualSpoutId) {
         this.virtualSpoutId = virtualSpoutId;
@@ -74,5 +80,10 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
     @Override
     public synchronized boolean isStopRequested() {
         return requestedStop;
+    }
+
+    @Override
+    public ConsumerState getCurrentState() {
+        return ConsumerState.builder().build();
     }
 }

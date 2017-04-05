@@ -7,7 +7,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.VirtualSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
@@ -17,6 +17,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -59,16 +60,24 @@ public class SidelineSpout extends BaseRichSpout {
     private SpoutCoordinator coordinator;
 
     /**
-     * TODO: Lemon - Add some descriptions to these guys.
+     * Starting Trigger
+     *
+     * This is an instance that is responsible for telling the sideline spout when to begin sidelining.
      */
     private StartingTrigger startingTrigger;
+
+    /**
+     * Stopping Trigger
+     *
+     * This is an instance is responsible for telling the sideline spout when to stop sidelining
+     */
     private StoppingTrigger stoppingTrigger;
 
     /**
      * This is our main Virtual Spout instance which consumes from the configured topic.
      * TODO: Do we need access to this here?  Could this be moved into the Coordinator?
      */
-    private VirtualSidelineSpout fireHoseSpout;
+    private VirtualSpout fireHoseSpout;
 
     /**
      * Manages creating implementation instances.
@@ -136,17 +145,20 @@ public class SidelineSpout extends BaseRichSpout {
         // this offset
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
-        // Store in request manager
-        getPersistenceAdapter().persistSidelineRequestState(
-            SidelineType.START,
-            id,
-            sidelineRequest,
-            startingState,
-            null
-        );
+        for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+            // Store in request manager
+            getPersistenceAdapter().persistSidelineRequestState(
+                SidelineType.START,
+                id,
+                sidelineRequest,
+                topicPartition.partition(),
+                startingState.getOffsetForTopicAndPartition(topicPartition),
+                null
+            );
+        }
 
         // Add our new filter steps
-        fireHoseSpout.getFilterChain().addSteps(id, sidelineRequest.steps);
+        fireHoseSpout.getFilterChain().addStep(id, sidelineRequest.step);
 
         // Update start count metric
         metricsRecorder.count(getClass(), "start-sideline", 1L);
@@ -159,12 +171,12 @@ public class SidelineSpout extends BaseRichSpout {
      * @param sidelineRequest A representation of the request that is being stopped
      */
     public void stopSidelining(SidelineRequest sidelineRequest) {
-        final SidelineRequestIdentifier id = fireHoseSpout.getFilterChain().findSteps(sidelineRequest.steps);
+        final SidelineRequestIdentifier id = fireHoseSpout.getFilterChain().findStep(sidelineRequest.step);
 
         if (id == null) {
             logger.error(
                 "Received STOP sideline request, but I don't actually have any filter chain steps for it! Make sure you check that your filter implements an equals() method. {} {}",
-                sidelineRequest.steps,
+                sidelineRequest.step,
                 fireHoseSpout.getFilterChain().getSteps()
             );
             return;
@@ -172,54 +184,44 @@ public class SidelineSpout extends BaseRichSpout {
 
         logger.info("Received STOP sideline request");
 
-        List<FilterChainStep> negatedSteps = Lists.newArrayList();
-
-        List<FilterChainStep> steps = fireHoseSpout.getFilterChain().removeSteps(id);
-
-        for (FilterChainStep step : steps) {
-            negatedSteps.add(new NegatingFilterChainStep(step));
-        }
-
-        // This is the state that the VirtualSidelineSpout should start with
-        final ConsumerState startingState = getPersistenceAdapter().retrieveSidelineRequest(id).startingState;
+        // Remove the steps associated with this sideline request
+        final FilterChainStep step = fireHoseSpout.getFilterChain().removeSteps(id);
 
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
 
-        // Persist the side line request state with the new negated version of the steps.
-        persistenceAdapter.persistSidelineRequestState(
-            SidelineType.STOP,
+        // We'll construct a consumer state from the various partition data stored for this sideline request
+        final ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
+
+        // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
+        // assigned to this particular sideline spout instance
+        for (final TopicPartition topicPartition : endingState.getTopicPartitions()) {
+            // This is the state that the VirtualSidelineSpout should start with
+            final SidelinePayload sidelinePayload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
+
+            // Add this partition to the starting consumer state
+            startingStateBuilder.withPartition(topicPartition, sidelinePayload.startingOffset);
+
+            // Persist the side line request state with the new negated version of the steps.
+            persistenceAdapter.persistSidelineRequestState(
+                SidelineType.STOP,
+                id,
+                new SidelineRequest(step), // Persist the non-negated steps, we'll always apply negation at runtime
+                topicPartition.partition(),
+                sidelinePayload.startingOffset,
+                endingState.getOffsetForTopicAndPartition(topicPartition)
+            );
+        }
+
+        // Build our starting state, this is a map of partition and offset
+        final ConsumerState startingState = startingStateBuilder.build();
+
+        openVirtualSpout(
             id,
-            // TODO: Lemon - Is this a bug?  We're persisting the non-negated steps here!
-            // TODO: Lemon - When we resume we have to remember to negate them.... is that what we want to do?
-            // TODO: Lemon - See my TODO in open() about this...
-            new SidelineRequest(steps), // Persist a new request with the negated steps
+            step,
             startingState,
             endingState
         );
-
-        // Generate our virtualSpoutId using the payload id.
-        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
-
-        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
-        logger.debug("Starting VirtualSidelineSpout with starting state {}", startingState);
-        logger.debug("Starting VirtualSidelineSpout with ending state {}", endingState);
-
-        final VirtualSidelineSpout spout = new VirtualSidelineSpout(
-            topologyConfig,
-            topologyContext,
-            factoryManager,
-            metricsRecorder,
-            // Starting offset of the sideline request
-            startingState,
-            // When the sideline request ends
-            endingState
-        );
-        spout.setVirtualSpoutId(virtualSpoutId);
-        spout.setSidelineRequestIdentifier(id);
-        spout.getFilterChain().addSteps(id, negatedSteps);
-
-        getCoordinator().addSidelineSpout(spout);
 
         // Update stop count metric
         metricsRecorder.count(getClass(), "stop-sideline", 1L);
@@ -249,15 +251,13 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
         metricsRecorder.open(getTopologyConfig(), getTopologyContext());
 
-        // TODO: LEMON - should this be removed?
-        // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
+        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
         if (startingTrigger != null) {
             startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
-        // TODO: LEMON - should this be removed?
-        // TODO: LEMON - can SidelineTriggerProxy be replaced with an interface?
-        if (stoppingTrigger != null) {
+        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
+       if (stoppingTrigger != null) {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
@@ -266,7 +266,7 @@ public class SidelineSpout extends BaseRichSpout {
         getPersistenceAdapter().open(getTopologyConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSidelineSpout(
+        fireHoseSpout = new VirtualSpout(
                 getTopologyConfig(),
                 getTopologyContext(),
                 getFactoryManager(),
@@ -293,70 +293,112 @@ public class SidelineSpout extends BaseRichSpout {
         // Call open on coordinator.
         getCoordinator().open(getTopologyConfig());
 
-        // TODO: LEMON - We should build the full payload here rather than individual requests later on
+        final ConsumerState currentState = fireHoseSpout.getCurrentState();
+
         final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
         for (SidelineRequestIdentifier id : existingRequestIds) {
-            final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(id);
+            final ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
+            final ConsumerState.ConsumerStateBuilder endingStateStateBuilder = ConsumerState.builder();
+
+            SidelinePayload payload = null;
+
+            for (final TopicPartition topicPartition : currentState.getTopicPartitions()) {
+                payload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
+
+                if (payload == null) {
+                    continue;
+                }
+
+                startingStateBuilder.withPartition(topicPartition, payload.startingOffset);
+
+                // We only have an ending offset on STOP requests
+                if (payload.endingOffset != null) {
+                    endingStateStateBuilder.withPartition(topicPartition, payload.endingOffset);
+                }
+            }
+
+            if (payload == null) {
+                logger.warn("Sideline request {} did not have any partitions persisted", id);
+                continue;
+            }
 
             // Resuming a start request means we apply the previous filter chain to the fire hose
             if (payload.type.equals(SidelineType.START)) {
-                logger.info("Resuming START sideline {} {}", payload.id, payload.request.steps);
+                logger.info("Resuming START sideline {} {}", payload.id, payload.request.step);
 
-                fireHoseSpout.getFilterChain().addSteps(
+                fireHoseSpout.getFilterChain().addStep(
                     payload.id,
-                    payload.request.steps
+                    payload.request.step
                 );
             }
 
             // Resuming a stopped request means we spin up a new sideline spout
             if (payload.type.equals(SidelineType.STOP)) {
-                // TODO: refactor this and stopSidelining() method to de-duplicate code.
-                logger.info("Resuming STOP sideline {} {}", payload.id, payload.request.steps);
-
-                // Generate our virtualSpoutId using the payload id.
-                final String virtualSpoutId = generateVirtualSpoutId(payload.id.toString());
-
-                // Create spout instance.
-                final VirtualSidelineSpout spout = new VirtualSidelineSpout(
-                    getTopologyConfig(),
-                    getTopologyContext(),
-                    getFactoryManager(),
-                    metricsRecorder,
-                    payload.startingState,
-                    payload.endingState
+                openVirtualSpout(
+                    payload.id,
+                    payload.request.step,
+                    startingStateBuilder.build(),
+                    endingStateStateBuilder.build()
                 );
-                spout.setVirtualSpoutId(virtualSpoutId);
-                spout.setSidelineRequestIdentifier(id);
-
-                // Add the request's filter steps
-                // TODO: But we never persisted the negated steps?  So we have to negate them here.
-                // TODO: Is this a bug? see my TODO note in stopSidelining() method.
-                // TODO: Note - Steviep added this next loop to negate steps, was not here previously
-                final List<FilterChainStep> negatedSteps = Lists.newArrayList();
-                for (FilterChainStep step : payload.request.steps) {
-                    negatedSteps.add(new NegatingFilterChainStep(step));
-                }
-                spout.getFilterChain().addSteps(payload.id, negatedSteps);
-
-                // Now pass the new "resumed" spout over to the coordinator to open and run
-                getCoordinator().addSidelineSpout(spout);
             }
         }
 
-        // TODO: LEMON - shouldn't this be always not null, can we remove this?
+        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), open it
         if (startingTrigger != null) {
             startingTrigger.open(getTopologyConfig());
+        } else {
+            logger.warn("Sideline spout is configured without a starting trigger");
         }
 
-        // TODO: LEMON - shouldn't this be always not null, can we remove this?
+        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), open it
         if (stoppingTrigger != null) {
             stoppingTrigger.open(getTopologyConfig());
+        } else {
+            logger.warn("Sideline spout is configured without a stopping trigger");
         }
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
+    }
+
+    /**
+     * Open a virtual spout (like when a sideline stop request is made)
+     * @param id Id of the sideline request
+     * @param step Filter chain step (it will be negate)
+     * @param startingState Starting consumer state
+     * @param endingState Ending consumer state
+     */
+    private void openVirtualSpout(
+        final SidelineRequestIdentifier id,
+        final FilterChainStep step,
+        final ConsumerState startingState,
+        final ConsumerState endingState
+    ) {
+        // Generate our virtualSpoutId using the payload id.
+        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
+
+        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
+        logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
+
+        // Create spout instance.
+        final VirtualSpout spout = new VirtualSpout(
+            getTopologyConfig(),
+            getTopologyContext(),
+            getFactoryManager(),
+            metricsRecorder,
+            startingState,
+            endingState
+        );
+        spout.setVirtualSpoutId(virtualSpoutId);
+        spout.setSidelineRequestIdentifier(id);
+
+        // Add and negate the request's filter step, we leave them stored in their original form and negate them at runtime
+        spout.getFilterChain().addStep(id, new NegatingFilterChainStep(step));
+
+        // Now pass the new "resumed" spout over to the coordinator to open and run
+        getCoordinator().addSidelineSpout(spout);
     }
 
     @Override
@@ -380,7 +422,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.count(getClass(), "emit", 1L);
 
         // Update emit count metric for VirtualSidelineSpout this tuple originated from
-        metricsRecorder.count(VirtualSidelineSpout.class, kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId() + ".emit", 1);
+        metricsRecorder.count(VirtualSpout.class, kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId() + ".emit", 1);
 
         // Everything below is temporary emit metrics for debugging.
 
@@ -432,10 +474,12 @@ public class SidelineSpout extends BaseRichSpout {
             persistenceAdapter = null;
         }
 
+        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), close it
         if (startingTrigger != null) {
             startingTrigger.close();
         }
 
+        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), close it
         if (stoppingTrigger != null) {
             stoppingTrigger.close();
         }
@@ -478,7 +522,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.count(getClass(), "ack", 1L);
 
         // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".ack", 1);
+        metricsRecorder.count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".ack", 1);
     }
 
     /**
@@ -497,7 +541,7 @@ public class SidelineSpout extends BaseRichSpout {
         metricsRecorder.count(getClass(), "fail", 1L);
 
         // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        metricsRecorder.count(VirtualSidelineSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".fail", 1);
+        metricsRecorder.count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".fail", 1);
     }
 
     /**

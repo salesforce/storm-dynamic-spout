@@ -28,7 +28,7 @@ public class StaticTrigger implements StartingTrigger, StoppingTrigger {
     }
 
     public void sendStartRequest(SidelineRequest request) {
-        this.sidelineSpout.startSidelining(request);
+        this.currentSidelineRequestIdentifier = this.sidelineSpout.startSidelining(request);
     }
 
     public void sendStopRequest(SidelineRequest request) {

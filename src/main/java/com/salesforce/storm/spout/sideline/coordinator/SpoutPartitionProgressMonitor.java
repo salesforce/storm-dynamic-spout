@@ -1,6 +1,8 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
+import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -15,13 +17,13 @@ import java.util.UUID;
 /**
  * Extremely hacky way to monitor VirtualSpout progress.
  */
-public class SidelineConsumerMonitor {
-    private static final Logger logger = LoggerFactory.getLogger(SidelineConsumerMonitor.class);
+public class SpoutPartitionProgressMonitor {
+    private static final Logger logger = LoggerFactory.getLogger(SpoutPartitionProgressMonitor.class);
 
     final PersistenceAdapter persistenceAdapter;
     final Map<TopicPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
 
-    public SidelineConsumerMonitor(PersistenceAdapter persistenceAdapter) {
+    public SpoutPartitionProgressMonitor(PersistenceAdapter persistenceAdapter) {
         this.persistenceAdapter = persistenceAdapter;
     }
 
@@ -33,7 +35,21 @@ public class SidelineConsumerMonitor {
         persistenceAdapter.close();
     }
 
-    public Map<TopicPartition, PartitionProgress> getStatus(final String virtualSpoutId) {
+    public Map<TopicPartition, PartitionProgress> getStatus(final DelegateSidelineSpout spout) {
+        final SidelineRequestIdentifier sidelineIdentifier = getSidelineRequestIdentifier(spout);
+
+        if (sidelineIdentifier == null) {
+            // This is the main
+            return handleMainVirtualSpout(spout);
+        } else {
+            // This is a sideline request virtual spout
+            return handleSidelineVirtualSpout(spout);
+        }
+    }
+
+    private SidelineRequestIdentifier getSidelineRequestIdentifier(final DelegateSidelineSpout spout) {
+        final String virtualSpoutId = spout.getVirtualSpoutId();
+
         // Parse out the SidelineRequestId, this is hacky
         final String[] bits = virtualSpoutId.split(":");
         if (bits.length != 2) {
@@ -42,35 +58,28 @@ public class SidelineConsumerMonitor {
         }
 
         // Grab 2nd bit.
-        final String sidelineRequestIdStr = bits[1];
+        final String sidelineRequestIdString = bits[1];
 
-        if (sidelineRequestIdStr.equals("main")) {
-            // This is the main
-            return handleMainVirtualSpout(virtualSpoutId);
+        if (sidelineRequestIdString.equals("main")) {
+            return null;
         } else {
-            // This is a sideline request virtual spout
-            return handleSidelineVirtualSpout(virtualSpoutId, new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdStr)));
+            return new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdString));
         }
+
     }
 
-    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final String virtualSpoutId) {
-        // We have no idea how many partitions there are... so start at 0 and go up to a max value
-        // until we get a null back.  Kind of hacky.
-        for (int partitionId = 0; partitionId < 100; partitionId++) {
-            final Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, partitionId);
-            if (currentOffset == null) {
-                // break out of loop;
-                break;
-            }
+    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSidelineSpout spout) {
+        final ConsumerState currentState = spout.getCurrentState();
 
-            final TopicPartition topicPartition = new TopicPartition("Topic", partitionId);
+        for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
+            final PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
+            final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
 
-            // Get previous progress
-            PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
             if (previousProgress == null) {
                 mainProgressMap.put(topicPartition, new PartitionProgress(currentOffset, currentOffset, currentOffset));
                 continue;
             }
+
             // Build new progress
             mainProgressMap.put(topicPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, currentOffset));
         }
@@ -78,22 +87,27 @@ public class SidelineConsumerMonitor {
         return Collections.unmodifiableMap(mainProgressMap);
     }
 
-    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final String virtualSpoutId, final SidelineRequestIdentifier sidelineRequestIdentifier) {
-        // Retrieve status
-        final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(sidelineRequestIdentifier);
-        if (payload == null) {
-            // Nothing to do?
-            logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
-            return null;
-        }
-        final ConsumerState startingState = payload.startingState;
-        final ConsumerState endingState = payload.endingState;
-
+    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSidelineSpout spout) {
         // Create return map
         Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
-        // Calculate the progress
-        for (TopicPartition topicPartition : startingState.getTopicPartitions()) {
+        final String virtualSpoutId = spout.getVirtualSpoutId();
+        final SidelineRequestIdentifier sidelineRequestIdentifier = getSidelineRequestIdentifier(spout);
+        final ConsumerState currentState = spout.getCurrentState();
+
+        for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
+            // Retrieve status
+            final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(
+                sidelineRequestIdentifier,
+                topicPartition.partition()
+            );
+
+            if (payload == null) {
+                // Nothing to do?
+                logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
+                return null;
+            }
+
             // Get the state
             Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
             if (currentOffset == null) {
@@ -103,11 +117,11 @@ public class SidelineConsumerMonitor {
 
             // Make sure no nulls
             boolean hasError = false;
-            if (startingState.getOffsetForTopicAndPartition(topicPartition) == null) {
+            if (payload.startingOffset == null) {
                 logger.warn("No starting state found for {}", topicPartition);
                 hasError = true;
             }
-            if (endingState.getOffsetForTopicAndPartition(topicPartition) == null) {
+            if (payload.endingOffset == null) {
                 logger.warn("No end state found for {}", topicPartition);
                 hasError = true;
             }
@@ -117,38 +131,15 @@ public class SidelineConsumerMonitor {
             }
 
             final PartitionProgress partitionProgress = new PartitionProgress(
-                    startingState.getOffsetForTopicAndPartition(topicPartition),
-                    currentOffset,
-                    endingState.getOffsetForTopicAndPartition(topicPartition)
+                payload.startingOffset,
+                currentOffset,
+                payload.endingOffset
             );
 
             progressMap.put(topicPartition, partitionProgress);
         }
 
         return Collections.unmodifiableMap(progressMap);
-    }
-
-
-
-    public void printStatus(final String virtualSpoutId) {
-        Map<TopicPartition, PartitionProgress> progressMap = getStatus(virtualSpoutId);
-        if (progressMap == null) {
-            return;
-        }
-
-        // Calculate the progress
-        for (Map.Entry<TopicPartition,PartitionProgress> entry : progressMap.entrySet()) {
-            final TopicPartition topicPartition = entry.getKey();
-            final PartitionProgress partitionProgress = entry.getValue();
-
-            logger.info("{} => {}% complete [{} of {} processed, {} remaining]",
-                topicPartition,
-                partitionProgress.getPercentageComplete(),
-                partitionProgress.getTotalProcessed(),
-                partitionProgress.getTotalMessages(),
-                partitionProgress.getTotalUnprocessed()
-            );
-        }
     }
 
     /**

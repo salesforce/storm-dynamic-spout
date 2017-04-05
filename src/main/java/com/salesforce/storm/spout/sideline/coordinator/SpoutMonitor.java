@@ -5,7 +5,6 @@ import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
-import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerMonitor;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -83,7 +82,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * Calculates progress of VirtualSideline spout instances.
      */
-    private SidelineConsumerMonitor consumerMonitor;
+    private SpoutPartitionProgressMonitor consumerMonitor;
 
     private final Map<String, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
     private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
@@ -257,23 +256,26 @@ public class SpoutMonitor implements Runnable {
         // Loop through spouts instances
         if (consumerMonitor == null) {
             // Create consumer monitor instance
-            consumerMonitor = new SidelineConsumerMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceAdapterInstance());
+            consumerMonitor = new SpoutPartitionProgressMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceAdapterInstance());
             consumerMonitor.open(getTopologyConfig());
         }
 
         // Loop thru all of them to get virtualSpout Ids.
         // This doesn't work for the 'firehose' instance tho..and we have no good way to identify which is the 'firehose'
-        for (String virtualSpoutId: spoutRunners.keySet()) {
-            Map<TopicPartition, SidelineConsumerMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(virtualSpoutId);
+        for (final SpoutRunner spoutRunner : spoutRunners.values()) {
+            final DelegateSidelineSpout spout = spoutRunner.getSpout();
+            Map<TopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
+
             if (progressMap == null) {
                 continue;
             }
-            logger.info("== VirtualSpoutId {} Status ==", virtualSpoutId);
+
+            logger.info("== VirtualSpoutId {} Status ==", spout.getVirtualSpoutId());
 
             // Calculate the progress
-            for (Map.Entry<TopicPartition,SidelineConsumerMonitor.PartitionProgress> entry : progressMap.entrySet()) {
+            for (Map.Entry<TopicPartition,SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
                 final TopicPartition topicPartition = entry.getKey();
-                final SidelineConsumerMonitor.PartitionProgress partitionProgress = entry.getValue();
+                final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
 
                 logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
                     topicPartition,

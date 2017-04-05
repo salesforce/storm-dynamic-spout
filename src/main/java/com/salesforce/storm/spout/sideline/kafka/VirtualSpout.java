@@ -36,9 +36,9 @@ import java.util.Map;
  * As acks/fails come into SidelineSpout, they will be routed to the appropriate VirtualSidelineSpout instance
  * and handled by the {@link #ack(Object)} and {@link #fail(Object)} methods.
  */
-public class VirtualSidelineSpout implements DelegateSidelineSpout {
+public class VirtualSpout implements DelegateSidelineSpout {
     // Logging
-    private static final Logger logger = LoggerFactory.getLogger(VirtualSidelineSpout.class);
+    private static final Logger logger = LoggerFactory.getLogger(VirtualSpout.class);
 
     /**
      * Holds reference to our topologyContext.
@@ -65,11 +65,19 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      */
     private Deserializer deserializer;
 
-
+    /**
+     * Filter chain applied to messages for this virtual spout
+     */
     private final FilterChain filterChain = new FilterChain();
 
-    // Define starting and ending offsets.
+    /**
+     * Starting point for the partitions for this spouts consumer
+     */
     private ConsumerState startingState = null;
+
+    /**
+     * Ending point for the partitions for this spouts consumer
+     */
     private ConsumerState endingState = null;
 
     /**
@@ -122,7 +130,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param factoryManager - FactoryManager instance.
      * @param metricsRecorder - For recording metrics.
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
         this(topologyConfig, topologyContext, factoryManager, metricsRecorder, null, null);
     }
 
@@ -137,7 +145,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
      * @param startingState - Where the underlying consumer should start from, Null if start from head.
      * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -158,7 +166,7 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSidelineSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
+    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, SidelineConsumer sidelineConsumer, ConsumerState startingState, ConsumerState endingState) {
         this(topologyConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
         // Inject the sideline consumer.
@@ -247,8 +255,13 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
             sidelineConsumer.removeConsumerState();
 
             // Clean up sideline request
-            if (getSidelineRequestIdentifier() != null) {
-                sidelineConsumer.getPersistenceAdapter().clearSidelineRequest(getSidelineRequestIdentifier());
+            if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
+                for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+                    sidelineConsumer.getPersistenceAdapter().clearSidelineRequest(
+                        getSidelineRequestIdentifier(),
+                        topicPartition.partition()
+                    );
+                }
             }
         } else {
             // We are just closing up shop,
@@ -258,6 +271,9 @@ public class VirtualSidelineSpout implements DelegateSidelineSpout {
         // Call close & null reference.
         sidelineConsumer.close();
         sidelineConsumer = null;
+
+        startingState = null;
+        endingState = null;
     }
 
     /**

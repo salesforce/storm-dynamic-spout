@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 public class SpoutTriggerProxy {
 
@@ -10,8 +11,8 @@ public class SpoutTriggerProxy {
         this.spout = spout;
     }
 
-    public void startSidelining(final SidelineRequest request) {
-        this.spout.startSidelining(request);
+    public SidelineRequestIdentifier startSidelining(final SidelineRequest request) {
+        return this.spout.startSidelining(request);
     }
 
     public void stopSidelining(final SidelineRequest request) {
