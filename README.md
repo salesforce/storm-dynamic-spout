@@ -40,7 +40,7 @@ The spout implementation handles the rest for you!  It tracks your filter criter
 Lets define the major components of the Spout and give a brief explanation of what their role is.  Then we'll
 build up how they all work together.
 
-### Introduction to the internal components
+### Primary Components
 
 [SidelineSpout](src/main/java/com/salesforce/storm/spout/sideline/SidelineSpout.java) - Implements Storm's spout interface.  Everything starts and stops here.
 
@@ -79,7 +79,7 @@ the acked tuple originated from and passes it to the correct instance's `ack()` 
 
 [StoppingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) - An interface that can be attached to `SidelineSpout` via `setStoppingTrigger()` and receives an instance of a `SpoutTriggerProxy` which allows the trigger to stop a sideline request.
 
-#### When the Topology Starts
+### When the Topology Starts
 When your topology is deployed with a `SidelineSpout` and it starts up, the SidelineSpout will first start the `SpoutMonitor`. The `SpoutMonitor` then
 creates the *main* `VirtualSpout` instance (sometimes called the firehose).  This *main* `VirtualSpout` instance is always running within
 the spout, and its job is to consume from your Kafka topic.  As it consumes messages from Kafka, it deserializes
@@ -88,12 +88,12 @@ them using your [`Deserializer`](src/main/java/com/salesforce/storm/spout/sideli
 When no sideline requests are active, the `FilterChain` is empty, and all messages consumed from
 Kafka will be converted to Tuples and emitted to your topology.
 
-#### Start Sideline Request
+### Starting Sideline Request
 Your implemented [`StartingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java) will notify the `SpoutMonitor` that a new sideline request has been started.  The `SpoutMonitor`
 will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
 your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
 
-#### Stop Sideline Request
+### Stoping Sideline Request
 Your implemented[`StoppingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) will notify the `SpoutMonitor` that it would like to stop a sideline request.  The `SpoutMonitor`
 will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's
 `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your
@@ -101,7 +101,7 @@ configured `PersistenceAdapter` implementation.  At this point messages consumed
 The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets
 recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
 
-#### What happens if I stop and redeploy the topology?
+### Stopping & Redeploying the topology?
 The `SidelineSpout` has several moving pieces, all of which will properly handle resuming in the state that they were
 when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic.
 Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering
@@ -188,6 +188,96 @@ The `FilterChainStep` interface dictates how you want to filter messages being c
      * @return The resulting filter after being processed
      */
     boolean filter(KafkaMessage message);
+```
+
+## Example Trigger Implementation
+
+The starting and stopping triggers are responsible for telling the `SidelineSpout` when to sideline.  While they are technically **not** required for the `SidelineSpout` to function, this project doesn't provide much value without them.
+
+Each project leveraging the `SidelineSpout` will likely have a unique set of triggers representing your specific use case.  The following is a theoretical example only.
+
+`NumberFilter` expects messages whose first value is an integer and if that value matches, it is filtered.
+
+```java
+public static class NumberFilter implements FilterChainStep {
+
+    final private int number;
+
+    public NumberFilter(final int number) {
+        this.number = number;
+    }
+
+    public boolean filter(KafkaMessage message) {
+        Integer messageNumber = (Integer) message.getValues().get(0);
+        // Filter them if they don't match, in other words "not" equals
+        return messageNumber.equals(number);
+    }
+}
+```
+
+`PollingSidelineTrigger` runs every 30 seconds and simply swaps out number filters, slowly incrementing over time.  It uses the `NumberFilter` by including it in a `SidelineRequest`.  `PollingSidelineTrigger` implements both `StartingTrigger` and `StoppingTrigger`, but this is not required.  You can create separate implementations for your project.
+
+```java
+public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger {
+
+    private boolean isOpen = false;
+
+    private transient ScheduledExecutorService executor;
+
+    private transient SpoutTriggerProxy sidelineSpout;
+
+    @Override
+    public void open(final Map config) {
+        if (isOpen) {
+            return;
+        }
+
+        isOpen = true;
+
+        executor = Executors.newScheduledThreadPool(1);
+
+        Poll poll = new Poll(sidelineSpout);
+
+        executor.scheduleAtFixedRate(poll, 0, 30, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void close() {
+        if (!executor.isShutdown()) {
+            executor.shutdown();
+        }
+    }
+
+    @Override
+    public void setSidelineSpout(SpoutTriggerProxy sidelineSpout) {
+        this.sidelineSpout = sidelineSpout;
+    }
+
+    static class Poll implements Runnable {
+
+        private SpoutTriggerProxy spout;
+        private Integer number = 0;
+
+        Poll(SpoutTriggerProxy spout) {
+            this.spout = spout;
+        }
+
+        @Override
+        public void run() {
+            // Start a sideline request for the next number
+            SidelineRequest startRequest = new SidelineRequest(
+                new NumberFilter(number++)
+            );
+            spout.startSidelining(startRequest);
+
+            // Stop a sideline request for the last number
+            SidelineRequest stopRequest = new SidelineRequest(
+                new NumberFilter(number - 1)
+            );
+            spout.stopSidelining(stopRequest);
+        }
+    }
+}
 ```
 
 ## Optional Interfaces for Overachievers
