@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.stream.Collectors;
  * Wrapper around Kafka's Consumer Config to abstract it and enforce some requirements.
  * TODO: should probably be immutable and use the builder pattern.
  */
-public class SidelineConsumerConfig {
+public class ConsumerConfig {
 
     private final Properties kafkaConsumerProperties = new Properties();
     private final String topic;
@@ -36,7 +35,7 @@ public class SidelineConsumerConfig {
      * @param consumerId - What consumerId the consumer should use.
      * @param topic - What topic the consumer should consume from.
      */
-    public SidelineConsumerConfig(final List<String> brokerHosts, final String consumerId, final String topic) {
+    public ConsumerConfig(final List<String> brokerHosts, final String consumerId, final String topic) {
         this.topic = topic;
         this.consumerId = consumerId;
 
@@ -46,22 +45,22 @@ public class SidelineConsumerConfig {
                 .collect(Collectors.joining(","));
 
         // Autocommit is disabled, we handle offset tracking.
-        setKafkaConsumerProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        setKafkaConsumerProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "10000");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "10000");
 
         // We use our own deserializer interface, so force ByteArray deserialization.
-        setKafkaConsumerProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
-        setKafkaConsumerProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
 
         // Other random tunings
         // Default is 65536 bytes, we 4x'd it
-        setKafkaConsumerProperty(ConsumerConfig.RECEIVE_BUFFER_CONFIG, "262144");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.RECEIVE_BUFFER_CONFIG, "262144");
 
         // Default value: 2147483647
-        setKafkaConsumerProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "2147483647");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "2147483647");
 
         // Default value: true, "This check adds some overhead, so it may be disabled in cases seeking extreme performance."
-        setKafkaConsumerProperty(ConsumerConfig.CHECK_CRCS_CONFIG, "true");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.CHECK_CRCS_CONFIG, "true");
 
         /**
          * Defines how quickly a session will time out.
@@ -72,7 +71,7 @@ public class SidelineConsumerConfig {
          *
          * We default this to 30 seconds.
          */
-        setKafkaConsumerProperty(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, "30000");
 
         /**
          * If an offset is deemed too old and not available how should we handle it?
@@ -98,11 +97,11 @@ public class SidelineConsumerConfig {
          * We probably need to bubble up an exception, catch it, log a scary error about
          * missing messages, reset our partition managers acked offset list back to zero.
          */
-        setKafkaConsumerProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "none");
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "none");
 
         // Passed in values
-        setKafkaConsumerProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerHostsStr);
-        setKafkaConsumerProperty(ConsumerConfig.GROUP_ID_CONFIG, this.consumerId);
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerHostsStr);
+        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG, this.consumerId);
     }
 
     public String getConsumerId() {
