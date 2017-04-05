@@ -37,13 +37,6 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     private String zkConnectionString;
     private String zkRoot;
 
-    // Additional Config
-    // TODO - Move into some kind of config/properties class/map/thing.
-    private final int zkSessionTimeout = 6000;
-    private final int zkConnectionTimeout = 6000;
-    private final int zkRetryAttempts = 10;
-    private final int zkRetryInterval = 10;
-
     // Zookeeper connection
     private CuratorFramework curator;
 
@@ -72,7 +65,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         this.zkRoot = zkRoot;
 
         try {
-            curator = newCurator();
+            curator = newCurator(topologyConfig);
             curator.start();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -149,86 +142,98 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         deleteNodeIfNoChildren(parentPath);
     }
 
+    /**
+     * Persist a sideline request
+     * @param type Sideline Type (Start/Stop)
+     * @param id Unique identifier for the sideline request.
+     * @param request Sideline Request
+     * @param partitionId Partition id
+     * @param startingOffset Ending offset
+     * @param endingOffset Starting offset
+     */
     @Override
     public void persistSidelineRequestState(
         SidelineType type,
         SidelineRequestIdentifier id,
         SidelineRequest request,
-        ConsumerState startingState,
-        ConsumerState endingState
+        int partitionId,
+        Long startingOffset,
+        Long endingOffset
     ) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         Map<String, Object> data = Maps.newHashMap();
         data.put("type", type.toString());
-        data.put("startingState", startingState);
-        if (endingState != null) { // Optional
-            data.put("endingState", endingState);
+        data.put("startingOffset", startingOffset);
+        if (endingOffset != null) { // Optional
+            data.put("endingOffset", endingOffset);
         }
-        data.put("filterChainSteps", Serializer.serialize(request.steps));
+        data.put("filterChainStep", Serializer.serialize(request.step));
 
         // Persist!
-        writeJson(getZkRequestStatePath(id.toString()), data);
+        writeJson(getZkRequestStatePath(id.toString(), partitionId), data);
     }
 
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id) {
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Read!
-        final String path = getZkRequestStatePath(id.toString());
+        final String path = getZkRequestStatePath(id.toString(), partitionId);
         Map<Object, Object> json = readJson(path);
         logger.debug("Read request state from Zookeeper at {}: {}", path, json);
+
+        if (json == null) {
+            return null;
+        }
 
         final String typeString = (String) json.get("type");
 
         final SidelineType type = typeString.equals(SidelineType.STOP.toString()) ? SidelineType.STOP : SidelineType.START;
 
-        final List<FilterChainStep> steps = parseJsonToFilterChainSteps(json);
+        final FilterChainStep step = parseJsonToFilterChainSteps(json);
 
-        final ConsumerState startingState = parseJsonToConsumerState(
-            (Map<Object, Object>) json.get("startingState")
-        );
-
-        final ConsumerState endingState = parseJsonToConsumerState(
-            (Map<Object, Object>) json.get("endingState")
-        );
+        final Long startingOffset = (Long) json.get("startingOffset");
+        final Long endingOffset = (Long) json.get("endingOffset");
 
         return new SidelinePayload(
             type,
             id,
-            new SidelineRequest(steps),
-            startingState,
-            endingState
+            new SidelineRequest(step),
+            startingOffset,
+            endingOffset
         );
     }
 
     /**
      * Removes a sideline request from the persistence layer.
      * @param id - SidelineRequestIdentifier you want to clear.
+     * @param partitionId
      */
     @Override
-    public void clearSidelineRequest(SidelineRequestIdentifier id) {
+    public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Delete!
-        final String path = getZkRequestStatePath(id.toString());
+        final String path = getZkRequestStatePath(id.toString(), partitionId);
         logger.info("Delete request from Zookeeper at {}", path);
         deleteNode(path);
     }
 
-    // TODO: this needs a test, and javadoc
+    /**
+     * Lists out a unique list of current sideline requests
+     * @return List of sideline request identifier objects
+     */
     public List<SidelineRequestIdentifier> listSidelineRequests() {
         verifyHasBeenOpened();
 
         final List<SidelineRequestIdentifier> ids = Lists.newArrayList();
 
         try {
-            // TODO: This should be moved to it's own method
-            final String path = getZkRoot() + "/requests";
+            final String path = getZkRequestStateRoot();
 
             if (curator.checkExists().forPath(path) == null) {
                 return ids;
@@ -248,47 +253,29 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return ids;
     }
 
-    private List<FilterChainStep> parseJsonToFilterChainSteps(final Map<Object, Object> json) {
+    private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
         if (json == null) {
-            return Lists.newArrayList();
+            return null;
         }
 
-        final String chainStepData = (String) json.get("filterChainSteps");
+        final String chainStepData = (String) json.get("filterChainStep");
 
         return Serializer.deserialize(chainStepData);
     }
 
     /**
-     * Internal method to take a map representing JSON of a consumer state and hydrate
-     * it into a proper ConsumerState object.
-     * @param json - Map representation of stored JSON
-     * @return - A hydrated ConsumerState object from the passed in Json Map.
-     */
-    private ConsumerState parseJsonToConsumerState(final Map<Object, Object> json) {
-        // Create new ConsumerState instance.
-        final ConsumerState.ConsumerStateBuilder builder = new ConsumerState.ConsumerStateBuilder();
-
-        // If no state is stored yet.
-        if (json == null) {
-            // Return empty consumerState
-            return builder.build();
-        }
-
-        // Otherwise parse the stored json
-        for (Map.Entry<Object, Object> entry: json.entrySet()) {
-            String[] bits = ((String)entry.getKey()).split("-");
-
-            // Populate consumerState.
-            builder.withPartition(new TopicPartition(bits[0], Integer.parseInt(bits[1])), (Long)entry.getValue());
-        }
-        return builder.build();
-    }
-
-    /**
      * Internal method to create a new Curator connection.
      */
-    private CuratorFramework newCurator() {
-        return CuratorFrameworkFactory.newClient(zkConnectionString, zkSessionTimeout, zkConnectionTimeout, new RetryNTimes(zkRetryAttempts, zkRetryInterval));
+    private CuratorFramework newCurator(final Map topologyConfig) {
+        return CuratorFrameworkFactory.newClient(
+            zkConnectionString,
+            (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT),
+            (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT),
+            new RetryNTimes(
+                (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS),
+                (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)
+            )
+        );
     }
 
     /**
@@ -408,8 +395,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
-    String getZkRequestStatePath(final String sidelineIdentifierStr) {
-        return getZkRoot() + "/requests/" + sidelineIdentifierStr;
+    String getZkRequestStatePath(final String sidelineIdentifierStr, final int partitionId) {
+        return getZkRoot() + "/requests/" + sidelineIdentifierStr + "/" + partitionId;
+    }
+
+    /**
+     * @return - The full zookeeper root to where our request state is stored.
+     */
+    String getZkRequestStateRoot() {
+        return getZkRoot() + "/requests";
     }
 
     /**

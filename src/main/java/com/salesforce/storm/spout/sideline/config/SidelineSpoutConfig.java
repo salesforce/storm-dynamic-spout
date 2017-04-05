@@ -59,13 +59,17 @@ public class SidelineSpoutConfig {
      */
     public static final String PERSISTENCE_ADAPTER_CLASS = "sideline_spout.persistence_adapter.class";
 
+///////////////////////////////////
+// Zookeeper Persistence Config
+///////////////////////////////////
+
     /**
      * (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format:
      * ["zkhost1:2181", "zkhost2:2181", ...]
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    public static final String PERSISTENCE_ZK_SERVERS = "sideline_spout.persistence.zk_servers";
+    public static final String PERSISTENCE_ZK_SERVERS = "sideline_spout.persistence.zookeeper.servers";
 
     /**
      * (String) Defines the root path to persist state under.
@@ -73,7 +77,27 @@ public class SidelineSpoutConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zk_root";
+    public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zookeeper.root";
+
+    /**
+     * (Integer) Zookeeper session timeout
+     */
+    public static final String PERSISTENCE_ZK_SESSION_TIMEOUT = "sideline_spout.persistence.zookeeper.session_timeout";
+
+    /**
+     * (Integer) Zookeeper connection timeout
+     */
+    public static final String PERSISTENCE_ZK_CONNECTION_TIMEOUT = "sideline_spout.persistence.zookeeper.connection_timeout";
+
+    /**
+     * (Integer) Zookeeper retry attempts
+     */
+    public static final String PERSISTENCE_ZK_RETRY_ATTEMPTS = "sideline_spout.persistence.zookeeper.retry_attempts";
+
+    /**
+     * (Integer) Zookeeper retry interval
+     */
+    public static final String PERSISTENCE_ZK_RETRY_INTERVAL = "sideline_spout.persistence.zookeeper.retry_interval";
 
 ///////////////////////////////////
 // Failed Message Retry Config
@@ -217,6 +241,26 @@ public class SidelineSpoutConfig {
         if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
             clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 2000);
             logger.warn("Missing configuration {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
+        }
+
+        if (!clonedConfig.containsKey(PERSISTENCE_ZK_SESSION_TIMEOUT)) {
+            clonedConfig.put(PERSISTENCE_ZK_SESSION_TIMEOUT, 6000);
+            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_SESSION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_SESSION_TIMEOUT));
+        }
+
+        if (!clonedConfig.containsKey(PERSISTENCE_ZK_CONNECTION_TIMEOUT)) {
+            clonedConfig.put(PERSISTENCE_ZK_CONNECTION_TIMEOUT, 6000);
+            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_CONNECTION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_CONNECTION_TIMEOUT));
+        }
+
+        if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_ATTEMPTS)) {
+            clonedConfig.put(PERSISTENCE_ZK_RETRY_ATTEMPTS, 10);
+            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_RETRY_ATTEMPTS, clonedConfig.get(PERSISTENCE_ZK_RETRY_ATTEMPTS));
+        }
+
+        if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_INTERVAL)) {
+            clonedConfig.put(PERSISTENCE_ZK_RETRY_INTERVAL, 10);
+            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_RETRY_INTERVAL, clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL));
         }
 
         return clonedConfig;

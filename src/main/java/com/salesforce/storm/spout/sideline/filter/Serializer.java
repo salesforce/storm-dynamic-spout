@@ -15,27 +15,27 @@ public class Serializer {
 
     private static final Logger logger = LoggerFactory.getLogger(Serializer.class);
 
-    public static List<FilterChainStep> deserialize(final String value) {
+    public static FilterChainStep deserialize(final String value) {
         try {
             final byte[] data = Base64.getDecoder().decode(value);
             final ObjectInputStream objectInputStream = new ObjectInputStream(
                 new ByteArrayInputStream(data)
             );
-            List<FilterChainStep> steps = (List<FilterChainStep>) objectInputStream.readObject();
+            FilterChainStep step = (FilterChainStep) objectInputStream.readObject();
             objectInputStream.close();
-            return steps;
+            return step;
         } catch (Exception ex) {
             // IOException or ClassNotFoundException most likely
             logger.error("{}", ex);
-            return Lists.newArrayList();
+            return null;
         }
     }
 
-    public static String serialize(List<FilterChainStep> steps) {
+    public static String serialize(FilterChainStep step) {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             final ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-            objectOutputStream.writeObject(steps);
+            objectOutputStream.writeObject(step);
             objectOutputStream.close();
             return Base64.getEncoder().encodeToString(byteArrayOutputStream.toByteArray());
         } catch (Exception ex) {
