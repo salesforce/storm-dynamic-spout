@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
-import com.salesforce.storm.spout.sideline.kafka.SidelineConsumerTest;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
@@ -89,7 +89,7 @@ public class SidelineSpoutTest {
     @Before
     public void beforeTest() throws InterruptedException {
         // Generate topic name
-        topicName = SidelineConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
+        topicName = ConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create topic
         kafkaTestServer.createTopic(topicName);
