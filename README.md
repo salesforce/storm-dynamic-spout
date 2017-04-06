@@ -178,7 +178,14 @@ void setSidelineSpout(SpoutTriggerProxy spout);
 ```
 
 ### [FilterChainStep](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java)
-The `FilterChainStep` interface dictates how you want to filter messages being consumed from kafka.
+The `FilterChainStep` interface dictates how you want to filter messages being consumed from kafka.  These filters 
+should be functional in nature, always producing the exact same results given the exact same message.  They should 
+ideally not depend on outside services or contextual information that can change over time.  These steps will ultimately 
+be serialized and stored with the `PersistenceAdapter` so it is very important to make sure they function idempotently
+when the same message is passed into them.  If your `FilterChainStep` does not adhere to this behavior you will run
+into problems when sidelines are stopped and their data is re-processed.  Having functional classes with initial state
+is OK so long as that state can be serialized.  In other words, if you're storing data in the filter step instances
+you should only do this if they can be serialized and deserialized without side effects.
 
 ```java
     /**
@@ -196,7 +203,8 @@ The starting and stopping triggers are responsible for telling the `SidelineSpou
 
 Each project leveraging the `SidelineSpout` will likely have a unique set of triggers representing your specific use case.  The following is a theoretical example only.
 
-`NumberFilter` expects messages whose first value is an integer and if that value matches, it is filtered.
+`NumberFilter` expects messages whose first value is an integer and if that value matches, it is filtered.  Notice that this
+filter guarantees the same same behavior will occur after being serialized and than deserialized later.
 
 ```java
 public static class NumberFilter implements FilterChainStep {
