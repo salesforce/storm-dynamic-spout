@@ -37,10 +37,10 @@ public class StormRecorder implements MetricsRecorder {
         final int timeBucket = 60;
 
         // Register the top level metrics.
-        averagedValues = topologyContext.registerMetric("averages", new MultiReducedMetric(new MeanReducer()), timeBucket);
-        assignedValues = topologyContext.registerMetric("gauges", new MultiAssignableMetric(), timeBucket);
-        timers = topologyContext.registerMetric("timers", new MultiReducedMetric(new MeanReducer()), timeBucket);
-        counters = topologyContext.registerMetric("counters", new MultiCountMetric(), timeBucket);
+        averagedValues = topologyContext.registerMetric("AVERAGES", new MultiReducedMetric(new MeanReducer()), timeBucket);
+        assignedValues = topologyContext.registerMetric("GAUGES", new MultiAssignableMetric(), timeBucket);
+        timers = topologyContext.registerMetric("TIMERS", new MultiReducedMetric(new MeanReducer()), timeBucket);
+        counters = topologyContext.registerMetric("COUNTERS", new MultiCountMetric(), timeBucket);
     }
 
     @Override
