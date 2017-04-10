@@ -11,7 +11,7 @@ import static org.junit.Assert.assertFalse;
 /**
  *
  */
-public class SidelineConsumerConfigTest {
+public class ConsumerConfigTest {
 
     /**
      * Validates that we have some sane default settings.
@@ -25,7 +25,7 @@ public class SidelineConsumerConfigTest {
         final String topic = "myTopic";
 
         // Create config
-        final SidelineConsumerConfig config = new SidelineConsumerConfig(brokerHosts, consumerId, topic);
+        final ConsumerConfig config = new ConsumerConfig(brokerHosts, consumerId, topic);
 
         // now do validation on constructor arguments
         assertEquals("Topic set", topic, config.getTopic());

@@ -200,7 +200,7 @@ public class VirtualSpoutTest {
         final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
 
         // Create a mock SidelineConsumer
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
@@ -210,14 +210,14 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create spout
-        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockConsumer, null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
 
         // Call it once.
         virtualSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open(eq(null));
+        verify(mockConsumer, times(1)).open(eq(null));
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -238,7 +238,7 @@ public class VirtualSpoutTest {
         final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
 
         // Create a mock SidelineConsumer
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create a mock Deserializer
         Deserializer mockDeserializer = mock(Deserializer.class);
@@ -252,7 +252,7 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create spout
-        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockConsumer, null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
 
         // Call open
@@ -268,7 +268,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockSidelineConsumer, times(1)).open(eq(null));
+        verify(mockConsumer, times(1)).open(eq(null));
     }
 
     /**
@@ -287,7 +287,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
@@ -297,10 +297,10 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, metricsRecorder, mockConsumer, null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
 
@@ -311,8 +311,8 @@ public class VirtualSpoutTest {
         assertNull("Should be null",  result);
 
         // Verify ack is never called on underlying mock sideline consumer
-        verify(mockSidelineConsumer, never()).commitOffset(any(), anyLong());
-        verify(mockSidelineConsumer, never()).commitOffset(any());
+        verify(mockConsumer, never()).commitOffset(any(), anyLong());
+        verify(mockConsumer, never()).commitOffset(any());
     }
 
     /**
@@ -358,16 +358,16 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
+        when(mockConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockSidelineConsumer, null, null);
+        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, metricsRecorder, mockConsumer, null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
 
@@ -378,7 +378,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null",  result);
 
         // Verify ack was called on the tuple
-        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+        verify(mockConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
     }
 
     /**
@@ -412,13 +412,13 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
+        when(mockConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         final StaticMessageFilter filterStep = new StaticMessageFilter();
 
@@ -428,7 +428,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null
         );
         virtualSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
@@ -442,7 +442,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null", result);
 
         // Verify ack was called on the tuple
-        verify(mockSidelineConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+        verify(mockConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
     }
 
     /**
@@ -478,10 +478,10 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -489,7 +489,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
@@ -558,13 +558,13 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
+        when(mockConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
-        when(mockSidelineConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
+        when(mockConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -572,7 +572,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, endingState);
         virtualSpout.setVirtualSpoutId("ConsumerId");
         virtualSpout.open();
@@ -620,11 +620,11 @@ public class VirtualSpoutTest {
 
         // Validate unsubscribed was called on our mock sidelineConsumer
         // Right now this is called twice... unsure if that is an issue. I don't think it is.
-        verify(mockSidelineConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
+        verify(mockConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
-        verify(mockSidelineConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset);
-        verify(mockSidelineConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset + 1);
+        verify(mockConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset);
+        verify(mockConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset + 1);
     }
 
     /**
@@ -677,10 +677,10 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockSidelineConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord);
 
         // Create a mock RetryManager
         RetryManager mockRetryManager = mock(RetryManager.class);
@@ -699,7 +699,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
@@ -792,7 +792,7 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -800,7 +800,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -812,7 +812,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, never()).retryFurther(anyObject());
         verify(mockRetryManager, never()).acked(anyObject());
         verify(mockRetryManager, never()).failed(anyObject());
-        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockConsumer, never()).commitOffset(anyObject(), anyLong());
     }
 
     /**
@@ -834,7 +834,7 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -842,7 +842,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -874,7 +874,7 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -882,7 +882,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -891,8 +891,8 @@ public class VirtualSpoutTest {
         virtualSpout.ack(null);
 
         // No interactions w/ our mock sideline consumer for committing offsets
-        verify(mockSidelineConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
-        verify(mockSidelineConsumer, never()).commitOffset(any(ConsumerRecord.class));
+        verify(mockConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
+        verify(mockConsumer, never()).commitOffset(any(ConsumerRecord.class));
         verify(mockRetryManager, never()).acked(anyObject());
     }
 
@@ -915,7 +915,7 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -923,7 +923,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -957,10 +957,10 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // TODO: Validate metric collection here
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
+        when(mockConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -968,20 +968,20 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
 
         // Never called yet
-        verify(mockSidelineConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockConsumer, never()).commitOffset(anyObject(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
 
         // Call ack with a string object, it should throw an exception.
         virtualSpout.ack(tupleMessageId);
 
         // Verify mock gets called with appropriate arguments
-        verify(mockSidelineConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
+        verify(mockConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
 
         // Gets acked on the failed retry manager
         verify(mockRetryManager, times(1)).acked(tupleMessageId);
@@ -1007,7 +1007,7 @@ public class VirtualSpoutTest {
         metricsRecorder.open(topologyConfig, mockTopologyContext);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -1015,7 +1015,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1041,7 +1041,7 @@ public class VirtualSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1068,7 +1068,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, endingState);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1086,7 +1086,7 @@ public class VirtualSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1113,7 +1113,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, endingState);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1131,7 +1131,7 @@ public class VirtualSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1158,7 +1158,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, endingState);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1178,7 +1178,7 @@ public class VirtualSpoutTest {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-        final SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        final Consumer mockConsumer = mock(Consumer.class);
 
         // Create our test TupleMessageId
         final String expectedTopic = "MyTopic";
@@ -1205,7 +1205,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, endingState);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1228,8 +1228,8 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
-        when(mockSidelineConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
+        Consumer mockConsumer = mock(Consumer.class);
+        when(mockConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1244,7 +1244,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1259,7 +1259,7 @@ public class VirtualSpoutTest {
         assertEquals("Got expected result from our method", expectedResult, result);
 
         // Validate mock call
-        verify(mockSidelineConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
+        verify(mockConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
     }
 
     /**
@@ -1273,11 +1273,11 @@ public class VirtualSpoutTest {
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier();
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-        when(mockSidelineConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
+        when(mockConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1292,7 +1292,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
@@ -1304,17 +1304,17 @@ public class VirtualSpoutTest {
         isCompletedField.set(virtualSpout, false);
 
         // Verify close hasn't been called yet.
-        verify(mockSidelineConsumer, never()).close();
+        verify(mockConsumer, never()).close();
 
         // Call close
         virtualSpout.close();
 
         // Verify close was called, and state was flushed
-        verify(mockSidelineConsumer, times(1)).flushConsumerState();
-        verify(mockSidelineConsumer, times(1)).close();
+        verify(mockConsumer, times(1)).flushConsumerState();
+        verify(mockConsumer, times(1)).close();
 
         // But we never called remove consumer state.
-        verify(mockSidelineConsumer, never()).removeConsumerState();
+        verify(mockConsumer, never()).removeConsumerState();
 
         // Never remove sideline request state
         verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
@@ -1332,11 +1332,11 @@ public class VirtualSpoutTest {
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier();
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-        when(mockSidelineConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
+        when(mockConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1355,7 +1355,7 @@ public class VirtualSpoutTest {
             mockTopologyContext,
             factoryManager,
             metricsRecorder,
-            mockSidelineConsumer,
+            mockConsumer,
             startingState,
             null
         );
@@ -1369,18 +1369,18 @@ public class VirtualSpoutTest {
         isCompletedField.set(virtualSpout, true);
 
         // Verify close hasn't been called yet.
-        verify(mockSidelineConsumer, never()).close();
+        verify(mockConsumer, never()).close();
 
         // Call close
         virtualSpout.close();
 
         // Verify close was called, and state was cleared
-        verify(mockSidelineConsumer, times(1)).removeConsumerState();
+        verify(mockConsumer, times(1)).removeConsumerState();
         verify(mockPersistenceAdapter, times(1)).clearSidelineRequest(eq(sidelineRequestId), eq(0));
-        verify(mockSidelineConsumer, times(1)).close();
+        verify(mockConsumer, times(1)).close();
 
         // But we never called flush consumer state.
-        verify(mockSidelineConsumer, never()).flushConsumerState();
+        verify(mockConsumer, never()).flushConsumerState();
     }
 
     /**
@@ -1394,11 +1394,11 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create a mock PersistanceManager & associate with SidelineConsumer.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-        when(mockSidelineConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
+        when(mockConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1413,7 +1413,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 factoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1424,18 +1424,18 @@ public class VirtualSpoutTest {
         isCompletedField.set(virtualSpout, true);
 
         // Verify close hasn't been called yet.
-        verify(mockSidelineConsumer, never()).close();
+        verify(mockConsumer, never()).close();
 
         // Call close
         virtualSpout.close();
 
         // Verify close was called, and state was cleared
-        verify(mockSidelineConsumer, times(1)).removeConsumerState();
+        verify(mockConsumer, times(1)).removeConsumerState();
         verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
-        verify(mockSidelineConsumer, times(1)).close();
+        verify(mockConsumer, times(1)).close();
 
         // But we never called flush consumer state.
-        verify(mockSidelineConsumer, never()).flushConsumerState();
+        verify(mockConsumer, never()).flushConsumerState();
     }
 
     /**
@@ -1474,7 +1474,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Create a mock RetryManager
         RetryManager mockRetryManager = mock(RetryManager.class);
@@ -1492,7 +1492,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
@@ -1508,7 +1508,7 @@ public class VirtualSpoutTest {
 
         // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
         verify(mockRetryManager, times(1)).acked(failedMessageId);
-        verify(mockSidelineConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
+        verify(mockConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
     }
 
     /**
@@ -1523,7 +1523,7 @@ public class VirtualSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create a mock SidelineConsumer
-        SidelineConsumer mockSidelineConsumer = mock(SidelineConsumer.class);
+        Consumer mockConsumer = mock(Consumer.class);
 
         // Define metric record
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -1538,7 +1538,7 @@ public class VirtualSpoutTest {
                 mockTopologyContext,
                 mockFactoryManager,
                 metricsRecorder,
-                mockSidelineConsumer,
+            mockConsumer,
                 null, null);
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
@@ -1549,13 +1549,13 @@ public class VirtualSpoutTest {
             .build();
 
         // Setup our mock to return expected value
-        when(mockSidelineConsumer.getCurrentState()).thenReturn(expectedConsumerState);
+        when(mockConsumer.getCurrentState()).thenReturn(expectedConsumerState);
 
         // Call get current state.
         final ConsumerState result = virtualSpout.getCurrentState();
 
         // Verify mock interactions
-        verify(mockSidelineConsumer, times(1)).getCurrentState();
+        verify(mockConsumer, times(1)).getCurrentState();
 
         // Verify result
         assertNotNull("result should not be null", result);
