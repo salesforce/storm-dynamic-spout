@@ -5,6 +5,7 @@ import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.apache.kafka.common.TopicPartition;
@@ -81,9 +82,16 @@ public class SpoutMonitor implements Runnable {
     private final Map<String, Object> topologyConfig;
 
     /**
-     * Metrics Recorder implementation for collectings metrics.
+     * Metrics Recorder implementation for collecting metrics.
      */
     private final MetricsRecorder metricsRecorder;
+
+    /**
+     * Should we re-use metric keys for VirtualSpout metrics?
+     * If true, we'll number the virtual spout instances.
+     * If false, we'll use the virtualSpoutId in the metric key.
+     */
+    private final boolean reuseMetricKeys = true;
 
     /**
      * Calculates progress of VirtualSideline spout instances.
@@ -286,11 +294,19 @@ public class SpoutMonitor implements Runnable {
 
             logger.info("== VirtualSpoutId {} Status ==", spout.getVirtualSpoutId());
 
+            final String virtualSpoutMetricKey;
+            if (reuseMetricKeys) {
+                virtualSpoutMetricKey = "virtualSpout1";
+            } else {
+                virtualSpoutMetricKey = spout.getVirtualSpoutId();
+            }
+
             // Calculate the progress
             for (Map.Entry<TopicPartition,SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
                 final TopicPartition topicPartition = entry.getKey();
                 final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
 
+                // Log progress
                 logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
                     topicPartition,
                     partitionProgress.getPercentageComplete(),
@@ -298,6 +314,15 @@ public class SpoutMonitor implements Runnable {
                     partitionProgress.getTotalMessages(),
                     partitionProgress.getTotalUnprocessed()
                 );
+
+                // Report to metric reporter
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".totalProcessed", partitionProgress.getTotalProcessed());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".totalUnprocessed", partitionProgress.getTotalUnprocessed());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".totalMessages", partitionProgress.getTotalMessages());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".percentComplete", partitionProgress.getPercentageComplete());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".startingOffset", partitionProgress.getStartingOffset());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".currentOffset", partitionProgress.getCurrentOffset());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".partition" + topicPartition.partition() + ".endingOffset", partitionProgress.getEndingOffset());
             }
         }
     }

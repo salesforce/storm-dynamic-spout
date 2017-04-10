@@ -268,8 +268,7 @@ public class SidelineSpout extends BaseRichSpout {
         fireHoseSpout = new VirtualSpout(
                 getTopologyConfig(),
                 getTopologyContext(),
-                getFactoryManager(),
-                getMetricsRecorder()
+                getFactoryManager()
         );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
@@ -386,7 +385,6 @@ public class SidelineSpout extends BaseRichSpout {
             getTopologyConfig(),
             getTopologyContext(),
             getFactoryManager(),
-            getMetricsRecorder(),
             startingState,
             endingState
         );

@@ -6,7 +6,10 @@ import com.google.common.collect.Queues;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.junit.After;
@@ -82,6 +85,10 @@ public class SpoutMonitorTest {
         // Create config
         final Map<String, Object> topologyConfig = getDefaultConfig(maxConcurrentSpouts, maxShutdownTime, monitorInterval);
 
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, new MockTopologyContext());
+
         // Create instance.
         SpoutMonitor spoutMonitor = new SpoutMonitor(
             newSpoutQueue,
@@ -90,7 +97,8 @@ public class SpoutMonitorTest {
             failQueue,
             latch,
             clock,
-            topologyConfig
+            topologyConfig,
+            metricsRecorder
         );
 
         // Call getters and validate!
@@ -100,6 +108,7 @@ public class SpoutMonitorTest {
         assertEquals("getMaxTerminationWaitTimeMs() returns right value", maxShutdownTime, spoutMonitor.getMaxTerminationWaitTimeMs());
         assertEquals("getMaxConcurrentVirtualSpouts() returns right value", maxConcurrentSpouts, spoutMonitor.getMaxConcurrentVirtualSpouts());
         assertTrue("KeepRunning should default to true", spoutMonitor.keepRunning());
+        assertEquals("getMetricsRecorder returns right value", metricsRecorder, spoutMonitor.getMetricsRecorder());
 
         // Validate executor
         final ThreadPoolExecutor executor = spoutMonitor.getExecutor();
@@ -581,6 +590,10 @@ public class SpoutMonitorTest {
         // Create config
         final Map<String, Object> topologyConfig = getDefaultConfig(2, 2000L, 100L);
 
+        // Create metrics recorder
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(topologyConfig, new MockTopologyContext());
+
         // Create instance.
         SpoutMonitor spoutMonitor = new SpoutMonitor(
                 newSpoutQueue,
@@ -589,7 +602,8 @@ public class SpoutMonitorTest {
                 failQueue,
                 latch,
                 clock,
-                topologyConfig
+                topologyConfig,
+                metricsRecorder
         );
 
         return spoutMonitor;

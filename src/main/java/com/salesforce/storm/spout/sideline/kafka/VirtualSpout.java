@@ -108,11 +108,6 @@ public class VirtualSpout implements DelegateSidelineSpout {
     private SidelineRequestIdentifier sidelineRequestIdentifier = null;
 
     /**
-     * For collecting metrics.
-     */
-    private final MetricsRecorder metricsRecorder;
-
-    /**
      * For tracking failed messages, and knowing when to replay them.
      */
     private RetryManager retryManager;
@@ -128,10 +123,9 @@ public class VirtualSpout implements DelegateSidelineSpout {
      * @param topologyConfig - our topology config
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
-     * @param metricsRecorder - For recording metrics.
      */
-    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
-        this(topologyConfig, topologyContext, factoryManager, metricsRecorder, null, null);
+    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager) {
+        this(topologyConfig, topologyContext, factoryManager, null, null);
     }
 
     /**
@@ -141,11 +135,10 @@ public class VirtualSpout implements DelegateSidelineSpout {
      * @param topologyConfig - our topology config
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
-     * @param metricsRecorder - For recording metrics.
      * @param startingState - Where the underlying consumer should start from, Null if start from head.
      * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -155,9 +148,6 @@ public class VirtualSpout implements DelegateSidelineSpout {
         // Save factory manager instance
         this.factoryManager = factoryManager;
 
-        // Save metrics recorder
-        this.metricsRecorder = metricsRecorder;
-
         // Save state
         this.startingState = startingState;
         this.endingState = endingState;
@@ -166,8 +156,8 @@ public class VirtualSpout implements DelegateSidelineSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
-        this(topologyConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
+    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
+        this(topologyConfig, topologyContext, factoryManager, startingState, endingState);
 
         // Inject the sideline consumer.
         this.consumer = consumer;
@@ -220,12 +210,6 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // Open the consumer
         consumer.open(startingState);
-
-        // If we have an ending state, we set some metrics.
-        if (endingState != null) {
-            // Update our metrics with our ending state.
-            updateMetrics(endingState, "endingOffset");
-        }
 
         // TEMP
         nextTupleTimeBuckets.put("failedRetry", 0L);
@@ -454,13 +438,6 @@ public class VirtualSpout implements DelegateSidelineSpout {
         }
     }
 
-    private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
-        for (TopicPartition partition: consumerState.getTopicPartitions()) {
-            final String key = getVirtualSpoutId() +  "." + keyPrefix + ".partition" + partition.partition();
-            getMetricsRecorder().assignValue(getClass(), key, consumerState.getOffsetForTopicAndPartition(partition));
-        }
-    }
-
     @Override
     public void fail(Object msgId) {
         if (msgId == null) {
@@ -600,13 +577,6 @@ public class VirtualSpout implements DelegateSidelineSpout {
     }
 
     /**
-     * @return Metric Record instance.
-     */
-    private MetricsRecorder getMetricsRecorder() {
-        return metricsRecorder;
-    }
-
-    /**
      * Unsubscribes the underlying consumer from the specified topic/partition.
      *
      * @param topicPartition - the topic/partition to unsubscribe from.
@@ -626,10 +596,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
     @Override
     public void flushState() {
         // Flush consumer state to our persistence layer.
-        final ConsumerState currentState = consumer.flushConsumerState();
-
-        // Update our metrics,
-        updateMetrics(currentState, "currentOffset");
+        consumer.flushConsumerState();
 
         // See if we can finish and close out this VirtualSidelineConsumer.
         attemptToComplete();
