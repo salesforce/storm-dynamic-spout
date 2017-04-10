@@ -66,17 +66,17 @@ public class VirtualSpout implements DelegateSidelineSpout {
     private Deserializer deserializer;
 
     /**
-     * Filter chain applied to messages for this virtual spout
+     * Filter chain applied to messages for this virtual spout.
      */
     private final FilterChain filterChain = new FilterChain();
 
     /**
-     * Starting point for the partitions for this spouts consumer
+     * Starting point for the partitions for this spouts consumer.
      */
     private ConsumerState startingState = null;
 
     /**
-     * Ending point for the partitions for this spouts consumer
+     * Ending point for the partitions for this spouts consumer.
      */
     private ConsumerState endingState = null;
 
@@ -463,7 +463,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
     private void updateMetrics(final ConsumerState consumerState, final String keyPrefix) {
         for (TopicPartition partition: consumerState.getTopicPartitions()) {
             final String key = getVirtualSpoutId() +  "." + keyPrefix + ".partition" + partition.partition();
-            metricsRecorder.assignValue(getClass(), key, consumerState.getOffsetForTopicAndPartition(partition));
+            getMetricsRecorder().assignValue(getClass(), key, consumerState.getOffsetForTopicAndPartition(partition));
         }
     }
 
@@ -603,6 +603,13 @@ public class VirtualSpout implements DelegateSidelineSpout {
      */
     protected FactoryManager getFactoryManager() {
         return factoryManager;
+    }
+
+    /**
+     * @return Metric Record instance.
+     */
+    private MetricsRecorder getMetricsRecorder() {
+        return metricsRecorder;
     }
 
     /**

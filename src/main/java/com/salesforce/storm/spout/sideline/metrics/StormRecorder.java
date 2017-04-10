@@ -34,14 +34,13 @@ public class StormRecorder implements MetricsRecorder {
     @Override
     public void open(final Map topologyConfig, final TopologyContext topologyContext) {
         // Configuration items, hardcoded for now.
-        final String topLevelPrefix = SidelineSpout.class.getSimpleName();
         final int timeBucket = 60;
 
         // Register the top level metrics.
-        averagedValues = topologyContext.registerMetric(topLevelPrefix + "-avgs", new MultiReducedMetric(new MeanReducer()), timeBucket);
-        assignedValues = topologyContext.registerMetric(topLevelPrefix + "-values", new MultiAssignableMetric(), timeBucket);
-        timers = topologyContext.registerMetric(topLevelPrefix + "-timers", new MultiReducedMetric(new MeanReducer()), timeBucket);
-        counters = topologyContext.registerMetric(topLevelPrefix + "-counters", new MultiCountMetric(), timeBucket);
+        averagedValues = topologyContext.registerMetric("averages", new MultiReducedMetric(new MeanReducer()), timeBucket);
+        assignedValues = topologyContext.registerMetric("gauges", new MultiAssignableMetric(), timeBucket);
+        timers = topologyContext.registerMetric("timers", new MultiReducedMetric(new MeanReducer()), timeBucket);
+        counters = topologyContext.registerMetric("counters", new MultiCountMetric(), timeBucket);
     }
 
     @Override
