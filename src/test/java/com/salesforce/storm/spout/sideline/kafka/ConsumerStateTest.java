@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -64,6 +65,31 @@ public class ConsumerStateTest {
         assertEquals("Has expected offset", 23L, (long) consumerState2.getOffsetForTopicAndPartition(topicPartition2));
         assertEquals("Has expected offset", 4423L, (long) consumerState2.getOffsetForTopicAndPartition(topicPartition3));
         assertEquals("Size should be 3", 3, consumerState2.size());
+    }
+
+    /**
+     * Verifies you can't change the source long value and change the resulting ConsumerState.
+     */
+    @Test
+    public void testImmutability_changeLongOffset() {
+        TopicPartition expectedTopicPartition = new TopicPartition("MyTopic", 12);
+        Long expectedOffset = 3444L;
+
+        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+
+        final ConsumerState consumerState = builder
+                .withPartition(expectedTopicPartition, expectedOffset)
+                .build();
+
+        // Sanity check
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Size should be 1", 1, consumerState.size());
+
+        // Now change our sourced Long
+        expectedOffset = 2L;
+
+        // It should still be 3444L
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
     }
 
     /**
@@ -225,5 +251,51 @@ public class ConsumerStateTest {
 
         expectedException.expect(UnsupportedOperationException.class);
         consumerState.remove(topicPartition);
+    }
+
+    /**
+     * Verifies you can't modify values().
+     */
+    @Test
+    public void testImmutabilityViaValues() {
+        TopicPartition expectedTopicPartition = new TopicPartition("MyTopic", 12);
+        Long expectedOffset = 3444L;
+
+        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+
+        final ConsumerState consumerState = builder
+                .withPartition(expectedTopicPartition, expectedOffset)
+                .build();
+
+        // Sanity check
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Size should be 1", 1, consumerState.size());
+
+        // Test using values
+        expectedException.expect(UnsupportedOperationException.class);
+        consumerState.values().remove(3444L);
+    }
+
+    /**
+     * Verifies you can't modify keySet().
+     */
+    @Test
+    public void testImmutabilityViaKeySet() {
+        TopicPartition expectedTopicPartition = new TopicPartition("MyTopic", 12);
+        Long expectedOffset = 3444L;
+
+        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+
+        final ConsumerState consumerState = builder
+                .withPartition(expectedTopicPartition, expectedOffset)
+                .build();
+
+        // Sanity check
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Size should be 1", 1, consumerState.size());
+
+        // Test using values
+        expectedException.expect(UnsupportedOperationException.class);
+        consumerState.keySet().remove(expectedTopicPartition);
     }
 }

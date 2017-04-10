@@ -5,6 +5,8 @@ import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.TupleMessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -80,6 +82,11 @@ public class SpoutMonitor implements Runnable {
     private final Map<String, Object> topologyConfig;
 
     /**
+     * Metrics Recorder implementation for collecting metrics.
+     */
+    private final MetricsRecorder metricsRecorder;
+    
+    /**
      * Calculates progress of VirtualSideline spout instances.
      */
     private SpoutPartitionProgressMonitor consumerMonitor;
@@ -104,8 +111,9 @@ public class SpoutMonitor implements Runnable {
             final Map<String, Queue<TupleMessageId>> failedTuplesQueue,
             final CountDownLatch latch,
             final Clock clock,
-            final Map<String, Object> topologyConfig
-    ) {
+            final Map<String, Object> topologyConfig,
+            final MetricsRecorder metricsRecorder
+            ) {
         this.newSpoutQueue = newSpoutQueue;
         this.tupleOutputQueue = tupleOutputQueue;
         this.ackedTuplesQueue = ackedTuplesQueue;
@@ -113,6 +121,7 @@ public class SpoutMonitor implements Runnable {
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
+        this.metricsRecorder = metricsRecorder;
 
         /**
          * Create our executor service with a fixed thread size.
@@ -155,7 +164,7 @@ public class SpoutMonitor implements Runnable {
                 try {
                     Thread.sleep(getMonitorThreadIntervalMs());
                 } catch (InterruptedException ex) {
-                    logger.warn("!!!!!! Thread interrupted, shutting down...");
+                    logger.warn("Thread interrupted, shutting down...");
                     return;
                 }
             }
@@ -252,6 +261,12 @@ public class SpoutMonitor implements Runnable {
         );
         logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
 
+        // Report to metrics record
+        getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
+        getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
+        getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
+        getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
+
         // TODO: All of this is hacky.  And how do we calculate the fire hose status?
         // Loop through spouts instances
         if (consumerMonitor == null) {
@@ -277,6 +292,7 @@ public class SpoutMonitor implements Runnable {
                 final TopicPartition topicPartition = entry.getKey();
                 final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
 
+                // Log progress
                 logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
                     topicPartition,
                     partitionProgress.getPercentageComplete(),
@@ -284,6 +300,16 @@ public class SpoutMonitor implements Runnable {
                     partitionProgress.getTotalMessages(),
                     partitionProgress.getTotalUnprocessed()
                 );
+
+                // Report to metric reporter
+                final String virtualSpoutMetricKey = spout.getVirtualSpoutId() + ".partition" + topicPartition.partition();
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalProcessed", partitionProgress.getTotalProcessed());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalUnprocessed", partitionProgress.getTotalUnprocessed());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalMessages", partitionProgress.getTotalMessages());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".percentComplete", partitionProgress.getPercentageComplete());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".startingOffset", partitionProgress.getStartingOffset());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".currentOffset", partitionProgress.getCurrentOffset());
+                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".endingOffset", partitionProgress.getEndingOffset());
             }
         }
     }
@@ -375,6 +401,13 @@ public class SpoutMonitor implements Runnable {
      */
     int getMaxConcurrentVirtualSpouts() {
         return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
+    }
+
+    /**
+     * @return Spouts metrics recorder.
+     */
+    MetricsRecorder getMetricsRecorder() {
+        return metricsRecorder;
     }
 
     /**

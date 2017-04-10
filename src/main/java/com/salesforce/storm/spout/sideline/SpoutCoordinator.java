@@ -115,7 +115,8 @@ public class SpoutCoordinator {
             getFailedTuplesQueue(),
             latch,
             getClock(),
-            getTopologyConfig()
+            getTopologyConfig(),
+            getMetricsRecorder()
         );
 
         // Start executing the spout monitor in a new thread.
@@ -234,6 +235,13 @@ public class SpoutCoordinator {
      */
     private Map<String, Object> getTopologyConfig() {
         return topologyConfig;
+    }
+
+    /**
+     * @return Spout's metric recorder.
+     */
+    private MetricsRecorder getMetricsRecorder() {
+        return metricsRecorder;
     }
 
     /**

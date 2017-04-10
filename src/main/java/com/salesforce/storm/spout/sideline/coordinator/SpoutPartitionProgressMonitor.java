@@ -151,6 +151,8 @@ public class SpoutPartitionProgressMonitor {
 
     public static class PartitionProgress {
         private final long startingOffset;
+        private final long endingOffset;
+        private final long currentOffset;
         private final long totalMessages;
         private final long totalUnprocessed;
         private final long totalProcessed;
@@ -175,6 +177,8 @@ public class SpoutPartitionProgressMonitor {
             }
 
             this.startingOffset = startingOffset;
+            this.currentOffset = currentOffset;
+            this.endingOffset = endingOffset;
         }
 
         public long getTotalMessages() {
@@ -195,6 +199,14 @@ public class SpoutPartitionProgressMonitor {
 
         public long getStartingOffset() {
             return startingOffset;
+        }
+
+        public long getCurrentOffset() {
+            return currentOffset;
+        }
+
+        public long getEndingOffset() {
+            return endingOffset;
         }
 
         @Override

@@ -26,7 +26,7 @@ public class PartitionDistributor {
         }
         // We have a consumer index that's invalid
         if (consumerIndex >= totalConsumers || consumerIndex < 0) {
-            throw new IllegalArgumentException("Your consumerIndex is invalid! Range should be [0 -> " + (totalConsumers-1) + "]");
+            throw new IllegalArgumentException("Your consumerIndex is invalid! Range should be [0 -> " + (totalConsumers - 1) + "]");
         }
 
         // Sort our partitions
@@ -39,8 +39,8 @@ public class PartitionDistributor {
         final int startingPartition = consumerIndex == 0 ? 0 : partitionsPerInstance * consumerIndex;
 
         // Determine our ending point in the list of instances
-        final int endingPartition = startingPartition + partitionsPerInstance > allPartitionIds.length ?
-            allPartitionIds.length : startingPartition + partitionsPerInstance;
+        final int endingPartition = startingPartition + partitionsPerInstance > allPartitionIds.length
+                ? allPartitionIds.length : startingPartition + partitionsPerInstance;
 
         // Make a new array of integers for the partition ids
         List<Integer> partitionIds = Lists.newArrayList();
