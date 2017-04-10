@@ -269,11 +269,11 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     private CuratorFramework newCurator(final Map topologyConfig) {
         return CuratorFrameworkFactory.newClient(
             zkConnectionString,
-            (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT),
-            (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT),
+            ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue(),
+            ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
             new RetryNTimes(
-                (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS),
-                (int) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)
+                ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue(),
+                ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue()
             )
         );
     }
