@@ -223,9 +223,8 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // If we have an ending state, we set some metrics.
         if (endingState != null) {
-            // TODO: commented out for now.
-            // Update our metrics
-            //updateMetrics(endingState, "endingOffset");
+            // Update our metrics with our ending state.
+            updateMetrics(endingState, "endingOffset");
         }
 
         // TEMP
@@ -441,11 +440,6 @@ public class VirtualSpout implements DelegateSidelineSpout {
         retryManager.acked(tupleMessageId);
         ackTimeBuckets.put("FailedMsgAck", ackTimeBuckets.get("FailedMsgAck") + (System.currentTimeMillis() - start));
 
-        // Update our metrics,
-        // TODO: probably doesn't need to happen every ack?
-        // Commented out because this is massively slow.  Cannot run this on every ack.
-        //updateMetrics(sidelineConsumer.getCurrentState(), "currentOffset");
-
         // Increment totals
         ackTimeBuckets.put("TotalTime", ackTimeBuckets.get("TotalTime") + (System.currentTimeMillis() - totalTime));
         ackTimeBuckets.put("TotalCalls", ackTimeBuckets.get("TotalCalls") + 1);
@@ -632,7 +626,10 @@ public class VirtualSpout implements DelegateSidelineSpout {
     @Override
     public void flushState() {
         // Flush consumer state to our persistence layer.
-        consumer.flushConsumerState();
+        final ConsumerState currentState = consumer.flushConsumerState();
+
+        // Update our metrics,
+        updateMetrics(currentState, "currentOffset");
 
         // See if we can finish and close out this VirtualSidelineConsumer.
         attemptToComplete();
