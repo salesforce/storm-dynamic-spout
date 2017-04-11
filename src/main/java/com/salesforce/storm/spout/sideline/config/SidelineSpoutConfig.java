@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.config;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,7 +193,7 @@ public class SidelineSpoutConfig {
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutConfig.class);
 
     /**
-     * Utility method to add any missing configuration items with their defaults.
+     * Utility method to add any unspecified configuration value for items with their defaults.
      * @param config - the config to update.
      * @return - a cloned copy of the config that is updated.
      */
@@ -202,65 +203,69 @@ public class SidelineSpoutConfig {
         clonedConfig.putAll(config);
 
         // Add in defaults where needed.
+        if (!clonedConfig.containsKey(OUTPUT_STREAM_ID)) {
+            clonedConfig.put(OUTPUT_STREAM_ID, "default");
+            logger.info("Unspecified configuration value for {} using default value {}", OUTPUT_STREAM_ID, clonedConfig.get(OUTPUT_STREAM_ID));
+        }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
-            logger.warn("Missing configuration {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
+            logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
         }
         if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
             clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, 25);
-            logger.warn("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES));
+            logger.info("Unspecified configuration value for {} using default value {}", FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES));
         }
         if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
             clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, 1000L);
-            logger.warn("Missing configuration {} using default value {}", FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS));
+            logger.info("Unspecified configuration value for {} using default value {}", FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS));
         }
         if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
             clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
-            logger.warn("Missing configuration {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
+            logger.info("Unspecified configuration value for {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
         }
         if (!clonedConfig.containsKey(MONITOR_THREAD_INTERVAL_MS)) {
             clonedConfig.put(MONITOR_THREAD_INTERVAL_MS, 2000L);
-            logger.warn("Missing configuration {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
+            logger.info("Unspecified configuration value for {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
         }
         if (!clonedConfig.containsKey(MAX_SPOUT_SHUTDOWN_TIME_MS)) {
             clonedConfig.put(MAX_SPOUT_SHUTDOWN_TIME_MS, 10000L);
-            logger.warn("Missing configuration {} using default value {}", MAX_SPOUT_SHUTDOWN_TIME_MS, clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS));
+            logger.info("Unspecified configuration value for {} using default value {}", MAX_SPOUT_SHUTDOWN_TIME_MS, clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS));
         }
         if (!clonedConfig.containsKey(CONSUMER_STATE_FLUSH_INTERVAL_MS)) {
             clonedConfig.put(CONSUMER_STATE_FLUSH_INTERVAL_MS, 30000L);
-            logger.warn("Missing configuration {} using default value {}", CONSUMER_STATE_FLUSH_INTERVAL_MS, clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS));
+            logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_STATE_FLUSH_INTERVAL_MS, clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS));
         }
         if (!clonedConfig.containsKey(MAX_CONCURRENT_VIRTUAL_SPOUTS)) {
             clonedConfig.put(MAX_CONCURRENT_VIRTUAL_SPOUTS, 10);
-            logger.warn("Missing configuration {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
+            logger.info("Unspecified configuration value for {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_CLASS)) {
-            clonedConfig.put(TUPLE_BUFFER_CLASS, "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer");
-            logger.warn("Missing configuration {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
+            clonedConfig.put(TUPLE_BUFFER_CLASS, RoundRobinBuffer.class.getName());
+            logger.info("Unspecified configuration value for {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
             clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 2000);
-            logger.warn("Missing configuration {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
+            logger.info("Unspecified configuration value for {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_SESSION_TIMEOUT)) {
             clonedConfig.put(PERSISTENCE_ZK_SESSION_TIMEOUT, 6000);
-            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_SESSION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_SESSION_TIMEOUT));
+            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_SESSION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_SESSION_TIMEOUT));
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_CONNECTION_TIMEOUT)) {
             clonedConfig.put(PERSISTENCE_ZK_CONNECTION_TIMEOUT, 6000);
-            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_CONNECTION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_CONNECTION_TIMEOUT));
+            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_CONNECTION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_CONNECTION_TIMEOUT));
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_ATTEMPTS)) {
             clonedConfig.put(PERSISTENCE_ZK_RETRY_ATTEMPTS, 10);
-            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_RETRY_ATTEMPTS, clonedConfig.get(PERSISTENCE_ZK_RETRY_ATTEMPTS));
+            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_RETRY_ATTEMPTS, clonedConfig.get(PERSISTENCE_ZK_RETRY_ATTEMPTS));
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_INTERVAL)) {
             clonedConfig.put(PERSISTENCE_ZK_RETRY_INTERVAL, 10);
-            logger.warn("Missing configuration {} using default value {}", PERSISTENCE_ZK_RETRY_INTERVAL, clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL));
+            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_RETRY_INTERVAL, clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL));
         }
 
         return clonedConfig;
