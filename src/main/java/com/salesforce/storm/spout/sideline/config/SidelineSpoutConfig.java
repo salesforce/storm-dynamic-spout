@@ -192,7 +192,7 @@ public class SidelineSpoutConfig {
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutConfig.class);
 
     /**
-     * Utility method to add any Unspecified configuration value for items with their defaults.
+     * Utility method to add any unspecified configuration value for items with their defaults.
      * @param config - the config to update.
      * @return - a cloned copy of the config that is updated.
      */
