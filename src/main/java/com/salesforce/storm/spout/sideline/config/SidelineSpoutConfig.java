@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.config;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,6 +203,10 @@ public class SidelineSpoutConfig {
         clonedConfig.putAll(config);
 
         // Add in defaults where needed.
+        if (!clonedConfig.containsKey(OUTPUT_STREAM_ID)) {
+            clonedConfig.put(OUTPUT_STREAM_ID, "default");
+            logger.info("Unspecified configuration value for {} using default value {}", OUTPUT_STREAM_ID, clonedConfig.get(OUTPUT_STREAM_ID));
+        }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
@@ -235,7 +240,7 @@ public class SidelineSpoutConfig {
             logger.info("Unspecified configuration value for {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_CLASS)) {
-            clonedConfig.put(TUPLE_BUFFER_CLASS, "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer");
+            clonedConfig.put(TUPLE_BUFFER_CLASS, RoundRobinBuffer.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
