@@ -42,6 +42,11 @@ public class SidelineSpout extends BaseRichSpout {
     private Map topologyConfig;
 
     /**
+     * The Spout configuration map
+     */
+    private Map spoutConfig;
+
+    /**
      * Spout's output collector, for emitting tuples out into the topology.
      */
     private SpoutOutputCollector outputCollector;
@@ -105,14 +110,14 @@ public class SidelineSpout extends BaseRichSpout {
      * Constructor to create our SidelineSpout.
      * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
      *
-     * @param topologyConfig - Our configuration.
+     * @param spoutConfig - Our configuration.
      */
-    public SidelineSpout(Map topologyConfig) {
+    public SidelineSpout(Map spoutConfig) {
         // Save off config, injecting appropriate default values for anything not explicitly configured.
-        this.topologyConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(topologyConfig));
+        this.spoutConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(spoutConfig));
 
         // Create our factory manager, which must be serializable.
-        factoryManager = new FactoryManager(getTopologyConfig());
+        factoryManager = new FactoryManager(getSpoutConfig());
     }
 
     /**
@@ -237,18 +242,18 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         // Save references.
-        this.topologyConfig = Tools.immutableCopy(SidelineSpoutConfig.setDefaults(topologyConfig));
+        this.topologyConfig = topologyConfig;
         this.topologyContext = topologyContext;
         this.outputCollector = spoutOutputCollector;
 
         // Ensure a consumer id prefix has been correctly set.
-        if (Strings.isNullOrEmpty((String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))) {
+        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))) {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
         // Initialize Metrics Collection
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
-        getMetricsRecorder().open(getTopologyConfig(), getTopologyContext());
+        getMetricsRecorder().open(getSpoutConfig(), getTopologyContext());
 
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
         if (startingTrigger != null) {
@@ -262,19 +267,19 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Create and open() persistence manager passing appropriate configuration.
         persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-        getPersistenceAdapter().open(getTopologyConfig());
+        getPersistenceAdapter().open(getSpoutConfig());
 
         // Create the main spout for the topic, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
-                getTopologyConfig(),
-                getTopologyContext(),
-                getFactoryManager()
+            getSpoutConfig(),
+            getTopologyContext(),
+            getFactoryManager()
         );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Create TupleBuffer
         final TupleBuffer tupleBuffer = getFactoryManager().createNewTupleBufferInstance();
-        tupleBuffer.open(getTopologyConfig());
+        tupleBuffer.open(getSpoutConfig());
 
         // Create Spout Coordinator.
         coordinator = new SpoutCoordinator(
@@ -289,7 +294,7 @@ public class SidelineSpout extends BaseRichSpout {
         );
 
         // Call open on coordinator.
-        getCoordinator().open(getTopologyConfig());
+        getCoordinator().open(getSpoutConfig());
 
         final ConsumerState currentState = fireHoseSpout.getCurrentState();
 
@@ -345,14 +350,14 @@ public class SidelineSpout extends BaseRichSpout {
 
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), open it
         if (startingTrigger != null) {
-            startingTrigger.open(getTopologyConfig());
+            startingTrigger.open(getSpoutConfig());
         } else {
             logger.warn("Sideline spout is configured without a starting trigger");
         }
 
         // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), open it
         if (stoppingTrigger != null) {
-            stoppingTrigger.open(getTopologyConfig());
+            stoppingTrigger.open(getSpoutConfig());
         } else {
             logger.warn("Sideline spout is configured without a stopping trigger");
         }
@@ -382,7 +387,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Create spout instance.
         final VirtualSpout spout = new VirtualSpout(
-            getTopologyConfig(),
+            getSpoutConfig(),
             getTopologyContext(),
             getFactoryManager(),
             startingState,
@@ -535,8 +540,8 @@ public class SidelineSpout extends BaseRichSpout {
     /**
      * @return - the Storm topology config map.
      */
-    private Map getTopologyConfig() {
-        return topologyConfig;
+    private Map getSpoutConfig() {
+        return spoutConfig;
     }
 
     /**
@@ -544,8 +549,8 @@ public class SidelineSpout extends BaseRichSpout {
      * @param key - the configuration item to retrieve
      * @return - the configuration item's value.
      */
-    private Object getTopologyConfigItem(final String key) {
-        return getTopologyConfig().get(key);
+    private Object getSpoutConfigItem(final String key) {
+        return getSpoutConfig().get(key);
     }
 
     /**
@@ -595,10 +600,10 @@ public class SidelineSpout extends BaseRichSpout {
      */
     String getOutputStreamId() {
         if (outputStreamId == null) {
-            if (topologyConfig == null) {
+            if (spoutConfig == null) {
                 throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
             }
-            outputStreamId = (String) getTopologyConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+            outputStreamId = (String) getSpoutConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {
                 outputStreamId = Utils.DEFAULT_STREAM_ID;
             }
@@ -619,7 +624,7 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Also prefixed with our configured prefix
-        String newId = (String) getTopologyConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        String newId = (String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         // append it
         newId += ":" + id;
 

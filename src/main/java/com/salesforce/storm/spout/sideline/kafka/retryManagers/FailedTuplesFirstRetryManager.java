@@ -24,7 +24,7 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     private Queue<TupleMessageId> failedMessageIds;
 
     @Override
-    public void open(Map stormConfig) {
+    public void open(Map spoutConfig) {
         messageIdsInFlight = Sets.newHashSet();
         failedMessageIds = new LinkedList<>();
     }

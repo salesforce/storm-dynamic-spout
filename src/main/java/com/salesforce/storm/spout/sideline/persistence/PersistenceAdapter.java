@@ -15,9 +15,9 @@ public interface PersistenceAdapter {
      * Performs any required initialization/connection/setup required for
      * the implementation.  By contract, this will be called once prior to calling
      * persistState() or getState().
-     * @param topologyConfig - The storm topology config map.
+     * @param spoutConfig - The storm topology config map.
      */
-    void open(Map topologyConfig);
+    void open(Map spoutConfig);
 
     /**
      * Performs any cleanup required for the implementation on shutdown.

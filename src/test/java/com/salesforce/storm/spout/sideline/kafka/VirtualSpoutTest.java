@@ -76,12 +76,12 @@ public class VirtualSpoutTest {
         VirtualSpout virtualSpout = new VirtualSpout(expectedTopologyConfig, mockTopologyContext, factoryManager);
 
         // Verify things got set
-        assertNotNull("TopologyConfig should be non-null", virtualSpout.getTopologyConfig());
+        assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
         assertNotNull("TopologyContext should be non-null", virtualSpout.getTopologyContext());
 
         // Verify the config is correct (and not some empty map)
-        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getTopologyConfig().size());
-        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getTopologyConfig());
+        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size());
+        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getSpoutConfig());
 
         // Verify factory manager set
         assertNotNull("Should have non-null factory manager", virtualSpout.getFactoryManager());
@@ -89,11 +89,11 @@ public class VirtualSpoutTest {
 
         // Verify the config is immutable and throws exception when you try to modify it
         expectedException.expect(UnsupportedOperationException.class);
-        virtualSpout.getTopologyConfig().put("MyKey", "MyValue");
+        virtualSpout.getSpoutConfig().put("MyKey", "MyValue");
     }
 
     /**
-     * Verify that getTopologyConfigItem() works as expected
+     * Verify that getSpoutConfigItem() works as expected
      */
     @Test
     public void testGetTopologyConfigItem() {
@@ -113,19 +113,19 @@ public class VirtualSpoutTest {
         VirtualSpout virtualSpout = new VirtualSpout(expectedTopologyConfig, mockTopologyContext, factoryManager);
 
         // Verify things got set
-        assertNotNull("TopologyConfig should be non-null", virtualSpout.getTopologyConfig());
+        assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
 
         // Verify the config is correct (and not some empty map)
-        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getTopologyConfig().size());
-        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getTopologyConfig());
+        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size());
+        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getSpoutConfig());
 
         // Check each item
-        assertEquals("Value1", virtualSpout.getTopologyConfigItem("Key1"));
-        assertEquals("Value2", virtualSpout.getTopologyConfigItem("Key2"));
-        assertEquals("Value3", virtualSpout.getTopologyConfigItem("Key3"));
+        assertEquals("Value1", virtualSpout.getSpoutConfigItem("Key1"));
+        assertEquals("Value2", virtualSpout.getSpoutConfigItem("Key2"));
+        assertEquals("Value3", virtualSpout.getSpoutConfigItem("Key3"));
 
         // Check a random key that doesn't exist
-        assertNull(virtualSpout.getTopologyConfigItem("Random Key"));
+        assertNull(virtualSpout.getSpoutConfigItem("Random Key"));
     }
 
     /**

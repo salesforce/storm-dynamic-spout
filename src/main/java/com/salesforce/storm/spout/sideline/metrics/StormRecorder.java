@@ -32,7 +32,7 @@ public class StormRecorder implements MetricsRecorder {
 
 
     @Override
-    public void open(final Map topologyConfig, final TopologyContext topologyContext) {
+    public void open(final Map spoutConfig, final TopologyContext topologyContext) {
         // Configuration items, hardcoded for now.
         final int timeBucket = 60;
 

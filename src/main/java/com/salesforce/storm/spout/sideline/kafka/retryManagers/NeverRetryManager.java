@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public class NeverRetryManager implements RetryManager {
     @Override
-    public void open(Map stormConfig) {
+    public void open(Map spoutConfig) {
         // Nothing to do
     }
 

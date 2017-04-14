@@ -21,7 +21,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<String, SidelinePayload> storedSidelineRequests;
 
     @Override
-    public void open(Map topologyConfig) {
+    public void open(Map spoutConfig) {
         // Allow non-destructive re-opening
         if (storedConsumerState == null) {
             storedConsumerState = Maps.newHashMap();

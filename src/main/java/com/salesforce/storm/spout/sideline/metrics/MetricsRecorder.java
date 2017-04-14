@@ -19,7 +19,7 @@ public interface MetricsRecorder {
      * the implementation.  By contract, this will be called once prior to calling
      * collecting any metrics.
      */
-    void open(final Map topologyConfig, final TopologyContext topologyContext);
+    void open(final Map spoutConfig, final TopologyContext topologyContext);
 
     /**
      * Perform any cleanup.

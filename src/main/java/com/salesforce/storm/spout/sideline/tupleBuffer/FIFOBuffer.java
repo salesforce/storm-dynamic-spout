@@ -37,9 +37,9 @@ public class FIFOBuffer implements TupleBuffer {
     }
 
     @Override
-    public void open(Map topologyConfig) {
+    public void open(Map spoutConfig) {
         // Defines the bounded size of our buffer.  Ideally this would be configurable.
-        Object maxBufferSizeObj = topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object maxBufferSizeObj = spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         int maxBufferSize = DEFAULT_MAX_SIZE;
         if (maxBufferSizeObj != null && maxBufferSizeObj instanceof Number) {
             maxBufferSize = ((Number) maxBufferSizeObj).intValue();

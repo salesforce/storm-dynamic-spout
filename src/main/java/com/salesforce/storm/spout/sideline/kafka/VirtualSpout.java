@@ -10,7 +10,6 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
-import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -46,9 +45,9 @@ public class VirtualSpout implements DelegateSidelineSpout {
     private final TopologyContext topologyContext;
 
     /**
-     * Holds reference to our topology configuration.
+     * Holds reference to our spout configuration.
      */
-    private final Map topologyConfig;
+    private final Map spoutConfig;
 
     /**
      * Our Factory Manager.
@@ -120,30 +119,30 @@ public class VirtualSpout implements DelegateSidelineSpout {
     /**
      * Constructor.
      * Use this constructor for your "FireHose" instance.  IE an instance that has no starting or ending state.
-     * @param topologyConfig - our topology config
+     * @param spoutConfig - our topology config
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
      */
-    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager) {
-        this(topologyConfig, topologyContext, factoryManager, null, null);
+    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager) {
+        this(spoutConfig, topologyContext, factoryManager, null, null);
     }
 
     /**
      * Constructor.
      * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
      * state.
-     * @param topologyConfig - our topology config
+     * @param spoutConfig - our topology config
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
      * @param startingState - Where the underlying consumer should start from, Null if start from head.
      * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
         // Save an immutable clone of the config
-        this.topologyConfig = Tools.immutableCopy(topologyConfig);
+        this.spoutConfig = Tools.immutableCopy(spoutConfig);
 
         // Save factory manager instance
         this.factoryManager = factoryManager;
@@ -156,8 +155,8 @@ public class VirtualSpout implements DelegateSidelineSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSpout(Map topologyConfig, TopologyContext topologyContext, FactoryManager factoryManager, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
-        this(topologyConfig, topologyContext, factoryManager, startingState, endingState);
+    protected VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
+        this(spoutConfig, topologyContext, factoryManager, startingState, endingState);
 
         // Inject the sideline consumer.
         this.consumer = consumer;
@@ -184,18 +183,18 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // Create our failed msg retry manager & open
         retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
-        retryManager.open(getTopologyConfig());
+        retryManager.open(getSpoutConfig());
 
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
         if (consumer == null) {
             // Create persistence manager instance and open.
             final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-            persistenceAdapter.open(getTopologyConfig());
+            persistenceAdapter.open(getSpoutConfig());
 
             // Construct SidelineConsumerConfig based on topology config.
-            final List<String> kafkaBrokers = (List<String>) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-            final String topic = (String) getTopologyConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
+            final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
+            final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
             final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
             consumerConfig.setNumberOfConsumers(
                 topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
@@ -557,16 +556,16 @@ public class VirtualSpout implements DelegateSidelineSpout {
         return consumer.getCurrentState();
     }
 
-    public Map<String, Object> getTopologyConfig() {
-        return topologyConfig;
+    public Map<String, Object> getSpoutConfig() {
+        return spoutConfig;
     }
 
     public TopologyContext getTopologyContext() {
         return topologyContext;
     }
 
-    public Object getTopologyConfigItem(final String key) {
-        return topologyConfig.get(key);
+    public Object getSpoutConfigItem(final String key) {
+        return spoutConfig.get(key);
     }
 
     /**

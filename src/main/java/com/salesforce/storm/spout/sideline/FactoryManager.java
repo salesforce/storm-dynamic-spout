@@ -23,7 +23,7 @@ public class FactoryManager implements Serializable {
     /**
      * Holds our configuration so we know what classes to create instances of.
      */
-    private final Map topologyConfig;
+    private final Map spoutConfig;
 
     /**
      * Class instance of our Deserializer.
@@ -50,9 +50,9 @@ public class FactoryManager implements Serializable {
      */
     private transient Class<? extends TupleBuffer> tupleBufferClass;
 
-    public FactoryManager(Map topologyConfig) {
+    public FactoryManager(Map spoutConfig) {
         // Create immutable copy of configuration.
-        this.topologyConfig = Tools.immutableCopy(topologyConfig);
+        this.spoutConfig = Tools.immutableCopy(spoutConfig);
     }
 
     /**
@@ -60,7 +60,7 @@ public class FactoryManager implements Serializable {
      */
     public synchronized Deserializer createNewDeserializerInstance() {
         if (deserializerClass == null) {
-            final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.DESERIALIZER_CLASS);
+            final String classStr = (String) spoutConfig.get(SidelineSpoutConfig.DESERIALIZER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.DESERIALIZER_CLASS);
             }
@@ -83,7 +83,7 @@ public class FactoryManager implements Serializable {
      */
     public synchronized RetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
-            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.RETRY_MANAGER_CLASS);
+            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             }
@@ -106,7 +106,7 @@ public class FactoryManager implements Serializable {
      */
     public synchronized PersistenceAdapter createNewPersistenceAdapterInstance() {
         if (persistenceAdapterClass == null) {
-            final String classStr = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
+            final String classStr = (String) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
             }
@@ -129,7 +129,7 @@ public class FactoryManager implements Serializable {
      */
     public synchronized MetricsRecorder createNewMetricsRecorder() {
         if (metricsRecorderClass == null) {
-            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
+            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.METRICS_RECORDER_CLASS);
             }
@@ -152,7 +152,7 @@ public class FactoryManager implements Serializable {
      */
     public synchronized TupleBuffer createNewTupleBufferInstance() {
         if (tupleBufferClass == null) {
-            String classStr = (String) topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
+            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             }
