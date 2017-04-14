@@ -61,8 +61,8 @@ public class RoundRobinBuffer implements TupleBuffer {
     }
 
     @Override
-    public void open(Map topologyConfig) {
-        Object maxBufferSizeObj = topologyConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+    public void open(Map spoutConfig) {
+        Object maxBufferSizeObj = spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         if (maxBufferSizeObj == null) {
             // Not configured, use default value.
             return;

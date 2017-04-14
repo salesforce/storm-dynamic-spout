@@ -27,8 +27,8 @@ public class SpoutPartitionProgressMonitor {
         this.persistenceAdapter = persistenceAdapter;
     }
 
-    public void open(Map topologyConfig) {
-        persistenceAdapter.open(topologyConfig);
+    public void open(Map spoutConfig) {
+        persistenceAdapter.open(spoutConfig);
     }
 
     public void close() {

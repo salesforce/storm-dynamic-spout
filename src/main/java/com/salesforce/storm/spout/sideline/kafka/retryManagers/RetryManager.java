@@ -13,7 +13,7 @@ public interface RetryManager {
     /**
      * Initialization.
      */
-    void open(Map stormConfig);
+    void open(Map spoutConfig);
 
     /**
      * Called for TupleMessageId's that have failed to process within the Topology.

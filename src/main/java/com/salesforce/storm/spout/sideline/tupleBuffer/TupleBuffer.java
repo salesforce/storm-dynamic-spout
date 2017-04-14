@@ -16,9 +16,9 @@ public interface TupleBuffer {
 
     /**
      * Called prior to utilizing the instance.
-     * @param topologyConfig - a copy of the storm topology config.
+     * @param spoutConfig - a copy of the storm topology config.
      */
-    void open(Map topologyConfig);
+    void open(Map spoutConfig);
 
     /**
      * Let the Implementation know that we're adding a new VirtualSpoutId.

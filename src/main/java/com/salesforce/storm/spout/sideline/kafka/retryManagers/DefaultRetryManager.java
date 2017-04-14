@@ -49,15 +49,15 @@ public class DefaultRetryManager implements RetryManager {
 
     /**
      * Called to initialize this implementation.
-     * @param stormConfig - not used, at least for now.
+     * @param spoutConfig - not used, at least for now.
      */
-    public void open(Map stormConfig) {
+    public void open(Map spoutConfig) {
         // Load config options.
-        if (stormConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
-            maxRetries = ((Number) stormConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)).intValue();
+        if (spoutConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
+            maxRetries = ((Number) spoutConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)).intValue();
         }
-        if (stormConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
-            minRetryTimeMs = ((Number) stormConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)).longValue();
+        if (spoutConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
+            minRetryTimeMs = ((Number) spoutConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)).longValue();
         }
 
         // Init data structures.

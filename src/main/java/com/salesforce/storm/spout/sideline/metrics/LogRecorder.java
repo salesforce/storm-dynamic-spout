@@ -20,7 +20,7 @@ public class LogRecorder implements MetricsRecorder {
     private final Map<String, Object> assignedValues = Maps.newConcurrentMap();
 
     @Override
-    public void open(Map topologyConfig, TopologyContext topologyContext) {
+    public void open(Map spoutConfig, TopologyContext topologyContext) {
     }
 
     @Override

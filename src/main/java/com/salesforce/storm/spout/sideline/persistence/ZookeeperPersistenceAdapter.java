@@ -42,14 +42,14 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
     /**
      * Loads in configuration and sets up zookeeper/curator connection.
-     * @param topologyConfig - The storm topology config map.
+     * @param spoutConfig - The storm topology config map.
      */
-    public void open(Map topologyConfig) {
+    public void open(Map spoutConfig) {
          // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
-        final List<String> zkServers = (List<String>) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS);
+        final List<String> zkServers = (List<String>) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS);
 
         // Root node / prefix to write entries under.
-        final String zkRoot = (String) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
+        final String zkRoot = (String) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
         if (Strings.isNullOrEmpty(zkRoot)) {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
         }
@@ -65,7 +65,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         this.zkRoot = zkRoot;
 
         try {
-            curator = newCurator(topologyConfig);
+            curator = newCurator(spoutConfig);
             curator.start();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -266,14 +266,14 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     /**
      * Internal method to create a new Curator connection.
      */
-    private CuratorFramework newCurator(final Map topologyConfig) {
+    private CuratorFramework newCurator(final Map spoutConfig) {
         return CuratorFrameworkFactory.newClient(
             zkConnectionString,
-            ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue(),
-            ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
+            ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue(),
+            ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
             new RetryNTimes(
-                ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue(),
-                ((Number) topologyConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue()
+                ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue(),
+                ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue()
             )
         );
     }
