@@ -76,7 +76,8 @@ public class DefaultRetryManager implements RetryManager {
         numberOfTimesFailed.put(messageId, failCount);
 
         // Determine when we should retry this msg next
-        final long retryTime = getClock().millis() + (minRetryTimeMs * failCount);
+        final int backOff = (int)(Math.pow(2, failCount)) - 1;
+        final long retryTime = getClock().millis() + ( backOff * minRetryTimeMs);
 
         // If we had previous fails
         if (failCount > 1) {
