@@ -86,7 +86,7 @@ public class TupleMessageId {
                 + ", partition=" + partition
                 + ", offset=" + offset
                 + ", srcVirtualSpoutId='" + srcVirtualSpoutId + '\''
-                + ", timeStamp='" + timestamp + " (" + diff +")" + '\''
+                + ", timestamp='" + timestamp + " (" + diff +")" + '\''
                 + '}';
     }
 
