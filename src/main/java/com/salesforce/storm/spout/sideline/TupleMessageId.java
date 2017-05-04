@@ -2,6 +2,8 @@ package com.salesforce.storm.spout.sideline;
 
 import org.apache.kafka.common.TopicPartition;
 
+import java.time.Clock;
+
 /**
  * This object is used as the MessageId for Tuples emitted to the Storm topology.
  */
@@ -10,6 +12,7 @@ public class TupleMessageId {
     private final int partition;
     private final long offset;
     private final String srcVirtualSpoutId;
+    private final long timestamp;
 
     /**
      * Constructor.
@@ -23,6 +26,7 @@ public class TupleMessageId {
         this.partition = partition;
         this.offset = offset;
         this.srcVirtualSpoutId = srcVirtualSpoutId;
+        this.timestamp = Clock.systemUTC().millis();
     }
     
     public String getTopic() {
@@ -75,11 +79,14 @@ public class TupleMessageId {
 
     @Override
     public String toString() {
+        final long diff = Clock.systemUTC().millis() - timestamp;
+
         return "TupleMessageId{"
                 + "topic='" + topic + '\''
                 + ", partition=" + partition
                 + ", offset=" + offset
                 + ", srcVirtualSpoutId='" + srcVirtualSpoutId + '\''
+                + ", timestamp='" + timestamp + " (" + diff +")" + '\''
                 + '}';
     }
 

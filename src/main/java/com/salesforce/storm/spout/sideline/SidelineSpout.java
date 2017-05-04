@@ -530,6 +530,8 @@ public class SidelineSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final TupleMessageId tupleMessageId = (TupleMessageId) id;
 
+        logger.warn("Failed {}", tupleMessageId);
+
         // Fail the tuple via the coordinator
         getCoordinator().fail(tupleMessageId);
 
