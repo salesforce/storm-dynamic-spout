@@ -8,6 +8,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -510,7 +513,6 @@ public class Consumer {
         }
     }
 
-
     /**
      * Get the partitions that this particular consumer instance should consume from.
      * @return List of partitions to consume from
@@ -543,5 +545,18 @@ public class Consumer {
 
         // Return TopicPartitions for our assigned partitions
         return topicPartitions;
+    }
+
+    private Map<MetricName, ? extends Metric> metrics() {
+        return getKafkaConsumer().metrics();
+    }
+
+    public double getMaxLag() {
+        for (Map.Entry<MetricName, ? extends Metric> entry : metrics().entrySet()) {
+            if (entry.getKey().name().equals("records-lag-max")) {
+                return entry.getValue().value();
+            }
+        }
+        return -1.0;
     }
 }

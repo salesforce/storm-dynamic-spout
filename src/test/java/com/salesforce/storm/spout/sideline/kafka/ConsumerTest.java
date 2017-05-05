@@ -1810,6 +1810,7 @@ public class ConsumerTest {
             assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
             assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
+
         // Next one should return null
         ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
         assertNull("Should have nothing new to consume and be null", foundRecord);

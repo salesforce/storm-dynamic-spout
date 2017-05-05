@@ -86,4 +86,9 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
     public ConsumerState getCurrentState() {
         return ConsumerState.builder().build();
     }
+
+    @Override
+    public double getMaxLag() {
+        return 0;
+    }
 }
