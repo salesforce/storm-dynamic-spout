@@ -71,17 +71,24 @@ public class SpoutPartitionProgressMonitor {
     private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSidelineSpout spout) {
         final ConsumerState currentState = spout.getCurrentState();
 
+        // Max lag is the MAX lag across all partitions
+        // This is a hack...since its not tied to any specific partition.
+        final Double maxLag = spout.getMaxLag();
+
         for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
             final PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
             final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
 
+            // "Calculate" ending offset by adding currentOffset + maxLag
+            final long endingOffset = currentOffset + maxLag.longValue();
+
             if (previousProgress == null) {
-                mainProgressMap.put(topicPartition, new PartitionProgress(currentOffset, currentOffset, currentOffset));
+                mainProgressMap.put(topicPartition, new PartitionProgress(currentOffset, currentOffset, endingOffset));
                 continue;
             }
 
             // Build new progress
-            mainProgressMap.put(topicPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, currentOffset));
+            mainProgressMap.put(topicPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, endingOffset));
         }
 
         return Collections.unmodifiableMap(mainProgressMap);

@@ -23,4 +23,6 @@ public interface DelegateSidelineSpout {
     boolean isStopRequested();
 
     ConsumerState getCurrentState();
+
+    double getMaxLag();
 }

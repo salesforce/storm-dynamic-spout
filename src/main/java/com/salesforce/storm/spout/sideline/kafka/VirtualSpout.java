@@ -556,6 +556,11 @@ public class VirtualSpout implements DelegateSidelineSpout {
         return consumer.getCurrentState();
     }
 
+    @Override
+    public double getMaxLag() {
+        return consumer.getMaxLag();
+    }
+
     public Map<String, Object> getSpoutConfig() {
         return spoutConfig;
     }

@@ -10,8 +10,12 @@ import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import kafka.admin.AdminClient;
+import kafka.admin.AdminUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.Metric;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -27,12 +31,15 @@ import org.mockito.InOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -1810,6 +1817,13 @@ public class ConsumerTest {
             assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
             assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
         }
+
+        for (Map.Entry<MetricName, ? extends Metric> entry : consumer.metrics().entrySet()) {
+            if (entry.getKey().name().equals("records-lag-max")) {
+                logger.info("Metrics {} ", entry.getValue().value());
+            }
+        }
+
         // Next one should return null
         ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
         assertNull("Should have nothing new to consume and be null", foundRecord);
@@ -1821,6 +1835,12 @@ public class ConsumerTest {
         // Now unsub from the partition 0
         final boolean result = consumer.unsubscribeTopicPartition(expectedTopicPartition0);
         assertTrue("Should be true", result);
+
+        for (Map.Entry<MetricName, ? extends Metric> entry : consumer.metrics().entrySet()) {
+            if (entry.getKey().name().equals("records-lag-max")) {
+                logger.info("Metrics {} ", entry.getValue().value());
+            }
+        }
 
         // Attempt to consume, but nothing should be returned from partition 0, only partition 1
         for (int x=0; x<expectedNumberOfMsgsPerPartition; x++) {
