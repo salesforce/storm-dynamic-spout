@@ -285,7 +285,7 @@ public class SpoutMonitor implements Runnable {
                 continue;
             }
 
-            logger.info("== VirtualSpoutId {} Status ==", spout.getVirtualSpoutId());
+            logger.info("== VirtualSpoutId {} ({} filters applied) Status ==", spout.getVirtualSpoutId(), spout.getNumberOfFiltersApplied());
 
             // Calculate the progress
             for (Map.Entry<TopicPartition,SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
@@ -311,6 +311,8 @@ public class SpoutMonitor implements Runnable {
                 getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".currentOffset", partitionProgress.getCurrentOffset());
                 getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".endingOffset", partitionProgress.getEndingOffset());
             }
+            // Report how many filters are applied on this virtual spout.
+            getMetricsRecorder().assignValue(VirtualSpout.class, spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied());
         }
     }
 
