@@ -25,4 +25,6 @@ public interface DelegateSidelineSpout {
     ConsumerState getCurrentState();
 
     double getMaxLag();
+
+    int getNumberOfFiltersApplied();
 }

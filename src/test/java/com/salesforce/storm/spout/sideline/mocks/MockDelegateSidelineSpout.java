@@ -91,4 +91,9 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
     public double getMaxLag() {
         return 0;
     }
+
+    @Override
+    public int getNumberOfFiltersApplied() {
+        return 0;
+    }
 }
