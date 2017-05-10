@@ -381,6 +381,11 @@ The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sidel
 
 **This is still a work in progress.**
 
+# Interesting Ideas and Questions
+Just a collection of random ideas, or things we could do with this:
+- Can we use sidelines to trigger re-processing arbitrary ranges of data?
+- Can we use sidelines to trigger dynamically trigger dropping certain messages onto the floor?
+
 # Releases & Changelog 
 See [CHANGELOG.md](CHANGELOG.md) for full release changes.
 
