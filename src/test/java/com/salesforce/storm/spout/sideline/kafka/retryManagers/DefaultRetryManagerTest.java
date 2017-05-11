@@ -21,8 +21,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class DefaultRetryManagerTest {
-    private static final Logger logger = LoggerFactory.getLogger(DefaultRetryManagerTest.class);
-
     /**
      * Used to mock the system clock.
      */
@@ -45,16 +43,20 @@ public class DefaultRetryManagerTest {
     public void testOpen() {
         final int expectedMaxRetries = 44;
         final long expectedMinRetryTimeMs = 4455;
+        final double expectedDelayMultiplier = 4.56;
+        final long expectedMaxDelayMS = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, expectedMaxDelayMS);
 
         // Create instance and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
-        assertEquals("Wrong max retries", expectedMaxRetries, retryManager.getMaxRetries());
-        assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getMinRetryTimeMs());
+        assertEquals("Wrong max retries", expectedMaxRetries, retryManager.getRetryLimit());
+        assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getInitialRetryDelayMs());
+        assertEquals("Wrong retry time", expectedDelayMultiplier, retryManager.getRetryDelayMultiplier(), 0.001);
+        assertEquals("Wrong retry time", expectedMaxDelayMS, retryManager.getRetryDelayMaxMs());
     }
 
     /**
@@ -63,14 +65,16 @@ public class DefaultRetryManagerTest {
     @Test
     public void testOpenWithNoConfigUsesDefaults() {
         // Build config.
-        Map stormConfig = getDefaultConfig(null, null);
+        Map stormConfig = getDefaultConfig(null, null, null, null);
 
         // Create instance and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
-        assertEquals("Wrong max retries", 25, retryManager.getMaxRetries());
-        assertEquals("Wrong retry time", 1000, retryManager.getMinRetryTimeMs());
+        assertEquals("Wrong max retries", -1, retryManager.getRetryLimit());
+        assertEquals("Wrong retry time", 2000, retryManager.getInitialRetryDelayMs());
+        assertEquals("Wrong max delay", 60 * 1000, retryManager.getRetryDelayMaxMs());
+        assertEquals("Wrong delay multiplier", 2.0, retryManager.getRetryDelayMultiplier(), 0.01);
     }
 
     /**
@@ -82,13 +86,19 @@ public class DefaultRetryManagerTest {
         final int expectedMaxRetries = 10;
         final long expectedMinRetryTimeMs = 1000;
 
+        // Use a wacky multiplier, because why not?
+        final double expectedDelayMultiplier = 44.5;
+
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
+
+        // Calculate the 1st retry times
+        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Define our tuple message id
         final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
@@ -99,22 +109,22 @@ public class DefaultRetryManagerTest {
         retryManager.failed(tupleMessageId1);
 
         // Validate it has failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
 
         // Mark second as having failed
         retryManager.failed(tupleMessageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
 
         // Mark 3rd as having failed
         retryManager.failed(tupleMessageId3);
 
         // Validate it has all three as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId3, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId3, 1, firstRetryTime, false);
     }
 
     /**
@@ -126,8 +136,11 @@ public class DefaultRetryManagerTest {
         final int expectedMaxRetries = 10;
         final long expectedMinRetryTimeMs = 1000;
 
+        // Use a wacky multiplier, because why not?
+        final double expectedDelayMultiplier = 11.25;
+
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -139,9 +152,9 @@ public class DefaultRetryManagerTest {
         final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
-        final long firstRetryTime = FIXED_TIME + (1 * expectedMinRetryTimeMs);
-        final long secondRetryTime = FIXED_TIME + (3 * expectedMinRetryTimeMs);
-        final long thirdRetryTime = FIXED_TIME + (7 * expectedMinRetryTimeMs);
+        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long thirdRetryTime = FIXED_TIME + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Mark first as having failed
         retryManager.failed(tupleMessageId1);
@@ -179,6 +192,63 @@ public class DefaultRetryManagerTest {
     }
 
     /**
+     * Tests what happens if a tuple fails more than our max fail limit.
+     */
+    @Test
+    public void testRetryDelayWhenExceedsMaxTimeDelaySetting() {
+        // construct manager
+        final int expectedMaxRetries = 10;
+        final long expectedMinRetryTimeMs = 1000;
+
+        // Use a multiplier of 10
+        final double expectedDelayMultiplier = 5;
+
+        // Set a max delay of 12 seconds
+        final long expectedMaxDelay = 12000;
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, expectedMaxDelay);
+
+        // Create instance, inject our mock clock,  and call open.
+        DefaultRetryManager retryManager = new DefaultRetryManager();
+        retryManager.setClock(mockClock);
+        retryManager.open(stormConfig);
+
+        // Define our tuple message id
+        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
+
+        // Calculate the 1st, 2nd, and 3rd fail retry times
+        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long thirdRetryTime = FIXED_TIME + expectedMaxDelay;
+
+        // Mark first as having failed
+        retryManager.failed(tupleMessageId1);
+
+        // Validate it has failed
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+
+        // Now fail messageId1 a second time.
+        retryManager.failed(tupleMessageId1);
+
+        // Validate it incremented our delay time, still below configured max delay
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 2, secondRetryTime, false);
+
+        // Now fail messageId1 a 3rd time.
+        retryManager.failed(tupleMessageId1);
+
+        // Validate its pinned at configured max delay
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 3, thirdRetryTime, false);
+
+        // Now fail messageId1 a 4th time.
+        retryManager.failed(tupleMessageId1);
+
+        // Validate its still pinned at configured max delay
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 4, thirdRetryTime, false);
+    }
+
+
+    /**
      * Tests that all previously un-tracked messageIds should be retried.
      */
     @Test
@@ -188,7 +258,7 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -213,7 +283,7 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -223,9 +293,38 @@ public class DefaultRetryManagerTest {
         // Define our tuple message id
         final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
 
-        assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(tupleMessageId));
-        assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(tupleMessageId));
-        assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(tupleMessageId));
+        for (int x=0; x<100; x++) {
+            assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(tupleMessageId));
+        }
+    }
+
+    /**
+     * Tests retryFurther always returns true if maxRetries is configured to a value less than 0
+     */
+    @Test
+    public void testRetryFurtherWithMaxRetriesSetNegative() {
+        // construct manager
+        final int expectedMaxRetries = -1;
+        final long expectedMinRetryTimeMs = 1000;
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
+
+        // Create instance, inject our mock clock,  and call open.
+        DefaultRetryManager retryManager = new DefaultRetryManager();
+        retryManager.setClock(mockClock);
+        retryManager.open(stormConfig);
+
+        // Define our tuple message id
+        final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
+
+        for (int x=0; x<100; x++) {
+            // Fail tuple
+            retryManager.failed(tupleMessageId);
+
+            // See if we should retry
+            assertTrue("Should always be true because we are configured to always retry", retryManager.retryFurther(tupleMessageId));
+        }
     }
 
     /**
@@ -237,8 +336,11 @@ public class DefaultRetryManagerTest {
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
 
+        // Use a wacky multiplier, because why not?
+        final double expectedDelayMultiplier = 1.5;
+
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -250,9 +352,9 @@ public class DefaultRetryManagerTest {
         final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
-        final long firstRetryTime = FIXED_TIME + (1 * expectedMinRetryTimeMs);
-        final long secondRetryTime = FIXED_TIME + (3 * expectedMinRetryTimeMs);
-        final long thirdRetryTime = FIXED_TIME + (7 * expectedMinRetryTimeMs);
+        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long thirdRetryTime = FIXED_TIME + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Mark first as having failed
         retryManager.failed(tupleMessageId1);
@@ -303,8 +405,11 @@ public class DefaultRetryManagerTest {
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
 
+        // Use a wacky multiplier, because why not?
+        final double expectedDelayMultiplier = 4.2;
+
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -320,8 +425,8 @@ public class DefaultRetryManagerTest {
         retryManager.failed(tupleMessageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, (FIXED_TIME + expectedMinRetryTimeMs), false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
+        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
 
         // Ask for the next tuple to retry, should be empty
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
@@ -339,8 +444,11 @@ public class DefaultRetryManagerTest {
         final int expectedMaxRetries = 3;
         final long expectedMinRetryTimeMs = 1000;
 
+        // Use a wacky multiplier, because why not?
+        final double expectedDelayMultiplier = 6.2;
+
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -359,8 +467,8 @@ public class DefaultRetryManagerTest {
         retryManager.failed(tupleMessageId2);
 
         // Calculate the first and 2nd fail retry times
-        final long firstRetryTime = FIXED_TIME + (1 * expectedMinRetryTimeMs);
-        final long secondRetryTime = FIXED_TIME + (3 * expectedMinRetryTimeMs);
+        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Validate it has first two as failed
         validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
@@ -373,7 +481,7 @@ public class DefaultRetryManagerTest {
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
 
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
-        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + expectedMinRetryTimeMs), ZoneId.of("UTC")));
+        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), ZoneId.of("UTC")));
 
         // Now tupleMessageId1 should expire next,
         TupleMessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
@@ -391,7 +499,7 @@ public class DefaultRetryManagerTest {
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
 
         // Advance time again, by 2x expected retry time, plus a few MS
-        final long newFixedTime = FIXED_TIME + (3 * expectedMinRetryTimeMs) + 10;
+        final long newFixedTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier) + 10;
         retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(newFixedTime), ZoneId.of("UTC")));
 
         // Now tupleMessageId1 should expire next,
@@ -408,7 +516,7 @@ public class DefaultRetryManagerTest {
         validateTupleNotInFailedSetButIsInFlight(retryManager, tupleMessageId2);
 
         // Calculate time for 3rd fail, against new fixed time
-        final long thirdRetryTime = newFixedTime + (7 * expectedMinRetryTimeMs);
+        final long thirdRetryTime = newFixedTime + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Mark tuple2 as having failed
         retryManager.failed(tupleMessageId2);
@@ -457,13 +565,19 @@ public class DefaultRetryManagerTest {
     }
 
     // Helper method
-    private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs) {
+    private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs, Double delayMultiplier, Long expectedMaxDelayMS) {
         Map stormConfig = Maps.newHashMap();
         if (maxRetries != null) {
-            stormConfig.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, maxRetries);
+            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_RETRY_LIMIT, maxRetries);
         }
         if (minRetryTimeMs != null) {
-            stormConfig.put(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, minRetryTimeMs);
+            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS, minRetryTimeMs);
+        }
+        if (delayMultiplier != null) {
+            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER, delayMultiplier);
+        }
+        if (expectedMaxDelayMS != null) {
+            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMS);
         }
         return stormConfig;
     }
