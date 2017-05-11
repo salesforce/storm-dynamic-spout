@@ -290,7 +290,7 @@ public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger 
 
 ## Optional Interfaces for Overachievers
 For most use cases the above interfaces are all that are required to get going.  But..sometimes your use case requires
-you to do do something just a little special of different.  If that's the case with you, we provide the following 
+you to do do something just a little special or different.  If that's the case with you, we provide the following 
 configurable interfaces to hopefully ease the pain.
 
 ### [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java)
@@ -344,10 +344,10 @@ This implementation only stores metadata within memory.  This is useful for test
 
 ### RetryManager Implementations
 #### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
-This is the default implementation for the spout.  It attempts retries of failed tuples a maximum of `MAX_RETRIES` times.
+This is the default implementation for the spout.  It attempts retries of failed tuples a maximum of `retry_limit` times.
 After a tuple fails more than that, it will be "acked" or marked as completed and never tried again.
-Each retry is attempted using an exponential back-off time period.  The first retry will be attempted within `MIN_RETRY_TIME_MS` milliseconds.  Each attempt
-after that will be retried at (`FAIL_COUNT` * `MIN_RETRY_TIME_MS`) milliseconds.
+Each retry is attempted using a calculated back-off time period.  The first retry will be attempted after `initial_delay_ms` milliseconds.  Each attempt
+after that will be retried at (`FAIL_COUNT` * `initial_delay_ms` * `delay_multiplier`) milliseconds OR `retry_delay_max_ms` milliseconds, which ever is smaller.
 
 ###### Configuration
 Config Key   | Type | Description | Default Value |
