@@ -365,7 +365,7 @@ This implementation will never retry failed messages.  One and done.
 
 ### TupleBuffer Implementations
 #### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
-This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added too.  A very chatty
+This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added to.  A very chatty
 virtual spout will not block/overrun less chatty ones.  The `poll()` method will round robin through all the available
 queues to get the next msg.
  
