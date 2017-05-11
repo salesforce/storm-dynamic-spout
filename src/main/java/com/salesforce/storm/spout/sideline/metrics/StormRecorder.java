@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
-import com.salesforce.storm.spout.sideline.SidelineSpout;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
