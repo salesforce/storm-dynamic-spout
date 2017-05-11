@@ -35,8 +35,8 @@ public class DefaultRetryManager implements RetryManager {
     // Each time we fail, double our delay, so 4, 8, 16 seconds, etc.
     private double retryDelayMultiplier = 2.0;
 
-    // Maximum delay between successive retries
-    private long retryDelayMaxMs = 60 * 1000;
+    // Maximum delay between successive retries, defaults to 15 minutes.
+    private long retryDelayMaxMs = 900000;
 
     /**
      * This Set holds which tuples are in flight.

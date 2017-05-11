@@ -71,7 +71,7 @@ public class DefaultRetryManagerTest {
 
         assertEquals("Wrong max retries", -1, retryManager.getRetryLimit());
         assertEquals("Wrong retry time", 2000, retryManager.getInitialRetryDelayMs());
-        assertEquals("Wrong max delay", 60 * 1000, retryManager.getRetryDelayMaxMs());
+        assertEquals("Wrong max delay", 15 * 60 * 1000, retryManager.getRetryDelayMaxMs());
         assertEquals("Wrong delay multiplier", 2.0, retryManager.getRetryDelayMultiplier(), 0.01);
     }
 

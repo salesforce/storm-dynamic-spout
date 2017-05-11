@@ -352,8 +352,10 @@ after that will be retried at (`FAIL_COUNT` * `MIN_RETRY_TIME_MS`) milliseconds.
 ###### Configuration
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.failed_msg_retry_manager.max_retries | int | Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. | 25
-sideline_spout.failed_msg_retry_manager.min_retry_time_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
+sideline_spout.retry_manager.retry_limit | int | Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. | -1
+sideline_spout.retry_manager.delay_multiplier | double | Defines how quickly the delay increases after each failed tuple. A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc. | 2.0
+sideline_spout.retry_manager.initial_delay_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * initial_delay_ms * delay_multiplier).  Example: If a tuple fails 5 times, initial_delay_ms is set to 1000, and delay_multiplier is set to 3.0 -- it will wait at least (5 * 1000 * 3.0) milliseconds before the next retry attempt. | 2000
+sideline_spout.retry_manager.retry_delay_max_ms | long | Defines an upper bound of the max delay time between retried a failed tuple. | 900000
 
 #### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
 This implementation will always retry failed tuples at the earliest chance it can.  No back-off strategy, no maximum times a tuple can fail.

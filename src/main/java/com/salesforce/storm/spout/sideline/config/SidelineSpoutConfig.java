@@ -135,7 +135,7 @@ public class SidelineSpoutConfig {
     public static final String RETRY_MANAGER_INITIAL_DELAY_MS = "sideline_spout.retry_manager.initial_delay_ms";
 
     /**
-     * (double) Defines how long to wait each time we fail a tuple.
+     * (double) Defines how quickly the delay increases after each failed tuple.
      *
      * Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.
      *
@@ -147,7 +147,7 @@ public class SidelineSpoutConfig {
     /**
      * (long) Defines an upper bound of the max delay time between retried a failed tuple.
      *
-     * Default Value: 60000 (60 minutes)
+     * Default Value: 900000 (15 minutes)
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     public static final String RETRY_MANAGER_MAX_DELAY_MS = "sideline_spout.retry_manager.retry_delay_max_ms";
