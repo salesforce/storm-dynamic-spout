@@ -64,4 +64,13 @@ public interface MetricsRecorder {
      */
     void timer(Class sourceClass, String metricName, long timeInMs);
 
+    /**
+     * Starts a timer for the given sourceClass and metricName.
+     */
+    void startTimer(Class sourceClass, String metricName);
+
+    /**
+     * Stops & records a timer for the given sourceClass and metricName.
+     */
+    void stopTimer(Class sourceClass, String metricName);
 }

@@ -19,6 +19,9 @@ public class LogRecorder implements MetricsRecorder {
     private final Map<String, CircularFifoBuffer> averages = Maps.newConcurrentMap();
     private final Map<String, Object> assignedValues = Maps.newConcurrentMap();
 
+    // For storing timer start values
+    private final Map<String, Long> timerStartValues = Maps.newConcurrentMap();
+
     @Override
     public void open(Map spoutConfig, TopologyContext topologyContext) {
     }
@@ -91,6 +94,26 @@ public class LogRecorder implements MetricsRecorder {
     @Override
     public void timer(Class sourceClass, String metricName, long timeInMs) {
         logger.debug("[TIMER] {} + {}", generateKey(sourceClass, metricName), timeInMs);
+    }
+
+    @Override
+    public void startTimer(Class sourceClass, String metricName) {
+        final String key = generateKey(sourceClass, metricName);
+        timerStartValues.put(key, Clock.systemUTC().millis());
+    }
+
+    @Override
+    public void stopTimer(Class sourceClass, String metricName) {
+        final long stopTime = Clock.systemUTC().millis();
+
+        final String key = generateKey(sourceClass, metricName);
+        final Long startTime = timerStartValues.get(key);
+
+        if (startTime == null) {
+            logger.warn("Could not find timer key {}", key);
+            return;
+        }
+        timer(sourceClass, metricName, stopTime - startTime);
     }
 
     private String generateKey(Class sourceClass, String metricName) {
