@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
-import com.salesforce.storm.spout.sideline.SidelineSpout;
+import com.google.common.collect.Maps;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -30,6 +30,8 @@ public class StormRecorder implements MetricsRecorder {
     private MultiReducedMetric timers;
     private MultiCountMetric counters;
 
+    // For storing timer start values
+    private final Map<String, Long> timerStartValues = Maps.newConcurrentMap();
 
     @Override
     public void open(final Map spoutConfig, final TopologyContext topologyContext) {
@@ -95,7 +97,26 @@ public class StormRecorder implements MetricsRecorder {
         timers.scope(key).update(timeInMs);
     }
 
+    @Override
+    public void startTimer(Class sourceClass, String metricName) {
+        final String key = generateKey(sourceClass, metricName);
+        timerStartValues.put(key, Clock.systemUTC().millis());
+    }
 
+    @Override
+    public void stopTimer(Class sourceClass, String metricName) {
+        final long stopTime = Clock.systemUTC().millis();
+
+        final String key = generateKey(sourceClass, metricName);
+        final Long startTime = timerStartValues.get(key);
+
+        if (startTime == null) {
+            logger.warn("Could not find timer key {}", key);
+            return;
+        }
+        timer(sourceClass, metricName, stopTime - startTime);
+    }
+    
     private String generateKey(Class sourceClass, String metricName) {
         return sourceClass.getSimpleName() + "." + metricName;
     }
