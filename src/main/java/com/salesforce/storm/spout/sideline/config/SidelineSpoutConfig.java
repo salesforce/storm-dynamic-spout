@@ -81,22 +81,22 @@ public class SidelineSpoutConfig {
     public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zookeeper.root";
 
     /**
-     * (Integer) Zookeeper session timeout
+     * (Integer) Zookeeper session timeout.
      */
     public static final String PERSISTENCE_ZK_SESSION_TIMEOUT = "sideline_spout.persistence.zookeeper.session_timeout";
 
     /**
-     * (Integer) Zookeeper connection timeout
+     * (Integer) Zookeeper connection timeout.
      */
     public static final String PERSISTENCE_ZK_CONNECTION_TIMEOUT = "sideline_spout.persistence.zookeeper.connection_timeout";
 
     /**
-     * (Integer) Zookeeper retry attempts
+     * (Integer) Zookeeper retry attempts.
      */
     public static final String PERSISTENCE_ZK_RETRY_ATTEMPTS = "sideline_spout.persistence.zookeeper.retry_attempts";
 
     /**
-     * (Integer) Zookeeper retry interval
+     * (Integer) Zookeeper retry interval.
      */
     public static final String PERSISTENCE_ZK_RETRY_INTERVAL = "sideline_spout.persistence.zookeeper.retry_interval";
 
@@ -113,13 +113,14 @@ public class SidelineSpoutConfig {
 
     /**
      * (int) Defines how many times a failed message will be replayed before just being acked.
-     * A value of 0 means tuples will never be retried.
      * A negative value means tuples will be retried forever.
+     * A value of 0 means tuples will never be retried.
+     * A positive value means tuples will be retried up to this limit, then dropped.
      *
-     * Default Value: 25
+     * Default Value: -1
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
-    public static final String FAILED_MSG_RETRY_MANAGER_MAX_RETRIES = "sideline_spout.failed_msg_retry_manager.max_retries";
+    public static final String RETRY_MANAGER_RETRY_LIMIT = "sideline_spout.retry_manager.retry_limit";
 
     /**
      * (long) Defines how long to wait before retry attempts are made on failed tuples, in milliseconds.
@@ -128,10 +129,28 @@ public class SidelineSpoutConfig {
      * Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds
      * before the next retry attempt.
      *
-     * Default Value: 1000
+     * Default Value: 2000 (2 seconds)
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
-    public static final String FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS = "sideline_spout.failed_msg_retry_manager.min_retry_time_ms";
+    public static final String RETRY_MANAGER_INITIAL_DELAY_MS = "sideline_spout.retry_manager.initial_delay_ms";
+
+    /**
+     * (double) Defines how quickly the delay increases after each failed tuple.
+     *
+     * Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.
+     *
+     * Default Value: 2.0
+     * Optional - Only required if you use the DefaultRetryManager implementation.
+     */
+    public static final String RETRY_MANAGER_DELAY_MULTIPLIER = "sideline_spout.retry_manager.delay_multiplier";
+
+    /**
+     * (long) Defines an upper bound of the max delay time between retried a failed tuple.
+     *
+     * Default Value: 900000 (15 minutes)
+     * Optional - Only required if you use the DefaultRetryManager implementation.
+     */
+    public static final String RETRY_MANAGER_MAX_DELAY_MS = "sideline_spout.retry_manager.retry_delay_max_ms";
 
 ///////////////////////////////////
 // Metrics Collection
@@ -211,13 +230,13 @@ public class SidelineSpoutConfig {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
         }
-        if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
-            clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, 25);
-            logger.info("Unspecified configuration value for {} using default value {}", FAILED_MSG_RETRY_MANAGER_MAX_RETRIES, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MAX_RETRIES));
+        if (!clonedConfig.containsKey(RETRY_MANAGER_RETRY_LIMIT)) {
+            clonedConfig.put(RETRY_MANAGER_RETRY_LIMIT, 25);
+            logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_RETRY_LIMIT, clonedConfig.get(RETRY_MANAGER_RETRY_LIMIT));
         }
-        if (!clonedConfig.containsKey(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
-            clonedConfig.put(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, 1000L);
-            logger.info("Unspecified configuration value for {} using default value {}", FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS, clonedConfig.get(FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS));
+        if (!clonedConfig.containsKey(RETRY_MANAGER_INITIAL_DELAY_MS)) {
+            clonedConfig.put(RETRY_MANAGER_INITIAL_DELAY_MS, 1000L);
+            logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_INITIAL_DELAY_MS, clonedConfig.get(RETRY_MANAGER_INITIAL_DELAY_MS));
         }
         if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
             clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());

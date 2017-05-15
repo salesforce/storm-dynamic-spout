@@ -2,9 +2,6 @@ package com.salesforce.storm.spout.sideline.trigger;
 
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 
-import java.util.Collections;
-import java.util.List;
-
 public class SidelineRequest {
 
     public final FilterChainStep step;

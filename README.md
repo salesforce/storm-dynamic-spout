@@ -290,7 +290,7 @@ public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger 
 
 ## Optional Interfaces for Overachievers
 For most use cases the above interfaces are all that are required to get going.  But..sometimes your use case requires
-you to do do something just a little special of different.  If that's the case with you, we provide the following 
+you to do do something just a little special or different.  If that's the case with you, we provide the following 
 configurable interfaces to hopefully ease the pain.
 
 ### [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java)
@@ -344,16 +344,18 @@ This implementation only stores metadata within memory.  This is useful for test
 
 ### RetryManager Implementations
 #### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
-This is the default implementation for the spout.  It attempts retries of failed tuples a maximum of `MAX_RETRIES` times.
+This is the default implementation for the spout.  It attempts retries of failed tuples a maximum of `retry_limit` times.
 After a tuple fails more than that, it will be "acked" or marked as completed and never tried again.
-Each retry is attempted using an exponential back-off time period.  The first retry will be attempted within `MIN_RETRY_TIME_MS` milliseconds.  Each attempt
-after that will be retried at (`FAIL_COUNT` * `MIN_RETRY_TIME_MS`) milliseconds.
+Each retry is attempted using a calculated back-off time period.  The first retry will be attempted after `initial_delay_ms` milliseconds.  Each attempt
+after that will be retried at (`FAIL_COUNT` * `initial_delay_ms` * `delay_multiplier`) milliseconds OR `retry_delay_max_ms` milliseconds, which ever is smaller.
 
 ###### Configuration
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.failed_msg_retry_manager.max_retries | int | Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. | 25
-sideline_spout.failed_msg_retry_manager.min_retry_time_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms).  Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
+sideline_spout.retry_manager.retry_limit | int | Defines how many times a failed message will be replayed before just being acked.  A value of 0 means tuples will never be retried. A negative value means tuples will be retried forever. | -1
+sideline_spout.retry_manager.delay_multiplier | double | Defines how quickly the delay increases after each failed tuple. A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc. | 2.0
+sideline_spout.retry_manager.initial_delay_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * initial_delay_ms * delay_multiplier).  Example: If a tuple fails 5 times, initial_delay_ms is set to 1000, and delay_multiplier is set to 3.0 -- it will wait at least (5 * 1000 * 3.0) milliseconds before the next retry attempt. | 2000
+sideline_spout.retry_manager.retry_delay_max_ms | long | Defines an upper bound of the max delay time between retried a failed tuple. | 900000
 
 #### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
 This implementation will always retry failed tuples at the earliest chance it can.  No back-off strategy, no maximum times a tuple can fail.
@@ -363,7 +365,7 @@ This implementation will never retry failed messages.  One and done.
 
 ### TupleBuffer Implementations
 #### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
-This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added too.  A very chatty
+This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added to.  A very chatty
 virtual spout will not block/overrun less chatty ones.  The `poll()` method will round robin through all the available
 queues to get the next msg.
  
@@ -380,6 +382,11 @@ This is a first in, first out implementation.  It has absolutely no "fairness" b
 The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how a metrics gathering implementation would behave.
 
 **This is still a work in progress.**
+
+# Interesting Ideas and Questions
+Just a collection of random ideas, or things we could do with this:
+- Can we use sidelines to trigger re-processing arbitrary ranges of data?
+- Can we use sidelines to trigger dynamically trigger dropping certain messages onto the floor?
 
 # Releases & Changelog 
 See [CHANGELOG.md](CHANGELOG.md) for full release changes.

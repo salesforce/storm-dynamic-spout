@@ -21,9 +21,22 @@ import java.util.TreeMap;
  * after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
  */
 public class DefaultRetryManager implements RetryManager {
-    // Configuration
-    private int maxRetries = 25;
-    private long minRetryTimeMs = 1000;
+    /**
+     * Define our retry limit.
+     * A value of less than 0 will mean we'll retry forever
+     * A value of 0 means we'll never retry.
+     * A value of greater than 0 sets an upper bound of number of retries.
+     */
+    private int retryLimit = -1;
+
+    // Initial delay after a tuple fails for the first time, in milliseconds.
+    private long initialRetryDelayMs = 2000;
+
+    // Each time we fail, double our delay, so 4, 8, 16 seconds, etc.
+    private double retryDelayMultiplier = 2.0;
+
+    // Maximum delay between successive retries, defaults to 15 minutes.
+    private long retryDelayMaxMs = 900000;
 
     /**
      * This Set holds which tuples are in flight.
@@ -49,15 +62,21 @@ public class DefaultRetryManager implements RetryManager {
 
     /**
      * Called to initialize this implementation.
-     * @param spoutConfig - not used, at least for now.
+     * @param spoutConfig used to pass in any configuration values.
      */
     public void open(Map spoutConfig) {
         // Load config options.
-        if (spoutConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)) {
-            maxRetries = ((Number) spoutConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MAX_RETRIES)).intValue();
+        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_RETRY_LIMIT)) {
+            retryLimit = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_RETRY_LIMIT)).intValue();
         }
-        if (spoutConfig.containsKey(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)) {
-            minRetryTimeMs = ((Number) spoutConfig.get(SidelineSpoutConfig.FAILED_MSG_RETRY_MANAGER_MIN_RETRY_TIME_MS)).longValue();
+        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)) {
+            initialRetryDelayMs = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)).longValue();
+        }
+        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)) {
+            retryDelayMultiplier = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)).doubleValue();
+        }
+        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)) {
+            retryDelayMaxMs = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)).longValue();
         }
 
         // Init data structures.
@@ -68,7 +87,7 @@ public class DefaultRetryManager implements RetryManager {
 
     /**
      * Mark a messageId as having failed and start tracking it.
-     * @param messageId - messageId to track as having failed.
+     * @param messageId messageId to track as having failed.
      */
     @Override
     public void failed(TupleMessageId messageId) {
@@ -76,8 +95,14 @@ public class DefaultRetryManager implements RetryManager {
         numberOfTimesFailed.put(messageId, failCount);
 
         // Determine when we should retry this msg next
-        final int backOff = (int)(Math.pow(2, failCount)) - 1;
-        final long retryTime = getClock().millis() + ( backOff * minRetryTimeMs);
+        // Calculate how many milliseconds to wait until the next retry
+        long additionalTime = (long) (failCount * getInitialRetryDelayMs() * getRetryDelayMultiplier());
+        if (additionalTime > getRetryDelayMaxMs()) {
+            // If its over our configured max delay, use max delay
+            additionalTime = getRetryDelayMaxMs();
+        }
+        // Calculate the timestamp for the retry.
+        final long retryTime = getClock().millis() + additionalTime;
 
         // If we had previous fails
         if (failCount > 1) {
@@ -137,15 +162,20 @@ public class DefaultRetryManager implements RetryManager {
     @Override
     public boolean retryFurther(TupleMessageId messageId) {
         // If max retries is set to 0, we will never retry any tuple.
-        if (getMaxRetries() == 0) {
+        if (getRetryLimit() == 0) {
             return false;
         }
 
-        // If we haven't tracked it yet
+        // If max retries is less than 0, we'll retry forever
+        if (getRetryLimit() < 0) {
+            return true;
+        }
+
+        // Find out how many times this tuple has failed previously.
         final int numberOfTimesHasFailed = numberOfTimesFailed.getOrDefault(messageId, 0);
 
         // If we have exceeded our max retry limit
-        if (numberOfTimesHasFailed >= maxRetries) {
+        if (numberOfTimesHasFailed >= retryLimit) {
             // Then we shouldn't retry
             return false;
         }
@@ -153,47 +183,67 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     /**
-     * @return - max number of times we'll retry a failed tuple.
+     * @return max number of times we'll retry a failed tuple.
      */
-    public int getMaxRetries() {
-        return maxRetries;
+    public int getRetryLimit() {
+        return retryLimit;
     }
 
     /**
-     * @return - minimum time between retries, in milliseconds.
+     * @return minimum time between retries, in milliseconds.
      */
-    public long getMinRetryTimeMs() {
-        return minRetryTimeMs;
+    public long getInitialRetryDelayMs() {
+        return initialRetryDelayMs;
+    }
+
+    /**
+     * @return The configured retry delay multiplier.
+     */
+    public double getRetryDelayMultiplier() {
+        return retryDelayMultiplier;
+    }
+
+    /**
+     * @return The configured max delay time, in milliseconds.
+     */
+    public long getRetryDelayMaxMs() {
+        return retryDelayMaxMs;
     }
 
     /**
      * Used internally and in tests.
-     * @return - returns all of the message Ids in flight / being processed by the topology currently.
+     * @return returns all of the message Ids in flight / being processed by the topology currently.
      */
-    protected Set<TupleMessageId> getRetriesInFlight() {
+    Set<TupleMessageId> getRetriesInFlight() {
         return retriesInFlight;
     }
 
-    protected Map<TupleMessageId, Integer> getNumberOfTimesFailed() {
+    /**
+     * Used internally and in tests.
+     */
+    Map<TupleMessageId, Integer> getNumberOfTimesFailed() {
         return numberOfTimesFailed;
     }
 
-    protected TreeMap<Long, Queue<TupleMessageId>> getFailedMessageIds() {
+    /**
+     * Used internally and in tests.
+     */
+    TreeMap<Long, Queue<TupleMessageId>> getFailedMessageIds() {
         return failedMessageIds;
     }
 
     /**
-     * @return - return our clock implementation.  Useful for testing.
+     * @return The configured clock implementation.  Useful for testing.
      */
-    protected Clock getClock() {
+    Clock getClock() {
         return clock;
     }
 
     /**
      * For injecting a clock implementation.  Useful for testing.
-     * @param clock - the clock implementation to use.
+     * @param clock the clock implementation to use.
      */
-    protected void setClock(Clock clock) {
+    void setClock(Clock clock) {
         this.clock = clock;
     }
 }
