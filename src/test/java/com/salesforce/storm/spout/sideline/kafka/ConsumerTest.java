@@ -1920,7 +1920,6 @@ public class ConsumerTest {
         assertEquals("Partition 1's last committed offset should be its starting offset", (Long) partition1StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition1));
 
         // Define the values we expect to get
-        // Ugh this is hacky, whatever
         final Set<String> expectedValues = Sets.newHashSet(
             // Partition 0 should not skip any messages!
             "partition0-offset2", "partition0-offset3",

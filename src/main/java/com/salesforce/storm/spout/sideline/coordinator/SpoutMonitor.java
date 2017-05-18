@@ -267,7 +267,6 @@ public class SpoutMonitor implements Runnable {
         getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
         getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
 
-        // TODO: All of this is hacky.  And how do we calculate the fire hose status?
         // Loop through spouts instances
         if (consumerMonitor == null) {
             // Create consumer monitor instance
@@ -276,7 +275,6 @@ public class SpoutMonitor implements Runnable {
         }
 
         // Loop thru all of them to get virtualSpout Ids.
-        // This doesn't work for the 'firehose' instance tho..and we have no good way to identify which is the 'firehose'
         for (final SpoutRunner spoutRunner : spoutRunners.values()) {
             final DelegateSidelineSpout spout = spoutRunner.getSpout();
             Map<TopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);

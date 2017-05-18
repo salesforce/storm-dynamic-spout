@@ -8,7 +8,7 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import java.util.List;
 
 /**
- * Hacked up extension of SpoutOutputCollector.
+ * Extension of SpoutOutputCollector to aide in testing.
  */
 public class MockSpoutOutputCollector extends SpoutOutputCollector {
     /**
