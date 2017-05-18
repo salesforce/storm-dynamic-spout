@@ -338,6 +338,8 @@ public class Consumer {
      * SOME partitions before the exception was thrown, those messages are considered "consumed"
      * by KafkaClient, and there's no way to get them w/o seeking back to them for those partitions.
      *
+     * This means when we roll back, we may replay some messages :/
+     *
      * @param outOfRangeException - the exception that was raised by the consumer.
      */
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {

@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Extremely hacky way to monitor VirtualSpout progress.
+ * Attempts to monitor VirtualSpout progress.
  */
 public class SpoutPartitionProgressMonitor {
     private static final Logger logger = LoggerFactory.getLogger(SpoutPartitionProgressMonitor.class);
@@ -50,7 +50,7 @@ public class SpoutPartitionProgressMonitor {
     private SidelineRequestIdentifier getSidelineRequestIdentifier(final DelegateSidelineSpout spout) {
         final String virtualSpoutId = spout.getVirtualSpoutId();
 
-        // Parse out the SidelineRequestId, this is hacky
+        // Parse out the SidelineRequestId, this is not ideal.
         final String[] bits = virtualSpoutId.split(":");
         if (bits.length != 2) {
             logger.warn("Unable to parse virtualSpoutId: {}", virtualSpoutId);
@@ -72,7 +72,8 @@ public class SpoutPartitionProgressMonitor {
         final ConsumerState currentState = spout.getCurrentState();
 
         // Max lag is the MAX lag across all partitions
-        // This is a hack...since its not tied to any specific partition.
+        // This is not ideal...since its not tied to any specific partition.
+        // At best you'll get the MAX lag for all of the partitions your instance is consuming from :/
         final Double maxLag = spout.getMaxLag();
 
         for (TopicPartition topicPartition : currentState.getTopicPartitions()) {

@@ -85,7 +85,7 @@ public class AbstractSchemeTest {
 
         @Override
         public List<Object> deserialize(ByteBuffer ser) {
-            // Hack to force a return value
+            // If this flag is true, return null.
             if (returnNull) {
                 return null;
             }
