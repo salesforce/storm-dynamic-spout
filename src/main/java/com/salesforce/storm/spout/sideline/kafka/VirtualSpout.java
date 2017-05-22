@@ -10,6 +10,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -112,6 +113,11 @@ public class VirtualSpout implements DelegateSidelineSpout {
     private RetryManager retryManager;
     private final Map<TupleMessageId, KafkaMessage> trackedMessages = Maps.newHashMap();
 
+    /**
+     * For metric reporting.
+     */
+    private final MetricsRecorder metricsRecorder;
+
     // TEMP
     private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
     private final Map<String, Long> ackTimeBuckets = Maps.newHashMap();
@@ -123,8 +129,8 @@ public class VirtualSpout implements DelegateSidelineSpout {
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
      */
-    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager) {
-        this(spoutConfig, topologyContext, factoryManager, null, null);
+    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+        this(spoutConfig, topologyContext, factoryManager, metricsRecorder, null, null);
     }
 
     /**
@@ -137,7 +143,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
      * @param startingState - Where the underlying consumer should start from, Null if start from head.
      * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -147,6 +153,9 @@ public class VirtualSpout implements DelegateSidelineSpout {
         // Save factory manager instance
         this.factoryManager = factoryManager;
 
+        // Save metric recorder instance.
+        this.metricsRecorder = metricsRecorder;
+
         // Save state
         this.startingState = startingState;
         this.endingState = endingState;
@@ -155,8 +164,8 @@ public class VirtualSpout implements DelegateSidelineSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
-        this(spoutConfig, topologyContext, factoryManager, startingState, endingState);
+    protected VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
+        this(spoutConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
         // Inject the sideline consumer.
         this.consumer = consumer;
@@ -336,6 +345,9 @@ public class VirtualSpout implements DelegateSidelineSpout {
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
+            // Increment filtered metric
+            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".filtered");
+
             // Ack
             ack(tupleMessageId);
 
@@ -462,12 +474,18 @@ public class VirtualSpout implements DelegateSidelineSpout {
             // Ack it in the consumer
             consumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
 
+            // Update metric
+            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit");
+
             // Done.
             return;
         }
 
         // Otherwise mark it as failed.
         retryManager.failed(tupleMessageId);
+
+        // Update metric
+        getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".fail");
     }
 
     /**
@@ -597,6 +615,13 @@ public class VirtualSpout implements DelegateSidelineSpout {
             logger.info("Unsubscribed from partition {}", topicPartition);
         }
         return result;
+    }
+
+    /**
+     * @return configured metric record instance.
+     */
+    MetricsRecorder getMetricsRecorder() {
+        return metricsRecorder;
     }
 
     /**

@@ -273,7 +273,8 @@ public class SidelineSpout extends BaseRichSpout {
         fireHoseSpout = new VirtualSpout(
             getSpoutConfig(),
             getTopologyContext(),
-            getFactoryManager()
+            getFactoryManager(),
+            getMetricsRecorder()
         );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
@@ -390,6 +391,7 @@ public class SidelineSpout extends BaseRichSpout {
             getSpoutConfig(),
             getTopologyContext(),
             getFactoryManager(),
+            getMetricsRecorder(),
             startingState,
             endingState
         );
@@ -534,9 +536,6 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Fail the tuple via the coordinator
         getCoordinator().fail(tupleMessageId);
-
-        // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".fail", 1);
     }
 
     /**
