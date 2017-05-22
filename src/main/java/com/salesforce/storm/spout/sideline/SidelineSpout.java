@@ -536,9 +536,6 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Fail the tuple via the coordinator
         getCoordinator().fail(tupleMessageId);
-
-        // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".fail", 1);
     }
 
     /**

@@ -153,7 +153,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
         // Save factory manager instance
         this.factoryManager = factoryManager;
 
-        // Save metric record
+        // Save metric recorder instance.
         this.metricsRecorder = metricsRecorder;
 
         // Save state
@@ -475,7 +475,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
             consumer.commitOffset(tupleMessageId.getTopicPartition(), tupleMessageId.getOffset());
 
             // Update metric
-            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit_tuples");
+            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit");
 
             // Done.
             return;
@@ -485,7 +485,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
         retryManager.failed(tupleMessageId);
 
         // Update metric
-        getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".failed_tuples");
+        getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".fail");
     }
 
     /**
