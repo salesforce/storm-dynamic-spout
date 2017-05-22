@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.kafka.deserializer;
 
-import org.apache.storm.shade.com.google.common.base.Charsets;
+import com.google.common.base.Charsets;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 

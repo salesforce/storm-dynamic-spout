@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -12,7 +13,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
-import org.apache.storm.shade.com.google.common.base.Charsets;
 import org.apache.zookeeper.CreateMode;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;

@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline.metrics;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
-import org.apache.storm.shade.org.apache.http.annotation.ThreadSafe;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +10,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-@ThreadSafe
 public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);

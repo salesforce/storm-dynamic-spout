@@ -5,7 +5,7 @@ import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.storm.shade.com.google.common.base.Charsets;
+import com.google.common.base.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

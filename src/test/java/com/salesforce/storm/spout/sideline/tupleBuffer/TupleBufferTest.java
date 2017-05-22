@@ -31,7 +31,7 @@ import static org.junit.Assert.assertNull;
 @RunWith(DataProviderRunner.class)
 public class TupleBufferTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(RoundRobinBufferTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(TupleBufferTest.class);
 
     /**
      * Provides various tuple buffer implementation.

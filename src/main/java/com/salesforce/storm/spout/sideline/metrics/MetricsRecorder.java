@@ -1,7 +1,5 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
-
-import org.apache.storm.shade.org.apache.http.annotation.ThreadSafe;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
@@ -11,7 +9,6 @@ import java.util.concurrent.Callable;
  * Any implementation of this should be written to be thread safe.  This instance
  * is definitely shared across multiple threads.
  */
-@ThreadSafe
 public interface MetricsRecorder {
 
     /**
