@@ -15,7 +15,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.storm.shade.com.google.common.base.Charsets;
+import com.google.common.base.Charsets;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

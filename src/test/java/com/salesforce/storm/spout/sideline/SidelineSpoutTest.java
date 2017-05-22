@@ -20,7 +20,7 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.generated.StreamInfo;
-import org.apache.storm.shade.com.google.common.base.Charsets;
+import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;

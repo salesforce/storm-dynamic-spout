@@ -18,11 +18,8 @@ import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- *
- */
 public class KafkaTestServerTest {
-    private static final Logger logger = LoggerFactory.getLogger(KafkaTestServer.class);
+    private static final Logger logger = LoggerFactory.getLogger(KafkaTestServerTest.class);
 
     /**
      * Tests producer and old style consumer.

@@ -53,7 +53,7 @@ public class SpoutPartitionProgressMonitor {
         // Parse out the SidelineRequestId, this is not ideal.
         final String[] bits = virtualSpoutId.split(":");
         if (bits.length != 2) {
-            logger.warn("Unable to parse virtualSpoutId: {}", virtualSpoutId);
+            logger.error("Unable to parse virtualSpoutId: {}", virtualSpoutId);
             return null;
         }
 
@@ -119,7 +119,7 @@ public class SpoutPartitionProgressMonitor {
             // Get the state
             Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
             if (currentOffset == null) {
-                logger.error("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
+                logger.info("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
                 continue;
             }
 

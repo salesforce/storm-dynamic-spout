@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka.deserializer.compat;
 
 import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import org.apache.storm.shade.com.google.common.base.Charsets;
+import com.google.common.base.Charsets;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
