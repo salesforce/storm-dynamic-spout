@@ -346,7 +346,7 @@ public class VirtualSpout implements DelegateSidelineSpout {
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
             // Increment filtered metric
-            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".filtered_tuples");
+            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".filtered");
 
             // Ack
             ack(tupleMessageId);
