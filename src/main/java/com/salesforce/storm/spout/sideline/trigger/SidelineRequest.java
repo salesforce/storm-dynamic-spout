@@ -4,10 +4,17 @@ import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 
 public class SidelineRequest {
 
+    public final SidelineRequestIdentifier id;
     public final FilterChainStep step;
 
-    public SidelineRequest(FilterChainStep step) {
+    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
+        this.id = id;
         this.step = step;
+    }
+
+    @Deprecated
+    public SidelineRequest(final FilterChainStep step) {
+        this(new SidelineRequestIdentifier(), step);
     }
 
     @Override

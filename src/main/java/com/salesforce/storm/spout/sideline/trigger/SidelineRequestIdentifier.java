@@ -2,14 +2,26 @@ package com.salesforce.storm.spout.sideline.trigger;
 
 import java.util.UUID;
 
+/**
+ * Identifies a sideline request, this should be unique to the request
+ */
 public class SidelineRequestIdentifier {
 
-    public final UUID id;
+    private String id;
 
-    public SidelineRequestIdentifier(final UUID id) {
+    public SidelineRequestIdentifier(final String id) {
         this.id = id;
     }
 
+    @Deprecated
+    public SidelineRequestIdentifier(final UUID id) {
+        this(id.toString());
+    }
+
+    /**
+     * Will generate a UUID, this is no longer recommended
+     */
+    @Deprecated
     public SidelineRequestIdentifier() {
         this(UUID.randomUUID());
     }
@@ -19,7 +31,7 @@ public class SidelineRequestIdentifier {
      */
     @Override
     public String toString() {
-        return id.toString();
+        return id;
     }
 
     @Override

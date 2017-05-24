@@ -143,8 +143,6 @@ public class SidelineSpout extends BaseRichSpout {
     public SidelineRequestIdentifier startSidelining(SidelineRequest sidelineRequest) {
         logger.info("Received START sideline request");
 
-        final SidelineRequestIdentifier id = new SidelineRequestIdentifier();
-
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
@@ -153,7 +151,7 @@ public class SidelineSpout extends BaseRichSpout {
             // Store in request manager
             getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.START,
-                id,
+                sidelineRequest.id, // TODO: Now that this is in the request, we should change the persistence adapter
                 sidelineRequest,
                 topicPartition.partition(),
                 startingState.getOffsetForTopicAndPartition(topicPartition),
@@ -162,12 +160,12 @@ public class SidelineSpout extends BaseRichSpout {
         }
 
         // Add our new filter steps
-        fireHoseSpout.getFilterChain().addStep(id, sidelineRequest.step);
+        fireHoseSpout.getFilterChain().addStep(sidelineRequest.id, sidelineRequest.step);
 
         // Update start count metric
         getMetricsRecorder().count(getClass(), "start-sideline", 1L);
 
-        return id;
+        return sidelineRequest.id;
     }
 
     /**
