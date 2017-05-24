@@ -47,10 +47,16 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         final List<String> zkServers = (List<String>) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS);
 
         // Root node / prefix to write entries under.
-        final String zkRoot = (String) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
+        String zkRoot = (String) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
         if (Strings.isNullOrEmpty(zkRoot)) {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
         }
+
+        // We append the consumerId onto the zkRootNode
+        final String consumerId = (String) spoutConfig.get(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+
+        // Save this concatenated prefix
+        this.zkRoot = zkRoot + "/" + consumerId;
 
         // Build out our bits and pieces.
         StringBuilder stringBuilder = new StringBuilder();
@@ -60,7 +66,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         String serverPorts = stringBuilder.toString();
         serverPorts = serverPorts.substring(0, serverPorts.length() - 1);
         this.zkConnectionString = serverPorts;
-        this.zkRoot = zkRoot;
+
 
         try {
             curator = newCurator(spoutConfig);
