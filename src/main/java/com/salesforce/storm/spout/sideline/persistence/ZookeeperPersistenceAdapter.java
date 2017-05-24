@@ -251,7 +251,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
             final List<String> requests = curator.getChildren().forPath(path);
 
             for (String request : requests) {
-                ids.add(new SidelineRequestIdentifier(UUID.fromString(request)));
+                ids.add(new SidelineRequestIdentifier(request));
             }
 
             logger.debug("Existing sideline request identifiers = {}", ids);
