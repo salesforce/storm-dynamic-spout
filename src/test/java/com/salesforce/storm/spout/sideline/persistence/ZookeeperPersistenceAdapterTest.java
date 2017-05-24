@@ -685,8 +685,15 @@ public class ZookeeperPersistenceAdapterTest {
             zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + 0,
             false
         );
+
         logger.debug("Result {}", doesNodeExist);
-        assertNull("Our root node should No longer exist", doesNodeExist);
+        assertNull("Our partition node should No longer exist", doesNodeExist);
+
+        doesNodeExist = zookeeperClient.exists(
+            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(),
+            false
+        );
+        assertNull("Our partition node should No longer exist", doesNodeExist);
 
         // Close everyone out
         persistenceAdapter.close();

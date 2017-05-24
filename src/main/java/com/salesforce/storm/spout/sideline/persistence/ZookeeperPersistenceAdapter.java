@@ -225,10 +225,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         final String path = getZkRequestStatePath(id.toString(), partitionId);
         logger.info("Delete request from Zookeeper at {}", path);
         deleteNode(path);
+
+        // Attempt to delete the parent path.
+        // This is a noop if the parent path is not empty.
+        final String parentPath = path.substring(0, path.lastIndexOf('/'));
+        deleteNodeIfNoChildren(parentPath);
     }
 
     /**
-     * Lists out a unique list of current sideline requests
+     * Lists out a unique list of current sideline requests.
      * @return List of sideline request identifier objects
      */
     public List<SidelineRequestIdentifier> listSidelineRequests() {
