@@ -63,7 +63,7 @@ public class SpoutPartitionProgressMonitor {
         if (sidelineRequestIdString.equals("main")) {
             return null;
         } else {
-            return new SidelineRequestIdentifier(UUID.fromString(sidelineRequestIdString));
+            return new SidelineRequestIdentifier(sidelineRequestIdString);
         }
 
     }
