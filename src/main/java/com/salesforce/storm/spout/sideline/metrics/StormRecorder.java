@@ -20,6 +20,13 @@ import java.util.concurrent.Callable;
  * Use this as an instance variable on your bolt, make sure to create it inside of prepareBolt()
  * and pass it down stream to any classes that need to track metrics in your application.
  *
+ * This will report metrics in the following format:
+ *
+ * Averaged Values: AVERAGES.<className>.<metricName>
+ * Gauge Values: GAUGES.<className>.<metricName>
+ * Timed Values: TIMERS.<className>.<metricName>
+ * Counter Values: COUNTERS.<className>.<metricName>
+ *
  */
 public class StormRecorder implements MetricsRecorder {
 

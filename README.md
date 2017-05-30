@@ -379,7 +379,15 @@ This means consuming from the queue will always be fast.
 This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### Metrics
-The many different metrics that are collected by the spout are detailed below.  
+The many different metrics that are collected by the spout are detailed below.
+  
+Type | Description
+-----|------------
+Averages | Calculates average of all values submitted over a set time period.
+Counter | Keeps a running count that gets reset back to zero on deployment.
+Gauge | Reports the last value given for the metric.
+Timer | Calculates how long on average, in milliseconds, an event takes.
+
 
 Class | Key | Type | Description
 ------|-----|------|------------
@@ -398,7 +406,7 @@ VirtualSidelineSpout | `virtual-spout-id`.partitionX.percentComplete | Gauge | P
 VirtualSidelineSpout | `virtual-spout-id`.partitionX.startingOffset | Gauge | The starting offset position for the given partition.
 VirtualSidelineSpout | `virtual-spout-id`.partitionX.currentOffset | Gauge | The offset currently being processed for the given partition.
 VirtualSidelineSpout | `virtual-spout-id`.partitionX.endingOffset | Gauge | The ending offset for the given partition.
-SpoutMonitor | poolSize | Gauage | The max number of VirtualSpout instances that will be run concurrently.
+SpoutMonitor | poolSize | Gauge | The max number of VirtualSpout instances that will be run concurrently.
 SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
 SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
 SpoutMonitor | completed | Gauge | The number of completed VirtualSpout instances.
@@ -408,7 +416,16 @@ The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sidel
 should be ThreadSafe, as a single instance is shared across multiple threads. Presently there are two implementations packaged with the project.
 
 ##### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
-This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).
+This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).  It will report metrics using the following
+format: 
+
+Type | Format 
+-----|--------
+Averages | AVERAGES.\<className\>.\<metricName\>
+Counter | COUNTERS.\<className\>.\<metricName\>
+Gauge | GAUGES.\<className\>.\<metricName\>
+Timer | TIMERS.\<className\>.\<metricName\> 
+ 
 
 ##### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
 This implementation logs metrics to your logging system.
@@ -420,5 +437,3 @@ Just a collection of random ideas, or things we could do with this:
 
 # Releases & Changelog 
 See [CHANGELOG.md](CHANGELOG.md) for full release changes.
-
-
