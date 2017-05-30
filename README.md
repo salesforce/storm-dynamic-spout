@@ -1,4 +1,3 @@
-<a name="storm-sideline-spout"></a>
 # Storm Sidelining Kafka Spout
 
 ## Purpose of this project
@@ -10,6 +9,56 @@ aims to be a drop in replacement for it.  This implementation differs in that it
 filter semantics when you build your topology which allow for specific messages to be skipped, and then
 replayed at a later point in time.  All this is done dynamically without requiring you to re-deploy your topology when filtering 
 criteria changes!
+
+## Table of Contents
+
+  * [Storm Sidelining Kafka Spout](#storm-sidelining-kafka-spout)
+    * [Purpose of this project](#purpose-of-this-project)
+      * [Example use case: Multi-tenant processing](#example-use-case-multi-tenant-processing)
+    * [How does it work?](#how-does-it-work)
+    * [How does it  <em>really</em> work?](#how-does-it--really-work)
+      * [Primary Components](#primary-components)
+      * [When the Topology Starts](#when-the-topology-starts)
+      * [Starting Sideline Request](#starting-sideline-request)
+      * [Stoping Sideline Request](#stoping-sideline-request)
+      * [Stopping &amp; Redeploying the topology?](#stopping--redeploying-the-topology)
+  * [Getting started](#getting-started)
+    * [Dependencies](#dependencies)
+    * [Configuration](#configuration)
+      * [Required Configuration](#required-configuration)
+    * [Required Interface Implementations](#required-interface-implementations)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java">Deserializer</a>](#deserializer)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java">StartingTrigger</a>](#startingtrigger)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java">StoppingTrigger</a>](#stoppingtrigger)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java">FilterChainStep</a>](#filterchainstep)
+    * [Example Trigger Implementation](#example-trigger-implementation)
+    * [Optional Interfaces for Overachievers](#optional-interfaces-for-overachievers)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java">PersistenceAdapter</a>](#persistenceadapter)
+            * [Configuration](#configuration-1)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java">RetryManager</a>](#retrymanager)
+            * [Configuration](#configuration-2)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java">TupleBuffer</a>](#tuplebuffer)
+            * [Configuration](#configuration-3)
+    * [Optional Interfaces Implementations](#optional-interfaces-implementations)
+      * [PersistenceAdapter Implementations](#persistenceadapter-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceAdapter.java">ZookeeperPersistenceAdapter</a>](#zookeeperpersistenceadapter)
+            * [Configuration](#configuration-4)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceAdapter.java">InMemoryPersistenceAdapter</a>](#inmemorypersistenceadapter)
+      * [RetryManager Implementations](#retrymanager-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java">DefaultRetryManager</a>](#defaultretrymanager)
+            * [Configuration](#configuration-5)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java">FailedTuplesFirstRetryManager</a>](#failedtuplesfirstretrymanager)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java">NeverRetryManager</a>](#neverretrymanager)
+      * [TupleBuffer Implementations](#tuplebuffer-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java">RoundRobinBuffer</a>](#roundrobinbuffer)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java">FIFOBuffer</a>](#fifobuffer)
+      * [Metrics](#metrics)
+        * [MetricsRecorder Implementations](#metricsrecorder-implementations)
+          * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java">StormRecorder</a>](#stormrecorder)
+          * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java">LogRecorder</a>](#logrecorder)
+  * [Interesting Ideas and Questions](#interesting-ideas-and-questions)
+  * [Releases &amp; Changelog](#releases--changelog)
+
 
 ### Example use case: Multi-tenant processing
 When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine 
