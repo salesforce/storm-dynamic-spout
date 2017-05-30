@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.filter;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 
 import java.util.UUID;
 
@@ -20,7 +20,7 @@ public class StaticMessageFilter implements FilterChainStep {
     }
 
     @Override
-    public boolean filter(KafkaMessage message) {
+    public boolean filter(Message message) {
         return true;
     }
 

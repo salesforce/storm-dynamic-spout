@@ -6,10 +6,14 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerTest;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.FailedTuplesFirstRetryManager;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.retry.FailedTuplesFirstRetryManager;
+import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.sideline.mocks.output.SpoutEmission;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
@@ -235,7 +239,7 @@ public class SidelineSpoutTest {
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Validate the tuples that got emitted are what we expect based on what we published into kafka
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 3, 0L);
@@ -296,7 +300,7 @@ public class SidelineSpoutTest {
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Now lets validate that what we got out of the spout is what we actually expected.
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
@@ -307,7 +311,7 @@ public class SidelineSpoutTest {
         // And lets call nextTuple, and we should get the same emissions back out because we called fail on them
         // And our retry manager should replay them first chance it gets.
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Now lets ack 2 different offsets, entries 0 and 3.
         // This means they should never get replayed.
@@ -336,7 +340,7 @@ public class SidelineSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
         // Validate the replayed tuples were our failed ones
-        validateTuplesFromSourceKafkaMessages(producedRecords, replayedEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, replayedEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Now lets ack these
         ackTuples(spout, replayedEmissions);
@@ -399,7 +403,7 @@ public class SidelineSpoutTest {
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // Validate the tuples are what we published into kafka
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Lets ack our tuples, this should commit offsets 0 -> 2. (0,1,2)
         ackTuples(spout, spoutEmissions);
@@ -434,7 +438,7 @@ public class SidelineSpoutTest {
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // We should validate these emissions
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":" + staticTrigger.getCurrentSidelineRequestIdentifier());
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":" + staticTrigger.getCurrentSidelineRequestIdentifier());
 
         // Call next tuple a few more times to be safe nothing else comes in.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
@@ -457,7 +461,7 @@ public class SidelineSpoutTest {
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // Loop over what we produced into kafka and validate them
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Close out
         spout.close();
@@ -646,7 +650,7 @@ public class SidelineSpoutTest {
         spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
 
         // We'll validate them
-        validateTuplesFromSourceKafkaMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // But if we call nextTuple() 5 more times, we should never get the additional 5 records we produced.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 5, 100L);
@@ -735,7 +739,7 @@ public class SidelineSpoutTest {
         sidelineKafkaRecords.addAll(additionalProducedRecords);
 
         // Validate em.
-        validateTuplesFromSourceKafkaMessages(sidelineKafkaRecords, sidelinedEmissions, expectedStreamId, consumerIdPrefix + ":" + sidelineRequestIdentifier);
+        validateTuplesFromSourceMessages(sidelineKafkaRecords, sidelinedEmissions, expectedStreamId, consumerIdPrefix + ":" + sidelineRequestIdentifier);
 
         // call nextTuple() several times, get nothing back
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
@@ -754,7 +758,7 @@ public class SidelineSpoutTest {
         List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 5);
 
         // verify we get the tuples [15,16,17,18,19]
-        validateTuplesFromSourceKafkaMessages(lastProducedRecords, lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(lastProducedRecords, lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Ack offsets [15,16,18] => Committed offset should be 16
         ackTuples(spout, Lists.newArrayList(
@@ -794,7 +798,7 @@ public class SidelineSpoutTest {
         lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 3);
 
         // Validate we got the right offset [17,18,19]
-        validateTuplesFromSourceKafkaMessages(lastProducedRecords.subList(2,5), lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(lastProducedRecords.subList(2,5), lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Verify no more tuples
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
@@ -885,8 +889,8 @@ public class SidelineSpoutTest {
             assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
 
             // Validate it came from the right place
-            final TupleMessageId tupleMessageId = (TupleMessageId) spoutEmission.getMessageId();
-            assertTrue("Came from expected partition", expectedPartitions.contains(tupleMessageId.getTopicPartition()));
+            final MessageId messageId = (MessageId) spoutEmission.getMessageId();
+            assertTrue("Came from expected partition", expectedPartitions.contains(messageId.getTopicPartition()));
         }
 
         // Validate we don't have any other emissions
@@ -990,8 +994,8 @@ public class SidelineSpoutTest {
             assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
 
             // Validate it came from the right place
-            final TupleMessageId tupleMessageId = (TupleMessageId) spoutEmission.getMessageId();
-            assertTrue("Came from expected partition", expectedPartitions.contains(tupleMessageId.getTopicPartition()));
+            final MessageId messageId = (MessageId) spoutEmission.getMessageId();
+            assertTrue("Came from expected partition", expectedPartitions.contains(messageId.getTopicPartition()));
         }
 
         // Validate we don't have any other emissions
@@ -1038,10 +1042,10 @@ public class SidelineSpoutTest {
 
         // Validate Message Id
         assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
-        assertTrue("Should be instance of TupleMessageId", spoutEmission.getMessageId() instanceof TupleMessageId);
+        assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
 
         // Grab the messageId and validate it
-        final TupleMessageId messageId = (TupleMessageId) spoutEmission.getMessageId();
+        final MessageId messageId = (MessageId) spoutEmission.getMessageId();
         assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getTopic());
         assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
         assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
@@ -1084,7 +1088,7 @@ public class SidelineSpoutTest {
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the acked queue.
-                Map<String, Queue<TupleMessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
+                Map<String, Queue<MessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
                 for (String key : queueMap.keySet()) {
                     // If any queue has entries, return false
                     if (!queueMap.get(key).isEmpty()) {
@@ -1120,7 +1124,7 @@ public class SidelineSpoutTest {
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the fail queue.
-                Map<String, Queue<TupleMessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
+                Map<String, Queue<MessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
                 for (String key : queueMap.keySet()) {
                     // If any queue has entries, return false
                     if (!queueMap.get(key).isEmpty()) {
@@ -1280,7 +1284,7 @@ public class SidelineSpoutTest {
      * @param expectedStreamId - The stream id that we expected the tuples to get emitted out on.
      * @param expectedConsumerId
      */
-    private void validateTuplesFromSourceKafkaMessages(List<ProducedKafkaRecord<byte[], byte[]>> producedRecords, List<SpoutEmission> spoutEmissions, final String expectedStreamId, String expectedConsumerId) {
+    private void validateTuplesFromSourceMessages(List<ProducedKafkaRecord<byte[], byte[]>> producedRecords, List<SpoutEmission> spoutEmissions, final String expectedStreamId, String expectedConsumerId) {
         // Sanity check, make sure we have the same number of each.
         assertEquals("Should have same number of tuples as original messages, Produced Count: " + producedRecords.size() + " Emissions Count: " + spoutEmissions.size(), producedRecords.size(), spoutEmissions.size());
 
@@ -1330,8 +1334,8 @@ public class SidelineSpoutTest {
         final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
 
         final Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
-        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, "com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager");
+        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
         config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
@@ -1339,7 +1343,7 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter");
+        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutMonitor thread to run every 1 second
         config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
@@ -1348,7 +1352,7 @@ public class SidelineSpoutTest {
         config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, "com.salesforce.storm.spout.sideline.metrics.LogRecorder");
+        config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {

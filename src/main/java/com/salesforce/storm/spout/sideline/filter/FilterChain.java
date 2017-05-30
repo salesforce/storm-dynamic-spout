@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.filter;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 import java.util.Map;
@@ -34,7 +34,7 @@ public class FilterChain {
      * @param message The filter to be processed by this step of the chain
      * @return Should this message be filtered out? True means yes.
      */
-    public boolean filter(KafkaMessage message) {
+    public boolean filter(Message message) {
         // No steps = nothing to filter by
         if (steps.values().isEmpty()) {
             return false;

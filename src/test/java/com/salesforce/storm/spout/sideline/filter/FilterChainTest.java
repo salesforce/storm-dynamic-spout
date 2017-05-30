@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.filter;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
@@ -16,28 +16,28 @@ public class FilterChainTest {
      */
     @Test
     public void testChain() {
-        final KafkaMessage message1 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message1 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(1)
         );
 
-        final KafkaMessage message2 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message2 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(2)
         );
 
-        final KafkaMessage message3 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message3 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(3)
         );
 
-        final KafkaMessage message4 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message4 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(4)
         );
 
-        final KafkaMessage message5 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message5 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(5)
         );
 
@@ -60,13 +60,13 @@ public class FilterChainTest {
      */
     @Test
     public void testNegatingChain() {
-        final KafkaMessage message1 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message1 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(1)
         );
 
-        final KafkaMessage message2 = new KafkaMessage(
-            new TupleMessageId("foobar", 1, 0L, "FakeConsumer"),
+        final Message message2 = new Message(
+            new MessageId("foobar", 1, 0L, "FakeConsumer"),
             new Values(2)
         );
 
@@ -87,7 +87,7 @@ public class FilterChainTest {
             this.number = number;
         }
 
-        public boolean filter(KafkaMessage message) {
+        public boolean filter(Message message) {
             Integer messageNumber = (Integer) message.getValues().get(0);
             // Filter them if they don't match, in other words "not" equals
             return messageNumber.equals(number);

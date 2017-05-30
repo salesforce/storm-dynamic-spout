@@ -1,7 +1,7 @@
-package com.salesforce.storm.spout.sideline.kafka.retryManagers;
+package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -16,12 +16,12 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     /**
      * This Set holds which Tuples are in flight.
      */
-    private Set<TupleMessageId> messageIdsInFlight;
+    private Set<MessageId> messageIdsInFlight;
 
     /**
      * Our FIFO queue of failed messageIds.
      */
-    private Queue<TupleMessageId> failedMessageIds;
+    private Queue<MessageId> failedMessageIds;
 
     @Override
     public void open(Map spoutConfig) {
@@ -30,20 +30,20 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     }
 
     @Override
-    public void failed(TupleMessageId messageId) {
+    public void failed(MessageId messageId) {
         messageIdsInFlight.remove(messageId);
         failedMessageIds.add(messageId);
     }
 
     @Override
-    public void acked(TupleMessageId messageId) {
+    public void acked(MessageId messageId) {
         messageIdsInFlight.remove(messageId);
         failedMessageIds.remove(messageId);
     }
 
     @Override
-    public TupleMessageId nextFailedMessageToRetry() {
-        final TupleMessageId nextMessageId = failedMessageIds.poll();
+    public MessageId nextFailedMessageToRetry() {
+        final MessageId nextMessageId = failedMessageIds.poll();
         if (nextMessageId == null) {
             return null;
         }
@@ -52,7 +52,7 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     }
 
     @Override
-    public boolean retryFurther(TupleMessageId messageId) {
+    public boolean retryFurther(MessageId messageId) {
         // We always retry.
         return true;
     }
@@ -60,14 +60,14 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     /**
      * @return - the messageIds currently in flight.
      */
-    Set<TupleMessageId> getMessageIdsInFlight() {
+    Set<MessageId> getMessageIdsInFlight() {
         return messageIdsInFlight;
     }
 
     /**
      * @return - the messageIds currently marked as having failed, excluding those in flight.
      */
-    Queue<TupleMessageId> getFailedMessageIds() {
+    Queue<MessageId> getFailedMessageIds() {
         return failedMessageIds;
     }
 }

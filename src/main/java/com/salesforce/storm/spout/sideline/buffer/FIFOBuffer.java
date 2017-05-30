@@ -1,7 +1,7 @@
-package com.salesforce.storm.spout.sideline.tupleBuffer;
+package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 
 import java.util.Map;
@@ -12,13 +12,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  * FIFO implementation.  Has absolutely no "fairness" between VirtualSpouts or any kind of
  * "scheduling."
  */
-public class FIFOBuffer implements TupleBuffer {
+public class FIFOBuffer implements MessageBuffer {
     private static final int DEFAULT_MAX_SIZE = 10_000;
 
     /**
      * This implementation uses a simple Blocking Queue in a FIFO manner.
      */
-    private BlockingQueue<KafkaMessage> tupleBuffer;
+    private BlockingQueue<Message> messageBuffer;
 
     public FIFOBuffer() {
     }
@@ -46,7 +46,7 @@ public class FIFOBuffer implements TupleBuffer {
         }
 
         // Create buffer.
-        tupleBuffer = new LinkedBlockingQueue<>(maxBufferSize);
+        messageBuffer = new LinkedBlockingQueue<>(maxBufferSize);
     }
 
     /**
@@ -69,28 +69,28 @@ public class FIFOBuffer implements TupleBuffer {
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.
-     * @param kafkaMessage - KafkaMessage to be added to the queue.
+     * @param message - Message to be added to the queue.
      * @throws InterruptedException - thrown if a thread is interrupted while blocked adding to the queue.
      */
     @Override
-    public void put(final KafkaMessage kafkaMessage) throws InterruptedException {
-        tupleBuffer.put(kafkaMessage);
+    public void put(final Message message) throws InterruptedException {
+        messageBuffer.put(message);
     }
 
     @Override
     public int size() {
-        return tupleBuffer.size();
+        return messageBuffer.size();
     }
 
     /**
-     * @return - returns the next KafkaMessage to be processed out of the queue.
+     * @return - returns the next Message to be processed out of the queue.
      */
     @Override
-    public KafkaMessage poll() {
-        return tupleBuffer.poll();
+    public Message poll() {
+        return messageBuffer.poll();
     }
 
-    public BlockingQueue<KafkaMessage> getUnderlyingQueue() {
-        return tupleBuffer;
+    public BlockingQueue<Message> getUnderlyingQueue() {
+        return messageBuffer;
     }
 }

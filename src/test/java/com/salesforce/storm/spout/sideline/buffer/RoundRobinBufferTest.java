@@ -1,11 +1,11 @@
-package com.salesforce.storm.spout.sideline.tupleBuffer;
+package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -55,11 +55,11 @@ public class RoundRobinBufferTest {
         config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer
-        TupleBuffer tupleBuffer = new RoundRobinBuffer();
-        tupleBuffer.open(config);
+        MessageBuffer messageBuffer = new RoundRobinBuffer();
+        messageBuffer.open(config);
 
         // Keep track of our order per spoutId
-        final Map<String, Queue<KafkaMessage>> submittedOrder = Maps.newHashMap();
+        final Map<String, Queue<Message>> submittedOrder = Maps.newHashMap();
 
         // Create random number generator
         Random random = new Random();
@@ -71,22 +71,22 @@ public class RoundRobinBufferTest {
             final int partition = random.nextInt(10);
 
 
-            KafkaMessage kafkaMessage = new KafkaMessage(
-                    new TupleMessageId("my topic", partition, x, sourceSpoutId),
+            Message message = new Message(
+                    new MessageId("my topic", partition, x, sourceSpoutId),
                     new Values("myValue" + x));
 
             // Keep track of order
             if (!submittedOrder.containsKey(sourceSpoutId)) {
                 submittedOrder.put(sourceSpoutId, Queues.newLinkedBlockingQueue());
             }
-            submittedOrder.get(sourceSpoutId).add(kafkaMessage);
+            submittedOrder.get(sourceSpoutId).add(message);
 
             // Add to our buffer
-            tupleBuffer.put(kafkaMessage);
+            messageBuffer.put(message);
         }
 
         // Validate size
-        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), tupleBuffer.size());
+        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
 
         // Now ask for the messages back, they should get round robin'd
         Iterator<String> keyIterator = Iterators.cycle(submittedOrder.keySet());
@@ -94,7 +94,7 @@ public class RoundRobinBufferTest {
             String nextSourceSpout = keyIterator.next();
 
             // Pop a msg
-            final KafkaMessage bufferedMsg = tupleBuffer.poll();
+            final Message bufferedMsg = messageBuffer.poll();
 
             // Skip null returns.
             if (bufferedMsg == null) {
@@ -104,10 +104,10 @@ public class RoundRobinBufferTest {
             }
 
             // Get which spout this was a source from
-            final String bufferedSrcSpoutId = bufferedMsg.getTupleMessageId().getSrcVirtualSpoutId();
+            final String bufferedSrcSpoutId = bufferedMsg.getMessageId().getSrcVirtualSpoutId();
 
             // Get the next message from this
-            KafkaMessage nextExpectedKafkaMsg = null;
+            Message nextExpectedKafkaMsg = null;
             while (nextExpectedKafkaMsg == null) {
                 nextExpectedKafkaMsg = submittedOrder.get(nextSourceSpout).poll();
 
@@ -125,21 +125,21 @@ public class RoundRobinBufferTest {
             assertEquals("Objects should be the same", nextExpectedKafkaMsg, bufferedMsg);
 
             // Should be from the source
-            assertEquals("Source Spout Id should be equal", nextSourceSpout, bufferedMsg.getTupleMessageId().getSrcVirtualSpoutId());
+            assertEquals("Source Spout Id should be equal", nextSourceSpout, bufferedMsg.getMessageId().getSrcVirtualSpoutId());
 
 
             // Validate the contents are the same
             assertEquals("partitions should be equal", nextExpectedKafkaMsg.getPartition(), bufferedMsg.getPartition());
             assertEquals("offsets should be equal", nextExpectedKafkaMsg.getOffset(), bufferedMsg.getOffset());
             assertEquals("topic should be equal", nextExpectedKafkaMsg.getTopic(), bufferedMsg.getTopic());
-            assertEquals("TupleMessageIds should be equal", nextExpectedKafkaMsg.getTupleMessageId(), bufferedMsg.getTupleMessageId());
+            assertEquals("MessageIds should be equal", nextExpectedKafkaMsg.getMessageId(), bufferedMsg.getMessageId());
             assertEquals("Values should be equal", nextExpectedKafkaMsg.getValues(), bufferedMsg.getValues());
         }
 
 
         // Validate that the next polls are all null
         for (int x=0; x<128; x++) {
-            assertNull("Should be null", tupleBuffer.poll());
+            assertNull("Should be null", messageBuffer.poll());
         }
     }
 
@@ -156,11 +156,11 @@ public class RoundRobinBufferTest {
         config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
-        RoundRobinBuffer tupleBuffer = new RoundRobinBuffer();
-        tupleBuffer.open(config);
+        RoundRobinBuffer messageBuffer = new RoundRobinBuffer();
+        messageBuffer.open(config);
 
         // Validate
-        assertEquals("Set correct", inputValue.intValue(), tupleBuffer.getMaxBufferSizePerVirtualSpout());
+        assertEquals("Set correct", inputValue.intValue(), messageBuffer.getMaxBufferSizePerVirtualSpout());
     }
 
     /**

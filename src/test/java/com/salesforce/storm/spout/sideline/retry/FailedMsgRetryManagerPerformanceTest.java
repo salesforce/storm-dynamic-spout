@@ -1,8 +1,8 @@
-package com.salesforce.storm.spout.sideline.kafka.retryManagers;
+package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,14 +46,14 @@ public class FailedMsgRetryManagerPerformanceTest {
         logger.info("Starting to add {} failed msgs", numberOfTuples);
         final long startTupleAddTime = System.currentTimeMillis();
         for (long x=0; x<numberOfTuples; x++) {
-            // Create TupleMessageId
-            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
-            retryManager.failed(tupleMessageId);
+            // Create MessageId
+            final MessageId messageId = new MessageId(topicName, partition, x, consumerId);
+            retryManager.failed(messageId);
         }
         for (long x=0; x<numberOfTuples; x++) {
-            // Create TupleMessageId
-            final TupleMessageId tupleMessageId = new TupleMessageId(topicName, partition, x, consumerId);
-            retryManager.failed(tupleMessageId);
+            // Create MessageId
+            final MessageId messageId = new MessageId(topicName, partition, x, consumerId);
+            retryManager.failed(messageId);
         }
         logger.info("Finished in {} ms", (System.currentTimeMillis() - startTupleAddTime));
 
@@ -63,13 +63,13 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Now ask for next failed
         logger.info("Trying to get tuples back");
         final long startNextFailedTime = System.currentTimeMillis();
-        final List<TupleMessageId> returnedTuples = Lists.newArrayList();
+        final List<MessageId> returnedTuples = Lists.newArrayList();
         do {
-            final TupleMessageId tupleMessageId = retryManager.nextFailedMessageToRetry();
-            if (tupleMessageId == null) {
+            final MessageId messageId = retryManager.nextFailedMessageToRetry();
+            if (messageId == null) {
                 continue;
             }
-            returnedTuples.add(tupleMessageId);
+            returnedTuples.add(messageId);
         } while (returnedTuples.size() < numberOfTuples);
         logger.info("Finished in {} ms", (System.currentTimeMillis() - startNextFailedTime));
     }

@@ -3,14 +3,14 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.FactoryManager;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
+import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
+import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
@@ -300,7 +300,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSpout.nextTuple();
+        Message result = virtualSpout.nextTuple();
 
         // Verify its null
         assertNull("Should be null",  result);
@@ -361,7 +361,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSpout.nextTuple();
+        Message result = virtualSpout.nextTuple();
 
         // Verify its null
         assertNull("Should be null",  result);
@@ -419,7 +419,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSpout.nextTuple();
+        Message result = virtualSpout.nextTuple();
 
         // Check result
         assertNull("Should be null", result);
@@ -445,7 +445,7 @@ public class VirtualSpoutTest {
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
 
         // Define expected result
-        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+        final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -474,7 +474,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSpout.nextTuple();
+        Message result = virtualSpout.nextTuple();
 
         // Check result
         assertNotNull("Should not be null", result);
@@ -484,7 +484,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected KafkaMessage", expectedKafkaMessage, result);
+        assertEquals("Got expected Message", expectedMessage, result);
     }
 
     /**
@@ -515,8 +515,8 @@ public class VirtualSpoutTest {
         final ConsumerRecord<byte[], byte[]> consumerRecordAfterEnd2 = new ConsumerRecord<>(topic, partition, afterOffset + 1, "after-key2".getBytes(Charsets.UTF_8), "after-value2".getBytes(Charsets.UTF_8));
 
         // Define expected results returned
-        final KafkaMessage expectedKafkaMessageBeforeEndingOffset = new KafkaMessage(new TupleMessageId(topic, partition, beforeOffset, "ConsumerId"), new Values("before-key", "before-value"));
-        final KafkaMessage expectedKafkaMessageEqualEndingOffset = new KafkaMessage(new TupleMessageId(topic, partition, endingOffset, "ConsumerId"), new Values("equal-key", "equal-value"));
+        final Message expectedMessageBeforeEndingOffset = new Message(new MessageId(topic, partition, beforeOffset, "ConsumerId"), new Values("before-key", "before-value"));
+        final Message expectedMessageEqualEndingOffset = new Message(new MessageId(topic, partition, endingOffset, "ConsumerId"), new Values("equal-key", "equal-value"));
 
         // Defining our Ending State
         final ConsumerState endingState = ConsumerState.builder()
@@ -551,7 +551,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call nextTuple(), this should return our entry BEFORE the ending offset
-        KafkaMessage result = virtualSpout.nextTuple();
+        Message result = virtualSpout.nextTuple();
 
         // Check result
         assertNotNull("Should not be null because the offset is under the limit.", result);
@@ -561,7 +561,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected partition", partition, result.getPartition());
         assertEquals("Found expected offset", beforeOffset, result.getOffset());
         assertEquals("Found expected values", new Values("before-key", "before-value"), result.getValues());
-        assertEquals("Got expected KafkaMessage", expectedKafkaMessageBeforeEndingOffset, result);
+        assertEquals("Got expected Message", expectedMessageBeforeEndingOffset, result);
 
         // Call nextTuple(), this offset should be equal to our ending offset
         // Equal to the end offset should still get emitted.
@@ -575,7 +575,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected partition", partition, result.getPartition());
         assertEquals("Found expected offset", endingOffset, result.getOffset());
         assertEquals("Found expected values", new Values("equal-key", "equal-value"), result.getValues());
-        assertEquals("Got expected KafkaMessage", expectedKafkaMessageEqualEndingOffset, result);
+        assertEquals("Got expected Message", expectedMessageEqualEndingOffset, result);
 
         // Call nextTuple(), this offset should be greater than our ending offset
         // and thus should return null.
@@ -627,7 +627,7 @@ public class VirtualSpoutTest {
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
 
         // Define expected result
-        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+        final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
 
         // This is a second record coming from the consumer
         final long unexpectedOffset = expectedOffset + 2L;
@@ -638,7 +638,7 @@ public class VirtualSpoutTest {
         final ConsumerRecord<byte[], byte[]> unexpectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, unexpectedOffset, unexpectedKeyBytes, unexpectedValueBytes);
 
         // Define unexpected result
-        final KafkaMessage unexpectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, unexpectedOffset, expectedConsumerId), new Values(unexpectedKey, unexpectedValue));
+        final Message unexpectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, unexpectedOffset, expectedConsumerId), new Values(unexpectedKey, unexpectedValue));
 
         final Map topologyConfig = getDefaultConfig();
 
@@ -657,7 +657,7 @@ public class VirtualSpoutTest {
         // First time its called, it should return null.
         // The 2nd time it should return our tuple Id.
         // The 3rd time it should return null again.
-        when(mockRetryManager.nextFailedMessageToRetry()).thenReturn(null, expectedKafkaMessage.getTupleMessageId(), null);
+        when(mockRetryManager.nextFailedMessageToRetry()).thenReturn(null, expectedMessage.getMessageId(), null);
 
         // Create factory manager
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
@@ -674,7 +674,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call nextTuple()
-        KafkaMessage result = virtualSpout.nextTuple();
+        Message result = virtualSpout.nextTuple();
 
         // Verify we asked the failed message manager, but got nothing back
         verify(mockRetryManager, times(1)).nextFailedMessageToRetry();
@@ -687,10 +687,10 @@ public class VirtualSpoutTest {
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected KafkaMessage", expectedKafkaMessage, result);
+        assertEquals("Got expected Message", expectedMessage, result);
 
         // Now call fail on this
-        final TupleMessageId failedMessageId = result.getTupleMessageId();
+        final MessageId failedMessageId = result.getMessageId();
 
         // Retry manager should retry this tuple.
         when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(true);
@@ -718,7 +718,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected KafkaMessage", expectedKafkaMessage, result);
+        assertEquals("Got expected Message", expectedMessage, result);
 
         // And call nextTuple() one more time, this time failed manager should return null
         // and sideline consumer returns our unexpected result
@@ -736,7 +736,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", unexpectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(unexpectedKey, unexpectedValue), result.getValues());
-        assertEquals("Got expected KafkaMessage", unexpectedKafkaMessage, result);
+        assertEquals("Got expected Message", unexpectedMessage, result);
     }
 
     /**
@@ -895,7 +895,7 @@ public class VirtualSpoutTest {
         final String expectedTopicName = "MyTopic";
         final int expectedPartitionId = 33;
         final long expectedOffset = 313376L;
-        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
+        final MessageId messageId = new MessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
 
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
@@ -925,13 +925,13 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, never()).acked(anyObject());
 
         // Call ack with a string object, it should throw an exception.
-        virtualSpout.ack(tupleMessageId);
+        virtualSpout.ack(messageId);
 
         // Verify mock gets called with appropriate arguments
         verify(mockConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
 
         // Gets acked on the failed retry manager
-        verify(mockRetryManager, times(1)).acked(tupleMessageId);
+        verify(mockRetryManager, times(1)).acked(messageId);
     }
 
     /**
@@ -963,20 +963,20 @@ public class VirtualSpoutTest {
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
 
-        // Create our test TupleMessageId
+        // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
         final String consumerId = "MyConsumerId";
-        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Call our method & validate.
-        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertFalse("Should always be false", result);
     }
 
     /**
-     * Test calling this method with a defined endingState, and the TupleMessageId's offset is equal to it,
+     * Test calling this method with a defined endingState, and the MessageId's offset is equal to it,
      * it should return false.
      */
     @Test
@@ -986,14 +986,14 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
-        // Create our test TupleMessageId
+        // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
         final String consumerId = "MyConsumerId";
-        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
-        // Define our endingState with a position equal to our TupleMessageId
+        // Define our endingState with a position equal to our MessageId
         final ConsumerState endingState = ConsumerState.builder()
             .withPartition(new TopicPartition(expectedTopic, expectedPartition), expectedOffset)
             .build();
@@ -1013,12 +1013,12 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call our method & validate.
-        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertFalse("Should be false", result);
     }
 
     /**
-     * Test calling this method with a defined endingState, and the TupleMessageId's offset is beyond it.
+     * Test calling this method with a defined endingState, and the MessageId's offset is beyond it.
      */
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
@@ -1027,14 +1027,14 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
-        // Create our test TupleMessageId
+        // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
         final String consumerId = "MyConsumerId";
-        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
-        // Define our endingState with a position less than our TupleMessageId
+        // Define our endingState with a position less than our MessageId
         final ConsumerState endingState = ConsumerState.builder()
             .withPartition(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100))
             .build();
@@ -1054,12 +1054,12 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call our method & validate.
-        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertTrue("Should be true", result);
     }
 
     /**
-     * Test calling this method with a defined endingState, and the TupleMessageId's offset is before it.
+     * Test calling this method with a defined endingState, and the MessageId's offset is before it.
      */
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
@@ -1068,14 +1068,14 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
-        // Create our test TupleMessageId
+        // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
         final String consumerId = "MyConsumerId";
-        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
-        // Define our endingState with a position greater than than our TupleMessageId
+        // Define our endingState with a position greater than than our MessageId
         final ConsumerState endingState = ConsumerState.builder()
             .withPartition(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100))
             .build();
@@ -1095,12 +1095,12 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call our method & validate.
-        final boolean result = virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertFalse("Should be false", result);
     }
 
     /**
-     * Test calling this method with a defined endingState, and then send in a TupleMessageId
+     * Test calling this method with a defined endingState, and then send in a MessageId
      * associated with a partition that doesn't exist in the ending state.  It should throw
      * an illegal state exception.
      */
@@ -1111,14 +1111,14 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
-        // Create our test TupleMessageId
+        // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
         final String consumerId = "MyConsumerId";
-        final TupleMessageId tupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
+        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
-        // Define our endingState with a position greater than than our TupleMessageId, but on a different partition
+        // Define our endingState with a position greater than than our MessageId, but on a different partition
         final ConsumerState endingState = ConsumerState.builder()
             .withPartition(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100))
             .build();
@@ -1139,7 +1139,7 @@ public class VirtualSpoutTest {
 
         // Call our method & validate exception is thrown
         expectedException.expect(IllegalStateException.class);
-        virtualSpout.doesMessageExceedEndingOffset(tupleMessageId);
+        virtualSpout.doesMessageExceedEndingOffset(messageId);
     }
 
     /**
@@ -1172,7 +1172,7 @@ public class VirtualSpoutTest {
         virtualSpout.setVirtualSpoutId("MyConsumerId");
         virtualSpout.open();
 
-        // Create our test TupleMessageId
+        // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final TopicPartition topicPartition = new TopicPartition(expectedTopic, expectedPartition);
@@ -1376,7 +1376,7 @@ public class VirtualSpoutTest {
         final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
 
         // Define expected result
-        final KafkaMessage expectedKafkaMessage = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+        final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -1405,7 +1405,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Now call fail on this
-        final TupleMessageId failedMessageId = expectedKafkaMessage.getTupleMessageId();
+        final MessageId failedMessageId = expectedMessage.getMessageId();
 
         // Retry manager should retry this tuple.
         when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);

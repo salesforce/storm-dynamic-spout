@@ -2,10 +2,10 @@ package com.salesforce.storm.spout.sideline.mocks;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.DelegateSpout;
 
 import java.util.Queue;
 import java.util.Set;
@@ -14,23 +14,23 @@ import java.util.UUID;
 /**
  * A test mock.
  */
-public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
+public class MockDelegateSpout implements DelegateSpout {
     private final String virtualSpoutId;
     public volatile boolean requestedStop = false;
     public volatile boolean wasOpenCalled = false;
     public volatile boolean wasCloseCalled = false;
     public volatile boolean flushStateCalled = false;
     public volatile RuntimeException exceptionToThrow = null;
-    public volatile Set<TupleMessageId> failedTupleIds = Sets.newConcurrentHashSet();
-    public volatile Set<TupleMessageId> ackedTupleIds = Sets.newConcurrentHashSet();
+    public volatile Set<MessageId> failedTupleIds = Sets.newConcurrentHashSet();
+    public volatile Set<MessageId> ackedTupleIds = Sets.newConcurrentHashSet();
 
-    public volatile Queue<KafkaMessage> emitQueue = Queues.newConcurrentLinkedQueue();
+    public volatile Queue<Message> emitQueue = Queues.newConcurrentLinkedQueue();
 
-    public MockDelegateSidelineSpout() {
+    public MockDelegateSpout() {
         this.virtualSpoutId = this.getClass().getSimpleName() + UUID.randomUUID().toString();
     }
 
-    public MockDelegateSidelineSpout(final String virtualSpoutId) {
+    public MockDelegateSpout(final String virtualSpoutId) {
         this.virtualSpoutId = virtualSpoutId;
     }
 
@@ -45,7 +45,7 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
     }
 
     @Override
-    public KafkaMessage nextTuple() {
+    public Message nextTuple() {
         if (exceptionToThrow != null) {
             throw exceptionToThrow;
         }
@@ -54,12 +54,12 @@ public class MockDelegateSidelineSpout implements DelegateSidelineSpout {
 
     @Override
     public void ack(Object id) {
-        ackedTupleIds.add((TupleMessageId) id);
+        ackedTupleIds.add((MessageId) id);
     }
 
     @Override
     public void fail(Object id) {
-        failedTupleIds.add((TupleMessageId) id);
+        failedTupleIds.add((MessageId) id);
     }
 
     @Override

@@ -1,7 +1,7 @@
-package com.salesforce.storm.spout.sideline.tupleBuffer;
+package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,13 +26,13 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * There may be some concurrency issues here that need to be addressed between add/remove virtualSpoutId, and poll().
  */
-public class RoundRobinBuffer implements TupleBuffer {
+public class RoundRobinBuffer implements MessageBuffer {
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinBuffer.class);
 
     /**
      * A Map of VirtualSpoutIds => Its own Blocking Queue.
      */
-    private final Map<String, BlockingQueue<KafkaMessage>> tupleBuffer = new ConcurrentHashMap<>();
+    private final Map<String, BlockingQueue<Message>> messageBuffer = new ConcurrentHashMap<>();
 
     /**
      * Defines the bounded size of our buffer PER VirtualSpout.
@@ -40,7 +40,7 @@ public class RoundRobinBuffer implements TupleBuffer {
     private int maxBufferSizePerVirtualSpout = 2000;
 
     /**
-     * An iterator over the Keys in tupleBuffer.  Used to Round Robin through the VirtualSpouts.
+     * An iterator over the Keys in buffer.  Used to Round Robin through the VirtualSpouts.
      */
     private Iterator<String> consumerIdIterator = null;
 
@@ -79,8 +79,8 @@ public class RoundRobinBuffer implements TupleBuffer {
      */
     @Override
     public void addVirtualSpoutId(final String virtualSpoutId) {
-        synchronized (tupleBuffer) {
-            tupleBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
+        synchronized (messageBuffer) {
+            messageBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
         }
     }
 
@@ -90,69 +90,69 @@ public class RoundRobinBuffer implements TupleBuffer {
      */
     @Override
     public void removeVirtualSpoutId(String virtualSpoutId) {
-        synchronized (tupleBuffer) {
-            tupleBuffer.remove(virtualSpoutId);
+        synchronized (messageBuffer) {
+            messageBuffer.remove(virtualSpoutId);
         }
     }
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.
-     * @param kafkaMessage - KafkaMessage to be added to the queue.
+     * @param message - Message to be added to the queue.
      * @throws InterruptedException - thrown if a thread is interrupted while blocked adding to the queue.
      */
     @Override
-    public void put(final KafkaMessage kafkaMessage) throws InterruptedException {
+    public void put(final Message message) throws InterruptedException {
         // Grab the source virtual spoutId
-        final String virtualSpoutId = kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId();
+        final String virtualSpoutId = message.getMessageId().getSrcVirtualSpoutId();
 
         // Add to correct buffer
-        BlockingQueue virtualSpoutQueue = tupleBuffer.get(virtualSpoutId);
+        BlockingQueue virtualSpoutQueue = messageBuffer.get(virtualSpoutId);
 
         // If our queue doesn't exist
         if (virtualSpoutQueue == null) {
             // Attempt to put it
-            tupleBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
+            messageBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
 
             // Grab a reference.
-            virtualSpoutQueue = tupleBuffer.get(virtualSpoutId);
+            virtualSpoutQueue = messageBuffer.get(virtualSpoutId);
         }
         // Put it.
-        virtualSpoutQueue.put(kafkaMessage);
+        virtualSpoutQueue.put(message);
     }
 
     @Override
     public int size() {
         int total = 0;
-        for (final Queue queue: tupleBuffer.values()) {
+        for (final Queue queue: messageBuffer.values()) {
             total += queue.size();
         }
         return total;
     }
 
     /**
-     * @return - returns the next KafkaMessage to be processed out of the queue.
+     * @return - returns the next Message to be processed out of the queue.
      */
     @Override
-    public KafkaMessage poll() {
+    public Message poll() {
         // If its null, or we hit the end, reset it.
         if (consumerIdIterator == null || !consumerIdIterator.hasNext()) {
-            consumerIdIterator = tupleBuffer.keySet().iterator();
+            consumerIdIterator = messageBuffer.keySet().iterator();
         }
 
         // Try every buffer until we hit the end.
-        KafkaMessage returnMsg = null;
+        Message returnMsg = null;
         while (returnMsg == null && consumerIdIterator.hasNext()) {
 
             // Advance iterator
             final String nextConsumerId = consumerIdIterator.next();
 
             // Find our buffer
-            final BlockingQueue<KafkaMessage> queue = tupleBuffer.get(nextConsumerId);
+            final BlockingQueue<Message> queue = messageBuffer.get(nextConsumerId);
 
             // We missed?
             if (queue == null) {
                 logger.info("Non-existent queue found, resetting iterator.");
-                consumerIdIterator = tupleBuffer.keySet().iterator();
+                consumerIdIterator = messageBuffer.keySet().iterator();
                 continue;
             }
             returnMsg = queue.poll();
@@ -163,7 +163,7 @@ public class RoundRobinBuffer implements TupleBuffer {
     /**
      * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
-    private BlockingQueue<KafkaMessage> createNewEmptyQueue() {
+    private BlockingQueue<Message> createNewEmptyQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSizePerVirtualSpout());
     }
 

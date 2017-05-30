@@ -1,13 +1,13 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
-import com.salesforce.storm.spout.sideline.mocks.MockDelegateSidelineSpout;
-import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.DelegateSpout;
+import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
+import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -74,9 +74,9 @@ public class SpoutRunnerTest {
     @Test
     public void testConstructor() {
         // Define inputs
-        final TupleBuffer tupleBuffer = new FIFOBuffer();
-        final Map<String, Queue<TupleMessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<TupleMessageId>> failQueue = Maps.newConcurrentMap();
+        final MessageBuffer messageBuffer = new FIFOBuffer();
+        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
 
@@ -84,7 +84,7 @@ public class SpoutRunnerTest {
         final long consumerStateFlushInterval = 200L;
 
         // Create our spout delegate
-        final DelegateSidelineSpout spout = mock(DelegateSidelineSpout.class);
+        final DelegateSpout spout = mock(DelegateSpout.class);
 
         // Create config
         final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
@@ -92,7 +92,7 @@ public class SpoutRunnerTest {
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             spout,
-            tupleBuffer,
+            messageBuffer,
             ackQueue,
             failQueue,
             latch,
@@ -104,7 +104,7 @@ public class SpoutRunnerTest {
         assertEquals("Clock instance is what we expect", clock, spoutRunner.getClock());
         assertEquals("TopologyConfig looks legit", topologyConfig, spoutRunner.getTopologyConfig());
         assertEquals("getConsumerStateFlushIntervalMs() returns right value", consumerStateFlushInterval, spoutRunner.getConsumerStateFlushIntervalMs());
-        assertEquals("Tuple Buffer got set", tupleBuffer, spoutRunner.getTupleQueue());
+        assertEquals("Tuple Buffer got set", messageBuffer, spoutRunner.getTupleQueue());
         assertEquals("Ack Queue got set", ackQueue, spoutRunner.getAckedTupleQueue());
         assertEquals("Fail Queue got set", failQueue, spoutRunner.getFailedTupleQueue());
         assertEquals("Latch got set", latch, spoutRunner.getLatch());
@@ -132,17 +132,17 @@ public class SpoutRunnerTest {
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
 
         // Create our spout delegate
-        final MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout(virtualSpoutId);
+        final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final TupleBuffer tupleBuffer = mock(TupleBuffer.class);
+        final MessageBuffer messageBuffer = mock(MessageBuffer.class);
 
         // Setup mock ack queue
-        final Map<String, Queue<TupleMessageId>> ackQueue = mock(Map.class);
+        final Map<String, Queue<MessageId>> ackQueue = mock(Map.class);
         when(ackQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Setup mock fail queue
-        final Map<String, Queue<TupleMessageId>> failQueue = mock(Map.class);
+        final Map<String, Queue<MessageId>> failQueue = mock(Map.class);
         when(failQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Create config
@@ -151,7 +151,7 @@ public class SpoutRunnerTest {
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
-            tupleBuffer,
+            messageBuffer,
             ackQueue,
             failQueue,
             latch,
@@ -180,12 +180,12 @@ public class SpoutRunnerTest {
         assertFalse("Close has not been called yet on our mock spout", mockSpout.wasCloseCalled);
 
         // Verify queues got setup
-        verify(tupleBuffer, times(1)).addVirtualSpoutId(eq(virtualSpoutId));
+        verify(messageBuffer, times(1)).addVirtualSpoutId(eq(virtualSpoutId));
         verify(ackQueue, times(1)).put(eq(virtualSpoutId), any(Queue.class));
         verify(failQueue, times(1)).put(eq(virtualSpoutId), any(Queue.class));
 
         // But not torn down yet
-        verify(tupleBuffer, never()).removeVirtualSpoutId(anyString());
+        verify(messageBuffer, never()).removeVirtualSpoutId(anyString());
         verify(ackQueue, never()).remove(anyString());
         verify(failQueue, never()).remove(anyString());
 
@@ -209,8 +209,8 @@ public class SpoutRunnerTest {
         // verify close was called
         assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
 
-        // Verify entries removed from tupleBuffer, ackQueue, failQueue
-        verify(tupleBuffer, times(1)).removeVirtualSpoutId(eq(virtualSpoutId));
+        // Verify entries removed from buffer, ackQueue, failQueue
+        verify(messageBuffer, times(1)).removeVirtualSpoutId(eq(virtualSpoutId));
         verify(ackQueue, times(1)).remove(eq(virtualSpoutId));
         verify(failQueue, times(1)).remove(eq(virtualSpoutId));
     }
@@ -227,11 +227,11 @@ public class SpoutRunnerTest {
     }
 
     /**
-     * Tests that if a DelegateSpout has KafkaMessages, they get moved into
-     * the TupleBuffer.
+     * Tests that if a DelegateSpout has Messages, they get moved into
+     * the MessageBuffer.
      */
     @Test
-    public void testTupleBufferGetsFilled() {
+    public void testMessageBufferGetsFilled() {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
@@ -241,17 +241,17 @@ public class SpoutRunnerTest {
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
 
         // Create our spout delegate
-        final MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout(virtualSpoutId);
+        final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final TupleBuffer tupleBuffer = FIFOBuffer.createDefaultInstance();
+        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
 
         // Setup mock ack queue
-        final Map<String, Queue<TupleMessageId>> ackQueue = mock(Map.class);
+        final Map<String, Queue<MessageId>> ackQueue = mock(Map.class);
         when(ackQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Setup mock fail queue
-        final Map<String, Queue<TupleMessageId>> failQueue = mock(Map.class);
+        final Map<String, Queue<MessageId>> failQueue = mock(Map.class);
         when(failQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Create config
@@ -260,7 +260,7 @@ public class SpoutRunnerTest {
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
-            tupleBuffer,
+            messageBuffer,
             ackQueue,
             failQueue,
             latch,
@@ -283,25 +283,25 @@ public class SpoutRunnerTest {
 
         // sanity test
         assertEquals("Latch has value of 0", 0, latch.getCount());
-        assertEquals("TupleBuffer should be empty", 0, tupleBuffer.size());
+        assertEquals("MessageBuffer should be empty", 0, messageBuffer.size());
 
         // Now Add some messages to our mock spout
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(new TupleMessageId("topic", 0, 0L, virtualSpoutId), new Values(1));
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(new TupleMessageId("topic", 0, 1L, virtualSpoutId), new Values(1));
-        final KafkaMessage kafkaMessage3 = new KafkaMessage(new TupleMessageId("topic", 0, 2L, virtualSpoutId), new Values(1));
-        mockSpout.emitQueue.add(kafkaMessage1);
-        mockSpout.emitQueue.add(kafkaMessage2);
-        mockSpout.emitQueue.add(kafkaMessage3);
+        final Message message1 = new Message(new MessageId("topic", 0, 0L, virtualSpoutId), new Values(1));
+        final Message message2 = new Message(new MessageId("topic", 0, 1L, virtualSpoutId), new Values(1));
+        final Message message3 = new Message(new MessageId("topic", 0, 2L, virtualSpoutId), new Values(1));
+        mockSpout.emitQueue.add(message1);
+        mockSpout.emitQueue.add(message2);
+        mockSpout.emitQueue.add(message3);
 
-        // Now wait for them to show up in our tupleBuffer
+        // Now wait for them to show up in our buffer
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(() -> {
-                return tupleBuffer.size() == 3;
+                return messageBuffer.size() == 3;
             }, equalTo(true));
 
         // Sanity test
-        assertEquals("TupleBuffer should have 3 entries", 3, tupleBuffer.size());
+        assertEquals("MessageBuffer should have 3 entries", 3, messageBuffer.size());
 
         logger.info("Requesting stop via SpoutRunner.requestStop()");
         spoutRunner.requestStop();
@@ -332,12 +332,12 @@ public class SpoutRunnerTest {
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
 
         // Create our spout delegate
-        final MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout(virtualSpoutId);
+        final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final TupleBuffer tupleBuffer = FIFOBuffer.createDefaultInstance();
-        final Map<String, Queue<TupleMessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<TupleMessageId>> failQueue = Maps.newConcurrentMap();
+        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
         final String otherVirtualSpoutId = "OtherVirtualSpout";
@@ -350,7 +350,7 @@ public class SpoutRunnerTest {
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
                 mockSpout,
-                tupleBuffer,
+            messageBuffer,
                 ackQueue,
                 failQueue,
                 latch,
@@ -373,27 +373,27 @@ public class SpoutRunnerTest {
 
         // sanity test
         assertEquals("Latch has value of 0", 0, latch.getCount());
-        assertEquals("TupleBuffer should be empty", 0, tupleBuffer.size());
+        assertEquals("MessageBuffer should be empty", 0, messageBuffer.size());
         assertEquals("Ack Queue should be empty", 0, ackQueue.get(virtualSpoutId).size());
         assertEquals("fail Queue should be empty", 0, failQueue.get(virtualSpoutId).size());
 
-        // Create some TupleMessageIds for our virtualSpoutId
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("topic", 0, 0L, virtualSpoutId);
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("topic", 0, 1L, virtualSpoutId);
-        final TupleMessageId tupleMessageId3 = new TupleMessageId("topic", 0, 2L, virtualSpoutId);
+        // Create some MessageIds for our virtualSpoutId
+        final MessageId messageId1 = new MessageId("topic", 0, 0L, virtualSpoutId);
+        final MessageId messageId2 = new MessageId("topic", 0, 1L, virtualSpoutId);
+        final MessageId messageId3 = new MessageId("topic", 0, 2L, virtualSpoutId);
 
-        // Create some TupleMessageIds for a different virtualSpoutId
-        final TupleMessageId tupleMessageId4 = new TupleMessageId("topic", 0, 0L, otherVirtualSpoutId);
-        final TupleMessageId tupleMessageId5 = new TupleMessageId("topic", 0, 1L, otherVirtualSpoutId);
-        final TupleMessageId tupleMessageId6 = new TupleMessageId("topic", 0, 2L, otherVirtualSpoutId);
+        // Create some MessageIds for a different virtualSpoutId
+        final MessageId messageId4 = new MessageId("topic", 0, 0L, otherVirtualSpoutId);
+        final MessageId messageId5 = new MessageId("topic", 0, 1L, otherVirtualSpoutId);
+        final MessageId messageId6 = new MessageId("topic", 0, 2L, otherVirtualSpoutId);
 
         // Add them to the appropriate queues
-        failQueue.get(virtualSpoutId).add(tupleMessageId1);
-        failQueue.get(virtualSpoutId).add(tupleMessageId2);
-        failQueue.get(virtualSpoutId).add(tupleMessageId3);
-        failQueue.get(otherVirtualSpoutId).add(tupleMessageId4);
-        failQueue.get(otherVirtualSpoutId).add(tupleMessageId5);
-        failQueue.get(otherVirtualSpoutId).add(tupleMessageId6);
+        failQueue.get(virtualSpoutId).add(messageId1);
+        failQueue.get(virtualSpoutId).add(messageId2);
+        failQueue.get(virtualSpoutId).add(messageId3);
+        failQueue.get(otherVirtualSpoutId).add(messageId4);
+        failQueue.get(otherVirtualSpoutId).add(messageId5);
+        failQueue.get(otherVirtualSpoutId).add(messageId6);
 
         // Now wait for them to show up in our spout instance
         await()
@@ -405,12 +405,12 @@ public class SpoutRunnerTest {
         // Sanity test
         assertEquals("failQueue should now be empty", 0, failQueue.get(virtualSpoutId).size());
         assertEquals("mock spout should have gotten 3 fail() calls", 3, mockSpout.failedTupleIds.size());
-        assertTrue("Should have tupleMessageId", mockSpout.failedTupleIds.contains(tupleMessageId1));
-        assertTrue("Should have tupleMessageId", mockSpout.failedTupleIds.contains(tupleMessageId2));
-        assertTrue("Should have tupleMessageId", mockSpout.failedTupleIds.contains(tupleMessageId3));
-        assertFalse("Should NOT have tupleMessageId", mockSpout.failedTupleIds.contains(tupleMessageId4));
-        assertFalse("Should NOT have tupleMessageId", mockSpout.failedTupleIds.contains(tupleMessageId5));
-        assertFalse("Should NOT have tupleMessageId", mockSpout.failedTupleIds.contains(tupleMessageId6));
+        assertTrue("Should have messageId", mockSpout.failedTupleIds.contains(messageId1));
+        assertTrue("Should have messageId", mockSpout.failedTupleIds.contains(messageId2));
+        assertTrue("Should have messageId", mockSpout.failedTupleIds.contains(messageId3));
+        assertFalse("Should NOT have messageId", mockSpout.failedTupleIds.contains(messageId4));
+        assertFalse("Should NOT have messageId", mockSpout.failedTupleIds.contains(messageId5));
+        assertFalse("Should NOT have messageId", mockSpout.failedTupleIds.contains(messageId6));
 
         // Other virtualspout id queue should still be populated
         assertEquals("fail queue for other virtual spout should remain full", 3, failQueue.get(otherVirtualSpoutId).size());
@@ -447,12 +447,12 @@ public class SpoutRunnerTest {
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
 
         // Create our spout delegate
-        final MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout(virtualSpoutId);
+        final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final TupleBuffer tupleBuffer = FIFOBuffer.createDefaultInstance();
-        final Map<String, Queue<TupleMessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<TupleMessageId>> failQueue = Maps.newConcurrentMap();
+        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
         final String otherVirtualSpoutId = "OtherVirtualSpout";
@@ -465,7 +465,7 @@ public class SpoutRunnerTest {
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
-            tupleBuffer,
+            messageBuffer,
             ackQueue,
             failQueue,
             latch,
@@ -488,27 +488,27 @@ public class SpoutRunnerTest {
 
         // sanity test
         assertEquals("Latch has value of 0", 0, latch.getCount());
-        assertEquals("TupleBuffer should be empty", 0, tupleBuffer.size());
+        assertEquals("MessageBuffer should be empty", 0, messageBuffer.size());
         assertEquals("Ack Queue should be empty", 0, ackQueue.get(virtualSpoutId).size());
         assertEquals("fail Queue should be empty", 0, failQueue.get(virtualSpoutId).size());
 
-        // Create some TupleMessageIds for our virtualSpoutId
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("topic", 0, 0L, virtualSpoutId);
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("topic", 0, 1L, virtualSpoutId);
-        final TupleMessageId tupleMessageId3 = new TupleMessageId("topic", 0, 2L, virtualSpoutId);
+        // Create some MessageIds for our virtualSpoutId
+        final MessageId messageId1 = new MessageId("topic", 0, 0L, virtualSpoutId);
+        final MessageId messageId2 = new MessageId("topic", 0, 1L, virtualSpoutId);
+        final MessageId messageId3 = new MessageId("topic", 0, 2L, virtualSpoutId);
 
-        // Create some TupleMessageIds for a different virtualSpoutId
-        final TupleMessageId tupleMessageId4 = new TupleMessageId("topic", 0, 0L, otherVirtualSpoutId);
-        final TupleMessageId tupleMessageId5 = new TupleMessageId("topic", 0, 1L, otherVirtualSpoutId);
-        final TupleMessageId tupleMessageId6 = new TupleMessageId("topic", 0, 2L, otherVirtualSpoutId);
+        // Create some MessageIds for a different virtualSpoutId
+        final MessageId messageId4 = new MessageId("topic", 0, 0L, otherVirtualSpoutId);
+        final MessageId messageId5 = new MessageId("topic", 0, 1L, otherVirtualSpoutId);
+        final MessageId messageId6 = new MessageId("topic", 0, 2L, otherVirtualSpoutId);
 
         // Add them to the appropriate queues
-        ackQueue.get(virtualSpoutId).add(tupleMessageId1);
-        ackQueue.get(virtualSpoutId).add(tupleMessageId2);
-        ackQueue.get(virtualSpoutId).add(tupleMessageId3);
-        ackQueue.get(otherVirtualSpoutId).add(tupleMessageId4);
-        ackQueue.get(otherVirtualSpoutId).add(tupleMessageId5);
-        ackQueue.get(otherVirtualSpoutId).add(tupleMessageId6);
+        ackQueue.get(virtualSpoutId).add(messageId1);
+        ackQueue.get(virtualSpoutId).add(messageId2);
+        ackQueue.get(virtualSpoutId).add(messageId3);
+        ackQueue.get(otherVirtualSpoutId).add(messageId4);
+        ackQueue.get(otherVirtualSpoutId).add(messageId5);
+        ackQueue.get(otherVirtualSpoutId).add(messageId6);
 
         // Now wait for them to show up in our spout instance
         await()
@@ -520,12 +520,12 @@ public class SpoutRunnerTest {
         // Sanity test
         assertEquals("ackQueue should now be empty", 0, ackQueue.get(virtualSpoutId).size());
         assertEquals("mock spout should have gotten 3 ack() calls", 3, mockSpout.ackedTupleIds.size());
-        assertTrue("Should have tupleMessageId", mockSpout.ackedTupleIds.contains(tupleMessageId1));
-        assertTrue("Should have tupleMessageId", mockSpout.ackedTupleIds.contains(tupleMessageId2));
-        assertTrue("Should have tupleMessageId", mockSpout.ackedTupleIds.contains(tupleMessageId3));
-        assertFalse("Should NOT have tupleMessageId", mockSpout.ackedTupleIds.contains(tupleMessageId4));
-        assertFalse("Should NOT have tupleMessageId", mockSpout.ackedTupleIds.contains(tupleMessageId5));
-        assertFalse("Should NOT have tupleMessageId", mockSpout.ackedTupleIds.contains(tupleMessageId6));
+        assertTrue("Should have messageId", mockSpout.ackedTupleIds.contains(messageId1));
+        assertTrue("Should have messageId", mockSpout.ackedTupleIds.contains(messageId2));
+        assertTrue("Should have messageId", mockSpout.ackedTupleIds.contains(messageId3));
+        assertFalse("Should NOT have messageId", mockSpout.ackedTupleIds.contains(messageId4));
+        assertFalse("Should NOT have messageId", mockSpout.ackedTupleIds.contains(messageId5));
+        assertFalse("Should NOT have messageId", mockSpout.ackedTupleIds.contains(messageId6));
 
         // Other virtualspout id queue should still be populated
         assertEquals("ack queue for other virtual spout should remain full", 3, ackQueue.get(otherVirtualSpoutId).size());
@@ -562,12 +562,12 @@ public class SpoutRunnerTest {
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
 
         // Create our spout delegate
-        final MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout(virtualSpoutId);
+        final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final TupleBuffer tupleBuffer = FIFOBuffer.createDefaultInstance();
-        final Map<String, Queue<TupleMessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<TupleMessageId>> failQueue = Maps.newConcurrentMap();
+        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
         final String otherVirtualSpoutId = "OtherVirtualSpout";
@@ -580,7 +580,7 @@ public class SpoutRunnerTest {
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
                 mockSpout,
-                tupleBuffer,
+            messageBuffer,
                 ackQueue,
                 failQueue,
                 latch,

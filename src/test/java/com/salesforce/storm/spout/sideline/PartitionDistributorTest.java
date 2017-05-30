@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;

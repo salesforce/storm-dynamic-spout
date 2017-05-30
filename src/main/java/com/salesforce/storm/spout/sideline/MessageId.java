@@ -7,7 +7,7 @@ import java.time.Clock;
 /**
  * This object is used as the MessageId for Tuples emitted to the Storm topology.
  */
-public class TupleMessageId {
+public class MessageId {
     private final String topic;
     private final int partition;
     private final long offset;
@@ -21,7 +21,7 @@ public class TupleMessageId {
      * @param offset - the offset this tuple came from.
      * @param srcVirtualSpoutId - the VirtualSpout's identifier this tuple came from.
      */
-    public TupleMessageId(final String topic, final int partition, final long offset, final String srcVirtualSpoutId) {
+    public MessageId(final String topic, final int partition, final long offset, final String srcVirtualSpoutId) {
         this.topic = topic;
         this.partition = partition;
         this.offset = offset;
@@ -54,7 +54,7 @@ public class TupleMessageId {
             return false;
         }
 
-        TupleMessageId that = (TupleMessageId) other;
+        MessageId that = (MessageId) other;
 
         if (getPartition() != that.getPartition()) {
             return false;
@@ -81,7 +81,7 @@ public class TupleMessageId {
     public String toString() {
         final long diff = Clock.systemUTC().millis() - timestamp;
 
-        return "TupleMessageId{"
+        return "MessageId{"
                 + "topic='" + topic + '\''
                 + ", partition=" + partition
                 + ", offset=" + offset

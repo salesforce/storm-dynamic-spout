@@ -8,9 +8,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Simple test around KafkaMessage.
+ * Simple test around Message.
  */
-public class KafkaMessageTest {
+public class MessageTest {
 
     /**
      * Tests the constructor + getters.
@@ -22,7 +22,7 @@ public class KafkaMessageTest {
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
         final String expectedConsumerId = "MyConsumerId";
-        final TupleMessageId expectedTupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
 
         // Define expected values components
@@ -31,21 +31,21 @@ public class KafkaMessageTest {
         final Long expectedValue3 = 42L;
         final Values expectedValues = new Values(expectedValue1, expectedValue2, expectedValue3);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage = new KafkaMessage(expectedTupleMessageId, expectedValues);
+        // Create Message
+        final Message message = new Message(expectedMessageId, expectedValues);
 
         // Validate TupleMessageId
-        assertEquals("Got expected TupleMessageId", expectedTupleMessageId, kafkaMessage.getTupleMessageId());
-        assertEquals("Got expected topic", expectedTopic, kafkaMessage.getTopic());
-        assertEquals("Got expected partition", expectedPartition, kafkaMessage.getPartition());
-        assertEquals("Got expected offset", expectedOffset, kafkaMessage.getOffset());
+        assertEquals("Got expected TupleMessageId", expectedMessageId, message.getMessageId());
+        assertEquals("Got expected topic", expectedTopic, message.getTopic());
+        assertEquals("Got expected partition", expectedPartition, message.getPartition());
+        assertEquals("Got expected offset", expectedOffset, message.getOffset());
 
         // Validate Values
-        assertEquals("Got expected Values", expectedValues, kafkaMessage.getValues());
-        assertEquals("Got expected Values count", 3, kafkaMessage.getValues().size());
-        assertEquals("Got expected Value1", expectedValue1, kafkaMessage.getValues().get(0));
-        assertEquals("Got expected Value2", expectedValue2, kafkaMessage.getValues().get(1));
-        assertEquals("Got expected Value3", expectedValue3, kafkaMessage.getValues().get(2));
+        assertEquals("Got expected Values", expectedValues, message.getValues());
+        assertEquals("Got expected Values count", 3, message.getValues().size());
+        assertEquals("Got expected Value1", expectedValue1, message.getValues().get(0));
+        assertEquals("Got expected Value2", expectedValue2, message.getValues().get(1));
+        assertEquals("Got expected Value3", expectedValue3, message.getValues().get(2));
     }
 
     /**
@@ -58,7 +58,7 @@ public class KafkaMessageTest {
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
         final String expectedConsumerId = "MyConsumerId";
-        final TupleMessageId expectedTupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
 
         // Define expected values components
@@ -67,10 +67,10 @@ public class KafkaMessageTest {
         final Long expectedValue3 = 42L;
         final Values expectedValues = new Values(expectedValue1, expectedValue2, expectedValue3);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage = new KafkaMessage(expectedTupleMessageId, expectedValues);
+        // Create Message
+        final Message message = new Message(expectedMessageId, expectedValues);
 
-        assertTrue("Should be equal", kafkaMessage.equals(kafkaMessage));
+        assertTrue("Should be equal", message.equals(message));
     }
 
     /**
@@ -83,7 +83,7 @@ public class KafkaMessageTest {
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
         final String expectedConsumerId = "MyConsumerId";
-        final TupleMessageId expectedTupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
 
         // Define expected values components
@@ -92,39 +92,39 @@ public class KafkaMessageTest {
         final Long expectedValue3 = 42L;
         final Values expectedValues = new Values(expectedValue1, expectedValue2, expectedValue3);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(expectedTupleMessageId, expectedValues);
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(expectedTupleMessageId, expectedValues);
+        // Create Message
+        final Message message1 = new Message(expectedMessageId, expectedValues);
+        final Message message2 = new Message(expectedMessageId, expectedValues);
 
         // Validate
-        assertTrue("Should be equal", kafkaMessage1.equals(kafkaMessage2));
-        assertTrue("Should be equal", kafkaMessage2.equals(kafkaMessage1));
+        assertTrue("Should be equal", message1.equals(message2));
+        assertTrue("Should be equal", message2.equals(message1));
     }
 
     /**
      * Tests equality.
      */
     @Test
-    public void testEqualsDifferentInstancesSameInnerTupleMessageId() {
+    public void testEqualsDifferentInstancesSameInnerMessageId() {
         // Define TupleMessageId components
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
         final String expectedConsumerId = "MyConsumerId";
-        final TupleMessageId expectedTupleMessageId = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
         // Define expected values components
         final String expectedValue1 = "This is value 1";
         final String expectedValue2 = "This is value 2";
         final Long expectedValue3 = 42L;
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(expectedTupleMessageId, new Values(expectedValue1, expectedValue2, expectedValue3));
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(expectedTupleMessageId, new Values(expectedValue1, expectedValue2, expectedValue3));
+        // Create Message
+        final Message message1 = new Message(expectedMessageId, new Values(expectedValue1, expectedValue2, expectedValue3));
+        final Message message2 = new Message(expectedMessageId, new Values(expectedValue1, expectedValue2, expectedValue3));
 
         // Validate
-        assertTrue("Should be equal", kafkaMessage1.equals(kafkaMessage2));
-        assertTrue("Should be equal", kafkaMessage2.equals(kafkaMessage1));
+        assertTrue("Should be equal", message1.equals(message2));
+        assertTrue("Should be equal", message2.equals(message1));
     }
 
     /**
@@ -144,15 +144,15 @@ public class KafkaMessageTest {
         final Long expectedValue3 = 42L;
         final Values expectedValues = new Values(expectedValue1, expectedValue2, expectedValue3);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), expectedValues);
+        // Create Message
+        final Message message1 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), expectedValues);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), expectedValues);
+        // Create Message
+        final Message message2 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), expectedValues);
 
         // Validate
-        assertTrue("Should be equal", kafkaMessage1.equals(kafkaMessage2));
-        assertTrue("Should be equal", kafkaMessage2.equals(kafkaMessage1));
+        assertTrue("Should be equal", message1.equals(message2));
+        assertTrue("Should be equal", message2.equals(message1));
     }
 
     /**
@@ -171,15 +171,15 @@ public class KafkaMessageTest {
         final String expectedValue2 = "This is value 2";
         final Long expectedValue3 = 42L;
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedValue1, expectedValue2, expectedValue3));
+        // Create Message
+        final Message message1 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedValue1, expectedValue2, expectedValue3));
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedValue1, expectedValue2, expectedValue3));
+        // Create Message
+        final Message message2 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedValue1, expectedValue2, expectedValue3));
 
         // Validate
-        assertTrue("Should be equal", kafkaMessage1.equals(kafkaMessage2));
-        assertTrue("Should be equal", kafkaMessage2.equals(kafkaMessage1));
+        assertTrue("Should be equal", message1.equals(message2));
+        assertTrue("Should be equal", message2.equals(message1));
     }
 
     /**
@@ -198,23 +198,23 @@ public class KafkaMessageTest {
         final String expectedValue2 = "This is value 2";
         final Long expectedValue3 = 42L;
 
-        // Create tupleMessageIds that are different
-        final TupleMessageId tupleMessageId1 = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
-        final TupleMessageId tupleMessageId2 = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset + 1, expectedConsumerId);
+        // Create messageIds that are different
+        final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset + 1, expectedConsumerId);
 
         // Create values that are the same
         final Values values1 = new Values(expectedValue1, expectedValue2, expectedValue3);
         final Values values2 = new Values(expectedValue1, expectedValue2, expectedValue3);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(tupleMessageId1, values1);
+        // Create Message
+        final Message message1 = new Message(messageId1, values1);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(tupleMessageId2, values2);
+        // Create Message
+        final Message message2 = new Message(messageId2, values2);
 
         // Validate
-        assertFalse("Should NOT be equal", kafkaMessage1.equals(kafkaMessage2));
-        assertFalse("Should NOT be equal", kafkaMessage2.equals(kafkaMessage1));
+        assertFalse("Should NOT be equal", message1.equals(message2));
+        assertFalse("Should NOT be equal", message2.equals(message1));
     }
 
     /**
@@ -233,23 +233,23 @@ public class KafkaMessageTest {
         final String expectedValue2 = "This is value 2";
         final Long expectedValue3 = 42L;
 
-        // Create tupleMessageIds that are the same
-        final TupleMessageId tupleMessageId1 = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
-        final TupleMessageId tupleMessageId2 = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        // Create messageIds that are the same
+        final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
         // Create values that are different
         final Values values1 = new Values(expectedValue1, expectedValue2, expectedValue3);
         final Values values2 = new Values(expectedValue1, expectedValue2);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(tupleMessageId1, values1);
+        // Create Message
+        final Message message1 = new Message(messageId1, values1);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage2 = new KafkaMessage(tupleMessageId2, values2);
+        // Create Message
+        final Message message2 = new Message(messageId2, values2);
 
         // Validate
-        assertFalse("Should NOT be equal", kafkaMessage1.equals(kafkaMessage2));
-        assertFalse("Should NOT be equal", kafkaMessage2.equals(kafkaMessage1));
+        assertFalse("Should NOT be equal", message1.equals(message2));
+        assertFalse("Should NOT be equal", message2.equals(message1));
     }
 
     /**
@@ -268,19 +268,19 @@ public class KafkaMessageTest {
         final String expectedValue2 = "This is value 2";
         final Long expectedValue3 = 42L;
 
-        // Create tupleMessageId
-        final TupleMessageId tupleMessageId1 = new TupleMessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+        // Create messageId
+        final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
         // Create values
         final Values values1 = new Values(expectedValue1, expectedValue2, expectedValue3);
 
-        // Create KafkaMessage
-        final KafkaMessage kafkaMessage1 = new KafkaMessage(tupleMessageId1, values1);
+        // Create Message
+        final Message message1 = new Message(messageId1, values1);
 
-        // Create KafkaMessage that is null
-        final KafkaMessage kafkaMessage2 = null;
+        // Create Message that is null
+        final Message message2 = null;
 
         // Validate
-        assertFalse("Should NOT be equal", kafkaMessage1.equals(kafkaMessage2));
+        assertFalse("Should NOT be equal", message1.equals(message2));
     }
 }

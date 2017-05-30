@@ -1,9 +1,9 @@
-package com.salesforce.storm.spout.sideline.kafka.retryManagers;
+package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 
 import java.time.Clock;
@@ -41,18 +41,18 @@ public class DefaultRetryManager implements RetryManager {
     /**
      * This Set holds which tuples are in flight.
      */
-    private Set<TupleMessageId> retriesInFlight;
+    private Set<MessageId> retriesInFlight;
 
     /**
      * This map hows how many times each messageId has failed.
      */
-    private Map<TupleMessageId, Integer> numberOfTimesFailed;
+    private Map<MessageId, Integer> numberOfTimesFailed;
 
     /**
      * This is a sorted Tree of timestamps, where each timestamp points to a queue of
      * failed messageIds.
      */
-    private TreeMap<Long, Queue<TupleMessageId>> failedMessageIds;
+    private TreeMap<Long, Queue<MessageId>> failedMessageIds;
 
     /**
      * Used to control timing around retries.
@@ -90,7 +90,7 @@ public class DefaultRetryManager implements RetryManager {
      * @param messageId messageId to track as having failed.
      */
     @Override
-    public void failed(TupleMessageId messageId) {
+    public void failed(MessageId messageId) {
         final int failCount = numberOfTimesFailed.getOrDefault(messageId, 0) + 1;
         numberOfTimesFailed.put(messageId, failCount);
 
@@ -117,7 +117,7 @@ public class DefaultRetryManager implements RetryManager {
 
         // Grab the queue for this timestamp,
         // If it doesn't exist, create a new queue and return it.
-        Queue<TupleMessageId> queue = failedMessageIds.computeIfAbsent(retryTime, k -> Lists.newLinkedList());
+        Queue<MessageId> queue = failedMessageIds.computeIfAbsent(retryTime, k -> Lists.newLinkedList());
 
         // Add our message to the queue.
         queue.add(messageId);
@@ -129,7 +129,7 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     @Override
-    public void acked(TupleMessageId messageId) {
+    public void acked(MessageId messageId) {
         // Remove from in flight
         retriesInFlight.remove(messageId);
 
@@ -138,15 +138,15 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     @Override
-    public TupleMessageId nextFailedMessageToRetry() {
+    public MessageId nextFailedMessageToRetry() {
         final long now = getClock().millis();
         final Long lowestKey = failedMessageIds.floorKey(now);
         if (lowestKey == null) {
             // Nothing has expired
             return null;
         }
-        Queue<TupleMessageId> queue = failedMessageIds.get(lowestKey);
-        final TupleMessageId messageId = queue.poll();
+        Queue<MessageId> queue = failedMessageIds.get(lowestKey);
+        final MessageId messageId = queue.poll();
 
         // If our queue is now empty
         if (queue.isEmpty()) {
@@ -160,7 +160,7 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     @Override
-    public boolean retryFurther(TupleMessageId messageId) {
+    public boolean retryFurther(MessageId messageId) {
         // If max retries is set to 0, we will never retry any tuple.
         if (getRetryLimit() == 0) {
             return false;
@@ -214,21 +214,21 @@ public class DefaultRetryManager implements RetryManager {
      * Used internally and in tests.
      * @return returns all of the message Ids in flight / being processed by the topology currently.
      */
-    Set<TupleMessageId> getRetriesInFlight() {
+    Set<MessageId> getRetriesInFlight() {
         return retriesInFlight;
     }
 
     /**
      * Used internally and in tests.
      */
-    Map<TupleMessageId, Integer> getNumberOfTimesFailed() {
+    Map<MessageId, Integer> getNumberOfTimesFailed() {
         return numberOfTimesFailed;
     }
 
     /**
      * Used internally and in tests.
      */
-    TreeMap<Long, Queue<TupleMessageId>> getFailedMessageIds() {
+    TreeMap<Long, Queue<MessageId>> getFailedMessageIds() {
         return failedMessageIds;
     }
 

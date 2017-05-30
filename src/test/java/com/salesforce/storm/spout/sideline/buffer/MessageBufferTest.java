@@ -1,9 +1,9 @@
-package com.salesforce.storm.spout.sideline.tupleBuffer;
+package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -29,15 +29,15 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNull;
 
 @RunWith(DataProviderRunner.class)
-public class TupleBufferTest {
+public class MessageBufferTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(TupleBufferTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageBufferTest.class);
 
     /**
      * Provides various tuple buffer implementation.
      */
     @DataProvider
-    public static Object[][] provideTupleBuffers() throws InstantiationException, IllegalAccessException {
+    public static Object[][] provideMessageBuffers() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
                 { createInstance(FIFOBuffer.class, 10000) },
                 { createInstance(RoundRobinBuffer.class, 1000 ) },
@@ -47,28 +47,28 @@ public class TupleBufferTest {
     /**
      * Helper method for creating instances and configuring them.
      */
-    private static TupleBuffer createInstance(Class clazz, int bufferSize) throws IllegalAccessException, InstantiationException {
+    private static MessageBuffer createInstance(Class clazz, int bufferSize) throws IllegalAccessException, InstantiationException {
         Map<String, Object> topologyConfig = Maps.newHashMap();
         topologyConfig.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
 
-        TupleBuffer tupleBuffer = (TupleBuffer) clazz.newInstance();
-        tupleBuffer.open(topologyConfig);
+        MessageBuffer messageBuffer = (MessageBuffer) clazz.newInstance();
+        messageBuffer.open(topologyConfig);
 
-        return tupleBuffer;
+        return messageBuffer;
     }
 
     /**
      * Tests this instance against multiple threads for weirdness.
      */
     @Test
-    @UseDataProvider("provideTupleBuffers")
-    public void testConcurrentModification(final TupleBuffer tupleBuffer) throws InterruptedException {
+    @UseDataProvider("provideMessageBuffers")
+    public void testConcurrentModification(final MessageBuffer messageBuffer) throws InterruptedException {
         // Settings for test
         final int numberOfVSpoutIds = 10;
         final int numberOfMessagesPer = 100000;
         final int numberOfThreads = 15;
 
-        logger.info("Running test with {}", tupleBuffer.getClass().getSimpleName());
+        logger.info("Running test with {}", messageBuffer.getClass().getSimpleName());
 
         // Create executor service with number of threads = how many we want to run
         final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
@@ -96,13 +96,13 @@ public class TupleBufferTest {
                     final int partition = random.nextInt(10);
 
 
-                    KafkaMessage kafkaMessage = new KafkaMessage(
-                            new TupleMessageId("my topic", partition, x, sourceSpoutId),
+                    Message message = new Message(
+                            new MessageId("my topic", partition, x, sourceSpoutId),
                             new Values("myValue" + x));
 
                     try {
                         final long startPutTime = System.currentTimeMillis();
-                        tupleBuffer.put(kafkaMessage);
+                        messageBuffer.put(message);
                         final long putTime = System.currentTimeMillis() - startPutTime;
                         if (putTime > longestTimeBlocked) {
                             longestTimeBlocked = putTime;
@@ -122,7 +122,7 @@ public class TupleBufferTest {
         int totalExpected = numberOfMessagesPer * numberOfVSpoutIds * numberOfThreads;
         logger.info("Expecting to find {} messages", totalExpected);
         while (totalFound != totalExpected) {
-            if (tupleBuffer.poll() != null) {
+            if (messageBuffer.poll() != null) {
                 totalFound++;
             } else {
                 totalNullsReturned++;
@@ -155,7 +155,7 @@ public class TupleBufferTest {
 
         // Poll a bunch, validating nothing else returned
         for (int x=0; x<1024; x++) {
-            assertNull("Should be null", tupleBuffer.poll());
+            assertNull("Should be null", messageBuffer.poll());
         }
 
         // Shutdown executor service
