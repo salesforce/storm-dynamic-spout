@@ -379,15 +379,17 @@ This means consuming from the queue will always be fast.
 This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### Metrics
-The many different metrics that are collected by the spout are detailed below.
+SidelineSpout collects metrics giving you insight to what is happening under the hood.  It collects
+four types of metrics, Averages, Counters, Gauges, and Timers.
   
 Type | Description
 -----|------------
-Averages | Calculates average of all values submitted over a set time period.
+Average | Calculates average of all values submitted over a set time period.
 Counter | Keeps a running count that gets reset back to zero on deployment.
 Gauge | Reports the last value given for the metric.
 Timer | Calculates how long on average, in milliseconds, an event takes.
 
+Below is a list of metrics that are collected with the metric type and description.
 
 Class | Key | Type | Description
 ------|-----|------|------------
