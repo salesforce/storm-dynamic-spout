@@ -1,4 +1,3 @@
-<a name="storm-sideline-spout"></a>
 # Storm Sidelining Kafka Spout
 
 ## Purpose of this project
@@ -10,6 +9,56 @@ aims to be a drop in replacement for it.  This implementation differs in that it
 filter semantics when you build your topology which allow for specific messages to be skipped, and then
 replayed at a later point in time.  All this is done dynamically without requiring you to re-deploy your topology when filtering 
 criteria changes!
+
+## Table of Contents
+
+  * [Storm Sidelining Kafka Spout](#storm-sidelining-kafka-spout)
+    * [Purpose of this project](#purpose-of-this-project)
+    * [Table of Contents](#table-of-contents)
+      * [Example use case: Multi-tenant processing](#example-use-case-multi-tenant-processing)
+    * [How does it work?](#how-does-it-work)
+    * [How does it  <em>really</em> work?](#how-does-it--really-work)
+      * [Primary Components](#primary-components)
+      * [When the Topology Starts](#when-the-topology-starts)
+      * [Starting Sideline Request](#starting-sideline-request)
+      * [Stoping Sideline Request](#stoping-sideline-request)
+      * [Stopping &amp; Redeploying the topology?](#stopping--redeploying-the-topology)
+  * [Getting started](#getting-started)
+    * [Dependencies](#dependencies)
+    * [Configuration](#configuration)
+      * [Required Configuration](#required-configuration)
+    * [Required Interface Implementations](#required-interface-implementations)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java">Deserializer</a>](#deserializer)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java">StartingTrigger</a>](#startingtrigger)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java">StoppingTrigger</a>](#stoppingtrigger)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java">FilterChainStep</a>](#filterchainstep)
+    * [Example Trigger Implementation](#example-trigger-implementation)
+    * [Optional Interfaces for Overachievers](#optional-interfaces-for-overachievers)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java">PersistenceAdapter</a>](#persistenceadapter)
+            * [Configuration](#configuration-1)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java">RetryManager</a>](#retrymanager)
+            * [Configuration](#configuration-2)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java">TupleBuffer</a>](#tuplebuffer)
+            * [Configuration](#configuration-3)
+    * [Optional Interfaces Implementations](#optional-interfaces-implementations)
+      * [PersistenceAdapter Implementations](#persistenceadapter-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/persistence/ZookeeperPersistenceAdapter.java">ZookeeperPersistenceAdapter</a>](#zookeeperpersistenceadapter)
+            * [Configuration](#configuration-4)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/persistence/InMemoryPersistenceAdapter.java">InMemoryPersistenceAdapter</a>](#inmemorypersistenceadapter)
+      * [RetryManager Implementations](#retrymanager-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java">DefaultRetryManager</a>](#defaultretrymanager)
+            * [Configuration](#configuration-5)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java">FailedTuplesFirstRetryManager</a>](#failedtuplesfirstretrymanager)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java">NeverRetryManager</a>](#neverretrymanager)
+      * [TupleBuffer Implementations](#tuplebuffer-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java">RoundRobinBuffer</a>](#roundrobinbuffer)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java">FIFOBuffer</a>](#fifobuffer)
+      * [MetricsRecorder Implementations](#metricsrecorder-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java">StormRecorder</a>](#stormrecorder)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java">LogRecorder</a>](#logrecorder)
+    * [Metrics](#metrics)
+  * [Interesting Ideas and Questions](#interesting-ideas-and-questions)
+  * [Releases &amp; Changelog](#releases--changelog)
 
 ### Example use case: Multi-tenant processing
 When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine 
@@ -378,10 +427,60 @@ This means consuming from the queue will always be fast.
 #### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java)
 This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
-### Metrics
-The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how a metrics gathering implementation would behave.
+### MetricsRecorder Implementations
+The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how to handle metrics that are gathered by the spout.  Implementations of this interface
+should be ThreadSafe, as a single instance is shared across multiple threads. Presently there are two implementations packaged with the project.
 
-**This is still a work in progress.**
+#### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
+This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).  It will report metrics using the following
+format: 
+
+Type | Format 
+-----|--------
+Averages | AVERAGES.\<className\>.\<metricName\>
+Counter | COUNTERS.\<className\>.\<metricName\>
+Gauge | GAUGES.\<className\>.\<metricName\>
+Timer | TIMERS.\<className\>.\<metricName\> 
+ 
+
+#### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
+This implementation logs metrics to your logging system.
+
+
+## Metrics
+SidelineSpout collects metrics giving you insight to what is happening under the hood.  It collects
+four types of metrics, Averages, Counters, Gauges, and Timers.
+  
+Type | Description
+-----|------------
+Average | Calculates average of all values submitted over a set time period.
+Counter | Keeps a running count that gets reset back to zero on deployment.
+Gauge | Reports the last value given for the metric.
+Timer | Calculates how long on average, in milliseconds, an event takes.
+
+Below is a list of metrics that are collected with the metric type and description.
+
+Class | Key | Type | Description
+------|-----|------|------------
+SidelineSpout | start-sideline | Counter | How many `Start Sideline` requests have been received.
+SidelineSpout | stop-sideline | Counter | How many `Stop Sideline` requests have been received.
+VirtualSidelineSpout | `virtual-spout-id`.emit | Counter | Tuple emit count per VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.ack | Counter | Tuple ack count per VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.fail | Counter | Messages who have failed.
+VirtualSidelineSpout | `virtual-spout-id`.filtered | Counter | Filtered messages per VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.exceeded_retry_limit | Counter | Messages who have exceeded the maximum configured retry count.
+VirtualSidelineSpout | `virtual-spout-id`.number_filters_applied | Gauge | How many Filters are being applied against the VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalMessages | Gauge | Total number of messages to be processed by the VirtualSpout for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalProcessed | Gauge | Number of messages processed by the VirtualSpout instance for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalUnprocessed | Gauge | Number of messages remaining to be processed by the VirtualSpout instance for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.percentComplete | Gauge | Percentage of messages processed out of the total for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.startingOffset | Gauge | The starting offset position for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.currentOffset | Gauge | The offset currently being processed for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.endingOffset | Gauge | The ending offset for the given partition.
+SpoutMonitor | poolSize | Gauge | The max number of VirtualSpout instances that will be run concurrently.
+SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
+SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
+SpoutMonitor | completed | Gauge | The number of completed VirtualSpout instances.
 
 # Interesting Ideas and Questions
 Just a collection of random ideas, or things we could do with this:
@@ -390,5 +489,3 @@ Just a collection of random ideas, or things we could do with this:
 
 # Releases & Changelog 
 See [CHANGELOG.md](CHANGELOG.md) for full release changes.
-
-
