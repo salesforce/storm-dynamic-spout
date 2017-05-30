@@ -188,6 +188,8 @@ public class SidelineSpout extends BaseRichSpout {
 
         // Remove the steps associated with this sideline request
         final FilterChainStep step = fireHoseSpout.getFilterChain().removeSteps(id);
+        // Create a negated version of the step we just pulled from the firehose
+        final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
 
         // This is the state that the VirtualSidelineSpout should end with
         final ConsumerState endingState = fireHoseSpout.getCurrentState();
@@ -208,7 +210,7 @@ public class SidelineSpout extends BaseRichSpout {
             persistenceAdapter.persistSidelineRequestState(
                 SidelineType.STOP,
                 id,
-                new SidelineRequest(step), // Persist the non-negated steps, we'll always apply negation at runtime
+                new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
                 topicPartition.partition(),
                 sidelinePayload.startingOffset,
                 endingState.getOffsetForTopicAndPartition(topicPartition)
@@ -220,7 +222,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         openVirtualSpout(
             id,
-            step,
+            negatedStep,
             startingState,
             endingState
         );
@@ -396,8 +398,8 @@ public class SidelineSpout extends BaseRichSpout {
         spout.setVirtualSpoutId(virtualSpoutId);
         spout.setSidelineRequestIdentifier(id);
 
-        // Add and negate the request's filter step, we leave them stored in their original form and negate them at runtime
-        spout.getFilterChain().addStep(id, new NegatingFilterChainStep(step));
+        // Add the supplied filter chain step to the new virtual spout's filter chain
+        spout.getFilterChain().addStep(id, step);
 
         // Now pass the new "resumed" spout over to the coordinator to open and run
         getCoordinator().addSidelineSpout(spout);
