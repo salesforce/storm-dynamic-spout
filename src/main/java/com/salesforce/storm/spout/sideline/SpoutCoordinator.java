@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -120,7 +121,7 @@ public class SpoutCoordinator {
         );
 
         // Start executing the spout monitor in a new thread.
-        getExecutor().submit(spoutMonitor);
+        startSpoutMonitor();
 
         // Block/wait for all of our VirtualSpout instances to start before continuing on.
         try {
@@ -128,6 +129,22 @@ public class SpoutCoordinator {
         } catch (InterruptedException ex) {
             logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
         }
+    }
+
+    private void startSpoutMonitor() {
+        CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((t) -> {
+            // On errors, we need to restart it.  We throttle restarts @ 10 seconds to prevent thrashing.
+            logger.error("Spout monitor died unnaturally.  Will restart after 10 seconds. {}", t.getMessage(), t);
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                logger.error("Caught InterruptedException, Will not restart SpouMonitor.");
+                return null;
+            }
+            logger.info("Restarting SpoutMonitor");
+            startSpoutMonitor();
+            return null;
+        });
     }
 
     /**

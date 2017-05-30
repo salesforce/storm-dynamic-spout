@@ -268,49 +268,59 @@ public class SpoutMonitor implements Runnable {
         getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
 
         // Loop through spouts instances
-        if (consumerMonitor == null) {
-            // Create consumer monitor instance
-            consumerMonitor = new SpoutPartitionProgressMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceAdapterInstance());
-            consumerMonitor.open(getTopologyConfig());
-        }
-
-        // Loop thru all of them to get virtualSpout Ids.
-        for (final SpoutRunner spoutRunner : spoutRunners.values()) {
-            final DelegateSidelineSpout spout = spoutRunner.getSpout();
-            Map<TopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
-
-            if (progressMap == null) {
-                continue;
+        try {
+            if (consumerMonitor == null) {
+                // Create consumer monitor instance
+                consumerMonitor = new SpoutPartitionProgressMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceAdapterInstance());
+                consumerMonitor.open(getTopologyConfig());
             }
 
-            logger.info("== VirtualSpoutId {} ({} filters applied) Status ==", spout.getVirtualSpoutId(), spout.getNumberOfFiltersApplied());
+            // Loop thru all of them to get virtualSpout Ids.
+            for (final SpoutRunner spoutRunner : spoutRunners.values()) {
+                final DelegateSidelineSpout spout = spoutRunner.getSpout();
+                Map<TopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
 
-            // Calculate the progress
-            for (Map.Entry<TopicPartition,SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
-                final TopicPartition topicPartition = entry.getKey();
-                final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
+                if (progressMap == null) {
+                    continue;
+                }
 
-                // Log progress
-                logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
-                    topicPartition,
-                    partitionProgress.getPercentageComplete(),
-                    partitionProgress.getTotalProcessed(),
-                    partitionProgress.getTotalMessages(),
-                    partitionProgress.getTotalUnprocessed()
-                );
+                logger.info("== VirtualSpoutId {} ({} filters applied) Status ==", spout.getVirtualSpoutId(), spout.getNumberOfFiltersApplied());
 
-                // Report to metric reporter
-                final String virtualSpoutMetricKey = spout.getVirtualSpoutId() + ".partition" + topicPartition.partition();
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalProcessed", partitionProgress.getTotalProcessed());
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalUnprocessed", partitionProgress.getTotalUnprocessed());
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalMessages", partitionProgress.getTotalMessages());
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".percentComplete", partitionProgress.getPercentageComplete());
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".startingOffset", partitionProgress.getStartingOffset());
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".currentOffset", partitionProgress.getCurrentOffset());
-                getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".endingOffset", partitionProgress.getEndingOffset());
+                // Calculate the progress
+                for (Map.Entry<TopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
+                    final TopicPartition topicPartition = entry.getKey();
+                    final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
+
+                    // Log progress
+                    logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
+                        topicPartition,
+                        partitionProgress.getPercentageComplete(),
+                        partitionProgress.getTotalProcessed(),
+                        partitionProgress.getTotalMessages(),
+                        partitionProgress.getTotalUnprocessed()
+                    );
+
+                    // Report to metric reporter
+                    final String virtualSpoutMetricKey = spout.getVirtualSpoutId() + ".partition" + topicPartition.partition();
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalProcessed", partitionProgress.getTotalProcessed());
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalUnprocessed", partitionProgress.getTotalUnprocessed());
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalMessages", partitionProgress.getTotalMessages());
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".percentComplete", partitionProgress.getPercentageComplete());
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".startingOffset", partitionProgress.getStartingOffset());
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".currentOffset", partitionProgress.getCurrentOffset());
+                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".endingOffset", partitionProgress.getEndingOffset());
+                }
+                // Report how many filters are applied on this virtual spout.
+                getMetricsRecorder().assignValue(VirtualSpout.class, spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied());
             }
-            // Report how many filters are applied on this virtual spout.
-            getMetricsRecorder().assignValue(VirtualSpout.class, spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied());
+        } catch (Throwable t) {
+            logger.error("Caught exception during status checks {}", t.getMessage(), t);
+
+            // Do basic cleanup.
+            if (consumerMonitor != null) {
+                consumerMonitor.close();
+            }
+            consumerMonitor = null;
         }
     }
 
