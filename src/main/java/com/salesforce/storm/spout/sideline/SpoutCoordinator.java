@@ -133,8 +133,15 @@ public class SpoutCoordinator {
 
     private void startSpoutMonitor() {
         CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((t) -> {
-            // On errors, we need to restart it.
-            logger.error("Spout monitor died unnaturally.  Restarting it {}", t.getMessage(), t);
+            // On errors, we need to restart it.  We throttle restarts @ 10 seconds to prevent thrashing.
+            logger.error("Spout monitor died unnaturally.  Will restart after 10 seconds. {}", t.getMessage(), t);
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                logger.error("Caught InterruptedException, Will not restart SpouMonitor.");
+                return null;
+            }
+            logger.info("Restarting SpoutMonitor");
             startSpoutMonitor();
             return null;
         });
