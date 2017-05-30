@@ -53,10 +53,10 @@ criteria changes!
       * [TupleBuffer Implementations](#tuplebuffer-implementations)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java">RoundRobinBuffer</a>](#roundrobinbuffer)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java">FIFOBuffer</a>](#fifobuffer)
-    * [Metrics](#metrics)
       * [MetricsRecorder Implementations](#metricsrecorder-implementations)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java">StormRecorder</a>](#stormrecorder)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java">LogRecorder</a>](#logrecorder)
+    * [Metrics](#metrics)
   * [Interesting Ideas and Questions](#interesting-ideas-and-questions)
   * [Releases &amp; Changelog](#releases--changelog)
 
@@ -427,6 +427,26 @@ This means consuming from the queue will always be fast.
 #### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java)
 This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
+### MetricsRecorder Implementations
+The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how to handle metrics that are gathered by the spout.  Implementations of this interface
+should be ThreadSafe, as a single instance is shared across multiple threads. Presently there are two implementations packaged with the project.
+
+#### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
+This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).  It will report metrics using the following
+format: 
+
+Type | Format 
+-----|--------
+Averages | AVERAGES.\<className\>.\<metricName\>
+Counter | COUNTERS.\<className\>.\<metricName\>
+Gauge | GAUGES.\<className\>.\<metricName\>
+Timer | TIMERS.\<className\>.\<metricName\> 
+ 
+
+#### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
+This implementation logs metrics to your logging system.
+
+
 ## Metrics
 SidelineSpout collects metrics giving you insight to what is happening under the hood.  It collects
 four types of metrics, Averages, Counters, Gauges, and Timers.
@@ -461,25 +481,6 @@ SpoutMonitor | poolSize | Gauge | The max number of VirtualSpout instances that 
 SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
 SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
 SpoutMonitor | completed | Gauge | The number of completed VirtualSpout instances.
-
-### MetricsRecorder Implementations
-The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how to handle metrics that are gathered by the spout.  Implementations of this interface
-should be ThreadSafe, as a single instance is shared across multiple threads. Presently there are two implementations packaged with the project.
-
-#### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
-This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).  It will report metrics using the following
-format: 
-
-Type | Format 
------|--------
-Averages | AVERAGES.\<className\>.\<metricName\>
-Counter | COUNTERS.\<className\>.\<metricName\>
-Gauge | GAUGES.\<className\>.\<metricName\>
-Timer | TIMERS.\<className\>.\<metricName\> 
- 
-
-#### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
-This implementation logs metrics to your logging system.
 
 # Interesting Ideas and Questions
 Just a collection of random ideas, or things we could do with this:
