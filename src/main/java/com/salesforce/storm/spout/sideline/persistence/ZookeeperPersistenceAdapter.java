@@ -205,7 +205,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return new SidelinePayload(
             type,
             id,
-            new SidelineRequest(step),
+            new SidelineRequest(id, step),
             startingOffset,
             endingOffset
         );

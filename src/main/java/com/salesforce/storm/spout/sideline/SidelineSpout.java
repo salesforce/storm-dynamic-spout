@@ -208,7 +208,7 @@ public class SidelineSpout extends BaseRichSpout {
             persistenceAdapter.persistSidelineRequestState(
                 SidelineType.STOP,
                 id,
-                new SidelineRequest(step), // Persist the non-negated steps, we'll always apply negation at runtime
+                new SidelineRequest(id, step), // Persist the non-negated steps, we'll always apply negation at runtime
                 topicPartition.partition(),
                 sidelinePayload.startingOffset,
                 endingState.getOffsetForTopicAndPartition(topicPartition)
