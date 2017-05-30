@@ -68,9 +68,9 @@ public class KafkaTestServerTest {
             }
             Thread.sleep(1000L);
         }
-        MessageAndMetadata<byte[], byte[]> kafkaMessage = it.next();
-        String foundMessage = new String(kafkaMessage.message(), "utf8");
-        String foundKey = new String(kafkaMessage.key(), "utf8");
+        MessageAndMetadata<byte[], byte[]> message = it.next();
+        String foundMessage = new String(message.message(), "utf8");
+        String foundKey = new String(message.key(), "utf8");
 
         assertEquals("Should have message", expectedValue, foundMessage);
         assertEquals("Should have key", expectedKey, foundKey);

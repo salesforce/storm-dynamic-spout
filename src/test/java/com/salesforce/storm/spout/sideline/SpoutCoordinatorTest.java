@@ -5,9 +5,9 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.mocks.MockDelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -33,16 +33,16 @@ public class SpoutCoordinatorTest {
         // Define how long we'll wait for internal operations to complete
         final long waitTime = internalOperationsIntervalMs * 4;
 
-        final List<KafkaMessage> expected = Lists.newArrayList();
+        final List<Message> expected = Lists.newArrayList();
 
-        final MockDelegateSidelineSpout fireHoseSpout = new MockDelegateSidelineSpout();
-        final MockDelegateSidelineSpout sidelineSpout1 = new MockDelegateSidelineSpout();
-        final MockDelegateSidelineSpout sidelineSpout2 = new MockDelegateSidelineSpout();
+        final MockDelegateSpout fireHoseSpout = new MockDelegateSpout();
+        final MockDelegateSpout sidelineSpout1 = new MockDelegateSpout();
+        final MockDelegateSpout sidelineSpout2 = new MockDelegateSpout();
 
         // Note: I set the topic here to different things largely to aide debugging the message ids later on
-        final KafkaMessage message1 = new KafkaMessage(new TupleMessageId("message1", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message1"));
-        final KafkaMessage message2 = new KafkaMessage(new TupleMessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
-        final KafkaMessage message3 = new KafkaMessage(new TupleMessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
+        final Message message1 = new Message(new MessageId("message1", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message1"));
+        final Message message2 = new Message(new MessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
+        final Message message3 = new Message(new MessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
 
         final FIFOBuffer actual = FIFOBuffer.createDefaultInstance();
 
@@ -85,11 +85,11 @@ public class SpoutCoordinatorTest {
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> actual.getUnderlyingQueue().size(), equalTo(3));
 
         // Ack the first two messages
-        coordinator.ack(message1.getTupleMessageId());
-        coordinator.ack(message2.getTupleMessageId());
+        coordinator.ack(message1.getMessageId());
+        coordinator.ack(message2.getMessageId());
 
         // Fail the third
-        coordinator.fail(message3.getTupleMessageId());
+        coordinator.fail(message3.getMessageId());
 
         // Wait for those to come through to the correct VirtualSpouts.
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.ackedTupleIds.size(), equalTo(1));
@@ -97,15 +97,15 @@ public class SpoutCoordinatorTest {
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.ackedTupleIds.size(), equalTo(1));
 
         assertTrue(
-            message1.getTupleMessageId().equals(fireHoseSpout.ackedTupleIds.toArray()[0])
+            message1.getMessageId().equals(fireHoseSpout.ackedTupleIds.toArray()[0])
         );
 
         assertTrue(
-            message3.getTupleMessageId().equals(fireHoseSpout.failedTupleIds.toArray()[0])
+            message3.getMessageId().equals(fireHoseSpout.failedTupleIds.toArray()[0])
         );
 
         assertTrue(
-            message2.getTupleMessageId().equals(sidelineSpout1.ackedTupleIds.toArray()[0])
+            message2.getMessageId().equals(sidelineSpout1.ackedTupleIds.toArray()[0])
         );
 
         coordinator.close();
@@ -113,10 +113,10 @@ public class SpoutCoordinatorTest {
         logger.info("Expected = " + expected);
         logger.info("Actual = " + actual);
 
-        for (KafkaMessage a : expected) {
+        for (Message a : expected) {
             boolean found = false;
 
-            for (KafkaMessage b : actual.getUnderlyingQueue()) {
+            for (Message b : actual.getUnderlyingQueue()) {
                 if (a.equals(b)) {
                     found = true;
                 }

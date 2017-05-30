@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Attempts to monitor VirtualSpout progress.
@@ -35,7 +34,7 @@ public class SpoutPartitionProgressMonitor {
         persistenceAdapter.close();
     }
 
-    public Map<TopicPartition, PartitionProgress> getStatus(final DelegateSidelineSpout spout) {
+    public Map<TopicPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
         final SidelineRequestIdentifier sidelineIdentifier = getSidelineRequestIdentifier(spout);
 
         if (sidelineIdentifier == null) {
@@ -47,7 +46,7 @@ public class SpoutPartitionProgressMonitor {
         }
     }
 
-    private SidelineRequestIdentifier getSidelineRequestIdentifier(final DelegateSidelineSpout spout) {
+    private SidelineRequestIdentifier getSidelineRequestIdentifier(final DelegateSpout spout) {
         final String virtualSpoutId = spout.getVirtualSpoutId();
 
         // Parse out the SidelineRequestId, this is not ideal.
@@ -68,7 +67,7 @@ public class SpoutPartitionProgressMonitor {
 
     }
 
-    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSidelineSpout spout) {
+    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSpout spout) {
         final ConsumerState currentState = spout.getCurrentState();
 
         // Max lag is the MAX lag across all partitions
@@ -95,7 +94,7 @@ public class SpoutPartitionProgressMonitor {
         return Collections.unmodifiableMap(mainProgressMap);
     }
 
-    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSidelineSpout spout) {
+    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSpout spout) {
         // Create return map
         Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 

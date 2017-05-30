@@ -2,12 +2,12 @@ package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Tools;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,27 +43,27 @@ public class SpoutMonitor implements Runnable {
      * This Queue contains requests to our thread to fire up new VirtualSidelineSpouts.
      * Instances are taken off of this queue and put into the ExecutorService's task queue.
      */
-    private final Queue<DelegateSidelineSpout> newSpoutQueue;
+    private final Queue<DelegateSpout> newSpoutQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be sent out to the topology.
      * It is filled by VirtualSidelineSpout instances, and drained by SidelineSpout.
      */
-    private final TupleBuffer tupleOutputQueue;
+    private final MessageBuffer tupleOutputQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be acked by VirtualSidelineSpouts.
      * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be acked.
      * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
      */
-    private final Map<String,Queue<TupleMessageId>> ackedTuplesQueue;
+    private final Map<String,Queue<MessageId>> ackedTuplesQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be failed by VirtualSidelineSpouts.
      * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be failed.
      * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
      */
-    private final Map<String,Queue<TupleMessageId>> failedTuplesQueue;
+    private final Map<String,Queue<MessageId>> failedTuplesQueue;
 
     /**
      * This latch allows the SpoutCoordinator to block on start up until its initial
@@ -105,10 +105,10 @@ public class SpoutMonitor implements Runnable {
     private long lastStatusReport = 0;
 
     public SpoutMonitor(
-            final Queue<DelegateSidelineSpout> newSpoutQueue,
-            final TupleBuffer tupleOutputQueue,
-            final Map<String, Queue<TupleMessageId>> ackedTuplesQueue,
-            final Map<String, Queue<TupleMessageId>> failedTuplesQueue,
+            final Queue<DelegateSpout> newSpoutQueue,
+            final MessageBuffer tupleOutputQueue,
+            final Map<String, Queue<MessageId>> ackedTuplesQueue,
+            final Map<String, Queue<MessageId>> failedTuplesQueue,
             final CountDownLatch latch,
             final Clock clock,
             final Map<String, Object> topologyConfig,
@@ -180,7 +180,7 @@ public class SpoutMonitor implements Runnable {
      */
     private void startNewSpoutTasks() {
         // Look for new spouts to start.
-        for (DelegateSidelineSpout spout; (spout = getNewSpoutQueue().poll()) != null;) {
+        for (DelegateSpout spout; (spout = getNewSpoutQueue().poll()) != null;) {
             logger.info("Preparing thread for spout {}", spout.getVirtualSpoutId());
 
             final SpoutRunner spoutRunner = new SpoutRunner(
@@ -259,7 +259,7 @@ public class SpoutMonitor implements Runnable {
             executor.getCompletedTaskCount(),
             executor.getTaskCount()
         );
-        logger.info("TupleBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
+        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
 
         // Report to metrics record
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
@@ -277,7 +277,7 @@ public class SpoutMonitor implements Runnable {
 
             // Loop thru all of them to get virtualSpout Ids.
             for (final SpoutRunner spoutRunner : spoutRunners.values()) {
-                final DelegateSidelineSpout spout = spoutRunner.getSpout();
+                final DelegateSpout spout = spoutRunner.getSpout();
                 Map<TopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
 
                 if (progressMap == null) {
@@ -430,7 +430,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * @return - The new spout queue.
      */
-    Queue<DelegateSidelineSpout> getNewSpoutQueue() {
+    Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
     }
 

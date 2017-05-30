@@ -2,9 +2,8 @@ package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.coordinator.SpoutMonitor;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,22 +38,22 @@ public class SpoutCoordinator {
     /**
      * Queue of spouts that need to be passed to the monitor and spun up.
      */
-    private final Queue<DelegateSidelineSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<DelegateSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
      * Queue for tuples that are ready to be emitted out into the topology.
      */
-    private final TupleBuffer tupleBuffer;
+    private final MessageBuffer messageBuffer;
 
     /**
      * Buffer by spout consumer id of messages that have been acked.
      */
-    private final Map<String,Queue<TupleMessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
+    private final Map<String,Queue<MessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
      * Buffer by spout consumer id of messages that have been failed.
      */
-    private final Map<String,Queue<TupleMessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
+    private final Map<String,Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
      * For capturing metrics.
@@ -80,9 +79,9 @@ public class SpoutCoordinator {
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
      * @param spout Fire hose spout
      */
-    public SpoutCoordinator(DelegateSidelineSpout spout, MetricsRecorder metricsRecorder, TupleBuffer tupleBuffer) {
+    public SpoutCoordinator(DelegateSpout spout, MetricsRecorder metricsRecorder, MessageBuffer messageBuffer) {
         this.metricsRecorder = metricsRecorder;
-        this.tupleBuffer = tupleBuffer;
+        this.messageBuffer = messageBuffer;
         addSidelineSpout(spout);
     }
 
@@ -91,7 +90,7 @@ public class SpoutCoordinator {
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
      */
-    public void addSidelineSpout(final DelegateSidelineSpout spout) {
+    public void addSidelineSpout(final DelegateSpout spout) {
         getNewSpoutQueue().add(spout);
     }
 
@@ -111,7 +110,7 @@ public class SpoutCoordinator {
         // Create our spout monitor instance.
         spoutMonitor = new SpoutMonitor(
             getNewSpoutQueue(),
-            getTupleBuffer(),
+            getMessageBuffer(),
             getAckedTuplesQueue(),
             getFailedTuplesQueue(),
             latch,
@@ -151,7 +150,7 @@ public class SpoutCoordinator {
      * Acks a tuple on the spout that it belongs to.
      * @param id Tuple message id to ack
      */
-    public void ack(final TupleMessageId id) {
+    public void ack(final MessageId id) {
         if (!getAckedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
@@ -164,7 +163,7 @@ public class SpoutCoordinator {
      * Fails a tuple on the spout that it belongs to.
      * @param id Tuple message id to fail
      */
-    public void fail(final TupleMessageId id) {
+    public void fail(final MessageId id) {
         if (!getFailedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
@@ -174,10 +173,10 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - Returns the next available KafkaMessage to be emitted into the topology.
+     * @return - Returns the next available Message to be emitted into the topology.
      */
-    public KafkaMessage nextMessage() {
-        return getTupleBuffer().poll();
+    public Message nextMessage() {
+        return getMessageBuffer().poll();
     }
 
     /**
@@ -213,30 +212,30 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - TupleBuffer instance.
+     * @return MessageBuffer instance.
      */
-    TupleBuffer getTupleBuffer() {
-        return tupleBuffer;
+    MessageBuffer getMessageBuffer() {
+        return messageBuffer;
     }
 
     /**
      * @return - The acked tuples queues.
      */
-    Map<String, Queue<TupleMessageId>> getAckedTuplesQueue() {
+    Map<String, Queue<MessageId>> getAckedTuplesQueue() {
         return ackedTuplesQueue;
     }
 
     /**
      * @return - The failed tuples queues.
      */
-    Map<String, Queue<TupleMessageId>> getFailedTuplesQueue() {
+    Map<String, Queue<MessageId>> getFailedTuplesQueue() {
         return failedTuplesQueue;
     }
 
     /**
      * @return - The new virtual spout instance queue.
      */
-    Queue<DelegateSidelineSpout> getNewSpoutQueue() {
+    Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
     }
 

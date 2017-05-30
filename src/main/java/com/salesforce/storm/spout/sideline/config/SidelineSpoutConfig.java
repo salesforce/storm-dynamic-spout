@@ -1,9 +1,9 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager;
+import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
-import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
+import com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ public class SidelineSpoutConfig {
     /**
      * (String) Defines which RetryManager implementation to use.
      * Should be a full classpath to a class that implements the RetryManager interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
+     * Default Value: "com.salesforce.storm.spout.sideline.kafka.retry.DefaultRetryManager"
      */
     public static final String RETRY_MANAGER_CLASS = "sideline_spout.retry_manager.class";
 
@@ -168,9 +168,9 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (String) Defines which TupleBuffer implementation to use.
-     * Should be a full classpath to a class that implements the TupleBuffer interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer"
+     * (String) Defines which MessageBuffer implementation to use.
+     * Should be a full classpath to a class that implements the MessageBuffer interface.
+     * Default Value: "com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer"
      */
     public static final String TUPLE_BUFFER_CLASS = "sideline_spout.coordinator.tuple_buffer.class";
 

@@ -1,11 +1,11 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.Tools;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.DelegateSpout;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,22 +27,22 @@ public class SpoutRunner implements Runnable {
     /**
      * This is the VirtualSideline Spout instance we are going to be managing.
      */
-    private final DelegateSidelineSpout spout;
+    private final DelegateSpout spout;
 
     /**
      * This is the queue we put messages that need to be emitted out to the topology onto.
      */
-    private final TupleBuffer tupleQueue;
+    private final MessageBuffer tupleQueue;
 
     /**
      * This is the queue we read tuples that need to be acked off of.
      */
-    private final Map<String, Queue<TupleMessageId>> ackedTupleQueue;
+    private final Map<String, Queue<MessageId>> ackedTupleQueue;
 
     /**
      * This is the queue we read tuples that need to be failed off of.
      */
-    private final Map<String, Queue<TupleMessageId>> failedTupleQueue;
+    private final Map<String, Queue<MessageId>> failedTupleQueue;
 
     /**
      * For access to the system clock.
@@ -71,10 +71,10 @@ public class SpoutRunner implements Runnable {
     private volatile boolean requestedStop = false;
 
     SpoutRunner(
-            final DelegateSidelineSpout spout,
-            final TupleBuffer tupleQueue,
-            final Map<String, Queue<TupleMessageId>> ackedTupleQueue,
-            final Map<String, Queue<TupleMessageId>> failedTupleInputQueue,
+            final DelegateSpout spout,
+            final MessageBuffer tupleQueue,
+            final Map<String, Queue<MessageId>> ackedTupleQueue,
+            final Map<String, Queue<MessageId>> failedTupleInputQueue,
             final CountDownLatch latch,
             final Clock clock,
             final Map<String, Object> topologyConfig
@@ -114,7 +114,7 @@ public class SpoutRunner implements Runnable {
             // Loop forever until someone requests the spout to stop
             while (!isStopRequested() && !spout.isStopRequested() && !Thread.interrupted()) {
                 // First look for any new tuples to be emitted.
-                final KafkaMessage message = spout.nextTuple();
+                final Message message = spout.nextTuple();
                 if (message != null) {
                     try {
                         tupleQueue.put(message);
@@ -129,13 +129,13 @@ public class SpoutRunner implements Runnable {
 
                 // Ack anything that needs to be acked
                 while (!ackedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    TupleMessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
+                    MessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
                     spout.ack(id);
                 }
 
                 // Fail anything that needs to be failed
                 while (!failedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    TupleMessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
+                    MessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
                     spout.fail(id);
                 }
 
@@ -211,19 +211,19 @@ public class SpoutRunner implements Runnable {
         return ((Number) getTopologyConfig().get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS)).longValue();
     }
 
-    DelegateSidelineSpout getSpout() {
+    DelegateSpout getSpout() {
         return spout;
     }
 
-    Map<String, Queue<TupleMessageId>> getAckedTupleQueue() {
+    Map<String, Queue<MessageId>> getAckedTupleQueue() {
         return ackedTupleQueue;
     }
 
-    Map<String, Queue<TupleMessageId>> getFailedTupleQueue() {
+    Map<String, Queue<MessageId>> getFailedTupleQueue() {
         return failedTupleQueue;
     }
 
-    TupleBuffer getTupleQueue() {
+    MessageBuffer getTupleQueue() {
         return tupleQueue;
     }
 

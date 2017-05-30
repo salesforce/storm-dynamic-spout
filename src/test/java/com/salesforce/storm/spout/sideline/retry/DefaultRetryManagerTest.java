@@ -1,7 +1,7 @@
-package com.salesforce.storm.spout.sideline.kafka.retryManagers;
+package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,30 +99,30 @@ public class DefaultRetryManagerTest {
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
-        final TupleMessageId tupleMessageId3 = new TupleMessageId("MyTopic", 0, 103L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId3 = new MessageId("MyTopic", 0, 103L, "MyConsumerId");
 
         // Mark first as having failed
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
 
         // Mark second as having failed
-        retryManager.failed(tupleMessageId2);
+        retryManager.failed(messageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Mark 3rd as having failed
-        retryManager.failed(tupleMessageId3);
+        retryManager.failed(messageId3);
 
         // Validate it has all three as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId3, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId3, 1, firstRetryTime, false);
     }
 
     /**
@@ -146,8 +146,8 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -155,38 +155,38 @@ public class DefaultRetryManagerTest {
         final long thirdRetryTime = FIXED_TIME + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Mark first as having failed
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
 
         // Mark second as having failed
-        retryManager.failed(tupleMessageId2);
+        retryManager.failed(messageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Now fail messageId1 a second time.
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 2, secondRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 2, secondRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Now fail messageId1 a 3rd time.
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 3, thirdRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 3, thirdRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Now fail messageId2 a 2nd time.
-        retryManager.failed(tupleMessageId2);
+        retryManager.failed(messageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 3, thirdRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 2, secondRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 3, thirdRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 2, secondRetryTime, false);
     }
 
     /**
@@ -213,7 +213,7 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -221,28 +221,28 @@ public class DefaultRetryManagerTest {
         final long thirdRetryTime = FIXED_TIME + expectedMaxDelay;
 
         // Mark first as having failed
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
 
         // Now fail messageId1 a second time.
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it incremented our delay time, still below configured max delay
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 2, secondRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 2, secondRetryTime, false);
 
         // Now fail messageId1 a 3rd time.
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate its pinned at configured max delay
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 3, thirdRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 3, thirdRetryTime, false);
 
         // Now fail messageId1 a 4th time.
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate its still pinned at configured max delay
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 4, thirdRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 4, thirdRetryTime, false);
     }
 
 
@@ -264,11 +264,11 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
+        final MessageId messageId = new MessageId("MyTopic", 0, 100L, "MyConsumerId");
 
-        assertTrue("Should always be true because its untracked", retryManager.retryFurther(tupleMessageId));
-        assertTrue("Should always be true because its untracked", retryManager.retryFurther(tupleMessageId));
-        assertTrue("Should always be true because its untracked", retryManager.retryFurther(tupleMessageId));
+        assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
+        assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
+        assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
     }
 
     /**
@@ -289,10 +289,10 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
+        final MessageId messageId = new MessageId("MyTopic", 0, 100L, "MyConsumerId");
 
         for (int x=0; x<100; x++) {
-            assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(tupleMessageId));
+            assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(messageId));
         }
     }
 
@@ -314,14 +314,14 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId = new TupleMessageId("MyTopic", 0, 100L, "MyConsumerId");
+        final MessageId messageId = new MessageId("MyTopic", 0, 100L, "MyConsumerId");
 
         for (int x=0; x<100; x++) {
             // Fail tuple
-            retryManager.failed(tupleMessageId);
+            retryManager.failed(messageId);
 
             // See if we should retry
-            assertTrue("Should always be true because we are configured to always retry", retryManager.retryFurther(tupleMessageId));
+            assertTrue("Should always be true because we are configured to always retry", retryManager.retryFurther(messageId));
         }
     }
 
@@ -346,8 +346,8 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -355,43 +355,43 @@ public class DefaultRetryManagerTest {
         final long thirdRetryTime = FIXED_TIME + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Mark first as having failed
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
 
         // Mark second as having failed
-        retryManager.failed(tupleMessageId2);
+        retryManager.failed(messageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Validate that we can retry both of these
-        assertTrue("Should be able to retry", retryManager.retryFurther(tupleMessageId1));
-        assertTrue("Should be able to retry", retryManager.retryFurther(tupleMessageId2));
+        assertTrue("Should be able to retry", retryManager.retryFurther(messageId1));
+        assertTrue("Should be able to retry", retryManager.retryFurther(messageId2));
 
         // Fail messageId1 a 2nd time
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 2, secondRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 2, secondRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Validate that we can retry both of these
-        assertTrue("Should be able to retry", retryManager.retryFurther(tupleMessageId1));
-        assertTrue("Should be able to retry", retryManager.retryFurther(tupleMessageId2));
+        assertTrue("Should be able to retry", retryManager.retryFurther(messageId1));
+        assertTrue("Should be able to retry", retryManager.retryFurther(messageId2));
 
         // Fail messageId1 a 3rd time
-        retryManager.failed(tupleMessageId1);
+        retryManager.failed(messageId1);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 3, thirdRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 3, thirdRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Validate that messageId1 cannot be retried, messageId2 can.
-        assertFalse("Should NOT be able to retry", retryManager.retryFurther(tupleMessageId1));
-        assertTrue("Should be able to retry", retryManager.retryFurther(tupleMessageId2));
+        assertFalse("Should NOT be able to retry", retryManager.retryFurther(messageId1));
+        assertTrue("Should be able to retry", retryManager.retryFurther(messageId2));
     }
 
     /**
@@ -415,16 +415,16 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
 
         // Mark both as having been failed.
-        retryManager.failed(tupleMessageId1);
-        retryManager.failed(tupleMessageId2);
+        retryManager.failed(messageId1);
+        retryManager.failed(messageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
 
         // Ask for the next tuple to retry, should be empty
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
@@ -454,23 +454,23 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Define our tuple message id
-        final TupleMessageId tupleMessageId1 = new TupleMessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final TupleMessageId tupleMessageId2 = new TupleMessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
 
-        // Mark tupleMessageID1 as having failed
-        retryManager.failed(tupleMessageId1);
+        // Mark messageId1 as having failed
+        retryManager.failed(messageId1);
 
-        // Mark tupleMessageId2 as having failed twice
-        retryManager.failed(tupleMessageId2);
-        retryManager.failed(tupleMessageId2);
+        // Mark messageId2 as having failed twice
+        retryManager.failed(messageId2);
+        retryManager.failed(messageId2);
 
         // Calculate the first and 2nd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
         final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, tupleMessageId1, 1, firstRetryTime, false);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 2, secondRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
+        validateExpectedFailedMessageId(retryManager, messageId2, 2, secondRetryTime, false);
 
         // Ask for the next tuple to retry, should be empty
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
@@ -481,14 +481,14 @@ public class DefaultRetryManagerTest {
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
         retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), ZoneId.of("UTC")));
 
-        // Now tupleMessageId1 should expire next,
-        TupleMessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
+        // Now messageId1 should expire next,
+        MessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
         assertNotNull("result should not be null", nextMessageIdToBeRetried);
-        assertEquals("Should be our tupleMessageId1", tupleMessageId1, nextMessageIdToBeRetried);
+        assertEquals("Should be our messageId1", messageId1, nextMessageIdToBeRetried);
 
         // Validate the internal state.
-        validateTupleNotInFailedSetButIsInFlight(retryManager, tupleMessageId1);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 2, secondRetryTime, false);
+        validateTupleNotInFailedSetButIsInFlight(retryManager, messageId1);
+        validateExpectedFailedMessageId(retryManager, messageId2, 2, secondRetryTime, false);
 
         // Calling nextFailedMessageToRetry should result in null.
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
@@ -500,66 +500,66 @@ public class DefaultRetryManagerTest {
         final long newFixedTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier) + 10;
         retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(newFixedTime), ZoneId.of("UTC")));
 
-        // Now tupleMessageId1 should expire next,
+        // Now messageId1 should expire next,
         nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
         assertNotNull("result should not be null", nextMessageIdToBeRetried);
 
         // Validate state.
-        validateTupleNotInFailedSetButIsInFlight(retryManager, tupleMessageId1);
-        validateTupleNotInFailedSetButIsInFlight(retryManager, tupleMessageId2);
+        validateTupleNotInFailedSetButIsInFlight(retryManager, messageId1);
+        validateTupleNotInFailedSetButIsInFlight(retryManager, messageId2);
 
         // call ack, validate its no longer tracked
-        retryManager.acked(tupleMessageId1);
-        validateTupleIsNotBeingTracked(retryManager, tupleMessageId1);
-        validateTupleNotInFailedSetButIsInFlight(retryManager, tupleMessageId2);
+        retryManager.acked(messageId1);
+        validateTupleIsNotBeingTracked(retryManager, messageId1);
+        validateTupleNotInFailedSetButIsInFlight(retryManager, messageId2);
 
         // Calculate time for 3rd fail, against new fixed time
         final long thirdRetryTime = newFixedTime + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
         // Mark tuple2 as having failed
-        retryManager.failed(tupleMessageId2);
-        validateTupleIsNotBeingTracked(retryManager, tupleMessageId1);
-        validateExpectedFailedMessageId(retryManager, tupleMessageId2, 3, thirdRetryTime, false);
+        retryManager.failed(messageId2);
+        validateTupleIsNotBeingTracked(retryManager, messageId1);
+        validateExpectedFailedMessageId(retryManager, messageId2, 3, thirdRetryTime, false);
     }
 
     /**
      * Helper method.
      * @param retryManager
-     * @param tupleMessageId
+     * @param messageId
      * @param expectedFailCount
      * @param expectedRetryTime
      * @param expectedToBeInFlight
      */
-    private void validateExpectedFailedMessageId(DefaultRetryManager retryManager, TupleMessageId tupleMessageId, int expectedFailCount, long expectedRetryTime, boolean expectedToBeInFlight) {
+    private void validateExpectedFailedMessageId(DefaultRetryManager retryManager, MessageId messageId, int expectedFailCount, long expectedRetryTime, boolean expectedToBeInFlight) {
         // Find its queue
-        Queue<TupleMessageId> failQueue = retryManager.getFailedMessageIds().get(expectedRetryTime);
+        Queue<MessageId> failQueue = retryManager.getFailedMessageIds().get(expectedRetryTime);
         assertNotNull("Queue should exist for our retry time of " + expectedRetryTime + " has [" + retryManager.getFailedMessageIds().keySet() + "]", failQueue);
-        assertTrue("Queue should contain our tuple messageId", failQueue.contains(tupleMessageId));
+        assertTrue("Queue should contain our tuple messageId", failQueue.contains(messageId));
 
         // This messageId should have the right number of fails associated with it.
-        assertEquals("Should have expected number of fails", (Integer) expectedFailCount, retryManager.getNumberOfTimesFailed().get(tupleMessageId));
+        assertEquals("Should have expected number of fails", (Integer) expectedFailCount, retryManager.getNumberOfTimesFailed().get(messageId));
 
         // Should this be marked as in flight?
-        assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getRetriesInFlight().contains(tupleMessageId));
+        assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getRetriesInFlight().contains(messageId));
     }
 
-    private void validateTupleNotInFailedSetButIsInFlight(DefaultRetryManager retryManager, TupleMessageId tupleMessageId) {
+    private void validateTupleNotInFailedSetButIsInFlight(DefaultRetryManager retryManager, MessageId messageId) {
         // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
-            assertFalse("Should not contain our messageId", queue.contains(tupleMessageId));
+            assertFalse("Should not contain our messageId", queue.contains(messageId));
         }
-        assertTrue("Should be tracked as in flight", retryManager.getRetriesInFlight().contains(tupleMessageId));
+        assertTrue("Should be tracked as in flight", retryManager.getRetriesInFlight().contains(messageId));
     }
 
-    private void validateTupleIsNotBeingTracked(DefaultRetryManager retryManager, TupleMessageId tupleMessageId) {
+    private void validateTupleIsNotBeingTracked(DefaultRetryManager retryManager, MessageId messageId) {
         // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
-            assertFalse("Should not contain our messageId", queue.contains(tupleMessageId));
+            assertFalse("Should not contain our messageId", queue.contains(messageId));
         }
-        assertFalse("Should not be tracked as in flight", retryManager.getRetriesInFlight().contains(tupleMessageId));
-        assertFalse("Should not have a fail count", retryManager.getNumberOfTimesFailed().containsKey(tupleMessageId));
+        assertFalse("Should not be tracked as in flight", retryManager.getRetriesInFlight().contains(messageId));
+        assertFalse("Should not have a fail count", retryManager.getNumberOfTimesFailed().containsKey(messageId));
     }
 
     // Helper method

@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.filter;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 
 public class NegatingFilterChainStep implements FilterChainStep {
 
@@ -10,7 +10,7 @@ public class NegatingFilterChainStep implements FilterChainStep {
         this.step = step;
     }
 
-    public boolean filter(KafkaMessage message) {
+    public boolean filter(Message message) {
         return !this.step.filter(message);
     }
 }

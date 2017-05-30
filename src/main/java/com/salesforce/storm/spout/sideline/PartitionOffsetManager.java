@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +38,14 @@ public class PartitionOffsetManager {
     /**
      * @return - The topic associated with this instance.
      */
-    public String getTopic() {
+    private String getTopic() {
         return topic;
     }
 
     /**
      * @return - The partition this instance represents.
      */
-    public int getPartitionId() {
+    private int getPartitionId() {
         return partitionId;
     }
 

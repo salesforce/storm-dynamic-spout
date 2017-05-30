@@ -38,7 +38,7 @@ criteria changes!
             * [Configuration](#configuration-1)
       * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java">RetryManager</a>](#retrymanager)
             * [Configuration](#configuration-2)
-      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java">TupleBuffer</a>](#tuplebuffer)
+      * [<a href="src/main/java/com/salesforce/storm/spout/sideline/messageBuffer/MessageBuffer.java">MessageBuffer</a>](#messagebuffer)
             * [Configuration](#configuration-3)
     * [Optional Interfaces Implementations](#optional-interfaces-implementations)
       * [PersistenceAdapter Implementations](#persistenceadapter-implementations)
@@ -50,9 +50,9 @@ criteria changes!
             * [Configuration](#configuration-5)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java">FailedTuplesFirstRetryManager</a>](#failedtuplesfirstretrymanager)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java">NeverRetryManager</a>](#neverretrymanager)
-      * [TupleBuffer Implementations](#tuplebuffer-implementations)
-        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java">RoundRobinBuffer</a>](#roundrobinbuffer)
-        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java">FIFOBuffer</a>](#fifobuffer)
+      * [MessageBuffer Implementations](#messagebuffer-implementations)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/messageBuffer/RoundRobinBuffer.java">RoundRobinBuffer</a>](#roundrobinbuffer)
+        * [<a href="src/main/java/com/salesforce/storm/spout/sideline/messageBuffer/FIFOBuffer.java">FIFOBuffer</a>](#fifobuffer)
       * [MetricsRecorder Implementations](#metricsrecorder-implementations)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java">StormRecorder</a>](#stormrecorder)
         * [<a href="src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java">LogRecorder</a>](#logrecorder)
@@ -243,7 +243,7 @@ you should only do this if they can be serialized and deserialized without side 
      * @param message The filter to be processed by this step of the chain
      * @return The resulting filter after being processed
      */
-    boolean filter(KafkaMessage message);
+    boolean filter(Message message);
 ```
 
 ## Example Trigger Implementation
@@ -264,7 +264,7 @@ public static class NumberFilter implements FilterChainStep {
         this.number = number;
     }
 
-    public boolean filter(KafkaMessage message) {
+    public boolean filter(Message message) {
         Integer messageNumber = (Integer) message.getValues().get(0);
         // Filter them if they don't match, in other words "not" equals
         return messageNumber.equals(number);
@@ -352,16 +352,16 @@ Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
 sideline_spout.persistence_adapter.class | String | Defines which PersistenceAdapter implementation to use.    Should be a full classpath to a class that implements the PersistenceAdapter interface. | *null* 
 
-### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/RetryManager.java)
+### [RetryManager](src/main/java/com/salesforce/storm/spout/sideline/retry/RetryManager.java)
 Interface for handling failed tuples.  By creating an implementation of this interface you can control how the spout deals with tuples that have failed within the topology. Currently we have
 three implementations bundled with the spout which should cover most standard use cases.
 
 ###### Configuration
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.retry_manager.class | String | Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface. |"com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager"
+sideline_spout.retry_manager.class | String | Defines which RetryManager implementation to use.  Should be a full classpath to a class that implements the RetryManager interface. |"com.salesforce.storm.spout.sideline.kafka.retry.DefaultRetryManager"
 
-### [TupleBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/TupleBuffer.java)
+### [MessageBuffer](src/main/java/com/salesforce/storm/spout/sideline/buffer/MessageBuffer.java)
 This interface defines an abstraction around essentially a concurrent queue.  By creating an abstraction around the queue it allows for things like
 implementing a "fairness" algorithm on the poll() method for pulling off of the queue. Using a straight ConcurrentQueue would provide FIFO semantics 
 but with an abstraction round robin across kafka consumers could be implemented, or any other preferred scheduling algorithm.
@@ -372,7 +372,7 @@ with this one.*
 ###### Configuration
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.coordinator.tuple_buffer.class | String | Defines which TupleBuffer implementation to use. Should be a full classpath to a class that implements the TupleBuffer interface. | "com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer"
+sideline_spout.coordinator.tuple_buffer.class | String | Defines which MessageBuffer implementation to use. Should be a full classpath to a class that implements the MessageBuffer interface. | "com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer"
 
 ## Optional Interfaces Implementations
 
@@ -392,7 +392,7 @@ sideline_spout.persistence.zk_root | String | Defines the root path to persist s
 This implementation only stores metadata within memory.  This is useful for tests, but has no real world use case as all state will be lost between topology deploys.
 
 ### RetryManager Implementations
-#### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/DefaultRetryManager.java)
+#### [DefaultRetryManager](src/main/java/com/salesforce/storm/spout/sideline/retry/DefaultRetryManager.java)
 This is the default implementation for the spout.  It attempts retries of failed tuples a maximum of `retry_limit` times.
 After a tuple fails more than that, it will be "acked" or marked as completed and never tried again.
 Each retry is attempted using a calculated back-off time period.  The first retry will be attempted after `initial_delay_ms` milliseconds.  Each attempt
@@ -406,14 +406,14 @@ sideline_spout.retry_manager.delay_multiplier | double | Defines how quickly the
 sideline_spout.retry_manager.initial_delay_ms | long | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * initial_delay_ms * delay_multiplier).  Example: If a tuple fails 5 times, initial_delay_ms is set to 1000, and delay_multiplier is set to 3.0 -- it will wait at least (5 * 1000 * 3.0) milliseconds before the next retry attempt. | 2000
 sideline_spout.retry_manager.retry_delay_max_ms | long | Defines an upper bound of the max delay time between retried a failed tuple. | 900000
 
-#### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/FailedTuplesFirstRetryManager.java)
+#### [FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/sideline/retry/FailedTuplesFirstRetryManager.java)
 This implementation will always retry failed tuples at the earliest chance it can.  No back-off strategy, no maximum times a tuple can fail.
 
-#### [NeverRetryManager](src/main/java/com/salesforce/storm/spout/sideline/kafka/retryManagers/NeverRetryManager.java)
+#### [NeverRetryManager](src/main/java/com/salesforce/storm/spout/sideline/retry/NeverRetryManager.java)
 This implementation will never retry failed messages.  One and done.
 
-### TupleBuffer Implementations
-#### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/RoundRobinBuffer.java)
+### MessageBuffer Implementations
+#### [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/sideline/buffer/RoundRobinBuffer.java)
 This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added to.  A very chatty
 virtual spout will not block/overrun less chatty ones.  The `poll()` method will round robin through all the available
 queues to get the next msg.
@@ -424,7 +424,7 @@ for available space in the queue.  This acts to throttle producers of messages.
 Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
 This means consuming from the queue will always be fast.
  
-#### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/tupleBuffer/FIFOBuffer.java)
+#### [FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/buffer/FIFOBuffer.java)
 This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### MetricsRecorder Implementations

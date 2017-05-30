@@ -1,6 +1,6 @@
-package com.salesforce.storm.spout.sideline.kafka.retryManagers;
+package com.salesforce.storm.spout.sideline.retry;
 
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 
 import java.util.Map;
 
@@ -14,12 +14,12 @@ public class NeverRetryManager implements RetryManager {
     }
 
     @Override
-    public void failed(TupleMessageId messageId) {
+    public void failed(MessageId messageId) {
         // Nothing to do
     }
 
     @Override
-    public void acked(TupleMessageId messageId) {
+    public void acked(MessageId messageId) {
         // Nothing to do
     }
 
@@ -27,7 +27,7 @@ public class NeverRetryManager implements RetryManager {
      * @return - always null, never retry any messages.
      */
     @Override
-    public TupleMessageId nextFailedMessageToRetry() {
+    public MessageId nextFailedMessageToRetry() {
         return null;
     }
 
@@ -35,7 +35,7 @@ public class NeverRetryManager implements RetryManager {
      * @return Always return false.  Never want to replay messages.
      */
     @Override
-    public boolean retryFurther(TupleMessageId messageId) {
+    public boolean retryFurther(MessageId messageId) {
         return false;
     }
 }

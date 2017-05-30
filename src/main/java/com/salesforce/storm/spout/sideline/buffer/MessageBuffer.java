@@ -1,6 +1,6 @@
-package com.salesforce.storm.spout.sideline.tupleBuffer;
+package com.salesforce.storm.spout.sideline.buffer;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 
 import java.util.Map;
 
@@ -12,7 +12,7 @@ import java.util.Map;
  * but with an abstraction we could implement round robin (see {@link RoundRobinBuffer}) across
  * VirtualSpouts or any scheduling algorithm that we'd like.
  */
-public interface TupleBuffer {
+public interface MessageBuffer {
 
     /**
      * Called prior to utilizing the instance.
@@ -34,10 +34,10 @@ public interface TupleBuffer {
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.
-     * @param kafkaMessage - KafkaMessage to be added to the queue.
+     * @param message - Message to be added to the queue.
      * @throws InterruptedException - thrown if a thread is interrupted while blocked adding to the queue.
      */
-    void put(final KafkaMessage kafkaMessage) throws InterruptedException;
+    void put(final Message message) throws InterruptedException;
 
     /**
      * @return - return the size of the buffer.
@@ -45,7 +45,7 @@ public interface TupleBuffer {
     int size();
 
     /**
-     * @return - returns the next KafkaMessage to be processed out of the queue.
+     * @return - returns the next Message to be processed out of the queue.
      */
-    KafkaMessage poll();
+    Message poll();
 }

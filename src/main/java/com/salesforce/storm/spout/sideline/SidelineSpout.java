@@ -15,7 +15,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -276,9 +276,9 @@ public class SidelineSpout extends BaseRichSpout {
         );
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
-        // Create TupleBuffer
-        final TupleBuffer tupleBuffer = getFactoryManager().createNewTupleBufferInstance();
-        tupleBuffer.open(getSpoutConfig());
+        // Create MessageBuffer
+        final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
+        messageBuffer.open(getSpoutConfig());
 
         // Create Spout Coordinator.
         coordinator = new SpoutCoordinator(
@@ -288,8 +288,8 @@ public class SidelineSpout extends BaseRichSpout {
             // Our metrics recorder.
             getMetricsRecorder(),
 
-            // Our TupleBuffer/Queue Implementation.
-            tupleBuffer
+            // Our MessageBuffer/Queue Implementation.
+            messageBuffer
         );
 
         // Call open on coordinator.
@@ -408,25 +408,25 @@ public class SidelineSpout extends BaseRichSpout {
         /**
          * Ask the SpoutCoordinator for the next message that should be emitted.
          * If it returns null, then there's nothing new to emit!
-         * If a KafkaMessage object is returned, it contains the appropriately
+         * If a Message object is returned, it contains the appropriately
          * mapped MessageId and Values for the tuple that should be emitted.
          */
-        final KafkaMessage kafkaMessage = getCoordinator().nextMessage();
-        if (kafkaMessage == null) {
+        final Message message = getCoordinator().nextMessage();
+        if (message == null) {
             // Nothing new to emit!
             return;
         }
 
         // Emit tuple via the output collector.
-        getOutputCollector().emit(getOutputStreamId(), kafkaMessage.getValues(), kafkaMessage.getTupleMessageId());
+        getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());
 
         // Update emit count metric for VirtualSidelineSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId() + ".emit", 1);
+        getMetricsRecorder().count(VirtualSpout.class, message.getMessageId().getSrcVirtualSpoutId() + ".emit", 1);
 
         // Everything below is temporary emit metrics for debugging.
 
         // Update / Display emit metrics
-        final String srcId = kafkaMessage.getTupleMessageId().getSrcVirtualSpoutId();
+        final String srcId = message.getMessageId().getSrcVirtualSpoutId();
         if (!emitCountMetrics.containsKey(srcId)) {
             emitCountMetrics.put(srcId, 1L);
         } else {
@@ -512,13 +512,13 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void ack(Object id) {
         // Cast to appropriate object type
-        final TupleMessageId tupleMessageId = (TupleMessageId) id;
+        final MessageId messageId = (MessageId) id;
 
         // Ack the tuple via the coordinator
-        getCoordinator().ack(tupleMessageId);
+        getCoordinator().ack(messageId);
 
         // Update ack count metric for VirtualSidelineSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, tupleMessageId.getSrcVirtualSpoutId() + ".ack", 1);
+        getMetricsRecorder().count(VirtualSpout.class, messageId.getSrcVirtualSpoutId() + ".ack", 1);
     }
 
     /**
@@ -528,12 +528,12 @@ public class SidelineSpout extends BaseRichSpout {
     @Override
     public void fail(Object id) {
         // Cast to appropriate object type
-        final TupleMessageId tupleMessageId = (TupleMessageId) id;
+        final MessageId messageId = (MessageId) id;
 
-        logger.warn("Failed {}", tupleMessageId);
+        logger.warn("Failed {}", messageId);
 
         // Fail the tuple via the coordinator
-        getCoordinator().fail(tupleMessageId);
+        getCoordinator().fail(messageId);
     }
 
     /**

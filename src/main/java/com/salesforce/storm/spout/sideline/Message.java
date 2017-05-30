@@ -5,13 +5,13 @@ import org.apache.storm.tuple.Values;
 /**
  * Represents an abstracted view over MessageId and the Tuple values.
  */
-public class KafkaMessage {
+public class Message {
 
     /**
-     * TupleMessageId contains information about what Topic, Partition, Offset, and Consumer this
+     * MessageId contains information about what Topic, Partition, Offset, and Consumer this
      * message originated from.
      */
-    private final TupleMessageId tupleMessageId;
+    private final MessageId messageId;
 
     /**
      * Values contains the values that will be emitted out to the Storm Topology.
@@ -20,28 +20,28 @@ public class KafkaMessage {
 
     /**
      * Constructor.
-     * @param tupleMessageId - contains information about what Topic, Partition, Offset, and Consumer this
+     * @param messageId - contains information about what Topic, Partition, Offset, and Consumer this
      * @param values - contains the values that will be emitted out to the Storm Topology.
      */
-    public KafkaMessage(TupleMessageId tupleMessageId, Values values) {
-        this.tupleMessageId = tupleMessageId;
+    public Message(MessageId messageId, Values values) {
+        this.messageId = messageId;
         this.values = values;
     }
 
-    public TupleMessageId getTupleMessageId() {
-        return tupleMessageId;
+    public MessageId getMessageId() {
+        return messageId;
     }
 
     public String getTopic() {
-        return getTupleMessageId().getTopic();
+        return getMessageId().getTopic();
     }
 
     public int getPartition() {
-        return getTupleMessageId().getPartition();
+        return getMessageId().getPartition();
     }
 
     public long getOffset() {
-        return getTupleMessageId().getOffset();
+        return getMessageId().getOffset();
     }
 
     public Values getValues() {
@@ -50,8 +50,8 @@ public class KafkaMessage {
 
     @Override
     public String toString() {
-        return "KafkaMessage{"
-                + "tupleMessageId=" + tupleMessageId
+        return "Message{"
+                + "messageId=" + messageId
                 + ", values=" + values
                 + '}';
     }
@@ -65,9 +65,9 @@ public class KafkaMessage {
             return false;
         }
 
-        KafkaMessage that = (KafkaMessage) other;
+        Message that = (Message) other;
 
-        if (!getTupleMessageId().equals(that.getTupleMessageId())) {
+        if (!getMessageId().equals(that.getMessageId())) {
             return false;
         }
         return getValues().equals(that.getValues());
@@ -75,7 +75,7 @@ public class KafkaMessage {
 
     @Override
     public int hashCode() {
-        int result = getTupleMessageId().hashCode();
+        int result = getMessageId().hashCode();
         result = 31 * result + getValues().hashCode();
         return result;
     }

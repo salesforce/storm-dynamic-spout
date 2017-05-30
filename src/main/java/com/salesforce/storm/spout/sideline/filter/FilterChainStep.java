@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline.filter;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.Message;
 
 import java.io.Serializable;
 
@@ -16,5 +16,5 @@ public interface FilterChainStep extends Serializable {
      * @param message The filter to be processed by this step of the chain
      * @return The resulting filter after being processed
      */
-    boolean filter(KafkaMessage message);
+    boolean filter(Message message);
 }

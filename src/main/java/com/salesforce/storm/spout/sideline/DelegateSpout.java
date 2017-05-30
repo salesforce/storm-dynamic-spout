@@ -1,14 +1,14 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline;
 
-import com.salesforce.storm.spout.sideline.KafkaMessage;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 
-public interface DelegateSidelineSpout {
+public interface DelegateSpout {
 
     void open();
 
     void close();
 
-    KafkaMessage nextTuple();
+    Message nextTuple();
 
     void ack(Object msgId);
 

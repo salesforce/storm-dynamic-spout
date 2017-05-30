@@ -5,14 +5,14 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.DefaultRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.NeverRetryManager;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
+import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
+import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
+import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter;
-import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
-import com.salesforce.storm.spout.sideline.tupleBuffer.RoundRobinBuffer;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -177,21 +177,21 @@ public class FactoryManagerTest {
      * Tests that if you fail to pass a deserializer config it throws an exception.
      */
     @Test
-    public void testCreateNewTupleBufferInstance_missingConfig() {
+    public void testCreateNewMessageBufferInstance_missingConfig() {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
         expectedException.expect(IllegalStateException.class);
-        factoryManager.createNewTupleBufferInstance();
+        factoryManager.createNewMessageBufferInstance();
     }
 
     /**
      * Provides various tuple buffer implementation.
      */
     @DataProvider
-    public static Object[][] provideTupleBufferClasses() {
+    public static Object[][] provideMessageBufferClasses() {
         return new Object[][]{
                 { FIFOBuffer.class },
                 { RoundRobinBuffer.class }
@@ -202,27 +202,27 @@ public class FactoryManagerTest {
      * Tests that create new deserializer instance works as expected.
      */
     @Test
-    @UseDataProvider("provideTupleBufferClasses")
-    public void testCreateNewTupleBuffer(final Class clazz) {
+    @UseDataProvider("provideMessageBufferClasses")
+    public void testCreateNewMessageBuffer(final Class clazz) {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
         config.put(SidelineSpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        List<TupleBuffer> instances = Lists.newArrayList();
+        List<MessageBuffer> instances = Lists.newArrayList();
         for (int x=0; x<5; x++) {
-            TupleBuffer tupleBuffer = factoryManager.createNewTupleBufferInstance();
+            MessageBuffer messageBuffer = factoryManager.createNewMessageBufferInstance();
 
             // Validate it
-            assertNotNull(tupleBuffer);
-            assertEquals("Is correct instance type", tupleBuffer.getClass(), clazz);
+            assertNotNull(messageBuffer);
+            assertEquals("Is correct instance type", messageBuffer.getClass(), clazz);
 
             // Verify its a different instance than our previous ones
-            assertFalse("Not a previous instance", instances.contains(tupleBuffer));
+            assertFalse("Not a previous instance", instances.contains(messageBuffer));
 
             // Add to our list
-            instances.add(tupleBuffer);
+            instances.add(messageBuffer);
         }
     }
 }

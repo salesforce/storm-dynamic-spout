@@ -3,10 +3,10 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.retryManagers.RetryManager;
+import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -48,7 +48,7 @@ public class FactoryManager implements Serializable {
     /**
      * Class instance of our Tuple Buffer.
      */
-    private transient Class<? extends TupleBuffer> tupleBufferClass;
+    private transient Class<? extends MessageBuffer> messageBufferClass;
 
     public FactoryManager(Map spoutConfig) {
         // Create immutable copy of configuration.
@@ -148,23 +148,23 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured TupleBuffer interface.
+     * @return returns a new instance of the configured MessageBuffer interface.
      */
-    public synchronized TupleBuffer createNewTupleBufferInstance() {
-        if (tupleBufferClass == null) {
+    public synchronized MessageBuffer createNewMessageBufferInstance() {
+        if (messageBufferClass == null) {
             String classStr = (String) spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
                 throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
             }
 
             try {
-                tupleBufferClass = (Class<? extends TupleBuffer>) Class.forName(classStr);
+                messageBufferClass = (Class<? extends MessageBuffer>) Class.forName(classStr);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }
         try {
-            return tupleBufferClass.newInstance();
+            return messageBufferClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }

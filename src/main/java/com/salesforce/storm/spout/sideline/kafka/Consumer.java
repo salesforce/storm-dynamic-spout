@@ -3,6 +3,8 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.PartitionDistributor;
+import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -198,7 +200,7 @@ public class Consumer {
 
     /**
      * Ask the consumer for the next message from Kafka.
-     * @return KafkaMessage - the next message read from kafka, or null if no such msg is available.
+     * @return Message - the next message read, or null if no such msg is available.
      */
     public ConsumerRecord<byte[], byte[]> nextRecord() {
         // Fill our buffer if its empty

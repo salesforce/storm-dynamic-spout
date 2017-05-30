@@ -1,9 +1,9 @@
-package com.salesforce.storm.spout.sideline.tupleBuffer;
+package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.KafkaMessage;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -43,11 +43,11 @@ public class FIFOBufferTest {
         config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer & open
-        TupleBuffer tupleBuffer = new FIFOBuffer();
-        tupleBuffer.open(config);
+        MessageBuffer messageBuffer = new FIFOBuffer();
+        messageBuffer.open(config);
 
         // Keep track of our order
-        final List<KafkaMessage> submittedOrder = Lists.newArrayList();
+        final List<Message> submittedOrder = Lists.newArrayList();
 
         // Create random number generator
         Random random = new Random();
@@ -59,40 +59,40 @@ public class FIFOBufferTest {
             final int partition = random.nextInt(10);
 
 
-            KafkaMessage kafkaMessage = new KafkaMessage(
-                    new TupleMessageId("my topic", partition, x, sourceSpoutId),
+            Message message = new Message(
+                    new MessageId("my topic", partition, x, sourceSpoutId),
                     new Values("value" + x));
 
             // Keep track of order
-            submittedOrder.add(kafkaMessage);
+            submittedOrder.add(message);
 
             // Add to our buffer
-            tupleBuffer.put(kafkaMessage);
+            messageBuffer.put(message);
         }
 
         // Validate size
-        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), tupleBuffer.size());
+        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
 
         // Now pop them, order should be maintained
-        for (KafkaMessage originalKafkaMsg: submittedOrder) {
-            final KafkaMessage bufferedMsg = tupleBuffer.poll();
+        for (Message originalKafkaMsg: submittedOrder) {
+            final Message bufferedMsg = messageBuffer.poll();
 
             // Validate it
             assertNotNull("Should not be null", bufferedMsg);
             assertEquals("Objects should be the same", originalKafkaMsg, bufferedMsg);
 
             // Validate the contents are the same
-            assertEquals("Source Spout Id should be equal", originalKafkaMsg.getTupleMessageId().getSrcVirtualSpoutId(), bufferedMsg.getTupleMessageId().getSrcVirtualSpoutId());
+            assertEquals("Source Spout Id should be equal", originalKafkaMsg.getMessageId().getSrcVirtualSpoutId(), bufferedMsg.getMessageId().getSrcVirtualSpoutId());
             assertEquals("partitions should be equal", originalKafkaMsg.getPartition(), bufferedMsg.getPartition());
             assertEquals("offsets should be equal", originalKafkaMsg.getOffset(), bufferedMsg.getOffset());
             assertEquals("topic should be equal", originalKafkaMsg.getTopic(), bufferedMsg.getTopic());
-            assertEquals("TupleMessageIds should be equal", originalKafkaMsg.getTupleMessageId(), bufferedMsg.getTupleMessageId());
+            assertEquals("messageIds should be equal", originalKafkaMsg.getMessageId(), bufferedMsg.getMessageId());
             assertEquals("Values should be equal", originalKafkaMsg.getValues(), bufferedMsg.getValues());
         }
 
         // Validate that the next polls are all null
         for (int x=0; x<64; x++) {
-            assertNull("Should be null", tupleBuffer.poll());
+            assertNull("Should be null", messageBuffer.poll());
         }
     }
 
@@ -107,11 +107,11 @@ public class FIFOBufferTest {
         config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
-        FIFOBuffer tupleBuffer = new FIFOBuffer();
-        tupleBuffer.open(config);
+        FIFOBuffer messageBuffer = new FIFOBuffer();
+        messageBuffer.open(config);
 
         // Validate
-        assertEquals("Set correct", inputValue.intValue(), ((LinkedBlockingQueue)tupleBuffer.getUnderlyingQueue()).remainingCapacity());
+        assertEquals("Set correct", inputValue.intValue(), ((LinkedBlockingQueue)messageBuffer.getUnderlyingQueue()).remainingCapacity());
     }
 
     /**

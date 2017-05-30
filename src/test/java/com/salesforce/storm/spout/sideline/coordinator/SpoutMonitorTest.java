@@ -3,15 +3,15 @@ package com.salesforce.storm.spout.sideline.coordinator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
-import com.salesforce.storm.spout.sideline.TupleMessageId;
+import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.DelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.sideline.mocks.MockDelegateSidelineSpout;
+import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.tupleBuffer.FIFOBuffer;
-import com.salesforce.storm.spout.sideline.tupleBuffer.TupleBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -70,10 +70,10 @@ public class SpoutMonitorTest {
     @Test
     public void testConstructor() {
         // Define inputs
-        final Queue<DelegateSidelineSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final TupleBuffer tupleBuffer = new FIFOBuffer();
-        final Map<String, Queue<TupleMessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<TupleMessageId>> failQueue = Maps.newConcurrentMap();
+        final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
+        final MessageBuffer messageBuffer = new FIFOBuffer();
+        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -92,7 +92,7 @@ public class SpoutMonitorTest {
         // Create instance.
         SpoutMonitor spoutMonitor = new SpoutMonitor(
             newSpoutQueue,
-            tupleBuffer,
+            messageBuffer,
             ackQueue,
             failQueue,
             latch,
@@ -171,7 +171,7 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
 
         // Our new spout queue
-        Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
         CompletableFuture future = startSpoutMonitor(spoutMonitor);
@@ -183,7 +183,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        DelegateSidelineSpout mockSpout = mock(DelegateSidelineSpout.class);
+        DelegateSpout mockSpout = mock(DelegateSpout.class);
         when(mockSpout.getVirtualSpoutId()).thenReturn("MySpoutId");
 
         // Add it to our queue
@@ -242,7 +242,7 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         // Our new spout queue
-        Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
         CompletableFuture future = startSpoutMonitor(spoutMonitor);
@@ -254,7 +254,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout("MySpoutId");
+        MockDelegateSpout mockSpout = new MockDelegateSpout("MySpoutId");
         mockSpout.requestedStop = false;
 
         // Add it to our queue
@@ -319,13 +319,13 @@ public class SpoutMonitorTest {
         final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
-        List<MockDelegateSidelineSpout> mockSpouts = Lists.newArrayList();
+        List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
         for (int x=0; x<maxConccurentInstances + 2; x++) {
-            mockSpouts.add(new MockDelegateSidelineSpout("SpoutInstance" + x));
+            mockSpouts.add(new MockDelegateSpout("SpoutInstance" + x));
         }
 
         // Our new spout queue
-        Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
         CompletableFuture future = startSpoutMonitor(spoutMonitor);
@@ -361,7 +361,7 @@ public class SpoutMonitorTest {
 
         // On spouts that should have run
         for (int x=0; x<maxConccurentInstances; x++) {
-            final MockDelegateSidelineSpout mockSpout = mockSpouts.get(x);
+            final MockDelegateSpout mockSpout = mockSpouts.get(x);
             assertTrue("open() should have been called", mockSpout.wasOpenCalled);
         }
 
@@ -378,7 +378,7 @@ public class SpoutMonitorTest {
 
         // Verify close was called on running spouts
         for (int x=0; x<mockSpouts.size(); x++) {
-            final MockDelegateSidelineSpout mockSpout = mockSpouts.get(x);
+            final MockDelegateSpout mockSpout = mockSpouts.get(x);
 
             // If it was a running spout instance
             if (x < maxConccurentInstances) {
@@ -409,13 +409,13 @@ public class SpoutMonitorTest {
         final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
-        List<MockDelegateSidelineSpout> mockSpouts = Lists.newArrayList();
+        List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
         for (int x=0; x<maxConccurentInstances + 1; x++) {
-            mockSpouts.add(new MockDelegateSidelineSpout("SpoutInstance" + x));
+            mockSpouts.add(new MockDelegateSpout("SpoutInstance" + x));
         }
 
         // Our new spout queue
-        Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
         CompletableFuture future = startSpoutMonitor(spoutMonitor);
@@ -451,11 +451,11 @@ public class SpoutMonitorTest {
 
         // On spouts that should have run
         for (int x=0; x<maxConccurentInstances; x++) {
-            final MockDelegateSidelineSpout mockSpout = mockSpouts.get(x);
+            final MockDelegateSpout mockSpout = mockSpouts.get(x);
             assertTrue("open() should have been called", mockSpout.wasOpenCalled);
         }
 
-        final MockDelegateSidelineSpout notStartedSpout = mockSpouts.get(mockSpouts.size() - 1);
+        final MockDelegateSpout notStartedSpout = mockSpouts.get(mockSpouts.size() - 1);
         assertFalse("Should not have called open on our spout thats not running", notStartedSpout.wasOpenCalled);
 
         // Now stop the first instance
@@ -487,7 +487,7 @@ public class SpoutMonitorTest {
             .until(future::isDone, equalTo(true));
 
         // Verify close was called on all spouts
-        for (MockDelegateSidelineSpout mockSpout : mockSpouts) {
+        for (MockDelegateSpout mockSpout : mockSpouts) {
             assertTrue("close() should have been called", mockSpout.wasCloseCalled);
         }
 
@@ -511,7 +511,7 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         // Our new spout queue
-        Queue<DelegateSidelineSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
         CompletableFuture future = startSpoutMonitor(spoutMonitor);
@@ -523,7 +523,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        MockDelegateSidelineSpout mockSpout = new MockDelegateSidelineSpout("MySpoutId");
+        MockDelegateSpout mockSpout = new MockDelegateSpout("MySpoutId");
         mockSpout.requestedStop = false;
 
         // Add it to our queue
@@ -580,10 +580,10 @@ public class SpoutMonitorTest {
 
     private SpoutMonitor getDefaultMonitorInstance() {
         // Define inputs
-        final Queue<DelegateSidelineSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final TupleBuffer tupleBuffer = new FIFOBuffer();
-        final Map<String, Queue<TupleMessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<TupleMessageId>> failQueue = Maps.newConcurrentMap();
+        final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
+        final MessageBuffer messageBuffer = new FIFOBuffer();
+        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -597,7 +597,7 @@ public class SpoutMonitorTest {
         // Create instance.
         SpoutMonitor spoutMonitor = new SpoutMonitor(
                 newSpoutQueue,
-                tupleBuffer,
+            messageBuffer,
                 ackQueue,
                 failQueue,
                 latch,
