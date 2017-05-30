@@ -379,9 +379,39 @@ This means consuming from the queue will always be fast.
 This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### Metrics
-The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how a metrics gathering implementation would behave.
+The many different metrics that are collected by the spout are detailed below.  
 
-**This is still a work in progress.**
+Class | Key | Type | Description
+------|-----|------|------------
+SidelineSpout | start-sideline | Counter | How many `Start Sideline` requests have been received.
+SidelineSpout | stop-sideline | Counter | How many `Stop Sideline` requests have been received.
+VirtualSidelineSpout | `virtual-spout-id`.emit | Counter | Tuple emit count per VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.ack | Counter | Tuple ack count per VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.fail | Counter | Messages who have failed.
+VirtualSidelineSpout | `virtual-spout-id`.filtered | Counter | Filtered messages per VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.exceeded_retry_limit | Counter | Messages who have exceeded the maximum configured retry count.
+VirtualSidelineSpout | `virtual-spout-id`.number_filters_applied | Gauge | How many Filters are being applied against the VirtualSpout instance.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalMessages | Gauge | Total number of messages to be processed by the VirtualSpout for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalProcessed | Gauge | Number of messages processed by the VirtualSpout instance for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalUnprocessed | Gauge | Number of messages remaining to be processed by the VirtualSpout instance for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.percentComplete | Gauge | Percentage of messages processed out of the total for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.startingOffset | Gauge | The starting offset position for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.currentOffset | Gauge | The offset currently being processed for the given partition.
+VirtualSidelineSpout | `virtual-spout-id`.partitionX.endingOffset | Gauge | The ending offset for the given partition.
+SpoutMonitor | poolSize | Gauage | The max number of VirtualSpout instances that will be run concurrently.
+SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
+SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
+SpoutMonitor | completed | Gauge | The number of completed VirtualSpout instances.
+
+#### MetricsRecorder Implementations
+The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how to handle metrics that are gathered by the spout.  Implementations of this interface
+should be ThreadSafe, as a single instance is shared across multiple threads. Presently there are two implementations packaged with the project.
+
+##### [StormRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/StormRecorder.java)
+This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).
+
+##### [LogRecorder](src/main/java/com/salesforce/storm/spout/sideline/metrics/LogRecorder.java)
+This implementation logs metrics to your logging system.
 
 # Interesting Ideas and Questions
 Just a collection of random ideas, or things we could do with this:
