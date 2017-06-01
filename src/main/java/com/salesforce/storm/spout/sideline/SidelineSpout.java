@@ -16,7 +16,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -147,7 +146,7 @@ public class SidelineSpout extends BaseRichSpout {
         // this offset
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
-        for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+        for (final MyTopicPartition topicPartition : startingState.getTopicPartitions()) {
             // Store in request manager
             getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.START,
@@ -199,7 +198,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
         // assigned to this particular sideline spout instance
-        for (final TopicPartition topicPartition : endingState.getTopicPartitions()) {
+        for (final MyTopicPartition topicPartition : endingState.getTopicPartitions()) {
             // This is the state that the VirtualSidelineSpout should start with
             final SidelinePayload sidelinePayload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
 
@@ -308,7 +307,7 @@ public class SidelineSpout extends BaseRichSpout {
 
             SidelinePayload payload = null;
 
-            for (final TopicPartition topicPartition : currentState.getTopicPartitions()) {
+            for (final MyTopicPartition topicPartition : currentState.getTopicPartitions()) {
                 payload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
 
                 if (payload == null) {

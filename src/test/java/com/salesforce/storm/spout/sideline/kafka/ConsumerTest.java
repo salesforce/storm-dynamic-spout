@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.MyTopicPartition;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
@@ -352,7 +353,8 @@ public class ConsumerTest {
         final String consumerId = "MyConsumerId";
 
         // Create re-usable TopicPartition instance
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
 
         // Define partition 0's earliest position at 1000L
         final long earliestPosition = 1000L;
@@ -368,7 +370,7 @@ public class ConsumerTest {
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // When we ask for the position of partition 0, we should return 1000L
-        when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPosition);
+        when(mockKafkaConsumer.position(kafkaTopicPartition0)).thenReturn(earliestPosition);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
@@ -383,13 +385,13 @@ public class ConsumerTest {
         consumer.open();
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
-        verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
+        verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(kafkaTopicPartition0)));
 
         // Since ConsumerStateManager has no state for partition 0, we should call seekToBeginning on that partition
-        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(partition0)));
+        verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(kafkaTopicPartition0)));
 
         // Verify position was asked for
-        verify(mockKafkaConsumer, times(1)).position(partition0);
+        verify(mockKafkaConsumer, times(1)).position(kafkaTopicPartition0);
 
         // Verify ConsumerStateManager returns the correct values
         final ConsumerState currentState = consumer.getCurrentState();
@@ -416,9 +418,13 @@ public class ConsumerTest {
         final String consumerId = "MyConsumerId";
 
         // Some re-usable TopicPartition objects
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
-        final TopicPartition partition2 = new TopicPartition(topicName, 2);
+        final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition kafkaTopicPartition1 = new TopicPartition(topicName, 1);
+        final TopicPartition kafkaTopicPartition2 = new TopicPartition(topicName, 2);
+
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
+        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
 
         // Define earliest positions for each partition
         final long earliestPositionPartition0 = 1000L;
@@ -446,9 +452,9 @@ public class ConsumerTest {
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // When we ask for the positions for each partition return mocked values
-        when(mockKafkaConsumer.position(partition0)).thenReturn(earliestPositionPartition0);
-        when(mockKafkaConsumer.position(partition1)).thenReturn(earliestPositionPartition1);
-        when(mockKafkaConsumer.position(partition2)).thenReturn(earliestPositionPartition2);
+        when(mockKafkaConsumer.position(kafkaTopicPartition0)).thenReturn(earliestPositionPartition0);
+        when(mockKafkaConsumer.position(kafkaTopicPartition1)).thenReturn(earliestPositionPartition1);
+        when(mockKafkaConsumer.position(kafkaTopicPartition2)).thenReturn(earliestPositionPartition2);
 
         // Call constructor injecting our mocks
         Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
@@ -474,9 +480,9 @@ public class ConsumerTest {
         )));
 
         // Validate we got our calls for the current position
-        verify(mockKafkaConsumer, times(1)).position(partition0);
-        verify(mockKafkaConsumer, times(1)).position(partition1);
-        verify(mockKafkaConsumer, times(1)).position(partition2);
+        verify(mockKafkaConsumer, times(1)).position(kafkaTopicPartition0);
+        verify(mockKafkaConsumer, times(1)).position(kafkaTopicPartition1);
+        verify(mockKafkaConsumer, times(1)).position(kafkaTopicPartition2);
 
         // Verify ConsumerStateManager returns the correct values
         final ConsumerState currentState = consumer.getCurrentState();
@@ -638,10 +644,15 @@ public class ConsumerTest {
         final String consumerId = "MyConsumerId";
 
         // Define partitionTopics so we can re-use em
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
-        final TopicPartition partition2 = new TopicPartition(topicName, 2);
-        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+        final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition kafkaTopicPartition1 = new TopicPartition(topicName, 1);
+        final TopicPartition kafkaTopicPartition2 = new TopicPartition(topicName, 2);
+        final TopicPartition kafkaTopicPartition3 = new TopicPartition(topicName, 3);
+
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
+        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
+        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
 
         // Define last committed offsets per partition, partitions 1 and 3 have no previously saved state.
         final long lastCommittedOffsetPartition0 = 1234L;
@@ -683,14 +694,14 @@ public class ConsumerTest {
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
         // When getState is called, return the following state for partitions 0 and 2.
-        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
-        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(null);
-        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
-        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition3.partition()))).thenReturn(null);
+        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(kafkaTopicPartition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
+        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(kafkaTopicPartition1.partition()))).thenReturn(null);
+        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(kafkaTopicPartition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
+        when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(kafkaTopicPartition3.partition()))).thenReturn(null);
 
         // Define values returned for partitions without state
-        when(mockKafkaConsumer.position(partition1)).thenReturn(earliestOffsetPartition1);
-        when(mockKafkaConsumer.position(partition3)).thenReturn(earliestOffsetPartition3);
+        when(mockKafkaConsumer.position(kafkaTopicPartition1)).thenReturn(earliestOffsetPartition1);
+        when(mockKafkaConsumer.position(kafkaTopicPartition3)).thenReturn(earliestOffsetPartition3);
 
         // Call constructor injecting our mocks
         Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
@@ -700,32 +711,32 @@ public class ConsumerTest {
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
-            partition0,
-            partition1,
-            partition2,
-            partition3
+            kafkaTopicPartition0,
+            kafkaTopicPartition1,
+            kafkaTopicPartition2,
+            kafkaTopicPartition3
         )));
 
         // Since ConsumerStateManager has state for only 2 partitions, we should call seekToBeginning on partitions 1 and 3.
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
-            partition1
+            kafkaTopicPartition1
         )));
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
-            partition3
+            kafkaTopicPartition3
         )));
 
         // Verify we asked for the positions for 2 unknown state partitions
-        verify(mockKafkaConsumer, times(1)).position(partition1);
-        verify(mockKafkaConsumer, times(1)).position(partition3);
+        verify(mockKafkaConsumer, times(1)).position(kafkaTopicPartition1);
+        verify(mockKafkaConsumer, times(1)).position(kafkaTopicPartition3);
 
         // For the partitions with state, we should call seek on each partition
         InOrder inOrderVerification = inOrder(mockKafkaConsumer);
-        inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(partition0), eq(expectedPartition0Offset));
-        inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(partition2), eq(expectedPartition2Offset));
+        inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(kafkaTopicPartition0), eq(expectedPartition0Offset));
+        inOrderVerification.verify(mockKafkaConsumer, times(1)).seek(eq(kafkaTopicPartition2), eq(expectedPartition2Offset));
 
         // Never seeked for partitions without any state
-        verify(mockKafkaConsumer, never()).seek(eq(partition1), anyLong());
-        verify(mockKafkaConsumer, never()).seek(eq(partition3), anyLong());
+        verify(mockKafkaConsumer, never()).seek(eq(kafkaTopicPartition1), anyLong());
+        verify(mockKafkaConsumer, never()).seek(eq(kafkaTopicPartition3), anyLong());
 
         // Now validate the consumer state
         final ConsumerState resultingConsumerState = consumer.getCurrentState();
@@ -762,14 +773,14 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate it
         assertNotNull("Should be non-null", assignedPartitions);
         assertFalse("Should not be empty", assignedPartitions.isEmpty());
         assertEquals("Should contain 1 entry", 1, assignedPartitions.size());
-        assertTrue("Should contain our expected topic/partition", assignedPartitions.contains(new TopicPartition(topicName, expectedPartitionId)));
+        assertTrue("Should contain our expected topic/partition", assignedPartitions.contains(new MyTopicPartition(topicName, expectedPartitionId)));
     }
 
     /**
@@ -795,7 +806,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate it
@@ -803,7 +814,7 @@ public class ConsumerTest {
         assertFalse("Should not be empty", assignedPartitions.isEmpty());
         assertEquals("Should contain 5 entries", expectedNumberOfPartitions, assignedPartitions.size());
         for (int x=0; x<expectedNumberOfPartitions; x++) {
-            assertTrue("Should contain our expected topic/partition " + x, assignedPartitions.contains(new TopicPartition(expectedTopicName, x)));
+            assertTrue("Should contain our expected topic/partition " + x, assignedPartitions.contains(new MyTopicPartition(expectedTopicName, x)));
         }
     }
 
@@ -814,7 +825,7 @@ public class ConsumerTest {
     @Test
     public void testUnsubscribeTopicPartitionSinglePartition() {
         // Define our expected topic/partition
-        final TopicPartition expectedTopicPartition = new TopicPartition(topicName, 0);
+        final MyTopicPartition expectedTopicPartition = new MyTopicPartition(topicName, 0);
 
         // Setup our config
         ConsumerConfig config = getDefaultSidelineConsumerConfig();
@@ -828,7 +839,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
@@ -888,7 +899,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
@@ -896,12 +907,12 @@ public class ConsumerTest {
         assertFalse("Should not be empty", assignedPartitions.isEmpty());
         assertEquals("Should contain entries", expectedNumberOfPartitions, assignedPartitions.size());
         for (int x=0; x<expectedNumberOfPartitions; x++) {
-            assertTrue("Should contain our expected topic/partition " + x, assignedPartitions.contains(new TopicPartition(expectedTopicName, x)));
+            assertTrue("Should contain our expected topic/partition " + x, assignedPartitions.contains(new MyTopicPartition(expectedTopicName, x)));
         }
 
         // Now unsub from our topic partition
         final int expectedRemovePartition = 2;
-        final TopicPartition toRemoveTopicPartition = new TopicPartition(expectedTopicName, expectedRemovePartition);
+        final MyTopicPartition toRemoveTopicPartition = new MyTopicPartition(expectedTopicName, expectedRemovePartition);
 
         final boolean result = consumer.unsubscribeTopicPartition(toRemoveTopicPartition);
         assertTrue("Should have returned true", result);
@@ -923,7 +934,7 @@ public class ConsumerTest {
 
         // Now remove another topic/partition
         final int expectedRemovePartition2 = 4;
-        final TopicPartition toRemoveTopicPartition2 = new TopicPartition(expectedTopicName, expectedRemovePartition2);
+        final MyTopicPartition toRemoveTopicPartition2 = new MyTopicPartition(expectedTopicName, expectedRemovePartition2);
 
         final boolean result3 = consumer.unsubscribeTopicPartition(toRemoveTopicPartition2);
         assertTrue("Should have returned true", result3);
@@ -1009,7 +1020,7 @@ public class ConsumerTest {
         final int numberOfRecordsToProduce = 5;
 
         // Define our topicPartition
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
 
         // Produce 5 entries to the topic.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
@@ -1057,7 +1068,7 @@ public class ConsumerTest {
         final int numberOfRecordsToProduce = 5;
 
         // Define our topicPartition
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
 
         // Produce 5 entries to the topic.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
@@ -1116,7 +1127,7 @@ public class ConsumerTest {
         final int numberOfRecordsToProduce = 9;
 
         // Define our topic/partition.
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
 
         // Produce 5 entries to the topic.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
@@ -1266,8 +1277,8 @@ public class ConsumerTest {
         kafkaTestServer.createTopic(topicName, expectedNumberOfPartitions);
 
         // Define our expected topic/partitions
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
 
         // Setup our config
         ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
@@ -1281,7 +1292,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
@@ -1398,10 +1409,15 @@ public class ConsumerTest {
         kafkaTestServer.createTopic(topicName, 4);
 
         // Define some topicPartitions
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
-        final TopicPartition partition2 = new TopicPartition(topicName, 2);
-        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+        final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition kafkaTopicPartition1 = new TopicPartition(topicName, 1);
+        final TopicPartition kafkaTopicPartition2 = new TopicPartition(topicName, 2);
+        final TopicPartition kafkaTopicPartition3 = new TopicPartition(topicName, 3);
+
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
+        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
+        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
 
         // produce 10 msgs into even partitions, 11 into odd partitions
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -1410,7 +1426,7 @@ public class ConsumerTest {
         produceRecords(numberOfMsgsPerPartition + 1, 3);
 
         // Some initial setup
-        final List<TopicPartition> expectedPartitions;
+        final List<MyTopicPartition> expectedPartitions;
         if (consumerIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0 or 1
             expectedPartitions = Lists.newArrayList(partition0 , partition1);
@@ -1437,7 +1453,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
@@ -1526,11 +1542,17 @@ public class ConsumerTest {
         kafkaTestServer.createTopic(topicName, 5);
 
         // Define some topicPartitions
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
-        final TopicPartition partition2 = new TopicPartition(topicName, 2);
-        final TopicPartition partition3 = new TopicPartition(topicName, 3);
-        final TopicPartition partition4 = new TopicPartition(topicName, 4);
+        final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
+        final TopicPartition kafkaTopicPartition1 = new TopicPartition(topicName, 1);
+        final TopicPartition kafkaTopicPartition2 = new TopicPartition(topicName, 2);
+        final TopicPartition kafkaTopicPartition3 = new TopicPartition(topicName, 3);
+        final TopicPartition kafkaTopicPartition4 = new TopicPartition(topicName, 4);
+
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
+        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
+        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
+        final MyTopicPartition partition4 = new MyTopicPartition(topicName, 4);
 
         // produce 10 msgs into even partitions, 11 into odd partitions
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -1540,7 +1562,7 @@ public class ConsumerTest {
         produceRecords(numberOfMsgsPerPartition, 4);
 
         // Some initial setup
-        final List<TopicPartition> expectedPartitions;
+        final List<MyTopicPartition> expectedPartitions;
         final int expectedRecordsToConsume;
         if (consumerIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0,1, or 2
@@ -1574,15 +1596,15 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
         assertNotNull("Should be non-null", assignedPartitions);
         assertFalse("Should not be empty", assignedPartitions.isEmpty());
         assertEquals("Should be assigned correct number of partitions", expectedPartitions.size(), assignedPartitions.size());
-        for (TopicPartition expectedTopicPartition : expectedPartitions) {
-            assertTrue("Should contain expected partition", assignedPartitions.contains(expectedTopicPartition));
+        for (MyTopicPartition expectedTopicPartition : expectedPartitions) {
+            assertTrue("Should contain expected partition", assignedPartitions.contains(new MyTopicPartition(expectedTopicPartition.topic(), expectedTopicPartition.partition())));
         }
 
         // Attempt to consume records
@@ -1593,7 +1615,7 @@ public class ConsumerTest {
 
             // Validate its from a partition we expect
             final int foundPartitionId = foundRecord.partition();
-            assertTrue("Should be from one of our expected partitions", expectedPartitions.contains(new TopicPartition(topicName, foundPartitionId)));
+            assertTrue("Should be from one of our expected partitions", expectedPartitions.contains(new MyTopicPartition(topicName, foundPartitionId)));
 
             // Lets ack the tuple as we go
             consumer.commitOffset(foundRecord);
@@ -1612,7 +1634,7 @@ public class ConsumerTest {
         assertNotNull("Should not be null", consumerState);
         assertEquals("Should only have correct number of entries", expectedPartitions.size(), consumerState.size());
 
-        for (TopicPartition expectedPartition: expectedPartitions) {
+        for (MyTopicPartition expectedPartition: expectedPartitions) {
             assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartition));
 
             if (expectedPartition.partition() % 2 == 0) {
@@ -1676,7 +1698,7 @@ public class ConsumerTest {
     @Test
     public void testConsumeFromTopicAfterUnsubscribingFromSinglePartition() {
         // Define our expected topic/partition
-        final TopicPartition expectedTopicPartition = new TopicPartition(topicName, 0);
+        final MyTopicPartition expectedTopicPartition = new MyTopicPartition(topicName, 0);
 
         // Setup our config
         ConsumerConfig config = getDefaultSidelineConsumerConfig();
@@ -1690,7 +1712,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
@@ -1754,8 +1776,8 @@ public class ConsumerTest {
         kafkaTestServer.createTopic(topicName, expectedNumberOfPartitions);
 
         // Define our expected topic/partitions
-        final TopicPartition expectedTopicPartition0 = new TopicPartition(topicName, 0);
-        final TopicPartition expectedTopicPartition1 = new TopicPartition(topicName, 1);
+        final MyTopicPartition expectedTopicPartition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition expectedTopicPartition1 = new MyTopicPartition(topicName, 1);
 
         // Setup our config
         ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
@@ -1769,7 +1791,7 @@ public class ConsumerTest {
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
-        Set<TopicPartition> assignedPartitions = consumer.getAssignedPartitions();
+        Set<MyTopicPartition> assignedPartitions = consumer.getAssignedPartitions();
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
@@ -1880,8 +1902,8 @@ public class ConsumerTest {
         final int numberOfExpectedMessages = 6;
 
         // Define our topic/partitions
-        final TopicPartition topicPartition0 = new TopicPartition(topicName, 0);
-        final TopicPartition topicPartition1 = new TopicPartition(topicName, 1);
+        final MyTopicPartition topicPartition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition topicPartition1 = new MyTopicPartition(topicName, 1);
 
         // Define starting offsets for partitions
         final long partition0StartingOffset = 1L;
@@ -1966,7 +1988,7 @@ public class ConsumerTest {
      * @param topicPartition - the topic/partition we want to validate
      * @param expectedOffset - the offset we expect
      */
-    private void validateConsumerState(ConsumerState consumerState, TopicPartition topicPartition, long expectedOffset) {
+    private void validateConsumerState(ConsumerState consumerState, MyTopicPartition topicPartition, long expectedOffset) {
         final long actualOffset = consumerState.getOffsetForTopicAndPartition(topicPartition);
         assertEquals("Expected offset", expectedOffset, actualOffset);
     }

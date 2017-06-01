@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline;
 
-import org.apache.kafka.common.TopicPartition;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +44,7 @@ public class MessageIdTest {
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate
-        final TopicPartition result = messageId.getTopicPartition();
+        final MyTopicPartition result = messageId.getTopicPartition();
         assertNotNull("Should not be null", result);
         assertEquals("Should have right topic", expectedTopic, result.topic());
         assertEquals("Should have right partition", expectedPartition, result.partition());

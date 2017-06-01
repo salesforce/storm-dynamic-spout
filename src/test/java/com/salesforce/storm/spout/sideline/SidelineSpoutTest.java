@@ -22,7 +22,6 @@ import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.generated.StreamInfo;
 import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
@@ -827,10 +826,10 @@ public class SidelineSpoutTest {
         kafkaTestServer.createTopic(topicName, 4);
 
         // Define some topicPartitions
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
-        final TopicPartition partition2 = new TopicPartition(topicName, 2);
-        final TopicPartition partition3 = new TopicPartition(topicName, 3);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
+        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
+        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
 
         // produce 10 msgs into even partitions, 11 into odd partitions
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -839,7 +838,7 @@ public class SidelineSpoutTest {
         produceRecords(numberOfMsgsPerPartition + 1, 3);
 
         // Some initial setup
-        final List<TopicPartition> expectedPartitions;
+        final List<MyTopicPartition> expectedPartitions;
         if (taskIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0 or 1
             expectedPartitions = Lists.newArrayList(partition0 , partition1);
@@ -923,11 +922,11 @@ public class SidelineSpoutTest {
         kafkaTestServer.createTopic(topicName, 5);
 
         // Define some topicPartitions
-        final TopicPartition partition0 = new TopicPartition(topicName, 0);
-        final TopicPartition partition1 = new TopicPartition(topicName, 1);
-        final TopicPartition partition2 = new TopicPartition(topicName, 2);
-        final TopicPartition partition3 = new TopicPartition(topicName, 3);
-        final TopicPartition partition4 = new TopicPartition(topicName, 4);
+        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
+        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
+        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
+        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
+        final MyTopicPartition partition4 = new MyTopicPartition(topicName, 4);
 
         // produce 10 msgs into even partitions, 11 into odd partitions
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -937,7 +936,7 @@ public class SidelineSpoutTest {
         produceRecords(numberOfMsgsPerPartition, 4);
 
         // Some initial setup
-        final List<TopicPartition> expectedPartitions;
+        final List<MyTopicPartition> expectedPartitions;
         final int expectedNumberOfTuplesToConsume;
         if (taskIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0,1, or 2

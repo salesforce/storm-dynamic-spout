@@ -1,7 +1,5 @@
 package com.salesforce.storm.spout.sideline;
 
-import org.apache.kafka.common.TopicPartition;
-
 import java.time.Clock;
 
 /**
@@ -94,7 +92,7 @@ public class MessageId {
      * Helper method.
      * @return TopicPartition object for this tuple message.
      */
-    public TopicPartition getTopicPartition() {
-        return new TopicPartition(getTopic(), getPartition());
+    public MyTopicPartition getTopicPartition() {
+        return new MyTopicPartition(getTopic(), getPartition());
     }
 }

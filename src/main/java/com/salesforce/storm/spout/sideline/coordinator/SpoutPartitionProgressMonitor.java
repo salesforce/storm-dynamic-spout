@@ -1,12 +1,12 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.MyTopicPartition;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
-import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class SpoutPartitionProgressMonitor {
     private static final Logger logger = LoggerFactory.getLogger(SpoutPartitionProgressMonitor.class);
 
     final PersistenceAdapter persistenceAdapter;
-    final Map<TopicPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
+    final Map<MyTopicPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
 
     public SpoutPartitionProgressMonitor(PersistenceAdapter persistenceAdapter) {
         this.persistenceAdapter = persistenceAdapter;
@@ -34,7 +34,7 @@ public class SpoutPartitionProgressMonitor {
         persistenceAdapter.close();
     }
 
-    public Map<TopicPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
+    public Map<MyTopicPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
         final SidelineRequestIdentifier sidelineIdentifier = getSidelineRequestIdentifier(spout);
 
         if (sidelineIdentifier == null) {
@@ -67,7 +67,7 @@ public class SpoutPartitionProgressMonitor {
 
     }
 
-    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSpout spout) {
+    private Map<MyTopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSpout spout) {
         final ConsumerState currentState = spout.getCurrentState();
 
         // Max lag is the MAX lag across all partitions
@@ -75,7 +75,7 @@ public class SpoutPartitionProgressMonitor {
         // At best you'll get the MAX lag for all of the partitions your instance is consuming from :/
         final Double maxLag = spout.getMaxLag();
 
-        for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
+        for (MyTopicPartition topicPartition : currentState.getTopicPartitions()) {
             final PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
             final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
 
@@ -94,15 +94,15 @@ public class SpoutPartitionProgressMonitor {
         return Collections.unmodifiableMap(mainProgressMap);
     }
 
-    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSpout spout) {
+    private Map<MyTopicPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSpout spout) {
         // Create return map
-        Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
+        Map<MyTopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
         final String virtualSpoutId = spout.getVirtualSpoutId();
         final SidelineRequestIdentifier sidelineRequestIdentifier = getSidelineRequestIdentifier(spout);
         final ConsumerState currentState = spout.getCurrentState();
 
-        for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
+        for (MyTopicPartition topicPartition : currentState.getTopicPartitions()) {
             // Retrieve status
             final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(
                 sidelineRequestIdentifier,

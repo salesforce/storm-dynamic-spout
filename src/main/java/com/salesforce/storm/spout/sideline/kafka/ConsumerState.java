@@ -1,8 +1,8 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.MyTopicPartition;
 import com.salesforce.storm.spout.sideline.Tools;
-import org.apache.kafka.common.TopicPartition;
 
 import java.util.Collection;
 import java.util.Map;
@@ -11,19 +11,19 @@ import java.util.Set;
 /**
  * This represents the State of a Consumer.  Immutable, use Builder to construct an instance.
  */
-public final class ConsumerState implements Map<TopicPartition, Long> {
-    private final Map<TopicPartition, Long> state;
+public final class ConsumerState implements Map<MyTopicPartition, Long> {
+    private final Map<MyTopicPartition, Long> state;
 
     /**
      * Private constructor.  Create an instance via builder().
-     * @param state - State that backs the consumer state.
+     * @param state State that backs the consumer state.
      */
-    private ConsumerState(Map<TopicPartition, Long> state) {
+    private ConsumerState(Map<MyTopicPartition, Long> state) {
         this.state = Tools.immutableCopy(state);
     }
 
     /**
-     * @return - A new ConsumerStateBuilder instance.
+     * @return A new ConsumerStateBuilder instance.
      */
     public static ConsumerStateBuilder builder() {
         return new ConsumerStateBuilder();
@@ -31,17 +31,27 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
 
     /**
      * Return the current offset for the given TopicPartition.
-     * @param topicPartition - The TopicPartition to get the offset for.
-     * @return - The current offset, or null if none is available.
+     * @param topicPartition The TopicPartition to get the offset for.
+     * @return The current offset, or null if none is available.
      */
-    public Long getOffsetForTopicAndPartition(TopicPartition topicPartition) {
+    public Long getOffsetForTopicAndPartition(MyTopicPartition topicPartition) {
         return state.get(topicPartition);
     }
 
     /**
-     * @return - returns all of the TopicPartitions represented by the state.
+     * Return the current offset for the given TopicPartition.
+     * @param topic Topic to retrieve offset for
+     * @param partition Partition to retrieve offset for
+     * @return The current offset, or null if none is available.
      */
-    public Set<TopicPartition> getTopicPartitions() {
+    public Long getOffsetForTopicAndPartition(String topic, int partition) {
+        return getOffsetForTopicAndPartition(new MyTopicPartition(topic, partition));
+    }
+
+    /**
+     * @return returns all of the TopicPartitions represented by the state.
+     */
+    public Set<MyTopicPartition> getTopicPartitions() {
         return state.keySet();
     }
 
@@ -63,7 +73,7 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
     }
 
     @Override
-    public Set<TopicPartition> keySet() {
+    public Set<MyTopicPartition> keySet() {
         return getTopicPartitions();
     }
 
@@ -73,7 +83,7 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
     }
 
     @Override
-    public Set<Entry<TopicPartition, Long>> entrySet() {
+    public Set<Entry<MyTopicPartition, Long>> entrySet() {
         return state.entrySet();
     }
 
@@ -88,7 +98,7 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
     }
 
     @Override
-    public Long put(TopicPartition key, Long value) {
+    public Long put(MyTopicPartition key, Long value) {
         throw new UnsupportedOperationException("Immutable map");
     }
 
@@ -108,7 +118,7 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
      * Unsupported operation for this implementation.
      */
     @Override
-    public void putAll(Map<? extends TopicPartition, ? extends Long> map) {
+    public void putAll(Map<? extends MyTopicPartition, ? extends Long> map) {
         throw new UnsupportedOperationException("Immutable map");
     }
 
@@ -124,8 +134,11 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
      * Builder for ConsumerState.
      */
     public static final class ConsumerStateBuilder {
-        private final Map<TopicPartition, Long> state = Maps.newHashMap();
+        private final Map<MyTopicPartition, Long> state = Maps.newHashMap();
 
+        /**
+         * Default constructor.
+         */
         public ConsumerStateBuilder() {
         }
 
@@ -135,9 +148,20 @@ public final class ConsumerState implements Map<TopicPartition, Long> {
          * @param offset Offset for the given TopicPartition
          * @return Builder instance for chaining.
          */
-        public ConsumerStateBuilder withPartition(TopicPartition topicPartition, long offset) {
+        public ConsumerStateBuilder withPartition(MyTopicPartition topicPartition, long offset) {
             state.put(topicPartition, offset);
             return this;
+        }
+
+        /**
+         * Add a new entry into the builder.
+         * @param topic Topic for the entry
+         * @param partition Partition for the entry
+         * @param offset Offset for the given TopicPartition
+         * @return Builder instance for chaining.
+         */
+        public ConsumerStateBuilder withPartition(String topic, int partition, long offset) {
+            return withPartition(new MyTopicPartition(topic, partition), offset);
         }
 
         /**

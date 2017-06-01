@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.MyTopicPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -15,7 +16,6 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
@@ -248,7 +248,7 @@ public class VirtualSpout implements DelegateSpout {
 
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
-                for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+                for (final MyTopicPartition topicPartition : startingState.getTopicPartitions()) {
                     consumer.getPersistenceAdapter().clearSidelineRequest(
                         getSidelineRequestIdentifier(),
                         topicPartition.partition()
@@ -388,7 +388,7 @@ public class VirtualSpout implements DelegateSpout {
             return false;
         }
 
-        final TopicPartition topicPartition = messageId.getTopicPartition();
+        final MyTopicPartition topicPartition = messageId.getTopicPartition();
         final long currentOffset = messageId.getOffset();
 
         // Find ending offset for this topic partition
@@ -610,7 +610,7 @@ public class VirtualSpout implements DelegateSpout {
      * @param topicPartition - the topic/partition to unsubscribe from.
      * @return boolean - true if successfully unsubscribed, false if not.
      */
-    public boolean unsubscribeTopicPartition(TopicPartition topicPartition) {
+    public boolean unsubscribeTopicPartition(MyTopicPartition topicPartition) {
         final boolean result = consumer.unsubscribeTopicPartition(topicPartition);
         if (result) {
             logger.info("Unsubscribed from partition {}", topicPartition);
@@ -657,7 +657,7 @@ public class VirtualSpout implements DelegateSpout {
         final ConsumerState currentState = consumer.getCurrentState();
 
         // Compare it against our ending state
-        for (TopicPartition topicPartition: currentState.getTopicPartitions()) {
+        for (MyTopicPartition topicPartition: currentState.getTopicPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
             final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
 
