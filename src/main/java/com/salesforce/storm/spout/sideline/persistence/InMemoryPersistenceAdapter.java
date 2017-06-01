@@ -2,12 +2,15 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * In memory persistence layer implementation. useful for tests.
@@ -18,7 +21,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<String, Long> storedConsumerState;
 
     // "Persists" side line request states in memory.
-    private Map<String, SidelinePayload> storedSidelineRequests;
+    private Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests;
 
     @Override
     public void open(Map spoutConfig) {
@@ -102,11 +105,53 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
         return ids;
     }
 
+    @Override
+    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+        final Set<Integer> partitions = Sets.newHashSet();
+
+        for (SidelineRequestStateKey key : storedSidelineRequests.keySet()) {
+            if (key.id.equals(id)) {
+                partitions.add(key.partitionId);
+            }
+        }
+
+        return Collections.unmodifiableSet(partitions);
+    }
+
     private String getConsumerStateKey(final String consumerId, final int partitionId) {
         return consumerId.concat("/").concat(String.valueOf(partitionId));
     }
 
-    private String getSidelineRequestStateKey(final SidelineRequestIdentifier id, final int partitionId) {
-        return id.toString().concat("/").concat(String.valueOf(partitionId));
+    private SidelineRequestStateKey getSidelineRequestStateKey(final SidelineRequestIdentifier id, final int partitionId) {
+        return new SidelineRequestStateKey(id, partitionId);
+    }
+
+    private static class SidelineRequestStateKey {
+
+        public final SidelineRequestIdentifier id;
+        public final int partitionId;
+
+        SidelineRequestStateKey(final SidelineRequestIdentifier id, final int partitionId) {
+            this.id = id;
+            this.partitionId = partitionId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SidelineRequestStateKey that = (SidelineRequestStateKey) o;
+
+            if (partitionId != that.partitionId) return false;
+            return id != null ? id.equals(that.id) : that.id == null;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = id != null ? id.hashCode() : 0;
+            result = 31 * result + partitionId;
+            return result;
+        }
     }
 }

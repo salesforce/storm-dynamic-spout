@@ -79,10 +79,9 @@ public class SpoutCoordinator {
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
      * @param spout Fire hose spout
      */
-    public SpoutCoordinator(DelegateSpout spout, MetricsRecorder metricsRecorder, MessageBuffer messageBuffer) {
+    public SpoutCoordinator(MetricsRecorder metricsRecorder, MessageBuffer messageBuffer) {
         this.metricsRecorder = metricsRecorder;
         this.messageBuffer = messageBuffer;
-        addSidelineSpout(spout);
     }
 
     /**
@@ -90,7 +89,7 @@ public class SpoutCoordinator {
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
      */
-    public void addSidelineSpout(final DelegateSpout spout) {
+    public void addVirtualSpout(final DelegateSpout spout) {
         getNewSpoutQueue().add(spout);
     }
 
