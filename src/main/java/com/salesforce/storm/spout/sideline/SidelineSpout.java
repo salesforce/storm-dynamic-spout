@@ -263,4 +263,8 @@ public class SidelineSpout extends DynamicSpout {
             stoppingTrigger.close();
         }
     }
+
+    void onActivate() {}
+
+    void onDeactivate() {}
 }

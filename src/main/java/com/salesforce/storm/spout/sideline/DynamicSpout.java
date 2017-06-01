@@ -21,6 +21,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * A base class for creating a virtualized spout, one spout implementation that is dynamically juggling multiple
+ * spouts underneath it.  This is done in such a way that Storm does not have to be aware of all the contributing
+ * spouts in the implementation.
+ */
 public abstract class DynamicSpout extends BaseRichSpout {
 
     // Logging
@@ -80,7 +85,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * Constructor to create our SidelineSpout.
      * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
      *
-     * @param spoutConfig - Our configuration.
+     * @param spoutConfig Our configuration.
      */
     public DynamicSpout(Map spoutConfig) {
         // Save off config, injecting appropriate default values for anything not explicitly configured.
@@ -94,9 +99,9 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * Open is called once the SidelineSpout instance has been deployed to the Storm cluster
      * and is ready to get to work.
      *
-     * @param topologyConfig - The Storm Topology configuration.
-     * @param topologyContext - The Storm Topology context.
-     * @param spoutOutputCollector - The output collector to emit tuples via.
+     * @param topologyConfig The Storm Topology configuration.
+     * @param topologyContext The Storm Topology context.
+     * @param spoutOutputCollector The output collector to emit tuples via.
      */
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
@@ -124,10 +129,8 @@ public abstract class DynamicSpout extends BaseRichSpout {
 
         // Create Spout Coordinator.
         coordinator = new SpoutCoordinator(
-
             // Our metrics recorder.
             getMetricsRecorder(),
-
             // Our MessageBuffer/Queue Implementation.
             messageBuffer
         );
@@ -141,6 +144,14 @@ public abstract class DynamicSpout extends BaseRichSpout {
         onOpen(topologyConfig, topologyContext, spoutOutputCollector);
     }
 
+    /**
+     * Called after open() this is essentially a callback or a hook to any spout implementing the virtual spout
+     * framework.
+     *
+     * @param topologyConfig The Storm Topology configuration.
+     * @param topologyContext The Storm Topology context.
+     * @param spoutOutputCollector The output collector to emit tuples via.
+     */
     abstract void onOpen(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector);
 
     /**
@@ -183,6 +194,9 @@ public abstract class DynamicSpout extends BaseRichSpout {
         getCoordinator().addSidelineSpout(spout);
     }
 
+    /**
+     * Get the next tuple from the spout
+     */
     @Override
     public void nextTuple() {
         /**
@@ -262,6 +276,10 @@ public abstract class DynamicSpout extends BaseRichSpout {
         onClose();
     }
 
+    /**
+     * Called after close() this is essentially a callback or a hook to any spout implementing the virtual spout
+     * framework.
+     */
     abstract void onClose();
 
     /**
@@ -270,7 +288,14 @@ public abstract class DynamicSpout extends BaseRichSpout {
     @Override
     public void activate() {
         logger.debug("Activating spout");
+        onActivate();
     }
+
+    /**
+     * Called after activate() this is essentially a callback or a hook to any spout implementing the virtual spout
+     * framework.
+     */
+    abstract void onActivate();
 
     /**
      * Currently a no-op.  We could make this un-pause things in the coordinator.
@@ -278,11 +303,18 @@ public abstract class DynamicSpout extends BaseRichSpout {
     @Override
     public void deactivate() {
         logger.debug("Deactivate spout");
+        onDeactivate();
     }
 
     /**
+     * Called after deactivate() this is essentially a callback or a hook to any spout implementing the virtual spout
+     * framework.
+     */
+    abstract void onDeactivate();
+
+    /**
      * Called for a Tuple MessageId when the tuple has been fully processed.
-     * @param id - the tuple's message id.
+     * @param id The tuple's message id.
      */
     @Override
     public void ack(Object id) {
@@ -298,7 +330,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
 
     /**
      * Called for a Tuple MessageId when the tuple has failed during processing.
-     * @param id - The failed tuple's message id.
+     * @param id The failed tuple's message id.
      */
     @Override
     public void fail(Object id) {
@@ -312,7 +344,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return - the Storm topology config map.
+     * @return The Storm topology config map.
      */
     protected Map getSpoutConfig() {
         return spoutConfig;
@@ -320,29 +352,29 @@ public abstract class DynamicSpout extends BaseRichSpout {
 
     /**
      * Utility method to get a specific entry in the Storm topology config map.
-     * @param key - the configuration item to retrieve
-     * @return - the configuration item's value.
+     * @param key The configuration item to retrieve
+     * @return The configuration item's value.
      */
     protected Object getSpoutConfigItem(final String key) {
         return getSpoutConfig().get(key);
     }
 
     /**
-     * @return - The Storm topology context.
+     * @return The Storm topology context.
      */
     protected TopologyContext getTopologyContext() {
         return topologyContext;
     }
 
     /**
-     * @return - The spout's output collector.
+     * @return The spout's output collector.
      */
     private SpoutOutputCollector getOutputCollector() {
         return outputCollector;
     }
 
     /**
-     * @return - The factory manager instance.
+     * @return The factory manager instance.
      */
     FactoryManager getFactoryManager() {
         return factoryManager;
@@ -356,21 +388,21 @@ public abstract class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return - The virtual spout coordinator.
+     * @return The virtual spout coordinator.
      */
     SpoutCoordinator getCoordinator() {
         return coordinator;
     }
 
     /**
-     * @return - The persistence manager.
+     * @return The persistence manager.
      */
     PersistenceAdapter getPersistenceAdapter() {
         return persistenceAdapter;
     }
 
     /**
-     * @return - returns the stream that tuples will be emitted out.
+     * @return The stream that tuples will be emitted out.
      */
     String getOutputStreamId() {
         if (outputStreamId == null) {
@@ -389,8 +421,8 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * Generates a VirtualSpoutId using an optional postfix.  It also appends
      * the Task index id.  This will probably cause problems if you decrease the number of instances of the spout.
      *
-     * @param id - Id to add after the prefix
-     * @return - Generates VirtualSpoutId.
+     * @param id Id to add after the prefix
+     * @return Generates VirtualSpoutId.
      */
     String generateVirtualSpoutId(final String id) {
         if (Strings.isNullOrEmpty(id)) {
