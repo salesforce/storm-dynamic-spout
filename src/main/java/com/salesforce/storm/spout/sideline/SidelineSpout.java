@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Spout instance.
@@ -242,7 +243,7 @@ public class SidelineSpout extends DynamicSpout {
 
             SidelinePayload payload = null;
 
-            final List<Integer> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
+            final Set<Integer> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
 
             for (final Integer partition : partitions) {
                 payload = getPersistenceAdapter().retrieveSidelineRequest(id, partition);
