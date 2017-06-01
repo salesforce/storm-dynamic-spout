@@ -155,46 +155,6 @@ public abstract class DynamicSpout extends BaseRichSpout {
     abstract void onOpen(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector);
 
     /**
-     * Open a virtual spout (like when a sideline stop request is made)
-     * @param id Id of the sideline request
-     * @param step Filter chain step (it will be negate)
-     * @param startingState Starting consumer state
-     * @param endingState Ending consumer state
-     */
-    void openVirtualSpout(
-        final SidelineRequestIdentifier id,
-        final FilterChainStep step,
-        final ConsumerState startingState,
-        final ConsumerState endingState
-    ) {
-        // TODO: Remove sideline specific details from this, it probably should just become a factory and eliminate adding to the coordinator
-
-        // Generate our virtualSpoutId using the payload id.
-        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
-
-        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
-        logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
-
-        // Create spout instance.
-        final VirtualSpout spout = new VirtualSpout(
-            getSpoutConfig(),
-            getTopologyContext(),
-            getFactoryManager(),
-            getMetricsRecorder(),
-            startingState,
-            endingState
-        );
-        spout.setVirtualSpoutId(virtualSpoutId);
-        spout.setSidelineRequestIdentifier(id);
-
-        // Add the supplied filter chain step to the new virtual spout's filter chain
-        spout.getFilterChain().addStep(id, step);
-
-        // Now pass the new "resumed" spout over to the coordinator to open and run
-        getCoordinator().addSidelineSpout(spout);
-    }
-
-    /**
      * Get the next tuple from the spout
      */
     @Override

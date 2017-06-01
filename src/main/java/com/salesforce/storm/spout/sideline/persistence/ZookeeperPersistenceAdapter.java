@@ -262,6 +262,38 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return ids;
     }
 
+    /**
+     * List the partitions for the given sideline request
+     * @param id Identifier for the sideline request that you want the partitions for
+     * @return A list of the partitions for the sideline request
+     */
+    @Override
+    public List<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+        verifyHasBeenOpened();
+
+        final List<Integer> partitions = Lists.newArrayList();
+
+        try {
+            final String path = getZkRequestStatePath(id.toString());
+
+            if (curator.checkExists().forPath(path) == null) {
+                return partitions;
+            }
+
+            final List<String> partitionNodes = curator.getChildren().forPath(path);
+
+            for (String partition : partitionNodes) {
+                partitions.add(Integer.valueOf(partition));
+            }
+
+            logger.debug("Partitions for sideline request {} = {}", id, partitions);
+        } catch (Exception ex) {
+            logger.error("{}", ex);
+        }
+
+        return partitions;
+    }
+
     private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
         if (json == null) {
             return null;
@@ -401,11 +433,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
     }
 
+    String getZkRequestStatePath(final String sidelineIdentifierStr) {
+        return getZkRoot() + "/requests/" + sidelineIdentifierStr;
+    }
+
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
     String getZkRequestStatePath(final String sidelineIdentifierStr, final int partitionId) {
-        return getZkRoot() + "/requests/" + sidelineIdentifierStr + "/" + partitionId;
+        return getZkRequestStatePath(sidelineIdentifierStr) + "/" + partitionId;
     }
 
     /**

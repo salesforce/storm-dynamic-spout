@@ -72,6 +72,13 @@ public interface PersistenceAdapter {
     SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id, int partitionId);
 
     /**
+     * List the partitions for the given sideline request
+     * @param id Identifier for the sideline request that you want the partitions for
+     * @return A list of the partitions for the sideline request
+     */
+    List<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id);
+
+    /**
      * Removes a sideline request from the persistence layer.
      * @param id - SidelineRequestIdentifier you want to clear.
      * @param partitionId - Partition of the sideline request you want to clear

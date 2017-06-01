@@ -824,6 +824,37 @@ public class ZookeeperPersistenceAdapterTest {
         assertTrue(ids.contains(sidelineRequestIdentifier3));
     }
 
+    @Test
+    public void testListSidelineRequestPartitions() {
+        final String configuredConsumerPrefix = "consumerIdPrefix";
+        final String configuredZkRoot = getRandomZkRootNode();
+
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest1 = new SidelineRequest(null);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest2 = new SidelineRequest(null);
+
+        // Two partitions for sideline request 1
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
+        // One partition for sideline request 2
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest1, 0, 10L, 11L);
+
+        List<Integer> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
+
+        assertEquals(Lists.newArrayList(0, 1), partitionsForSidelineRequest1);
+
+        List<Integer> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
+
+        assertEquals(Lists.newArrayList(0), partitionsForSidelineRequest2);
+    }
+
     /**
      * Helper method.
      */

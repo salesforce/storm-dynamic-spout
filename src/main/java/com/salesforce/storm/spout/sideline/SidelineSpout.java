@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
@@ -161,6 +162,46 @@ public class SidelineSpout extends DynamicSpout {
         getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
     }
 
+    /**
+     * Open a virtual spout (like when a sideline stop request is made)
+     * @param id Id of the sideline request
+     * @param step Filter chain step (it will be negate)
+     * @param startingState Starting consumer state
+     * @param endingState Ending consumer state
+     */
+    private void openVirtualSpout(
+        final SidelineRequestIdentifier id,
+        final FilterChainStep step,
+        final ConsumerState startingState,
+        final ConsumerState endingState
+    ) {
+        // TODO: Remove sideline specific details from this, it probably should just become a factory and eliminate adding to the coordinator
+
+        // Generate our virtualSpoutId using the payload id.
+        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
+
+        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
+        logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
+
+        // Create spout instance.
+        final VirtualSpout spout = new VirtualSpout(
+            getSpoutConfig(),
+            getTopologyContext(),
+            getFactoryManager(),
+            getMetricsRecorder(),
+            startingState,
+            endingState
+        );
+        spout.setVirtualSpoutId(virtualSpoutId);
+        spout.setSidelineRequestIdentifier(id);
+
+        // Add the supplied filter chain step to the new virtual spout's filter chain
+        spout.getFilterChain().addStep(id, step);
+
+        // Now pass the new "resumed" spout over to the coordinator to open and run
+        getCoordinator().addSidelineSpout(spout);
+    }
+
     void onOpen(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
         if (startingTrigger != null) {
@@ -179,13 +220,18 @@ public class SidelineSpout extends DynamicSpout {
             getFactoryManager(),
             getMetricsRecorder()
         );
+        // TODO: Add callbacks fro onOpen and onClose
+        /**
+        fireHoseSpout.onOpen((Consumer consumer, String identifier) -> {
+
+        })
+         **/
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Our main firehose spout instance.
         getCoordinator().addSidelineSpout(fireHoseSpout);
 
-
-        final ConsumerState currentState = fireHoseSpout.getCurrentState();
+        final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
 
         final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
@@ -196,12 +242,16 @@ public class SidelineSpout extends DynamicSpout {
 
             SidelinePayload payload = null;
 
-            for (final TopicPartition topicPartition : currentState.getTopicPartitions()) {
-                payload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
+            final List<Integer> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
+
+            for (final Integer partition : partitions) {
+                payload = getPersistenceAdapter().retrieveSidelineRequest(id, partition);
 
                 if (payload == null) {
                     continue;
                 }
+
+                final TopicPartition topicPartition = new TopicPartition(topic, partition);
 
                 startingStateBuilder.withPartition(topicPartition, payload.startingOffset);
 
