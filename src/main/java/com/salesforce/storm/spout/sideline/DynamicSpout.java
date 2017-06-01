@@ -4,12 +4,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -53,7 +50,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
 
     /**
      * Our internal Coordinator.  This manages all Virtual Spouts as well
-     * as handles routing emitted, acked, and failed tuples between this SidelineSpout instance
+     * as handles routing emitted, acked, and failed tuples between this Spout instance
      * and the appropriate Virtual Spouts.
      */
     private SpoutCoordinator coordinator;
@@ -64,7 +61,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     private final FactoryManager factoryManager;
 
     /**
-     * Stores state about starting/stopping sideline requests.
+     * Stores state from the spout
      */
     private PersistenceAdapter persistenceAdapter;
 
@@ -82,7 +79,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     private String outputStreamId = null;
 
     /**
-     * Constructor to create our SidelineSpout.
+     * Constructor to create our spout.
      * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
      *
      * @param spoutConfig Our configuration.
@@ -96,7 +93,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Open is called once the SidelineSpout instance has been deployed to the Storm cluster
+     * Open is called once the spout instance has been deployed to the Storm cluster
      * and is ready to get to work.
      *
      * @param topologyConfig The Storm Topology configuration.
@@ -174,7 +171,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
         // Emit tuple via the output collector.
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());
 
-        // Update emit count metric for VirtualSidelineSpout this tuple originated from
+        // Update emit count metric for VirtualSpout this tuple originated from
         getMetricsRecorder().count(VirtualSpout.class, message.getMessageId().getSrcVirtualSpoutId() + ".emit", 1);
 
         // Everything below is temporary emit metrics for debugging.
@@ -284,7 +281,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
         // Ack the tuple via the coordinator
         getCoordinator().ack(messageId);
 
-        // Update ack count metric for VirtualSidelineSpout this tuple originated from
+        // Update ack count metric for VirtualSpout this tuple originated from
         getMetricsRecorder().count(VirtualSpout.class, messageId.getSrcVirtualSpoutId() + ".ack", 1);
     }
 
