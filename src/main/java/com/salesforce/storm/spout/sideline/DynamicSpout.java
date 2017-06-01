@@ -355,7 +355,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     /**
      * @return The virtual spout coordinator.
      */
-    private SpoutCoordinator getCoordinator() {
+    SpoutCoordinator getCoordinator() {
         return coordinator;
     }
 
