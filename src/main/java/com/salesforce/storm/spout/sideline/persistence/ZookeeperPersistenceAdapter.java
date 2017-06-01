@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
@@ -19,9 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 /**
  * Persistence layer implemented using Zookeeper.
@@ -268,10 +270,10 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
      * @return A list of the partitions for the sideline request
      */
     @Override
-    public List<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
         verifyHasBeenOpened();
 
-        final List<Integer> partitions = Lists.newArrayList();
+        final Set<Integer> partitions = Sets.newHashSet();
 
         try {
             final String path = getZkRequestStatePath(id.toString());
@@ -291,7 +293,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
             logger.error("{}", ex);
         }
 
-        return partitions;
+        return Collections.unmodifiableSet(partitions);
     }
 
     private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {

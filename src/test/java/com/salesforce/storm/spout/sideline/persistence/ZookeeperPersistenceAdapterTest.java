@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -824,6 +825,9 @@ public class ZookeeperPersistenceAdapterTest {
         assertTrue(ids.contains(sidelineRequestIdentifier3));
     }
 
+    /**
+     * Test that given a sideline request we receive a set of partition ids for it
+     */
     @Test
     public void testListSidelineRequestPartitions() {
         final String configuredConsumerPrefix = "consumerIdPrefix";
@@ -846,11 +850,11 @@ public class ZookeeperPersistenceAdapterTest {
         // One partition for sideline request 2
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest1, 0, 10L, 11L);
 
-        List<Integer> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
+        Set<Integer> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
 
         assertEquals(Lists.newArrayList(0, 1), partitionsForSidelineRequest1);
 
-        List<Integer> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
+        Set<Integer> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
 
         assertEquals(Lists.newArrayList(0), partitionsForSidelineRequest2);
     }

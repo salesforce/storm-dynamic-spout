@@ -59,13 +59,13 @@ public class SpoutCoordinatorTest {
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, actual);
-        coordinator.addSidelineSpout(fireHoseSpout);
+        coordinator.addVirtualSpout(fireHoseSpout);
         coordinator.open(config);
 
         assertEquals(1, coordinator.getTotalSpouts());
 
-        coordinator.addSidelineSpout(sidelineSpout1);
-        coordinator.addSidelineSpout(sidelineSpout2);
+        coordinator.addVirtualSpout(sidelineSpout1);
+        coordinator.addVirtualSpout(sidelineSpout2);
 
         logger.info("Waiting for Coordinator to detect and open() our spout instances");
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> coordinator.getTotalSpouts(), equalTo(3));

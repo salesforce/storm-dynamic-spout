@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,7 +106,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     }
 
     @Override
-    public List<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
         final Set<Integer> partitions = Sets.newHashSet();
 
         for (SidelineRequestStateKey key : storedSidelineRequests.keySet()) {
@@ -114,7 +115,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
             }
         }
 
-        return Lists.newArrayList(partitions);
+        return Collections.unmodifiableSet(partitions);
     }
 
     private String getConsumerStateKey(final String consumerId, final int partitionId) {

@@ -175,8 +175,6 @@ public class SidelineSpout extends DynamicSpout {
         final ConsumerState startingState,
         final ConsumerState endingState
     ) {
-        // TODO: Remove sideline specific details from this, it probably should just become a factory and eliminate adding to the coordinator
-
         // Generate our virtualSpoutId using the payload id.
         final String virtualSpoutId = generateVirtualSpoutId(id.toString());
 
@@ -192,6 +190,8 @@ public class SidelineSpout extends DynamicSpout {
             startingState,
             endingState
         );
+
+        // TODO: Sort this out so that we can track the sideline request identifier inside of the virtual spout identifier
         spout.setVirtualSpoutId(virtualSpoutId);
         spout.setSidelineRequestIdentifier(id);
 
@@ -199,7 +199,7 @@ public class SidelineSpout extends DynamicSpout {
         spout.getFilterChain().addStep(id, step);
 
         // Now pass the new "resumed" spout over to the coordinator to open and run
-        getCoordinator().addSidelineSpout(spout);
+        addVirtualSpout(spout);
     }
 
     void onOpen(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
@@ -229,7 +229,7 @@ public class SidelineSpout extends DynamicSpout {
         fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
 
         // Our main firehose spout instance.
-        getCoordinator().addSidelineSpout(fireHoseSpout);
+        addVirtualSpout(fireHoseSpout);
 
         final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
 

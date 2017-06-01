@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface that controls persistence of state.
@@ -76,7 +77,7 @@ public interface PersistenceAdapter {
      * @param id Identifier for the sideline request that you want the partitions for
      * @return A list of the partitions for the sideline request
      */
-    List<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id);
+    Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id);
 
     /**
      * Removes a sideline request from the persistence layer.

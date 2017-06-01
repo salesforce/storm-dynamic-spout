@@ -324,6 +324,14 @@ public abstract class DynamicSpout extends BaseRichSpout {
     }
 
     /**
+     * Add a delegate spout to the coordinator
+     * @param spout Delegate spout to add
+     */
+    protected void addVirtualSpout(DelegateSpout spout) {
+        getCoordinator().addVirtualSpout(spout);
+    }
+
+    /**
      * @return The spout's output collector.
      */
     private SpoutOutputCollector getOutputCollector() {
@@ -347,7 +355,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     /**
      * @return The virtual spout coordinator.
      */
-    SpoutCoordinator getCoordinator() {
+    private SpoutCoordinator getCoordinator() {
         return coordinator;
     }
 

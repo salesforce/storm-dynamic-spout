@@ -89,7 +89,7 @@ public class SpoutCoordinator {
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
      */
-    public void addSidelineSpout(final DelegateSpout spout) {
+    public void addVirtualSpout(final DelegateSpout spout) {
         getNewSpoutQueue().add(spout);
     }
 
