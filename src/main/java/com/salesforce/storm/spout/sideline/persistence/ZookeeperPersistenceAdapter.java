@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
@@ -19,9 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
 /**
  * Persistence layer implemented using Zookeeper.
@@ -262,6 +264,38 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return ids;
     }
 
+    /**
+     * List the partitions for the given sideline request
+     * @param id Identifier for the sideline request that you want the partitions for
+     * @return A list of the partitions for the sideline request
+     */
+    @Override
+    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+        verifyHasBeenOpened();
+
+        final Set<Integer> partitions = Sets.newHashSet();
+
+        try {
+            final String path = getZkRequestStatePath(id.toString());
+
+            if (curator.checkExists().forPath(path) == null) {
+                return partitions;
+            }
+
+            final List<String> partitionNodes = curator.getChildren().forPath(path);
+
+            for (String partition : partitionNodes) {
+                partitions.add(Integer.valueOf(partition));
+            }
+
+            logger.debug("Partitions for sideline request {} = {}", id, partitions);
+        } catch (Exception ex) {
+            logger.error("{}", ex);
+        }
+
+        return Collections.unmodifiableSet(partitions);
+    }
+
     private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
         if (json == null) {
             return null;
@@ -401,11 +435,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
     }
 
+    String getZkRequestStatePath(final String sidelineIdentifierStr) {
+        return getZkRoot() + "/requests/" + sidelineIdentifierStr;
+    }
+
     /**
      * @return - The full zookeeper path to where our consumer state is stored.
      */
     String getZkRequestStatePath(final String sidelineIdentifierStr, final int partitionId) {
-        return getZkRoot() + "/requests/" + sidelineIdentifierStr + "/" + partitionId;
+        return getZkRequestStatePath(sidelineIdentifierStr) + "/" + partitionId;
     }
 
     /**

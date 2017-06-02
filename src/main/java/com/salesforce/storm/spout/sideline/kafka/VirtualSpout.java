@@ -246,6 +246,7 @@ public class VirtualSpout implements DelegateSpout {
             // We should clean up consumer state
             consumer.removeConsumerState();
 
+            // TODO: This should be moved out of here so that the vspout has no notion of a sideline request
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
                 for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {

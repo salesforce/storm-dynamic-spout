@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -26,8 +27,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -822,6 +825,40 @@ public class ZookeeperPersistenceAdapterTest {
         assertTrue(ids.contains(sidelineRequestIdentifier1));
         assertTrue(ids.contains(sidelineRequestIdentifier2));
         assertTrue(ids.contains(sidelineRequestIdentifier3));
+    }
+
+    /**
+     * Test that given a sideline request we receive a set of partition ids for it
+     */
+    @Test
+    public void testListSidelineRequestPartitions() {
+        final String configuredConsumerPrefix = "consumerIdPrefix";
+        final String configuredZkRoot = getRandomZkRootNode();
+
+        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+
+        ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
+        persistenceAdapter.open(topologyConfig);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest1 = new SidelineRequest(null);
+
+        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
+        final SidelineRequest sidelineRequest2 = new SidelineRequest(null);
+
+        // Two partitions for sideline request 1
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
+        // One partition for sideline request 2
+        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest1, 0, 10L, 11L);
+
+        Set<Integer> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
+
+        assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0, 1)), partitionsForSidelineRequest1);
+
+        Set<Integer> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
+
+        assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0)), partitionsForSidelineRequest2);
     }
 
     /**

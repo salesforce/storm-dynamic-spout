@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+// TODO: Rename this to SpoutConfig and rename keys accordingly
+
 /**
  * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
  */
