@@ -168,7 +168,7 @@ public class Consumer {
             Long startingOffset = null;
 
             if (startingState != null) {
-                startingOffset = startingState.getOffsetForTopicAndPartition(topicPartition.topic(), topicPartition.partition());
+                startingOffset = startingState.getOffsetForNamespaceAndPartition(topicPartition.topic(), topicPartition.partition());
             }
 
             // Check to see if we have an existing offset saved for this partition
@@ -228,22 +228,32 @@ public class Consumer {
 
     /**
      * Mark a particular offset on a Topic/Partition as having been successfully processed.
-     * @param topicPartition - The Topic & Partition the offset belongs to
-     * @param offset - The offset that should be marked as completed.
+     * @param consumerPartition The Topic & Partition the offset belongs to
+     * @param offset The offset that should be marked as completed.
      */
-    public void commitOffset(ConsumerPartition topicPartition, long offset) {
+    public void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
         // Track internally which offsets we've marked completed
-        partitionStateManagers.get(topicPartition).finishOffset(offset);
+        partitionStateManagers.get(consumerPartition).finishOffset(offset);
 
         // Occasionally flush
         timedFlushConsumerState();
     }
 
     /**
-     * Mark a particular message as having been successfully processed.
-     * @param consumerRecord - the consumer record to mark as completed.
+     * Mark a particular offset on a Topic/Partition as having been successfully processed.
+     * @param namespace The topic offset belongs to.
+     * @param partition The partition the offset belongs to.
+     * @param offset The offset that should be marked as completed.
      */
-    public void commitOffset(ConsumerRecord consumerRecord) {
+    public void commitOffset(final String namespace, final int partition, final long offset) {
+        commitOffset(new ConsumerPartition(namespace, partition), offset);
+    }
+
+    /**
+     * Mark a particular message as having been successfully processed.
+     * @param consumerRecord the consumer record to mark as completed.
+     */
+    public void commitOffset(final ConsumerRecord consumerRecord) {
         commitOffset(new ConsumerPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
     }
 

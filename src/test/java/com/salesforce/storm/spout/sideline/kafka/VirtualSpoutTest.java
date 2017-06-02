@@ -367,7 +367,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null",  result);
 
         // Verify ack was called on the tuple
-        verify(mockConsumer, times(1)).commitOffset(new ConsumerPartition(expectedTopic, expectedPartition), expectedOffset);
+        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
     }
 
     /**
@@ -425,7 +425,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null", result);
 
         // Verify ack was called on the tuple
-        verify(mockConsumer, times(1)).commitOffset(new ConsumerPartition(expectedTopic, expectedPartition), expectedOffset);
+        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
     }
 
     /**
@@ -928,7 +928,7 @@ public class VirtualSpoutTest {
         virtualSpout.ack(messageId);
 
         // Verify mock gets called with appropriate arguments
-        verify(mockConsumer, times(1)).commitOffset(eq(new ConsumerPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
+        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopicName), eq(expectedPartitionId), eq(expectedOffset));
 
         // Gets acked on the failed retry manager
         verify(mockRetryManager, times(1)).acked(messageId);
@@ -1178,7 +1178,7 @@ public class VirtualSpoutTest {
         final ConsumerPartition topicPartition = new ConsumerPartition(expectedTopic, expectedPartition);
 
         // Call our method & validate.
-        final boolean result = virtualSpout.unsubscribeTopicPartition(topicPartition);
+        final boolean result = virtualSpout.unsubscribeTopicPartition(topicPartition.namespace(), topicPartition.partition());
         assertEquals("Got expected result from our method", expectedResult, result);
 
         // Validate mock call
@@ -1415,7 +1415,7 @@ public class VirtualSpoutTest {
 
         // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
         verify(mockRetryManager, times(1)).acked(failedMessageId);
-        verify(mockConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
+        verify(mockConsumer, times(1)).commitOffset(failedMessageId.getNamespace(), failedMessageId.getPartition(), failedMessageId.getOffset());
     }
 
     /**

@@ -401,7 +401,7 @@ public class ConsumerTest {
         assertEquals("Should have 1 entry", 1, currentState.size());
 
         // Offset should have offset 1000L - 1 for completed offset.
-        assertEquals("Expected value should be 999", (earliestPosition - 1), (long) currentState.getOffsetForTopicAndPartition(partition0));
+        assertEquals("Expected value should be 999", (earliestPosition - 1), (long) currentState.getOffsetForNamespaceAndPartition(partition0));
     }
 
     /**
@@ -492,9 +492,9 @@ public class ConsumerTest {
         assertEquals("Should have 3 entries", 3, currentState.size());
 
         // Offsets should be the earliest position - 1
-        assertEquals("Expected value for partition0", (earliestPositionPartition0 - 1), (long) currentState.getOffsetForTopicAndPartition(partition0));
-        assertEquals("Expected value for partition1", (earliestPositionPartition1 - 1), (long) currentState.getOffsetForTopicAndPartition(partition1));
-        assertEquals("Expected value for partition2", (earliestPositionPartition2 - 1), (long) currentState.getOffsetForTopicAndPartition(partition2));
+        assertEquals("Expected value for partition0", (earliestPositionPartition0 - 1), (long) currentState.getOffsetForNamespaceAndPartition(partition0));
+        assertEquals("Expected value for partition1", (earliestPositionPartition1 - 1), (long) currentState.getOffsetForNamespaceAndPartition(partition1));
+        assertEquals("Expected value for partition2", (earliestPositionPartition2 - 1), (long) currentState.getOffsetForNamespaceAndPartition(partition2));
     }
 
     /**
@@ -747,10 +747,10 @@ public class ConsumerTest {
         assertEquals("Should have 4 entries", 4, resultingConsumerState.size());
 
         // Offsets should be set to what we expected.
-        assertEquals("Expected value for partition0", expectedStateOffsetPartition0, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition0));
-        assertEquals("Expected value for partition1", expectedStateOffsetPartition1, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition1));
-        assertEquals("Expected value for partition2", expectedStateOffsetPartition2, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition2));
-        assertEquals("Expected value for partition2", expectedStateOffsetPartition3, (long) resultingConsumerState.getOffsetForTopicAndPartition(partition3));
+        assertEquals("Expected value for partition0", expectedStateOffsetPartition0, (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition0));
+        assertEquals("Expected value for partition1", expectedStateOffsetPartition1, (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition1));
+        assertEquals("Expected value for partition2", expectedStateOffsetPartition2, (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition2));
+        assertEquals("Expected value for partition2", expectedStateOffsetPartition3, (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition3));
     }
 
     /**
@@ -1491,8 +1491,8 @@ public class ConsumerTest {
         assertEquals("Should only have 2 entries", 2, consumerState.size());
         assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartitions.get(0)));
         assertTrue("Should contain for 2nd expected partition", consumerState.containsKey(expectedPartitions.get(1)));
-        assertEquals("Offset stored should be 9 on first expected partition", (Long) 9L, consumerState.getOffsetForTopicAndPartition(expectedPartitions.get(0)));
-        assertEquals("Offset stored should be 10 on 2nd expected partition", (Long) 10L, consumerState.getOffsetForTopicAndPartition(expectedPartitions.get(1)));
+        assertEquals("Offset stored should be 9 on first expected partition", (Long) 9L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(0)));
+        assertEquals("Offset stored should be 10 on 2nd expected partition", (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(1)));
 
         // And double check w/ persistence manager directly
         final Long partition0Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 0);
@@ -1638,9 +1638,9 @@ public class ConsumerTest {
             assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartition));
 
             if (expectedPartition.partition() % 2 == 0) {
-                assertEquals("Offset stored should be 9 on even partitions", (Long) 9L, consumerState.getOffsetForTopicAndPartition(expectedPartition));
+                assertEquals("Offset stored should be 9 on even partitions", (Long) 9L, consumerState.getOffsetForNamespaceAndPartition(expectedPartition));
             } else {
-                assertEquals("Offset stored should be 10 on odd partitions", (Long) 10L, consumerState.getOffsetForTopicAndPartition(expectedPartition));
+                assertEquals("Offset stored should be 10 on odd partitions", (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartition));
             }
         }
 
@@ -1938,8 +1938,8 @@ public class ConsumerTest {
 
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();
-        assertEquals("Partition 0's last committed offset should be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition0));
-        assertEquals("Partition 1's last committed offset should be its starting offset", (Long) partition1StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition1));
+        assertEquals("Partition 0's last committed offset should be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0));
+        assertEquals("Partition 1's last committed offset should be its starting offset", (Long) partition1StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition1));
 
         // Define the values we expect to get
         final Set<String> expectedValues = Sets.newHashSet(
@@ -1976,10 +1976,10 @@ public class ConsumerTest {
         // Validate PartitionOffsetManager is correctly setup
         // We have not acked anything,
         consumerState = consumer.getCurrentState();
-        assertEquals("Partition 0's last committed offset should still be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForTopicAndPartition(topicPartition0));
+        assertEquals("Partition 0's last committed offset should still be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0));
 
         // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
-        assertEquals("Partition 1's last committed offset should be reset to earliest, or -1 in our case", (Long)(-1L), consumerState.getOffsetForTopicAndPartition(topicPartition1));
+        assertEquals("Partition 1's last committed offset should be reset to earliest, or -1 in our case", (Long)(-1L), consumerState.getOffsetForNamespaceAndPartition(topicPartition1));
     }
 
     /**
@@ -1989,7 +1989,7 @@ public class ConsumerTest {
      * @param expectedOffset - the offset we expect
      */
     private void validateConsumerState(ConsumerState consumerState, ConsumerPartition topicPartition, long expectedOffset) {
-        final long actualOffset = consumerState.getOffsetForTopicAndPartition(topicPartition);
+        final long actualOffset = consumerState.getOffsetForNamespaceAndPartition(topicPartition);
         assertEquals("Expected offset", expectedOffset, actualOffset);
     }
 

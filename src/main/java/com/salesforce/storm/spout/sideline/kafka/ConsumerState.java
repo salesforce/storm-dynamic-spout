@@ -31,21 +31,21 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
 
     /**
      * Return the current offset for the given TopicPartition.
-     * @param topicPartition The TopicPartition to get the offset for.
+     * @param consumerPartition The TopicPartition to get the offset for.
      * @return The current offset, or null if none is available.
      */
-    public Long getOffsetForTopicAndPartition(ConsumerPartition topicPartition) {
-        return state.get(topicPartition);
+    public Long getOffsetForNamespaceAndPartition(ConsumerPartition consumerPartition) {
+        return state.get(consumerPartition);
     }
 
     /**
      * Return the current offset for the given TopicPartition.
-     * @param topic Topic to retrieve offset for
+     * @param namespace Namespace to retrieve offset for
      * @param partition Partition to retrieve offset for
      * @return The current offset, or null if none is available.
      */
-    public Long getOffsetForTopicAndPartition(String topic, int partition) {
-        return getOffsetForTopicAndPartition(new ConsumerPartition(topic, partition));
+    public Long getOffsetForNamespaceAndPartition(String namespace, int partition) {
+        return getOffsetForNamespaceAndPartition(new ConsumerPartition(namespace, partition));
     }
 
     /**

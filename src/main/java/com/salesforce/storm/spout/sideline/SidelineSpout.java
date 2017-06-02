@@ -153,7 +153,7 @@ public class SidelineSpout extends BaseRichSpout {
                 sidelineRequest.id, // TODO: Now that this is in the request, we should change the persistence adapter
                 sidelineRequest,
                 topicPartition.partition(),
-                startingState.getOffsetForTopicAndPartition(topicPartition),
+                startingState.getOffsetForNamespaceAndPartition(topicPartition),
                 null
             );
         }
@@ -212,7 +212,7 @@ public class SidelineSpout extends BaseRichSpout {
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
                 topicPartition.partition(),
                 sidelinePayload.startingOffset,
-                endingState.getOffsetForTopicAndPartition(topicPartition)
+                endingState.getOffsetForNamespaceAndPartition(topicPartition)
             );
         }
 

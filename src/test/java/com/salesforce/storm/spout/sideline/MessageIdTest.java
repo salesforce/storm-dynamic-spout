@@ -32,25 +32,6 @@ public class MessageIdTest {
     }
 
     /**
-     * Validates getTopicPartition() method.
-     */
-    @Test
-    public void testGetTopicPartition() {
-        // Define MessageId components
-        final String expectedTopic = "MyTopic";
-        final int expectedPartition = 2;
-        final long expectedOffset = 31337L;
-        final String expectedVirtualSpoutId = "MyVirtualSpoutId";
-        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
-
-        // Validate
-        final ConsumerPartition result = messageId.getTopicPartition();
-        assertNotNull("Should not be null", result);
-        assertEquals("Should have right namespace", expectedTopic, result.namespace());
-        assertEquals("Should have right partition", expectedPartition, result.partition());
-    }
-
-    /**
      * Tests equality.
      */
     @Test

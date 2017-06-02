@@ -77,7 +77,7 @@ public class SpoutPartitionProgressMonitor {
 
         for (ConsumerPartition topicPartition : currentState.getTopicPartitions()) {
             final PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
-            final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
+            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(topicPartition);
 
             // "Calculate" ending offset by adding currentOffset + maxLag
             final long endingOffset = currentOffset + maxLag.longValue();

@@ -1,14 +1,18 @@
 package com.salesforce.storm.spout.sideline;
 
 /**
- * Namespace and partition number.
+ * Namespace and partition number DTO object.
  */
 public class ConsumerPartition {
     private int hash = 0;
     private final String namespace;
     private final int partition;
 
-
+    /**
+     * Constructor.
+     * @param namespace Set the namespace for the Consumer.
+     * @param partition Set the partition within the namespace.
+     */
     public ConsumerPartition(final String namespace, final int partition) {
         this.namespace = namespace;
         this.partition = partition;

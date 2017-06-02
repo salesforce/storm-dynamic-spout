@@ -87,12 +87,4 @@ public class MessageId {
                 + ", timestamp='" + timestamp + " (" + diff + ")" + '\''
                 + '}';
     }
-
-    /**
-     * Helper method.
-     * @return TopicPartition object for this tuple message.
-     */
-    public ConsumerPartition getTopicPartition() {
-        return new ConsumerPartition(getNamespace(), getPartition());
-    }
 }

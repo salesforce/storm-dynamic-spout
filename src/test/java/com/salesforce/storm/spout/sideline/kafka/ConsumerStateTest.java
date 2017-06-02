@@ -37,7 +37,7 @@ public class ConsumerStateTest {
                 .build();
 
         // Sanity check
-        assertEquals("Has expected offset", expectedOffset, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", expectedOffset, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Now lets keep using the builder, should this even be legal?
@@ -52,17 +52,17 @@ public class ConsumerStateTest {
         final ConsumerState consumerState2 = builder.build();
 
         // Verify the builder isn't not coupled to the built consumer state
-        assertEquals("Has expected offset", expectedOffset, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", expectedOffset, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
         assertEquals("Size should be 1", 1, consumerState.size());
-        assertNull("Should be null", consumerState.getOffsetForTopicAndPartition(topicPartition2));
-        assertNull("Should be null", consumerState.getOffsetForTopicAndPartition(topicPartition3));
+        assertNull("Should be null", consumerState.getOffsetForNamespaceAndPartition(topicPartition2));
+        assertNull("Should be null", consumerState.getOffsetForNamespaceAndPartition(topicPartition3));
         assertNotEquals("Shouldn't be equal", consumerState, consumerState2);
         assertFalse("Shouldn't be equal", consumerState.equals(consumerState2));
 
         // And just for completeness.
-        assertEquals("Has expected offset", expectedOffset, (long) consumerState2.getOffsetForTopicAndPartition(expectedTopicPartition));
-        assertEquals("Has expected offset", 23L, (long) consumerState2.getOffsetForTopicAndPartition(topicPartition2));
-        assertEquals("Has expected offset", 4423L, (long) consumerState2.getOffsetForTopicAndPartition(topicPartition3));
+        assertEquals("Has expected offset", expectedOffset, (long) consumerState2.getOffsetForNamespaceAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", 23L, (long) consumerState2.getOffsetForNamespaceAndPartition(topicPartition2));
+        assertEquals("Has expected offset", 4423L, (long) consumerState2.getOffsetForNamespaceAndPartition(topicPartition3));
         assertEquals("Size should be 3", 3, consumerState2.size());
     }
 
@@ -81,14 +81,14 @@ public class ConsumerStateTest {
                 .build();
 
         // Sanity check
-        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Now change our sourced Long
         expectedOffset = 2L;
 
         // It should still be 3444L
-        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
     }
 
     /**
@@ -130,14 +130,14 @@ public class ConsumerStateTest {
 
         // Validate not null case
         assertNotNull("Should not be null", consumerState.get(topicPartition));
-        assertNotNull("Should not be null", consumerState.getOffsetForTopicAndPartition(topicPartition));
+        assertNotNull("Should not be null", consumerState.getOffsetForNamespaceAndPartition(topicPartition));
         assertEquals("Should be our offset", (Long) offset, consumerState.get(topicPartition));
-        assertEquals("Should be our offset", (Long) offset, consumerState.getOffsetForTopicAndPartition(topicPartition));
+        assertEquals("Should be our offset", (Long) offset, consumerState.getOffsetForNamespaceAndPartition(topicPartition));
         assertTrue("Should be false", consumerState.containsKey(topicPartition));
 
         // Validate null case
         assertNull("Should be null", consumerState.get(topicPartition2));
-        assertNull("Should be null", consumerState.getOffsetForTopicAndPartition(topicPartition2));
+        assertNull("Should be null", consumerState.getOffsetForNamespaceAndPartition(topicPartition2));
         assertFalse("Should be false", consumerState.containsKey(topicPartition2));
 
         // get Keyset
@@ -267,7 +267,7 @@ public class ConsumerStateTest {
                 .build();
 
         // Sanity check
-        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Test using values
@@ -290,7 +290,7 @@ public class ConsumerStateTest {
                 .build();
 
         // Sanity check
-        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForTopicAndPartition(expectedTopicPartition));
+        assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Test using values

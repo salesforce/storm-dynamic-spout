@@ -889,7 +889,8 @@ public class SidelineSpoutTest {
 
             // Validate it came from the right place
             final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-            assertTrue("Came from expected partition", expectedPartitions.contains(messageId.getTopicPartition()));
+            final ConsumerPartition consumerPartition = new ConsumerPartition(messageId.getNamespace(), messageId.getPartition());
+            assertTrue("Came from expected partition", expectedPartitions.contains(consumerPartition));
         }
 
         // Validate we don't have any other emissions
@@ -994,7 +995,8 @@ public class SidelineSpoutTest {
 
             // Validate it came from the right place
             final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-            assertTrue("Came from expected partition", expectedPartitions.contains(messageId.getTopicPartition()));
+            final ConsumerPartition consumerPartition = new ConsumerPartition(messageId.getNamespace(), messageId.getPartition());
+            assertTrue("Came from expected partition", expectedPartitions.contains(consumerPartition));
         }
 
         // Validate we don't have any other emissions

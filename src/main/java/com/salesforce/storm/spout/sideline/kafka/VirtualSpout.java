@@ -314,7 +314,7 @@ public class VirtualSpout implements DelegateSpout {
             logger.debug("Tuple {} exceeds max offset, acking", messageId);
 
             // Unsubscribe partition this tuple belongs to.
-            unsubscribeTopicPartition(messageId.getTopicPartition());
+            unsubscribeTopicPartition(messageId.getNamespace(), messageId.getPartition());
 
             // We don't need to ack the tuple because it never got emitted out.
             // Simply return null.
@@ -388,14 +388,13 @@ public class VirtualSpout implements DelegateSpout {
             return false;
         }
 
-        final ConsumerPartition topicPartition = messageId.getTopicPartition();
         final long currentOffset = messageId.getOffset();
 
         // Find ending offset for this namespace partition
-        final Long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
+        final Long endingOffset = endingState.getOffsetForNamespaceAndPartition(messageId.getNamespace(), messageId.getPartition());
         if (endingOffset == null) {
             // None defined?  Probably an error
-            throw new IllegalStateException("Consuming from a namespace/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
+            throw new IllegalStateException("Consuming from a namespace/partition without a defined end offset? [" + messageId.getNamespace() + "-" + messageId.getPartition() + "] not in (" + endingState + ")");
         }
 
         // If its > the ending offset
@@ -423,7 +422,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Talk to sidelineConsumer and mark the offset completed.
         start = System.currentTimeMillis();
-        consumer.commitOffset(messageId.getTopicPartition(), messageId.getOffset());
+        consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
         ackTimeBuckets.put("CommitOffset", ackTimeBuckets.get("CommitOffset") + (System.currentTimeMillis() - start));
 
         // Remove this tuple from the spout where we track things in-case the tuple fails.
@@ -473,7 +472,7 @@ public class VirtualSpout implements DelegateSpout {
             retryManager.acked(messageId);
 
             // Ack it in the consumer
-            consumer.commitOffset(messageId.getTopicPartition(), messageId.getOffset());
+            consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
 
             // Update metric
             getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit");
@@ -607,13 +606,14 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Unsubscribes the underlying consumer from the specified namespace/partition.
      *
-     * @param topicPartition - the namespace/partition to unsubscribe from.
-     * @return boolean - true if successfully unsubscribed, false if not.
+     * @param namespace the namespace to unsubscribe from.
+     * @param partition the partition to unsubscribe from.
+     * @return boolean true if successfully unsubscribed, false if not.
      */
-    public boolean unsubscribeTopicPartition(ConsumerPartition topicPartition) {
-        final boolean result = consumer.unsubscribeTopicPartition(topicPartition);
+    public boolean unsubscribeTopicPartition(final String namespace, final int partition) {
+        final boolean result = consumer.unsubscribeTopicPartition(new ConsumerPartition(namespace, partition));
         if (result) {
-            logger.info("Unsubscribed from partition {}", topicPartition);
+            logger.info("Unsubscribed from partition [{}-{}]", namespace, partition);
         }
         return result;
     }
@@ -659,10 +659,10 @@ public class VirtualSpout implements DelegateSpout {
         // Compare it against our ending state
         for (ConsumerPartition topicPartition: currentState.getTopicPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
-            final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
+            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(topicPartition);
 
             // endingOffset contains the last offset we want to process.
-            final long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
+            final long endingOffset = endingState.getOffsetForNamespaceAndPartition(topicPartition);
 
             // If the current offset is < ending offset
             if (currentOffset < endingOffset) {
