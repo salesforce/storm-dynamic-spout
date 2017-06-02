@@ -11,7 +11,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -43,7 +42,7 @@ public class SidelineSpout extends DynamicSpout {
     private StoppingTrigger stoppingTrigger;
 
     /**
-     * This is our main Virtual Spout instance which consumes from the configured topic.
+     * This is our main Virtual Spout instance which consumes from the configured namespace.
      * TODO: Do we need access to this here?  Could this be moved into the Coordinator?
      */
     private VirtualSpout fireHoseSpout;
@@ -79,14 +78,14 @@ public class SidelineSpout extends DynamicSpout {
         // this offset
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
-        for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+        for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
             // Store in request manager
             getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.START,
                 sidelineRequest.id, // TODO: Now that this is in the request, we should change the persistence adapter
                 sidelineRequest,
-                topicPartition.partition(),
-                startingState.getOffsetForTopicAndPartition(topicPartition),
+                consumerPartition.partition(),
+                startingState.getOffsetForNamespaceAndPartition(consumerPartition),
                 null
             );
         }
@@ -131,21 +130,21 @@ public class SidelineSpout extends DynamicSpout {
 
         // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
         // assigned to this particular sideline spout instance
-        for (final TopicPartition topicPartition : endingState.getTopicPartitions()) {
+        for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
             // This is the state that the VirtualSidelineSpout should start with
-            final SidelinePayload sidelinePayload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
+            final SidelinePayload sidelinePayload = getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition.partition());
 
             // Add this partition to the starting consumer state
-            startingStateBuilder.withPartition(topicPartition, sidelinePayload.startingOffset);
+            startingStateBuilder.withPartition(consumerPartition, sidelinePayload.startingOffset);
 
             // Persist the side line request state with the new negated version of the steps.
             getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.STOP,
                 id,
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
-                topicPartition.partition(),
+                consumerPartition.partition(),
                 sidelinePayload.startingOffset,
-                endingState.getOffsetForTopicAndPartition(topicPartition)
+                endingState.getOffsetForNamespaceAndPartition(consumerPartition)
             );
         }
 
@@ -214,7 +213,7 @@ public class SidelineSpout extends DynamicSpout {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
-        // Create the main spout for the topic, we'll dub it the 'firehose'
+        // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
             getSpoutConfig(),
             getTopologyContext(),
@@ -251,14 +250,11 @@ public class SidelineSpout extends DynamicSpout {
                 if (payload == null) {
                     continue;
                 }
-
-                final TopicPartition topicPartition = new TopicPartition(topic, partition);
-
-                startingStateBuilder.withPartition(topicPartition, payload.startingOffset);
+                startingStateBuilder.withPartition(topic, partition, payload.startingOffset);
 
                 // We only have an ending offset on STOP requests
                 if (payload.endingOffset != null) {
-                    endingStateStateBuilder.withPartition(topicPartition, payload.endingOffset);
+                    endingStateStateBuilder.withPartition(topic, partition, payload.endingOffset);
                 }
             }
 

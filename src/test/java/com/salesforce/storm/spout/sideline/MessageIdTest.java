@@ -1,6 +1,5 @@
 package com.salesforce.storm.spout.sideline;
 
-import org.apache.kafka.common.TopicPartition;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -26,29 +25,10 @@ public class MessageIdTest {
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate MessageId
-        assertEquals("Got expected topic", expectedTopic, messageId.getTopic());
+        assertEquals("Got expected namespace", expectedTopic, messageId.getNamespace());
         assertEquals("Got expected partition", expectedPartition, messageId.getPartition());
         assertEquals("Got expected offset", expectedOffset, messageId.getOffset());
         assertEquals("Got expected virtual spout id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
-    }
-
-    /**
-     * Validates getTopicPartition() method.
-     */
-    @Test
-    public void testGetTopicPartition() {
-        // Define MessageId components
-        final String expectedTopic = "MyTopic";
-        final int expectedPartition = 2;
-        final long expectedOffset = 31337L;
-        final String expectedVirtualSpoutId = "MyVirtualSpoutId";
-        final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
-
-        // Validate
-        final TopicPartition result = messageId.getTopicPartition();
-        assertNotNull("Should not be null", result);
-        assertEquals("Should have right topic", expectedTopic, result.topic());
-        assertEquals("Should have right partition", expectedPartition, result.partition());
     }
 
     /**

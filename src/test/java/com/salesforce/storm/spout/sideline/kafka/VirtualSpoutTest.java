@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
@@ -19,7 +20,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
 import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Fields;
@@ -367,7 +367,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null",  result);
 
         // Verify ack was called on the tuple
-        verify(mockConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
     }
 
     /**
@@ -425,7 +425,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null", result);
 
         // Verify ack was called on the tuple
-        verify(mockConsumer, times(1)).commitOffset(new TopicPartition(expectedTopic, expectedPartition), expectedOffset);
+        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
     }
 
     /**
@@ -480,7 +480,7 @@ public class VirtualSpoutTest {
         assertNotNull("Should not be null", result);
 
         // Validate it
-        assertEquals("Found expected topic", expectedTopic, result.getTopic());
+        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
@@ -488,7 +488,7 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * 1. publish a bunch of messages to a topic with a single partition.
+     * 1. publish a bunch of messages to a namespace with a single partition.
      * 2. create a VirtualSideLineSpout where we explicitly define an ending offset less than the total msgs published
      * 3. Consume from the Spout (call nextTuple())
      * 4. Ensure that we stop getting tuples back after we exceed the ending state offset.
@@ -520,7 +520,7 @@ public class VirtualSpoutTest {
 
         // Defining our Ending State
         final ConsumerState endingState = ConsumerState.builder()
-            .withPartition(new TopicPartition(topic, partition), endingOffset)
+            .withPartition(topic, partition, endingOffset)
             .build();
 
         // Create test config
@@ -557,7 +557,7 @@ public class VirtualSpoutTest {
         assertNotNull("Should not be null because the offset is under the limit.", result);
 
         // Validate it
-        assertEquals("Found expected topic", topic, result.getTopic());
+        assertEquals("Found expected namespace", topic, result.getNamespace());
         assertEquals("Found expected partition", partition, result.getPartition());
         assertEquals("Found expected offset", beforeOffset, result.getOffset());
         assertEquals("Found expected values", new Values("before-key", "before-value"), result.getValues());
@@ -571,7 +571,7 @@ public class VirtualSpoutTest {
         assertNotNull("Should not be null because the offset is under the limit.", result);
 
         // Validate it
-        assertEquals("Found expected topic", topic, result.getTopic());
+        assertEquals("Found expected namespace", topic, result.getNamespace());
         assertEquals("Found expected partition", partition, result.getPartition());
         assertEquals("Found expected offset", endingOffset, result.getOffset());
         assertEquals("Found expected values", new Values("equal-key", "equal-value"), result.getValues());
@@ -593,11 +593,11 @@ public class VirtualSpoutTest {
 
         // Validate unsubscribed was called on our mock sidelineConsumer
         // Right now this is called twice... unsure if that is an issue. I don't think it is.
-        verify(mockConsumer, times(2)).unsubscribeTopicPartition(eq(new TopicPartition(topic, partition)));
+        verify(mockConsumer, times(2)).unsubscribeConsumerPartition(eq(new ConsumerPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
-        verify(mockConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset);
-        verify(mockConsumer, times(0)).commitOffset(new TopicPartition(topic, partition), afterOffset + 1);
+        verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset);
+        verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset + 1);
     }
 
     /**
@@ -683,7 +683,7 @@ public class VirtualSpoutTest {
         assertNotNull("Should not be null", result);
 
         // Validate it
-        assertEquals("Found expected topic", expectedTopic, result.getTopic());
+        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
@@ -714,7 +714,7 @@ public class VirtualSpoutTest {
         assertNotNull("Should not be null", result);
 
         // Validate it
-        assertEquals("Found expected topic", expectedTopic, result.getTopic());
+        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
@@ -732,7 +732,7 @@ public class VirtualSpoutTest {
         assertNotNull("Should not be null", result);
 
         // Validate it
-        assertEquals("Found expected topic", expectedTopic, result.getTopic());
+        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
         assertEquals("Found expected partition", expectedPartition, result.getPartition());
         assertEquals("Found expected offset", unexpectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(unexpectedKey, unexpectedValue), result.getValues());
@@ -848,7 +848,7 @@ public class VirtualSpoutTest {
         virtualSpout.ack(null);
 
         // No interactions w/ our mock sideline consumer for committing offsets
-        verify(mockConsumer, never()).commitOffset(any(TopicPartition.class), anyLong());
+        verify(mockConsumer, never()).commitOffset(any(ConsumerPartition.class), anyLong());
         verify(mockConsumer, never()).commitOffset(any(ConsumerRecord.class));
         verify(mockRetryManager, never()).acked(anyObject());
     }
@@ -928,7 +928,7 @@ public class VirtualSpoutTest {
         virtualSpout.ack(messageId);
 
         // Verify mock gets called with appropriate arguments
-        verify(mockConsumer, times(1)).commitOffset(eq(new TopicPartition(expectedTopicName, expectedPartitionId)), eq(expectedOffset));
+        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopicName), eq(expectedPartitionId), eq(expectedOffset));
 
         // Gets acked on the failed retry manager
         verify(mockRetryManager, times(1)).acked(messageId);
@@ -995,7 +995,7 @@ public class VirtualSpoutTest {
 
         // Define our endingState with a position equal to our MessageId
         final ConsumerState endingState = ConsumerState.builder()
-            .withPartition(new TopicPartition(expectedTopic, expectedPartition), expectedOffset)
+            .withPartition(expectedTopic, expectedPartition, expectedOffset)
             .build();
 
         // Create factory manager
@@ -1036,7 +1036,7 @@ public class VirtualSpoutTest {
 
         // Define our endingState with a position less than our MessageId
         final ConsumerState endingState = ConsumerState.builder()
-            .withPartition(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset - 100))
+            .withPartition(expectedTopic, expectedPartition, (expectedOffset - 100))
             .build();
 
         // Create factory manager
@@ -1077,7 +1077,7 @@ public class VirtualSpoutTest {
 
         // Define our endingState with a position greater than than our MessageId
         final ConsumerState endingState = ConsumerState.builder()
-            .withPartition(new TopicPartition(expectedTopic, expectedPartition), (expectedOffset + 100))
+            .withPartition(expectedTopic, expectedPartition, (expectedOffset + 100))
             .build();
 
         // Create factory manager
@@ -1120,7 +1120,7 @@ public class VirtualSpoutTest {
 
         // Define our endingState with a position greater than than our MessageId, but on a different partition
         final ConsumerState endingState = ConsumerState.builder()
-            .withPartition(new TopicPartition(expectedTopic, expectedPartition + 1), (expectedOffset + 100))
+            .withPartition(expectedTopic, expectedPartition + 1, (expectedOffset + 100))
             .build();
 
         // Create factory manager
@@ -1156,7 +1156,7 @@ public class VirtualSpoutTest {
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
-        when(mockConsumer.unsubscribeTopicPartition(any(TopicPartition.class))).thenReturn(expectedResult);
+        when(mockConsumer.unsubscribeConsumerPartition(any(ConsumerPartition.class))).thenReturn(expectedResult);
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
@@ -1175,14 +1175,14 @@ public class VirtualSpoutTest {
         // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
-        final TopicPartition topicPartition = new TopicPartition(expectedTopic, expectedPartition);
+        final ConsumerPartition topicPartition = new ConsumerPartition(expectedTopic, expectedPartition);
 
         // Call our method & validate.
-        final boolean result = virtualSpout.unsubscribeTopicPartition(topicPartition);
+        final boolean result = virtualSpout.unsubscribeTopicPartition(topicPartition.namespace(), topicPartition.partition());
         assertEquals("Got expected result from our method", expectedResult, result);
 
         // Validate mock call
-        verify(mockConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
+        verify(mockConsumer, times(1)).unsubscribeConsumerPartition(eq(topicPartition));
     }
 
     /**
@@ -1261,7 +1261,7 @@ public class VirtualSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
         ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
-        startingStateBuilder.withPartition(new TopicPartition("foobar", 0), 1L);
+        startingStateBuilder.withPartition("foobar", 0, 1L);
         ConsumerState startingState = startingStateBuilder.build();
 
         // Create spout
@@ -1415,7 +1415,7 @@ public class VirtualSpoutTest {
 
         // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
         verify(mockRetryManager, times(1)).acked(failedMessageId);
-        verify(mockConsumer, times(1)).commitOffset(failedMessageId.getTopicPartition(), failedMessageId.getOffset());
+        verify(mockConsumer, times(1)).commitOffset(failedMessageId.getNamespace(), failedMessageId.getPartition(), failedMessageId.getOffset());
     }
 
     /**
@@ -1448,7 +1448,7 @@ public class VirtualSpoutTest {
 
         final ConsumerState expectedConsumerState = ConsumerState
             .builder()
-            .withPartition(new TopicPartition("myTopic", 0), 200L)
+            .withPartition("myTopic", 0, 200L)
             .build();
 
         // Setup our mock to return expected value

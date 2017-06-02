@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -15,7 +16,6 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ import java.util.Map;
  * These instances are designed to live within a {@link com.salesforce.storm.spout.sideline.SidelineSpout}
  * instance.  During the lifetime of a SidelineSpout, many VirtualSidelineSpouts can get created and destroyed.
  *
- * The VirtualSidelineSpout will consume from a configured topic and return {@link Message} from its
+ * The VirtualSidelineSpout will consume from a configured namespace and return {@link Message} from its
  * {@link #nextTuple()} method.  These will eventually get converted to the appropriate Tuples and emitted
  * out by the SidelineSpout.
  *
@@ -249,10 +249,10 @@ public class VirtualSpout implements DelegateSpout {
             // TODO: This should be moved out of here so that the vspout has no notion of a sideline request
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
-                for (final TopicPartition topicPartition : startingState.getTopicPartitions()) {
+                for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
                     consumer.getPersistenceAdapter().clearSidelineRequest(
                         getSidelineRequestIdentifier(),
-                        topicPartition.partition()
+                        consumerPartition.partition()
                     );
                 }
             }
@@ -315,7 +315,7 @@ public class VirtualSpout implements DelegateSpout {
             logger.debug("Tuple {} exceeds max offset, acking", messageId);
 
             // Unsubscribe partition this tuple belongs to.
-            unsubscribeTopicPartition(messageId.getTopicPartition());
+            unsubscribeTopicPartition(messageId.getNamespace(), messageId.getPartition());
 
             // We don't need to ack the tuple because it never got emitted out.
             // Simply return null.
@@ -389,14 +389,13 @@ public class VirtualSpout implements DelegateSpout {
             return false;
         }
 
-        final TopicPartition topicPartition = messageId.getTopicPartition();
         final long currentOffset = messageId.getOffset();
 
-        // Find ending offset for this topic partition
-        final Long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
+        // Find ending offset for this namespace partition
+        final Long endingOffset = endingState.getOffsetForNamespaceAndPartition(messageId.getNamespace(), messageId.getPartition());
         if (endingOffset == null) {
             // None defined?  Probably an error
-            throw new IllegalStateException("Consuming from a topic/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
+            throw new IllegalStateException("Consuming from a namespace/partition without a defined end offset? [" + messageId.getNamespace() + "-" + messageId.getPartition() + "] not in (" + endingState + ")");
         }
 
         // If its > the ending offset
@@ -424,7 +423,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Talk to sidelineConsumer and mark the offset completed.
         start = System.currentTimeMillis();
-        consumer.commitOffset(messageId.getTopicPartition(), messageId.getOffset());
+        consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
         ackTimeBuckets.put("CommitOffset", ackTimeBuckets.get("CommitOffset") + (System.currentTimeMillis() - start));
 
         // Remove this tuple from the spout where we track things in-case the tuple fails.
@@ -474,7 +473,7 @@ public class VirtualSpout implements DelegateSpout {
             retryManager.acked(messageId);
 
             // Ack it in the consumer
-            consumer.commitOffset(messageId.getTopicPartition(), messageId.getOffset());
+            consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
 
             // Update metric
             getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit");
@@ -606,15 +605,16 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Unsubscribes the underlying consumer from the specified topic/partition.
+     * Unsubscribes the underlying consumer from the specified namespace/partition.
      *
-     * @param topicPartition - the topic/partition to unsubscribe from.
-     * @return boolean - true if successfully unsubscribed, false if not.
+     * @param namespace the namespace to unsubscribe from.
+     * @param partition the partition to unsubscribe from.
+     * @return boolean true if successfully unsubscribed, false if not.
      */
-    public boolean unsubscribeTopicPartition(TopicPartition topicPartition) {
-        final boolean result = consumer.unsubscribeTopicPartition(topicPartition);
+    public boolean unsubscribeTopicPartition(final String namespace, final int partition) {
+        final boolean result = consumer.unsubscribeConsumerPartition(new ConsumerPartition(namespace, partition));
         if (result) {
-            logger.info("Unsubscribed from partition {}", topicPartition);
+            logger.info("Unsubscribed from partition [{}-{}]", namespace, partition);
         }
         return result;
     }
@@ -658,12 +658,12 @@ public class VirtualSpout implements DelegateSpout {
         final ConsumerState currentState = consumer.getCurrentState();
 
         // Compare it against our ending state
-        for (TopicPartition topicPartition: currentState.getTopicPartitions()) {
+        for (final ConsumerPartition consumerPartition: currentState.getConsumerPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
-            final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
+            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
 
             // endingOffset contains the last offset we want to process.
-            final long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
+            final long endingOffset = endingState.getOffsetForNamespaceAndPartition(consumerPartition);
 
             // If the current offset is < ending offset
             if (currentOffset < endingOffset) {
@@ -671,8 +671,8 @@ public class VirtualSpout implements DelegateSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            if (consumer.unsubscribeTopicPartition(topicPartition)) {
-                logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
+            if (consumer.unsubscribeConsumerPartition(consumerPartition)) {
+                logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", consumerPartition, currentOffset, endingOffset);
             }
         }
 

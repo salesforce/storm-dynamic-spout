@@ -33,7 +33,7 @@ public class ConsumerConfig {
      * Constructor.
      * @param brokerHosts - List of Kafka brokers in format of ["host1:9092", "host2:9092", ...]
      * @param consumerId - What consumerId the consumer should use.
-     * @param topic - What topic the consumer should consume from.
+     * @param topic - What namespace the consumer should consume from.
      */
     public ConsumerConfig(final List<String> brokerHosts, final String consumerId, final String topic) {
         this.topic = topic;

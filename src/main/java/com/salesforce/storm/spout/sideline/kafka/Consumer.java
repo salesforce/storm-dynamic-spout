@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -74,10 +76,10 @@ public class Consumer {
     private final PersistenceAdapter persistenceAdapter;
 
     /**
-     * Since offsets are managed on a per partition basis, each topic/partition has its own ConsumerPartitionStateManagers
+     * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
      * instance to track its own offset.  The state of these are what gets persisted via the ConsumerStateManager.
      */
-    private final Map<TopicPartition, PartitionOffsetManager> partitionStateManagers = Maps.newHashMap();
+    private final Map<ConsumerPartition, PartitionOffsetManager> partitionStateManagers = Maps.newHashMap();
 
     /**
      * Used to buffers messages read from Kafka.
@@ -157,7 +159,7 @@ public class Consumer {
 
         final KafkaConsumer kafkaConsumer = getKafkaConsumer();
 
-        logger.info("Assigning topic and partitions = {}", topicPartitions);
+        logger.info("Assigning namespace and partitions = {}", topicPartitions);
 
         // Assign our consumer to the given partitions
         kafkaConsumer.assign(topicPartitions);
@@ -166,7 +168,7 @@ public class Consumer {
             Long startingOffset = null;
 
             if (startingState != null) {
-                startingOffset = startingState.getOffsetForTopicAndPartition(topicPartition);
+                startingOffset = startingState.getOffsetForNamespaceAndPartition(topicPartition.topic(), topicPartition.partition());
             }
 
             // Check to see if we have an existing offset saved for this partition
@@ -178,17 +180,17 @@ public class Consumer {
 
             if (offset != null) {
                 // We have a stored offset, so pick up on the partition where we left off
-                logger.info("Resuming topic {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
+                logger.info("Resuming namespace {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
                 getKafkaConsumer().seek(topicPartition, (offset + 1));
             } else {
                 // We do not have an existing offset saved, so start from the head
                 kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
                 offset = getKafkaConsumer().position(topicPartition) - 1;
-                logger.info("Starting at the beginning of topic {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
+                logger.info("Starting at the beginning of namespace {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
             }
 
             partitionStateManagers.put(
-                topicPartition,
+                new ConsumerPartition(topicPartition.topic(), topicPartition.partition()),
                 new PartitionOffsetManager(
                     topicPartition.topic(),
                     topicPartition.partition(),
@@ -217,7 +219,7 @@ public class Consumer {
         ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
 
         // Track this new message's state
-        TopicPartition topicPartition = new TopicPartition(nextRecord.topic(), nextRecord.partition());
+        ConsumerPartition topicPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
         partitionStateManagers.get(topicPartition).startOffset(nextRecord.offset());
 
         // Return the record
@@ -226,23 +228,33 @@ public class Consumer {
 
     /**
      * Mark a particular offset on a Topic/Partition as having been successfully processed.
-     * @param topicPartition - The Topic & Partition the offset belongs to
-     * @param offset - The offset that should be marked as completed.
+     * @param consumerPartition The Topic & Partition the offset belongs to
+     * @param offset The offset that should be marked as completed.
      */
-    public void commitOffset(TopicPartition topicPartition, long offset) {
+    public void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
         // Track internally which offsets we've marked completed
-        partitionStateManagers.get(topicPartition).finishOffset(offset);
+        partitionStateManagers.get(consumerPartition).finishOffset(offset);
 
         // Occasionally flush
         timedFlushConsumerState();
     }
 
     /**
-     * Mark a particular message as having been successfully processed.
-     * @param consumerRecord - the consumer record to mark as completed.
+     * Mark a particular offset on a Topic/Partition as having been successfully processed.
+     * @param namespace The topic offset belongs to.
+     * @param partition The partition the offset belongs to.
+     * @param offset The offset that should be marked as completed.
      */
-    public void commitOffset(ConsumerRecord consumerRecord) {
-        commitOffset(new TopicPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
+    public void commitOffset(final String namespace, final int partition, final long offset) {
+        commitOffset(new ConsumerPartition(namespace, partition), offset);
+    }
+
+    /**
+     * Mark a particular message as having been successfully processed.
+     * @param consumerRecord the consumer record to mark as completed.
+     */
+    public void commitOffset(final ConsumerRecord consumerRecord) {
+        commitOffset(new ConsumerPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
     }
 
     /**
@@ -284,14 +296,15 @@ public class Consumer {
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         // Loop through all of our partition managers
-        for (Map.Entry<TopicPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
-            TopicPartition topicPartition = entry.getKey();
+        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
+            final ConsumerPartition topicPartition = entry.getKey();
 
-            long lastFinishedOffset = entry.getValue().lastFinishedOffset();
+            final long lastFinishedOffset = entry.getValue().lastFinishedOffset();
 
-            // Get the current offset for each partition.
-            builder.withPartition(entry.getKey(), lastFinishedOffset);
+            // Set the current offset for each partition.
+            builder.withPartition(topicPartition, lastFinishedOffset);
 
+            // Persist it.
             persistenceAdapter.persistConsumerState(
                 getConsumerId(),
                 topicPartition.partition(),
@@ -349,10 +362,10 @@ public class Consumer {
         final Set outOfRangePartitions = outOfRangeException.partitions();
 
         // Grab all partitions our consumer is subscribed too.
-        Set<TopicPartition> allAssignedPartitions = getKafkaConsumer().assignment();
+        Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
 
         // Loop over all subscribed partitions
-        for (TopicPartition assignedTopicPartition : allAssignedPartitions) {
+        for (ConsumerPartition assignedTopicPartition : allAssignedPartitions) {
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
             if (outOfRangePartitions.contains(assignedTopicPartition)) {
@@ -366,7 +379,7 @@ public class Consumer {
             // before the exception was thrown.
             final long offset = partitionStateManagers.get(assignedTopicPartition).lastStartedOffset();
             logger.info("Backtracking {} offset to {}", assignedTopicPartition, offset);
-            getKafkaConsumer().seek(assignedTopicPartition, offset);
+            getKafkaConsumer().seek(new TopicPartition(assignedTopicPartition.namespace(), assignedTopicPartition.partition()), offset);
         }
 
         // All of the error'd partitions we need to seek to earliest available position.
@@ -396,7 +409,7 @@ public class Consumer {
             // We need to reset the saved offset to the current value
             // Replace PartitionOffsetManager with new instance from new position.
             logger.info("Partition {} using new earliest offset {}", topicPartition, newOffset);
-            partitionStateManagers.put(topicPartition, new PartitionOffsetManager(topicPartition.topic(), topicPartition.partition(), newOffset));
+            partitionStateManagers.put(new ConsumerPartition(topicPartition.topic(), topicPartition.partition()), new PartitionOffsetManager(topicPartition.topic(), topicPartition.partition(), newOffset));
         }
     }
 
@@ -435,30 +448,45 @@ public class Consumer {
     /**
      * @return - A set of all the partitions currently subscribed to.
      */
-    public Set<TopicPartition> getAssignedPartitions() {
-        return kafkaConsumer.assignment();
+    public Set<ConsumerPartition> getAssignedPartitions() {
+        // Create our return set using abstracted TopicPartition
+        Set<ConsumerPartition> assignedPartitions = new HashSet<>();
+
+        // Loop over resumes from underlying kafka consumer
+        for (TopicPartition topicPartition: kafkaConsumer.assignment()) {
+            // Convert object type
+            assignedPartitions.add(new ConsumerPartition(topicPartition.topic(), topicPartition.partition()));
+        }
+        // Return immutable copy of our list.
+        return Collections.unmodifiableSet(assignedPartitions);
     }
 
     /**
      * Unsubscribe the consumer from a specific topic/partition.
-     * @param topicPartition - the Topic/Partition to stop consuming from.
+     * @param consumerPartitionToUnsubscribe the Topic/Partition to stop consuming from.
      * @return boolean, true if unsubscribed, false if it did not.
      */
-    public boolean unsubscribeTopicPartition(final TopicPartition topicPartition) {
+    public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
         // Determine what we're currently assigned to,
         // We clone the returned set so we can modify it.
-        Set<TopicPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
+        Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
 
-        // If it doesn't contain our topic partition
-        if (!assignedTopicPartitions.contains(topicPartition)) {
+        // If it doesn't contain our namespace partition
+        if (!assignedTopicPartitions.contains(consumerPartitionToUnsubscribe)) {
             // For now return false, but maybe we should throw exception?
             return false;
         }
         // Remove it
-        assignedTopicPartitions.remove(topicPartition);
+        assignedTopicPartitions.remove(consumerPartitionToUnsubscribe);
+
+        // Convert to TopicPartitions to interact with underlying kafka consumer.
+        Set<TopicPartition> reassignedTopicPartitions = new HashSet<>();
+        for (ConsumerPartition consumerPartition : assignedTopicPartitions) {
+            reassignedTopicPartitions.add(new TopicPartition(consumerPartition.namespace(), consumerPartition.partition()));
+        }
 
         // Reassign consumer
-        kafkaConsumer.assign(assignedTopicPartitions);
+        kafkaConsumer.assign(reassignedTopicPartitions);
 
         // return boolean
         return true;
@@ -473,7 +501,7 @@ public class Consumer {
     public ConsumerState getCurrentState() {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
-        for (Map.Entry<TopicPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
+        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
             builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
         }
         return builder.build();
@@ -509,9 +537,9 @@ public class Consumer {
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
 
-        final Set<TopicPartition> topicPartitions = partitionStateManagers.keySet();
+        final Set<ConsumerPartition> topicPartitions = partitionStateManagers.keySet();
 
-        for (TopicPartition topicPartition : topicPartitions) {
+        for (ConsumerPartition topicPartition : topicPartitions) {
             getPersistenceAdapter().clearConsumerState(getConsumerId(), topicPartition.partition());
         }
     }
@@ -554,12 +582,16 @@ public class Consumer {
         return getKafkaConsumer().metrics();
     }
 
+    /**
+     * @return Returns the maximum lag.
+     */
     public double getMaxLag() {
         for (Map.Entry<MetricName, ? extends Metric> entry : metrics().entrySet()) {
             if (entry.getKey().name().equals("records-lag-max")) {
                 return entry.getValue().value();
             }
         }
+        // Fall thru return value?
         return -1.0;
     }
 }

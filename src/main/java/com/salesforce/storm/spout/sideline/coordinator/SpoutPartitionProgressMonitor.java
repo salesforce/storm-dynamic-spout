@@ -1,12 +1,12 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
-import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class SpoutPartitionProgressMonitor {
     private static final Logger logger = LoggerFactory.getLogger(SpoutPartitionProgressMonitor.class);
 
     final PersistenceAdapter persistenceAdapter;
-    final Map<TopicPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
+    final Map<ConsumerPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
 
     public SpoutPartitionProgressMonitor(PersistenceAdapter persistenceAdapter) {
         this.persistenceAdapter = persistenceAdapter;
@@ -34,7 +34,7 @@ public class SpoutPartitionProgressMonitor {
         persistenceAdapter.close();
     }
 
-    public Map<TopicPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
+    public Map<ConsumerPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
         final SidelineRequestIdentifier sidelineIdentifier = getSidelineRequestIdentifier(spout);
 
         if (sidelineIdentifier == null) {
@@ -67,7 +67,7 @@ public class SpoutPartitionProgressMonitor {
 
     }
 
-    private Map<TopicPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSpout spout) {
+    private Map<ConsumerPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSpout spout) {
         final ConsumerState currentState = spout.getCurrentState();
 
         // Max lag is the MAX lag across all partitions
@@ -75,38 +75,38 @@ public class SpoutPartitionProgressMonitor {
         // At best you'll get the MAX lag for all of the partitions your instance is consuming from :/
         final Double maxLag = spout.getMaxLag();
 
-        for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
-            final PartitionProgress previousProgress = mainProgressMap.get(topicPartition);
-            final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
+        for (final ConsumerPartition consumerPartition : currentState.getConsumerPartitions()) {
+            final PartitionProgress previousProgress = mainProgressMap.get(consumerPartition);
+            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
 
             // "Calculate" ending offset by adding currentOffset + maxLag
             final long endingOffset = currentOffset + maxLag.longValue();
 
             if (previousProgress == null) {
-                mainProgressMap.put(topicPartition, new PartitionProgress(currentOffset, currentOffset, endingOffset));
+                mainProgressMap.put(consumerPartition, new PartitionProgress(currentOffset, currentOffset, endingOffset));
                 continue;
             }
 
             // Build new progress
-            mainProgressMap.put(topicPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, endingOffset));
+            mainProgressMap.put(consumerPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, endingOffset));
         }
 
         return Collections.unmodifiableMap(mainProgressMap);
     }
 
-    private Map<TopicPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSpout spout) {
+    private Map<ConsumerPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSpout spout) {
         // Create return map
-        Map<TopicPartition, PartitionProgress> progressMap = Maps.newHashMap();
+        Map<ConsumerPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
         final String virtualSpoutId = spout.getVirtualSpoutId();
         final SidelineRequestIdentifier sidelineRequestIdentifier = getSidelineRequestIdentifier(spout);
         final ConsumerState currentState = spout.getCurrentState();
 
-        for (TopicPartition topicPartition : currentState.getTopicPartitions()) {
+        for (final ConsumerPartition consumerPartition : currentState.getConsumerPartitions()) {
             // Retrieve status
             final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(
                 sidelineRequestIdentifier,
-                topicPartition.partition()
+                consumerPartition.partition()
             );
 
             if (payload == null) {
@@ -116,7 +116,7 @@ public class SpoutPartitionProgressMonitor {
             }
 
             // Get the state
-            Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, topicPartition.partition());
+            Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, consumerPartition.partition());
             if (currentOffset == null) {
                 logger.info("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
                 continue;
@@ -125,11 +125,11 @@ public class SpoutPartitionProgressMonitor {
             // Make sure no nulls
             boolean hasError = false;
             if (payload.startingOffset == null) {
-                logger.warn("No starting state found for {}", topicPartition);
+                logger.warn("No starting state found for {}", consumerPartition);
                 hasError = true;
             }
             if (payload.endingOffset == null) {
-                logger.warn("No end state found for {}", topicPartition);
+                logger.warn("No end state found for {}", consumerPartition);
                 hasError = true;
             }
             // Skip errors
@@ -143,7 +143,7 @@ public class SpoutPartitionProgressMonitor {
                 payload.endingOffset
             );
 
-            progressMap.put(topicPartition, partitionProgress);
+            progressMap.put(consumerPartition, partitionProgress);
         }
 
         return Collections.unmodifiableMap(progressMap);

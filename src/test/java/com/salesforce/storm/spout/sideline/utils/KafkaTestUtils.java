@@ -28,10 +28,10 @@ public class KafkaTestUtils {
     }
 
     /**
-     * Produce some records into the defined kafka topic.
+     * Produce some records into the defined kafka namespace.
      *
      * @param numberOfRecords - how many records to produce
-     * @param topicName - the topic name to produce into.
+     * @param topicName - the namespace name to produce into.
      * @param partitionId - the partition to produce into.
      * @return List of ProducedKafkaRecords.
      */
@@ -57,7 +57,7 @@ public class KafkaTestUtils {
             producerFutures.add(producer.send(record));
         }
 
-        // Publish to the topic and close.
+        // Publish to the namespace and close.
         producer.flush();
         logger.info("Produce completed");
         producer.close();

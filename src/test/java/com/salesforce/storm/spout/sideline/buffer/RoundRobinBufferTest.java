@@ -72,7 +72,7 @@ public class RoundRobinBufferTest {
 
 
             Message message = new Message(
-                    new MessageId("my topic", partition, x, sourceSpoutId),
+                    new MessageId("my namespace", partition, x, sourceSpoutId),
                     new Values("myValue" + x));
 
             // Keep track of order
@@ -131,7 +131,7 @@ public class RoundRobinBufferTest {
             // Validate the contents are the same
             assertEquals("partitions should be equal", nextExpectedKafkaMsg.getPartition(), bufferedMsg.getPartition());
             assertEquals("offsets should be equal", nextExpectedKafkaMsg.getOffset(), bufferedMsg.getOffset());
-            assertEquals("topic should be equal", nextExpectedKafkaMsg.getTopic(), bufferedMsg.getTopic());
+            assertEquals("namespace should be equal", nextExpectedKafkaMsg.getNamespace(), bufferedMsg.getNamespace());
             assertEquals("MessageIds should be equal", nextExpectedKafkaMsg.getMessageId(), bufferedMsg.getMessageId());
             assertEquals("Values should be equal", nextExpectedKafkaMsg.getValues(), bufferedMsg.getValues());
         }

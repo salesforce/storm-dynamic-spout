@@ -7,11 +7,11 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 /**
- * Tracks which offsets for a specific topic/partition have been processed.
+ * Tracks which offsets for a specific namespace/partition have been processed.
  */
 public class PartitionOffsetManager {
     private static final Logger logger = LoggerFactory.getLogger(PartitionOffsetManager.class);
-    private final String topic;
+    private final String namespace;
     private final int partitionId;
 
     // Offsets where processing has been started
@@ -25,21 +25,21 @@ public class PartitionOffsetManager {
 
     /**
      * Constructor.
-     * @param topic - What topic this Partition belongs to.
+     * @param namespace - What namespace this Partition belongs to.
      * @param partitionId - What partition this instance represents.
      * @param lastFinishedOffset - What offset should be considered the last "completed" offset.
      */
-    public PartitionOffsetManager(final String topic, final int partitionId, final long lastFinishedOffset) {
-        this.topic = topic;
+    public PartitionOffsetManager(final String namespace, final int partitionId, final long lastFinishedOffset) {
+        this.namespace = namespace;
         this.partitionId = partitionId;
         this.lastFinishedOffset = lastFinishedOffset;
     }
 
     /**
-     * @return - The topic associated with this instance.
+     * @return - The namespace associated with this instance.
      */
-    private String getTopic() {
-        return topic;
+    private String getNamespace() {
+        return namespace;
     }
 
     /**
@@ -71,7 +71,7 @@ public class PartitionOffsetManager {
      */
     public void finishOffset(final long offset) {
         if (!trackedOffsets.contains(offset)) {
-            logger.warn("[{}-{}] - Tried to ack unknown offset {}", getTopic(), getPartitionId(), offset);
+            logger.warn("[{}-{}] - Tried to ack unknown offset {}", getNamespace(), getPartitionId(), offset);
             return;
         }
 
