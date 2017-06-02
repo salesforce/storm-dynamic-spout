@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.MyTopicPartition;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,7 +27,7 @@ public class ConsumerStateTest {
      */
     @Test
     public void testImmutability() {
-        final MyTopicPartition expectedTopicPartition = new MyTopicPartition("MyTopic", 12);
+        final ConsumerPartition expectedTopicPartition = new ConsumerPartition("MyTopic", 12);
         final long expectedOffset = 3444L;
 
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
@@ -41,8 +41,8 @@ public class ConsumerStateTest {
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Now lets keep using the builder, should this even be legal?
-        final MyTopicPartition topicPartition2 = new MyTopicPartition("DifferentTopic",23);
-        final MyTopicPartition topicPartition3 = new MyTopicPartition("DifferentTopic",32);
+        final ConsumerPartition topicPartition2 = new ConsumerPartition("DifferentTopic",23);
+        final ConsumerPartition topicPartition3 = new ConsumerPartition("DifferentTopic",32);
 
         // Add two partitions
         builder.withPartition(topicPartition2, 23L);
@@ -71,7 +71,7 @@ public class ConsumerStateTest {
      */
     @Test
     public void testImmutability_changeLongOffset() {
-        MyTopicPartition expectedTopicPartition = new MyTopicPartition("MyTopic", 12);
+        ConsumerPartition expectedTopicPartition = new ConsumerPartition("MyTopic", 12);
         Long expectedOffset = 3444L;
 
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
@@ -104,7 +104,7 @@ public class ConsumerStateTest {
 
         // Create consumer state with stored offset
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
-        builder.withPartition(new MyTopicPartition("Topic", 0), 0L);
+        builder.withPartition(new ConsumerPartition("Topic", 0), 0L);
 
         final ConsumerState consumerState = builder.build();
         assertFalse("Should NOT be empty", consumerState.isEmpty());
@@ -117,11 +117,11 @@ public class ConsumerStateTest {
     @Test
     public void testGet() {
         // Our happy case
-        final MyTopicPartition topicPartition = new MyTopicPartition("MyTopic", 2);
+        final ConsumerPartition topicPartition = new ConsumerPartition("MyTopic", 2);
         final long offset = 23L;
 
         // Our null case
-        final MyTopicPartition topicPartition2 = new MyTopicPartition("MyTopic", 3);
+        final ConsumerPartition topicPartition2 = new ConsumerPartition("MyTopic", 3);
 
 
         final ConsumerState consumerState = ConsumerState.builder()
@@ -143,12 +143,12 @@ public class ConsumerStateTest {
         // get Keyset
         assertNotNull("Should not be null", consumerState.keySet());
         assertEquals("Should have 1 entry", 1, consumerState.keySet().size());
-        assertTrue("Should contain our expected topic partition", consumerState.keySet().contains(topicPartition));
+        assertTrue("Should contain our expected namespace partition", consumerState.keySet().contains(topicPartition));
 
         // Get values
         assertNotNull("Should not be null", consumerState.values());
         assertEquals("Should have 1 entry", 1, consumerState.values().size());
-        assertTrue("Should contain our expected topic partition", consumerState.values().contains(offset));
+        assertTrue("Should contain our expected namespace partition", consumerState.values().contains(offset));
 
         // Contains value
         assertTrue("Should contain offset", consumerState.containsValue(offset));
@@ -161,7 +161,7 @@ public class ConsumerStateTest {
     @Test
     public void testEntrySet() {
         // Our happy case
-        final MyTopicPartition topicPartition = new MyTopicPartition("MyTopic", 2);
+        final ConsumerPartition topicPartition = new ConsumerPartition("MyTopic", 2);
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
@@ -171,7 +171,7 @@ public class ConsumerStateTest {
         // EntrySet
         assertNotNull("Should not be null", consumerState.entrySet());
         assertEquals("Should have 1 entry", 1, consumerState.entrySet().size());
-        for (Map.Entry<MyTopicPartition, Long> entry: consumerState.entrySet()) {
+        for (Map.Entry<ConsumerPartition, Long> entry: consumerState.entrySet()) {
             assertEquals("Key is correct", topicPartition, entry.getKey());
             assertEquals("Value is correct", (Long) offset, entry.getValue());
 
@@ -187,7 +187,7 @@ public class ConsumerStateTest {
     @Test
     public void testCannotClear() {
         // Our happy case
-        final MyTopicPartition topicPartition = new MyTopicPartition("MyTopic", 2);
+        final ConsumerPartition topicPartition = new ConsumerPartition("MyTopic", 2);
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
@@ -204,7 +204,7 @@ public class ConsumerStateTest {
     @Test
     public void testCannotPut() {
         // Our happy case
-        final MyTopicPartition topicPartition = new MyTopicPartition("MyTopic", 2);
+        final ConsumerPartition topicPartition = new ConsumerPartition("MyTopic", 2);
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
@@ -212,7 +212,7 @@ public class ConsumerStateTest {
                 .build();
 
         expectedException.expect(UnsupportedOperationException.class);
-        consumerState.put(new MyTopicPartition("MyTopic", 3), 2L);
+        consumerState.put(new ConsumerPartition("MyTopic", 3), 2L);
     }
 
     /**
@@ -221,15 +221,15 @@ public class ConsumerStateTest {
     @Test
     public void testCannotPutAll() {
         // Our happy case
-        final MyTopicPartition topicPartition = new MyTopicPartition("MyTopic", 2);
+        final ConsumerPartition topicPartition = new ConsumerPartition("MyTopic", 2);
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
                 .withPartition(topicPartition, offset)
                 .build();
 
-        Map<MyTopicPartition, Long> newMap = Maps.newHashMap();
-        newMap.put(new MyTopicPartition("MyTopic", 3), 2L);
+        Map<ConsumerPartition, Long> newMap = Maps.newHashMap();
+        newMap.put(new ConsumerPartition("MyTopic", 3), 2L);
 
         expectedException.expect(UnsupportedOperationException.class);
         consumerState.putAll(newMap);
@@ -241,7 +241,7 @@ public class ConsumerStateTest {
     @Test
     public void testCannotRemove() {
         // Our happy case
-        final MyTopicPartition topicPartition = new MyTopicPartition("MyTopic", 2);
+        final ConsumerPartition topicPartition = new ConsumerPartition("MyTopic", 2);
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
@@ -257,7 +257,7 @@ public class ConsumerStateTest {
      */
     @Test
     public void testImmutabilityViaValues() {
-        MyTopicPartition expectedTopicPartition = new MyTopicPartition("MyTopic", 12);
+        ConsumerPartition expectedTopicPartition = new ConsumerPartition("MyTopic", 12);
         Long expectedOffset = 3444L;
 
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
@@ -280,7 +280,7 @@ public class ConsumerStateTest {
      */
     @Test
     public void testImmutabilityViaKeySet() {
-        MyTopicPartition expectedTopicPartition = new MyTopicPartition("MyTopic", 12);
+        ConsumerPartition expectedTopicPartition = new ConsumerPartition("MyTopic", 12);
         Long expectedOffset = 3444L;
 
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();

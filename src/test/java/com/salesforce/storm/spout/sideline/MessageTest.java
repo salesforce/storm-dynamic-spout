@@ -36,7 +36,7 @@ public class MessageTest {
 
         // Validate TupleMessageId
         assertEquals("Got expected TupleMessageId", expectedMessageId, message.getMessageId());
-        assertEquals("Got expected topic", expectedTopic, message.getTopic());
+        assertEquals("Got expected namespace", expectedTopic, message.getNamespace());
         assertEquals("Got expected partition", expectedPartition, message.getPartition());
         assertEquals("Got expected offset", expectedOffset, message.getOffset());
 

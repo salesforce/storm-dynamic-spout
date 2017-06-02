@@ -94,11 +94,11 @@ build up how they all work together.
 [SidelineSpout](src/main/java/com/salesforce/storm/spout/sideline/SidelineSpout.java) - Implements Storm's spout interface.  Everything starts and stops here.
 
 [Consumer](src/main/java/com/salesforce/storm/spout/sideline/kafka/Consumer.java) - This is the high-level Kafka consumer built ontop of [`KafkaConsumer`](https://kafka.apache.org/0100/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html) 
-that manages consuming messages from a Kafka topic as well as maintaining consumer state information.  It wraps `KafkaConsumer`
+that manages consuming messages from a Kafka namespace as well as maintaining consumer state information.  It wraps `KafkaConsumer`
 giving it semantics that play nicely with Storm.  `KafkaConsumer` assumes messages from a given partition are always
 consumed in order and processed in order.  As we know Storm provides no guarantee that tuples emitted into a topology
 will get processed and acknowledged in order.  As a result tracking which messages
-within your Kafka topic have or have not been processed is not entirely trivial, and this wrapper aims
+within your Kafka namespace have or have not been processed is not entirely trivial, and this wrapper aims
 to deal with that.
 
 [VirtualSpout](src/main/java/com/salesforce/storm/spout/sideline/kafka/VirtualSpout.java) - Within `SidelineSpout`, you will have one or more `VirtualSpout` instances.
@@ -131,7 +131,7 @@ the acked tuple originated from and passes it to the correct instance's `ack()` 
 ### When the Topology Starts
 When your topology is deployed with a `SidelineSpout` and it starts up, the SidelineSpout will first start the `SpoutMonitor`. The `SpoutMonitor` then
 creates the *main* `VirtualSpout` instance (sometimes called the firehose).  This *main* `VirtualSpout` instance is always running within
-the spout, and its job is to consume from your Kafka topic.  As it consumes messages from Kafka, it deserializes
+the spout, and its job is to consume from your Kafka namespace.  As it consumes messages from Kafka, it deserializes
 them using your [`Deserializer`](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java) implementation.  It then runs it thru a [`FilterChain`](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChain.java), which is a collection of
 [`FilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java) objects.  These filters determine what messages should be *sidelined* and which should be emitted out.
 When no sideline requests are active, the `FilterChain` is empty, and all messages consumed from
@@ -139,20 +139,20 @@ Kafka will be converted to Tuples and emitted to your topology.
 
 ### Starting Sideline Request
 Your implemented [`StartingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java) will notify the `SpoutMonitor` that a new sideline request has been started.  The `SpoutMonitor`
-will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
+will record the *main* `VirtualSpout`'s current offsets within the namespace and record them with request via
 your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
 
 ### Stoping Sideline Request
 Your implemented[`StoppingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) will notify the `SpoutMonitor` that it would like to stop a sideline request.  The `SpoutMonitor`
 will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's
-`FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your
-configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered.
+`FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the namespace and record them via your
+configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka namespace will no longer be filtered.
 The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets
 recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
 
 ### Stopping & Redeploying the topology?
 The `SidelineSpout` has several moving pieces, all of which will properly handle resuming in the state that they were
-when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic.
+when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your namespace.
 Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering
 messages from being emitted into the topology.  Metadata aboutsideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are
 created and will resume consuming messages at the last previously acked offsets.
@@ -174,7 +174,7 @@ any where you would like.  Mysql? Redis? Kafka? Sure!  Contribute an adapter to 
 
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
-sideline_spout.kafka.topic | String | Defines which Kafka topic we will consume messages from. | *null*
+sideline_spout.kafka.namespace | String | Defines which Kafka namespace we will consume messages from. | *null*
 sideline_spout.kafka.brokers | List\<String\> | Holds a list of Kafka Broker hostnames + ports in the following format: ["broker1:9092", "broker2:9092", ...] | *null*
 sideline_spout.consumer_id_prefix | String | Defines a consumerId prefix to use for all consumers created by the spout.  This must be unique to your spout instance, and must not change between deploys. | *null*
 sideline_spout.output_stream_id | String | Defines the name of the output stream tuples will be emitted out of. | "default"
@@ -191,14 +191,14 @@ controls the naming of your output field(s).
      * Deserializes bytes into a Storm Values object
      * A null return value from here will result in this message being ignored.
      *
-     * @param topic - Represents what topic this message came from.
+     * @param namespace - Represents what namespace this message came from.
      * @param partition - Represents what partition this message came from.
      * @param offset - Represents what offset this message came from.
      * @param key - Byte array representing the key.
      * @param value - Byte array representing the value.
      * @return Values that should be emitted by the spout to the topology.
      */
-    Values deserialize(final String topic, final int partition, final long offset, final byte[] key, final byte[] value);
+    Values deserialize(final String namespace, final int partition, final long offset, final byte[] key, final byte[] value);
 
     /**
      * Declares the output fields for the deserializer.

@@ -60,7 +60,7 @@ public class FIFOBufferTest {
 
 
             Message message = new Message(
-                    new MessageId("my topic", partition, x, sourceSpoutId),
+                    new MessageId("my namespace", partition, x, sourceSpoutId),
                     new Values("value" + x));
 
             // Keep track of order
@@ -85,7 +85,7 @@ public class FIFOBufferTest {
             assertEquals("Source Spout Id should be equal", originalKafkaMsg.getMessageId().getSrcVirtualSpoutId(), bufferedMsg.getMessageId().getSrcVirtualSpoutId());
             assertEquals("partitions should be equal", originalKafkaMsg.getPartition(), bufferedMsg.getPartition());
             assertEquals("offsets should be equal", originalKafkaMsg.getOffset(), bufferedMsg.getOffset());
-            assertEquals("topic should be equal", originalKafkaMsg.getTopic(), bufferedMsg.getTopic());
+            assertEquals("namespace should be equal", originalKafkaMsg.getNamespace(), bufferedMsg.getNamespace());
             assertEquals("messageIds should be equal", originalKafkaMsg.getMessageId(), bufferedMsg.getMessageId());
             assertEquals("Values should be equal", originalKafkaMsg.getValues(), bufferedMsg.getValues());
         }

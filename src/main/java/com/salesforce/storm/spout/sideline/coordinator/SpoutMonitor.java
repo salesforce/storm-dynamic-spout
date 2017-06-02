@@ -1,7 +1,7 @@
 package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.salesforce.storm.spout.sideline.FactoryManager;
-import com.salesforce.storm.spout.sideline.MyTopicPartition;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -278,7 +278,7 @@ public class SpoutMonitor implements Runnable {
             // Loop thru all of them to get virtualSpout Ids.
             for (final SpoutRunner spoutRunner : spoutRunners.values()) {
                 final DelegateSpout spout = spoutRunner.getSpout();
-                Map<MyTopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
+                Map<ConsumerPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
 
                 if (progressMap == null) {
                     continue;
@@ -287,8 +287,8 @@ public class SpoutMonitor implements Runnable {
                 logger.info("== VirtualSpoutId {} ({} filters applied) Status ==", spout.getVirtualSpoutId(), spout.getNumberOfFiltersApplied());
 
                 // Calculate the progress
-                for (Map.Entry<MyTopicPartition, SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
-                    final MyTopicPartition topicPartition = entry.getKey();
+                for (Map.Entry<ConsumerPartition, SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
+                    final ConsumerPartition topicPartition = entry.getKey();
                     final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
 
                     // Log progress

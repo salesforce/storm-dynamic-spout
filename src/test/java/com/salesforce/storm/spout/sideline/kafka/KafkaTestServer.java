@@ -74,17 +74,17 @@ public class KafkaTestServer implements AutoCloseable {
     }
 
     /**
-     * Creates a topic in Kafka. If the topic already exists this does nothing.
-     * Will create a topic with exactly 1 partition.
-     * @param topicName - the topic name to create.
+     * Creates a namespace in Kafka. If the namespace already exists this does nothing.
+     * Will create a namespace with exactly 1 partition.
+     * @param topicName - the namespace name to create.
      */
     public void createTopic(String topicName) {
         createTopic(topicName, 1);
     }
 
     /**
-     * Creates a topic in Kafka. If the topic already exists this does nothing.
-     * @param topicName - the topic name to create.
+     * Creates a namespace in Kafka. If the namespace already exists this does nothing.
+     * @param topicName - the namespace name to create.
      * @param partitions - the number of partitions to create.
      */
     public void createTopic(final String topicName, final int partitions) {
@@ -93,8 +93,8 @@ public class KafkaTestServer implements AutoCloseable {
 
         /**
          * Note: You must initialize the ZkClient with ZKStringSerializer. If you don't then createTopic()
-         * will only seem to work (it will return without error). The topic will exist only in ZooKeeper
-         * and will be returned when listing topics, but Kafka itself does not create the topic.
+         * will only seem to work (it will return without error). The namespace will exist only in ZooKeeper
+         * and will be returned when listing topics, but Kafka itself does not create the namespace.
          */
         ZkClient zkClient = new ZkClient(getZkServer().getConnectString(), sessionTimeoutInMs, connectionTimeoutInMs, ZKStringSerializer$.MODULE$);
         ZkUtils zkUtils = ZkUtils.apply(zkClient, false);
@@ -146,7 +146,7 @@ public class KafkaTestServer implements AutoCloseable {
         consumerProperties.put("zookeeper.connect", getZkServer().getConnectString());
         consumerProperties.put("group.id", "test-group");
 
-        // Start from the head of the topic by default
+        // Start from the head of the namespace by default
         consumerProperties.put("auto.offset.reset", "smallest");
 
         // Don't commit offsets anywhere for our consumerId

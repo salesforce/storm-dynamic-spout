@@ -6,7 +6,7 @@ import java.time.Clock;
  * This object is used as the MessageId for Tuples emitted to the Storm topology.
  */
 public class MessageId {
-    private final String topic;
+    private final String namespace;
     private final int partition;
     private final long offset;
     private final String srcVirtualSpoutId;
@@ -14,21 +14,21 @@ public class MessageId {
 
     /**
      * Constructor.
-     * @param topic - the topic this tuple came from.
+     * @param namespace - the namespace this tuple came from.
      * @param partition - the partition this tuple came from.
      * @param offset - the offset this tuple came from.
      * @param srcVirtualSpoutId - the VirtualSpout's identifier this tuple came from.
      */
-    public MessageId(final String topic, final int partition, final long offset, final String srcVirtualSpoutId) {
-        this.topic = topic;
+    public MessageId(final String namespace, final int partition, final long offset, final String srcVirtualSpoutId) {
+        this.namespace = namespace;
         this.partition = partition;
         this.offset = offset;
         this.srcVirtualSpoutId = srcVirtualSpoutId;
         this.timestamp = Clock.systemUTC().millis();
     }
     
-    public String getTopic() {
-        return topic;
+    public String getNamespace() {
+        return namespace;
     }
 
     public int getPartition() {
@@ -60,7 +60,7 @@ public class MessageId {
         if (getOffset() != that.getOffset()) {
             return false;
         }
-        if (!getTopic().equals(that.getTopic())) {
+        if (!getNamespace().equals(that.getNamespace())) {
             return false;
         }
         return getSrcVirtualSpoutId().equals(that.getSrcVirtualSpoutId());
@@ -68,7 +68,7 @@ public class MessageId {
 
     @Override
     public int hashCode() {
-        int result = getTopic().hashCode();
+        int result = getNamespace().hashCode();
         result = 31 * result + getPartition();
         result = 31 * result + (int) (getOffset() ^ (getOffset() >>> 32));
         result = 31 * result + getSrcVirtualSpoutId().hashCode();
@@ -80,11 +80,11 @@ public class MessageId {
         final long diff = Clock.systemUTC().millis() - timestamp;
 
         return "MessageId{"
-                + "topic='" + topic + '\''
+                + "namespace='" + namespace + '\''
                 + ", partition=" + partition
                 + ", offset=" + offset
                 + ", srcVirtualSpoutId='" + srcVirtualSpoutId + '\''
-                + ", timestamp='" + timestamp + " (" + diff +")" + '\''
+                + ", timestamp='" + timestamp + " (" + diff + ")" + '\''
                 + '}';
     }
 
@@ -92,7 +92,7 @@ public class MessageId {
      * Helper method.
      * @return TopicPartition object for this tuple message.
      */
-    public MyTopicPartition getTopicPartition() {
-        return new MyTopicPartition(getTopic(), getPartition());
+    public ConsumerPartition getTopicPartition() {
+        return new ConsumerPartition(getNamespace(), getPartition());
     }
 }

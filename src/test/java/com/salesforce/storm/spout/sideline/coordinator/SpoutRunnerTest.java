@@ -286,9 +286,9 @@ public class SpoutRunnerTest {
         assertEquals("MessageBuffer should be empty", 0, messageBuffer.size());
 
         // Now Add some messages to our mock spout
-        final Message message1 = new Message(new MessageId("topic", 0, 0L, virtualSpoutId), new Values(1));
-        final Message message2 = new Message(new MessageId("topic", 0, 1L, virtualSpoutId), new Values(1));
-        final Message message3 = new Message(new MessageId("topic", 0, 2L, virtualSpoutId), new Values(1));
+        final Message message1 = new Message(new MessageId("namespace", 0, 0L, virtualSpoutId), new Values(1));
+        final Message message2 = new Message(new MessageId("namespace", 0, 1L, virtualSpoutId), new Values(1));
+        final Message message3 = new Message(new MessageId("namespace", 0, 2L, virtualSpoutId), new Values(1));
         mockSpout.emitQueue.add(message1);
         mockSpout.emitQueue.add(message2);
         mockSpout.emitQueue.add(message3);
@@ -378,14 +378,14 @@ public class SpoutRunnerTest {
         assertEquals("fail Queue should be empty", 0, failQueue.get(virtualSpoutId).size());
 
         // Create some MessageIds for our virtualSpoutId
-        final MessageId messageId1 = new MessageId("topic", 0, 0L, virtualSpoutId);
-        final MessageId messageId2 = new MessageId("topic", 0, 1L, virtualSpoutId);
-        final MessageId messageId3 = new MessageId("topic", 0, 2L, virtualSpoutId);
+        final MessageId messageId1 = new MessageId("namespace", 0, 0L, virtualSpoutId);
+        final MessageId messageId2 = new MessageId("namespace", 0, 1L, virtualSpoutId);
+        final MessageId messageId3 = new MessageId("namespace", 0, 2L, virtualSpoutId);
 
         // Create some MessageIds for a different virtualSpoutId
-        final MessageId messageId4 = new MessageId("topic", 0, 0L, otherVirtualSpoutId);
-        final MessageId messageId5 = new MessageId("topic", 0, 1L, otherVirtualSpoutId);
-        final MessageId messageId6 = new MessageId("topic", 0, 2L, otherVirtualSpoutId);
+        final MessageId messageId4 = new MessageId("namespace", 0, 0L, otherVirtualSpoutId);
+        final MessageId messageId5 = new MessageId("namespace", 0, 1L, otherVirtualSpoutId);
+        final MessageId messageId6 = new MessageId("namespace", 0, 2L, otherVirtualSpoutId);
 
         // Add them to the appropriate queues
         failQueue.get(virtualSpoutId).add(messageId1);
@@ -493,14 +493,14 @@ public class SpoutRunnerTest {
         assertEquals("fail Queue should be empty", 0, failQueue.get(virtualSpoutId).size());
 
         // Create some MessageIds for our virtualSpoutId
-        final MessageId messageId1 = new MessageId("topic", 0, 0L, virtualSpoutId);
-        final MessageId messageId2 = new MessageId("topic", 0, 1L, virtualSpoutId);
-        final MessageId messageId3 = new MessageId("topic", 0, 2L, virtualSpoutId);
+        final MessageId messageId1 = new MessageId("namespace", 0, 0L, virtualSpoutId);
+        final MessageId messageId2 = new MessageId("namespace", 0, 1L, virtualSpoutId);
+        final MessageId messageId3 = new MessageId("namespace", 0, 2L, virtualSpoutId);
 
         // Create some MessageIds for a different virtualSpoutId
-        final MessageId messageId4 = new MessageId("topic", 0, 0L, otherVirtualSpoutId);
-        final MessageId messageId5 = new MessageId("topic", 0, 1L, otherVirtualSpoutId);
-        final MessageId messageId6 = new MessageId("topic", 0, 2L, otherVirtualSpoutId);
+        final MessageId messageId4 = new MessageId("namespace", 0, 0L, otherVirtualSpoutId);
+        final MessageId messageId5 = new MessageId("namespace", 0, 1L, otherVirtualSpoutId);
+        final MessageId messageId6 = new MessageId("namespace", 0, 2L, otherVirtualSpoutId);
 
         // Add them to the appropriate queues
         ackQueue.get(virtualSpoutId).add(messageId1);

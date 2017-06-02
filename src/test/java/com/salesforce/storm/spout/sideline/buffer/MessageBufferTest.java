@@ -97,7 +97,7 @@ public class MessageBufferTest {
 
 
                     Message message = new Message(
-                            new MessageId("my topic", partition, x, sourceSpoutId),
+                            new MessageId("my namespace", partition, x, sourceSpoutId),
                             new Values("myValue" + x));
 
                     try {

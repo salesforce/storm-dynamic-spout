@@ -25,7 +25,7 @@ public class MessageIdTest {
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate MessageId
-        assertEquals("Got expected topic", expectedTopic, messageId.getTopic());
+        assertEquals("Got expected namespace", expectedTopic, messageId.getNamespace());
         assertEquals("Got expected partition", expectedPartition, messageId.getPartition());
         assertEquals("Got expected offset", expectedOffset, messageId.getOffset());
         assertEquals("Got expected virtual spout id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
@@ -44,9 +44,9 @@ public class MessageIdTest {
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate
-        final MyTopicPartition result = messageId.getTopicPartition();
+        final ConsumerPartition result = messageId.getTopicPartition();
         assertNotNull("Should not be null", result);
-        assertEquals("Should have right topic", expectedTopic, result.topic());
+        assertEquals("Should have right namespace", expectedTopic, result.namespace());
         assertEquals("Should have right partition", expectedPartition, result.partition());
     }
 

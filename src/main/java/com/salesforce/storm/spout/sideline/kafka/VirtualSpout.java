@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.Message;
-import com.salesforce.storm.spout.sideline.MyTopicPartition;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
@@ -30,7 +30,7 @@ import java.util.Map;
  * These instances are designed to live within a {@link com.salesforce.storm.spout.sideline.SidelineSpout}
  * instance.  During the lifetime of a SidelineSpout, many VirtualSidelineSpouts can get created and destroyed.
  *
- * The VirtualSidelineSpout will consume from a configured topic and return {@link Message} from its
+ * The VirtualSidelineSpout will consume from a configured namespace and return {@link Message} from its
  * {@link #nextTuple()} method.  These will eventually get converted to the appropriate Tuples and emitted
  * out by the SidelineSpout.
  *
@@ -248,7 +248,7 @@ public class VirtualSpout implements DelegateSpout {
 
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
-                for (final MyTopicPartition topicPartition : startingState.getTopicPartitions()) {
+                for (final ConsumerPartition topicPartition : startingState.getTopicPartitions()) {
                     consumer.getPersistenceAdapter().clearSidelineRequest(
                         getSidelineRequestIdentifier(),
                         topicPartition.partition()
@@ -388,14 +388,14 @@ public class VirtualSpout implements DelegateSpout {
             return false;
         }
 
-        final MyTopicPartition topicPartition = messageId.getTopicPartition();
+        final ConsumerPartition topicPartition = messageId.getTopicPartition();
         final long currentOffset = messageId.getOffset();
 
-        // Find ending offset for this topic partition
+        // Find ending offset for this namespace partition
         final Long endingOffset = endingState.getOffsetForTopicAndPartition(topicPartition);
         if (endingOffset == null) {
             // None defined?  Probably an error
-            throw new IllegalStateException("Consuming from a topic/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
+            throw new IllegalStateException("Consuming from a namespace/partition without a defined end offset? " + topicPartition + " not in (" + endingState + ")");
         }
 
         // If its > the ending offset
@@ -605,12 +605,12 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Unsubscribes the underlying consumer from the specified topic/partition.
+     * Unsubscribes the underlying consumer from the specified namespace/partition.
      *
-     * @param topicPartition - the topic/partition to unsubscribe from.
+     * @param topicPartition - the namespace/partition to unsubscribe from.
      * @return boolean - true if successfully unsubscribed, false if not.
      */
-    public boolean unsubscribeTopicPartition(MyTopicPartition topicPartition) {
+    public boolean unsubscribeTopicPartition(ConsumerPartition topicPartition) {
         final boolean result = consumer.unsubscribeTopicPartition(topicPartition);
         if (result) {
             logger.info("Unsubscribed from partition {}", topicPartition);
@@ -657,7 +657,7 @@ public class VirtualSpout implements DelegateSpout {
         final ConsumerState currentState = consumer.getCurrentState();
 
         // Compare it against our ending state
-        for (MyTopicPartition topicPartition: currentState.getTopicPartitions()) {
+        for (ConsumerPartition topicPartition: currentState.getTopicPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
             final long currentOffset = currentState.getOffsetForTopicAndPartition(topicPartition);
 

@@ -1,24 +1,25 @@
 package com.salesforce.storm.spout.sideline;
 
 /**
- * A topic name and partition number.
+ * Namespace and partition number.
  */
-public class MyTopicPartition {
+public class ConsumerPartition {
     private int hash = 0;
+    private final String namespace;
     private final int partition;
-    private final String topic;
 
-    public MyTopicPartition(String topic, int partition) {
+
+    public ConsumerPartition(final String namespace, final int partition) {
+        this.namespace = namespace;
         this.partition = partition;
-        this.topic = topic;
     }
 
     public int partition() {
         return partition;
     }
 
-    public String topic() {
-        return topic;
+    public String namespace() {
+        return namespace;
     }
 
     @Override
@@ -29,7 +30,7 @@ public class MyTopicPartition {
         final int prime = 31;
         int result = 1;
         result = prime * result + partition;
-        result = prime * result + ((topic == null) ? 0 : topic.hashCode());
+        result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
         this.hash = result;
         return result;
     }
@@ -45,15 +46,15 @@ public class MyTopicPartition {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        MyTopicPartition other = (MyTopicPartition) obj;
+        ConsumerPartition other = (ConsumerPartition) obj;
         if (partition != other.partition) {
             return false;
         }
-        if (topic == null) {
-            if (other.topic != null) {
+        if (namespace == null) {
+            if (other.namespace != null) {
                 return false;
             }
-        } else if (!topic.equals(other.topic)) {
+        } else if (!namespace.equals(other.namespace)) {
             return false;
         }
         return true;
@@ -61,6 +62,6 @@ public class MyTopicPartition {
 
     @Override
     public String toString() {
-        return topic + "-" + partition;
+        return namespace + "-" + partition;
     }
 }

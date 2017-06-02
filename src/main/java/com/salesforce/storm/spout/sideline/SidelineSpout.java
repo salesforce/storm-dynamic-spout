@@ -77,7 +77,7 @@ public class SidelineSpout extends BaseRichSpout {
     private StoppingTrigger stoppingTrigger;
 
     /**
-     * This is our main Virtual Spout instance which consumes from the configured topic.
+     * This is our main Virtual Spout instance which consumes from the configured namespace.
      * TODO: Do we need access to this here?  Could this be moved into the Coordinator?
      */
     private VirtualSpout fireHoseSpout;
@@ -146,7 +146,7 @@ public class SidelineSpout extends BaseRichSpout {
         // this offset
         final ConsumerState startingState = fireHoseSpout.getCurrentState();
 
-        for (final MyTopicPartition topicPartition : startingState.getTopicPartitions()) {
+        for (final ConsumerPartition topicPartition : startingState.getTopicPartitions()) {
             // Store in request manager
             getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.START,
@@ -198,7 +198,7 @@ public class SidelineSpout extends BaseRichSpout {
 
         // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
         // assigned to this particular sideline spout instance
-        for (final MyTopicPartition topicPartition : endingState.getTopicPartitions()) {
+        for (final ConsumerPartition topicPartition : endingState.getTopicPartitions()) {
             // This is the state that the VirtualSidelineSpout should start with
             final SidelinePayload sidelinePayload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
 
@@ -268,7 +268,7 @@ public class SidelineSpout extends BaseRichSpout {
         persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
         getPersistenceAdapter().open(getSpoutConfig());
 
-        // Create the main spout for the topic, we'll dub it the 'firehose'
+        // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
             getSpoutConfig(),
             getTopologyContext(),
@@ -307,7 +307,7 @@ public class SidelineSpout extends BaseRichSpout {
 
             SidelinePayload payload = null;
 
-            for (final MyTopicPartition topicPartition : currentState.getTopicPartitions()) {
+            for (final ConsumerPartition topicPartition : currentState.getTopicPartitions()) {
                 payload = getPersistenceAdapter().retrieveSidelineRequest(id, topicPartition.partition());
 
                 if (payload == null) {

@@ -15,7 +15,7 @@ public interface Deserializer extends Serializable {
      * This is the method your implementation would need define.
      * A null return value from here will result in this message being ignored.
      *
-     * @param topic - represents what topic this message came from.
+     * @param topic - represents what namespace this message came from.
      * @param partition - represents what partition this message came from.
      * @param offset - represents what offset this message came from.
      * @param key - byte array representing the key.

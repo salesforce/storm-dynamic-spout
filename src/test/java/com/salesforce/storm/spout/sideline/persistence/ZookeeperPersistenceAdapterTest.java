@@ -3,7 +3,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.MyTopicPartition;
+import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
@@ -500,9 +500,9 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Create state
         final ConsumerState consumerState = ConsumerState.builder()
-            .withPartition(new MyTopicPartition(topicName, 0), 10L)
-            .withPartition(new MyTopicPartition(topicName, 1), 1000L)
-            .withPartition(new MyTopicPartition(topicName, 3), 3000L)
+            .withPartition(new ConsumerPartition(topicName, 0), 10L)
+            .withPartition(new ConsumerPartition(topicName, 1), 1000L)
+            .withPartition(new ConsumerPartition(topicName, 3), 3000L)
             .build();
 
         // Persist it

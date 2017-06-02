@@ -26,14 +26,14 @@ public class KafkaTestServerTest {
      */
     @Test
     public void testProducerAndConsumer() throws Exception {
-        final String topicName = "dummy-topic";
+        final String topicName = "dummy-namespace";
         final int partitionId = 0;
 
         // Start server
         KafkaTestServer server = new KafkaTestServer();
         server.start();
 
-        // Create a dummy topic
+        // Create a dummy namespace
         server.createTopic(topicName);
 
         // Define our message

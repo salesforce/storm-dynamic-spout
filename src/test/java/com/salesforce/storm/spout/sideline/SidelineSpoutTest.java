@@ -65,7 +65,7 @@ public class SidelineSpoutTest {
     // Our internal Kafka and Zookeeper Server, used to test against.
     private static KafkaTestServer kafkaTestServer;
 
-    // Gets set to our randomly generated topic created for the test.
+    // Gets set to our randomly generated namespace created for the test.
     private String topicName;
 
     /**
@@ -87,14 +87,14 @@ public class SidelineSpoutTest {
 
     /**
      * This happens once before every test method.
-     * Create a new empty topic with randomly generated name.
+     * Create a new empty namespace with randomly generated name.
      */
     @Before
     public void beforeTest() throws InterruptedException {
-        // Generate topic name
+        // Generate namespace name
         topicName = ConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
-        // Create topic
+        // Create namespace
         kafkaTestServer.createTopic(topicName);
     }
 
@@ -189,7 +189,7 @@ public class SidelineSpoutTest {
 
     /**
      * Our most simple end-2-end test.
-     * This test stands up our spout and ask it to consume from our kafka topic.
+     * This test stands up our spout and ask it to consume from our kafka namespace.
      * We publish some data into kafka, and validate that when we call nextTuple() on
      * our spout that we get out our messages that were published into kafka.
      *
@@ -202,7 +202,7 @@ public class SidelineSpoutTest {
     @Test
     @UseDataProvider("provideStreamIds")
     public void doBasicConsumingTest(final String configuredStreamId, final String expectedStreamId) throws InterruptedException {
-        // Define how many tuples we should push into the topic, and then consume back out.
+        // Define how many tuples we should push into the namespace, and then consume back out.
         final int emitTupleCount = 10;
 
         // Define our ConsumerId prefix
@@ -228,10 +228,10 @@ public class SidelineSpoutTest {
         // validate our streamId
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
-        // Call next tuple, topic is empty, so nothing should get emitted.
+        // Call next tuple, namespace is empty, so nothing should get emitted.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 2, 0L);
 
-        // Lets produce some data into the topic
+        // Lets produce some data into the namespace
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
 
         // Now consume tuples generated from the messages we published into kafka.
@@ -251,7 +251,7 @@ public class SidelineSpoutTest {
      * End-to-End test over the fail() method using the {@link FailedTuplesFirstRetryManager}
      * retry manager.
      *
-     * This test stands up our spout and ask it to consume from our kafka topic.
+     * This test stands up our spout and ask it to consume from our kafka namespace.
      * We publish some data into kafka, and validate that when we call nextTuple() on
      * our spout that we get out our messages that were published into kafka.
      *
@@ -259,11 +259,11 @@ public class SidelineSpoutTest {
      * We ack some tuples and then validate that they do NOT get replayed.
      *
      * This does not make use of any side lining logic, just simple consuming from the
-     * 'fire hose' topic.
+     * 'fire hose' namespace.
      */
     @Test
     public void doBasicFailTest() throws InterruptedException {
-        // Define how many tuples we should push into the topic, and then consume back out.
+        // Define how many tuples we should push into the namespace, and then consume back out.
         final int emitTupleCount = 10;
 
         // Define our ConsumerId prefix
@@ -289,10 +289,10 @@ public class SidelineSpoutTest {
         // validate our streamId
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
-        // Call next tuple, topic is empty, so should get nothing.
+        // Call next tuple, namespace is empty, so should get nothing.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
 
-        // Lets produce some data into the topic
+        // Lets produce some data into the namespace
         List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
 
         // Now loop and get our tuples
@@ -353,12 +353,12 @@ public class SidelineSpoutTest {
 
     /**
      * Our most basic End 2 End test that includes basic sidelining.
-     * First we stand up our spout and produce some records into the kafka topic its consuming from.
+     * First we stand up our spout and produce some records into the kafka namespace its consuming from.
      * Records 1 and 2 we get out of the spout.
      * Then we enable sidelining, and call nextTuple(), the remaining records should not be emitted.
      * We stop sidelining, this should cause a virtual spout to be started within the spout.
      * Calling nextTuple() should get back the records that were previously skipped.
-     * We produce additional records into the topic.
+     * We produce additional records into the namespace.
      * Call nextTuple() and we should get them out.
      */
     @Test
@@ -467,15 +467,15 @@ public class SidelineSpoutTest {
     }
 
     /**
-     * This test stands up a spout instance and begins consuming from a topic.
-     * Halfway thru consuming all the messages published in that topic we will shutdown
+     * This test stands up a spout instance and begins consuming from a namespace.
+     * Halfway thru consuming all the messages published in that namespace we will shutdown
      * the spout gracefully.
      *
      * We'll create a new instance of the spout and fire it up, then validate that it resumes
      * consuming from where it left off.
      *
      * Assumptions made in this test:
-     *   - single partition topic
+     *   - single partition namespace
      *   - using ZK persistence manager to maintain state between spout instances/restarts.
      */
     @Test
@@ -750,7 +750,7 @@ public class SidelineSpoutTest {
         waitForVirtualSpouts(spout, 1);
         logger.info("=== Virtual Spout should be closed now... just fire hose left!");
 
-        // Produce 5 messages into Kafka topic with offsets [15,16,17,18,19]
+        // Produce 5 messages into Kafka namespace with offsets [15,16,17,18,19]
         List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 5 times,
@@ -808,7 +808,7 @@ public class SidelineSpoutTest {
 
     /**
      * This is an integration test of multiple SidelineConsumers.
-     * We stand up a topic with 4 partitions.
+     * We stand up a namespace with 4 partitions.
      * We then have a consumer size of 2.
      * We run the test once using consumerIndex 0
      *   - Verify we only consume from partitions 0 and 1
@@ -821,15 +821,15 @@ public class SidelineSpoutTest {
     public void testConsumeWithConsumerGroupEvenNumberOfPartitions(final int taskIndex) {
         final int numberOfMsgsPerPartition = 10;
 
-        // Create a topic with 4 partitions
+        // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
         kafkaTestServer.createTopic(topicName, 4);
 
         // Define some topicPartitions
-        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
-        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
-        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
-        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
+        final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
+        final ConsumerPartition partition1 = new ConsumerPartition(topicName, 1);
+        final ConsumerPartition partition2 = new ConsumerPartition(topicName, 2);
+        final ConsumerPartition partition3 = new ConsumerPartition(topicName, 3);
 
         // produce 10 msgs into even partitions, 11 into odd partitions
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -838,7 +838,7 @@ public class SidelineSpoutTest {
         produceRecords(numberOfMsgsPerPartition + 1, 3);
 
         // Some initial setup
-        final List<MyTopicPartition> expectedPartitions;
+        final List<ConsumerPartition> expectedPartitions;
         if (taskIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0 or 1
             expectedPartitions = Lists.newArrayList(partition0 , partition1);
@@ -904,7 +904,7 @@ public class SidelineSpoutTest {
 
     /**
      * This is an integration test of multiple SidelineConsumers.
-     * We stand up a topic with 4 partitions.
+     * We stand up a namespace with 4 partitions.
      * We then have a consumer size of 2.
      * We run the test once using consumerIndex 0
      *   - Verify we only consume from partitions 0 and 1
@@ -917,16 +917,16 @@ public class SidelineSpoutTest {
     public void testConsumeWithConsumerGroupOddNumberOfPartitions(final int taskIndex) {
         final int numberOfMsgsPerPartition = 10;
 
-        // Create a topic with 4 partitions
+        // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
         kafkaTestServer.createTopic(topicName, 5);
 
         // Define some topicPartitions
-        final MyTopicPartition partition0 = new MyTopicPartition(topicName, 0);
-        final MyTopicPartition partition1 = new MyTopicPartition(topicName, 1);
-        final MyTopicPartition partition2 = new MyTopicPartition(topicName, 2);
-        final MyTopicPartition partition3 = new MyTopicPartition(topicName, 3);
-        final MyTopicPartition partition4 = new MyTopicPartition(topicName, 4);
+        final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
+        final ConsumerPartition partition1 = new ConsumerPartition(topicName, 1);
+        final ConsumerPartition partition2 = new ConsumerPartition(topicName, 2);
+        final ConsumerPartition partition3 = new ConsumerPartition(topicName, 3);
+        final ConsumerPartition partition4 = new ConsumerPartition(topicName, 4);
 
         // produce 10 msgs into even partitions, 11 into odd partitions
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -936,7 +936,7 @@ public class SidelineSpoutTest {
         produceRecords(numberOfMsgsPerPartition, 4);
 
         // Some initial setup
-        final List<MyTopicPartition> expectedPartitions;
+        final List<ConsumerPartition> expectedPartitions;
         final int expectedNumberOfTuplesToConsume;
         if (taskIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0,1, or 2
@@ -1045,7 +1045,7 @@ public class SidelineSpoutTest {
 
         // Grab the messageId and validate it
         final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-        assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getTopic());
+        assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getNamespace());
         assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
         assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
 

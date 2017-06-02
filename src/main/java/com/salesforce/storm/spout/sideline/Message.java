@@ -32,8 +32,8 @@ public class Message {
         return messageId;
     }
 
-    public String getTopic() {
-        return getMessageId().getTopic();
+    public String getNamespace() {
+        return getMessageId().getNamespace();
     }
 
     public int getPartition() {
