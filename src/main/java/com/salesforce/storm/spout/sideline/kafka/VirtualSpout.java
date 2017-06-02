@@ -248,10 +248,10 @@ public class VirtualSpout implements DelegateSpout {
 
             // Clean up sideline request
             if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
-                for (final ConsumerPartition topicPartition : startingState.getTopicPartitions()) {
+                for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
                     consumer.getPersistenceAdapter().clearSidelineRequest(
                         getSidelineRequestIdentifier(),
-                        topicPartition.partition()
+                        consumerPartition.partition()
                     );
                 }
             }
@@ -657,12 +657,12 @@ public class VirtualSpout implements DelegateSpout {
         final ConsumerState currentState = consumer.getCurrentState();
 
         // Compare it against our ending state
-        for (ConsumerPartition topicPartition: currentState.getTopicPartitions()) {
+        for (final ConsumerPartition consumerPartition: currentState.getConsumerPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
-            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(topicPartition);
+            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
 
             // endingOffset contains the last offset we want to process.
-            final long endingOffset = endingState.getOffsetForNamespaceAndPartition(topicPartition);
+            final long endingOffset = endingState.getOffsetForNamespaceAndPartition(consumerPartition);
 
             // If the current offset is < ending offset
             if (currentOffset < endingOffset) {
@@ -670,8 +670,8 @@ public class VirtualSpout implements DelegateSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            if (consumer.unsubscribeTopicPartition(topicPartition)) {
-                logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", topicPartition, currentOffset, endingOffset);
+            if (consumer.unsubscribeTopicPartition(consumerPartition)) {
+                logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", consumerPartition, currentOffset, endingOffset);
             }
         }
 

@@ -49,9 +49,9 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
     }
 
     /**
-     * @return returns all of the TopicPartitions represented by the state.
+     * @return returns all of the ConsumerPartitions represented by the state.
      */
-    public Set<ConsumerPartition> getTopicPartitions() {
+    public Set<ConsumerPartition> getConsumerPartitions() {
         return state.keySet();
     }
 
@@ -74,7 +74,7 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
 
     @Override
     public Set<ConsumerPartition> keySet() {
-        return getTopicPartitions();
+        return getConsumerPartitions();
     }
 
     @Override
