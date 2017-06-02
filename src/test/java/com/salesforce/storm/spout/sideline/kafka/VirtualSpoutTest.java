@@ -593,7 +593,7 @@ public class VirtualSpoutTest {
 
         // Validate unsubscribed was called on our mock sidelineConsumer
         // Right now this is called twice... unsure if that is an issue. I don't think it is.
-        verify(mockConsumer, times(2)).unsubscribeTopicPartition(eq(new ConsumerPartition(topic, partition)));
+        verify(mockConsumer, times(2)).unsubscribeConsumerPartition(eq(new ConsumerPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
         verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset);
@@ -1156,7 +1156,7 @@ public class VirtualSpoutTest {
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
-        when(mockConsumer.unsubscribeTopicPartition(any(ConsumerPartition.class))).thenReturn(expectedResult);
+        when(mockConsumer.unsubscribeConsumerPartition(any(ConsumerPartition.class))).thenReturn(expectedResult);
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
@@ -1182,7 +1182,7 @@ public class VirtualSpoutTest {
         assertEquals("Got expected result from our method", expectedResult, result);
 
         // Validate mock call
-        verify(mockConsumer, times(1)).unsubscribeTopicPartition(eq(topicPartition));
+        verify(mockConsumer, times(1)).unsubscribeConsumerPartition(eq(topicPartition));
     }
 
     /**

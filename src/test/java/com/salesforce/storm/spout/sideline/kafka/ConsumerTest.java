@@ -819,7 +819,7 @@ public class ConsumerTest {
     }
 
     /**
-     * Tests that the unsubscribeTopicPartition() works as we expect.
+     * Tests that the unsubscribeConsumerPartition() works as we expect.
      * This test uses a namespace with a single partition that we are subscribed to.
      */
     @Test
@@ -849,7 +849,7 @@ public class ConsumerTest {
         assertTrue("Should contain our expected namespace/partition 0", assignedPartitions.contains(expectedTopicPartition));
 
         // Now unsub from our namespace partition
-        final boolean result = consumer.unsubscribeTopicPartition(expectedTopicPartition);
+        final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should have returned true", result);
 
         // Now ask for assigned partitions, should have none
@@ -877,7 +877,7 @@ public class ConsumerTest {
     }
 
     /**
-     * Tests that the unsubscribeTopicPartition() works as we expect.
+     * Tests that the unsubscribeConsumerPartition() works as we expect.
      * This test uses a namespace with multiple partitions that we are subscribed to.
      */
     @Test
@@ -914,7 +914,7 @@ public class ConsumerTest {
         final int expectedRemovePartition = 2;
         final ConsumerPartition toRemoveTopicPartition = new ConsumerPartition(expectedTopicName, expectedRemovePartition);
 
-        final boolean result = consumer.unsubscribeTopicPartition(toRemoveTopicPartition);
+        final boolean result = consumer.unsubscribeConsumerPartition(toRemoveTopicPartition);
         assertTrue("Should have returned true", result);
 
         // Now ask for assigned partitions, should have none
@@ -929,14 +929,14 @@ public class ConsumerTest {
         assertFalse("Should NOT contain our removed namespace/partition 0", assignedPartitions.contains(toRemoveTopicPartition));
 
         // Attempt to remove the same topicPartitionAgain, it should return false
-        final boolean result2 = consumer.unsubscribeTopicPartition(toRemoveTopicPartition);
+        final boolean result2 = consumer.unsubscribeConsumerPartition(toRemoveTopicPartition);
         assertFalse("Should return false the second time", result2);
 
         // Now remove another namespace/partition
         final int expectedRemovePartition2 = 4;
         final ConsumerPartition toRemoveTopicPartition2 = new ConsumerPartition(expectedTopicName, expectedRemovePartition2);
 
-        final boolean result3 = consumer.unsubscribeTopicPartition(toRemoveTopicPartition2);
+        final boolean result3 = consumer.unsubscribeConsumerPartition(toRemoveTopicPartition2);
         assertTrue("Should have returned true", result3);
 
         // Now ask for assigned partitions, should have none
@@ -1746,7 +1746,7 @@ public class ConsumerTest {
         producedRecords = produceRecords(expectedNumberOfMsgs, 0);
 
         // Now unsub from the partition
-        final boolean result = consumer.unsubscribeTopicPartition(expectedTopicPartition);
+        final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should be true", result);
 
         // Attempt to consume, but nothing should be returned, because we unsubscribed.
@@ -1842,7 +1842,7 @@ public class ConsumerTest {
         producedRecordsPartition1 = produceRecords(expectedNumberOfMsgsPerPartition, 1);
 
         // Now unsub from the partition 0
-        final boolean result = consumer.unsubscribeTopicPartition(expectedTopicPartition0);
+        final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition0);
         assertTrue("Should be true", result);
 
         // Attempt to consume, but nothing should be returned from partition 0, only partition 1

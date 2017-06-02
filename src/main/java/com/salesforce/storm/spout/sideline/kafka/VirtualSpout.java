@@ -611,7 +611,7 @@ public class VirtualSpout implements DelegateSpout {
      * @return boolean true if successfully unsubscribed, false if not.
      */
     public boolean unsubscribeTopicPartition(final String namespace, final int partition) {
-        final boolean result = consumer.unsubscribeTopicPartition(new ConsumerPartition(namespace, partition));
+        final boolean result = consumer.unsubscribeConsumerPartition(new ConsumerPartition(namespace, partition));
         if (result) {
             logger.info("Unsubscribed from partition [{}-{}]", namespace, partition);
         }
@@ -670,7 +670,7 @@ public class VirtualSpout implements DelegateSpout {
                 return;
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
-            if (consumer.unsubscribeTopicPartition(consumerPartition)) {
+            if (consumer.unsubscribeConsumerPartition(consumerPartition)) {
                 logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", consumerPartition, currentOffset, endingOffset);
             }
         }

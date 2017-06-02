@@ -387,7 +387,7 @@ public class Consumer {
     }
 
     /**
-     * Internal method that given a collection of namespace partitions will find the earliest
+     * Internal method that given a collection of topic partitions will find the earliest
      * offset for that partition, seek the underlying consumer to it, and reset its internal
      * offset tracking to that new position.
      *
@@ -462,22 +462,22 @@ public class Consumer {
     }
 
     /**
-     * Unsubscribe the consumer from a specific namespace/partition.
-     * @param topicPartitionToUnsubscribe the Topic/Partition to stop consuming from.
+     * Unsubscribe the consumer from a specific topic/partition.
+     * @param consumerPartitionToUnsubscribe the Topic/Partition to stop consuming from.
      * @return boolean, true if unsubscribed, false if it did not.
      */
-    public boolean unsubscribeTopicPartition(final ConsumerPartition topicPartitionToUnsubscribe) {
+    public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
         // Determine what we're currently assigned to,
         // We clone the returned set so we can modify it.
         Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
 
         // If it doesn't contain our namespace partition
-        if (!assignedTopicPartitions.contains(topicPartitionToUnsubscribe)) {
+        if (!assignedTopicPartitions.contains(consumerPartitionToUnsubscribe)) {
             // For now return false, but maybe we should throw exception?
             return false;
         }
         // Remove it
-        assignedTopicPartitions.remove(topicPartitionToUnsubscribe);
+        assignedTopicPartitions.remove(consumerPartitionToUnsubscribe);
 
         // Convert to TopicPartitions to interact with underlying kafka consumer.
         Set<TopicPartition> reassignedTopicPartitions = new HashSet<>();
@@ -582,12 +582,16 @@ public class Consumer {
         return getKafkaConsumer().metrics();
     }
 
+    /**
+     * @return Returns the maximum lag.
+     */
     public double getMaxLag() {
         for (Map.Entry<MetricName, ? extends Metric> entry : metrics().entrySet()) {
             if (entry.getKey().name().equals("records-lag-max")) {
                 return entry.getValue().value();
             }
         }
+        // Fall thru return value?
         return -1.0;
     }
 }
