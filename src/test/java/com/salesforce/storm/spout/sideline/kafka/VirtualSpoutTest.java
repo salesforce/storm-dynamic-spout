@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
@@ -17,7 +18,6 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import com.google.common.base.Charsets;
@@ -257,9 +257,6 @@ public class VirtualSpoutTest {
         // Call open
         virtualSpout.open();
 
-        // Validate that we asked factory manager for a deserializer
-        verify(mockFactoryManager, times(1)).createNewDeserializerInstance();
-
         // Validate that we asked factory manager for a failed msg retry manager
         verify(mockFactoryManager, times(1)).createNewFailedMsgRetryManagerInstance();
 
@@ -277,7 +274,7 @@ public class VirtualSpoutTest {
     @Test
     public void testNextTupleWhenConsumerReturnsNull() {
         // Define some inputs
-        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = null;
+        final Record expectedConsumerRecord = null;
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -333,11 +330,6 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 3;
         final long expectedOffset = 434323L;
-        final String expectedKey = "MyKey";
-        final String expectedValue = "MyValue";
-        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -348,12 +340,12 @@ public class VirtualSpoutTest {
         // Create factory manager
         final FactoryManager mockFactoryManager = createMockFactoryManager(nullDeserializer, null);
 
-        // Create a mock SidelineConsumer
+        // Create a mock Consumer
         final Consumer mockConsumer = mock(Consumer.class);
         when(mockConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
@@ -365,9 +357,6 @@ public class VirtualSpoutTest {
 
         // Verify its null
         assertNull("Should be null",  result);
-
-        // Verify ack was called on the tuple
-        verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
     }
 
     /**
@@ -383,9 +372,7 @@ public class VirtualSpoutTest {
         final String expectedConsumerId = "MyConsumerId";
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
+        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -414,6 +401,7 @@ public class VirtualSpoutTest {
             mockConsumer,
             null, null
         );
+        // @TODO Lemon - need to refactor this to not use your Deprecated thing
         virtualSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
@@ -440,9 +428,7 @@ public class VirtualSpoutTest {
         final String expectedConsumerId = "MyConsumerId";
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
+        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
 
         // Define expected result
         final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
@@ -488,7 +474,7 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * 1. publish a bunch of messages to a namespace with a single partition.
+     * 1. publish a bunch of messages to a topic with a single partition.
      * 2. create a VirtualSideLineSpout where we explicitly define an ending offset less than the total msgs published
      * 3. Consume from the Spout (call nextTuple())
      * 4. Ensure that we stop getting tuples back after we exceed the ending state offset.
@@ -505,14 +491,14 @@ public class VirtualSpoutTest {
         final long afterOffset = (endingOffset + 100);
 
         // Create a ConsumerRecord who's offset is BEFORE the ending offset, this should pass
-        final ConsumerRecord<byte[], byte[]> consumerRecordBeforeEnd = new ConsumerRecord<>(topic, partition, beforeOffset, "before-key".getBytes(Charsets.UTF_8), "before-value".getBytes(Charsets.UTF_8));
+        final Record consumerRecordBeforeEnd = new Record(topic, partition, beforeOffset, new Values("before-key", "before-value"));
 
         // This ConsumerRecord is EQUAL to the limit, and thus should pass.
-        final ConsumerRecord<byte[], byte[]> consumerRecordEqualEnd = new ConsumerRecord<>(topic, partition, endingOffset, "equal-key".getBytes(Charsets.UTF_8), "equal-value".getBytes(Charsets.UTF_8));
+        final Record consumerRecordEqualEnd = new Record(topic, partition, endingOffset, new Values("equal-key", "equal-value"));
 
         // These two should exceed the limit (since its >) and nothing should be returned.
-        final ConsumerRecord<byte[], byte[]> consumerRecordAfterEnd = new ConsumerRecord<>(topic, partition, afterOffset, "after-key".getBytes(Charsets.UTF_8), "after-value".getBytes(Charsets.UTF_8));
-        final ConsumerRecord<byte[], byte[]> consumerRecordAfterEnd2 = new ConsumerRecord<>(topic, partition, afterOffset + 1, "after-key2".getBytes(Charsets.UTF_8), "after-value2".getBytes(Charsets.UTF_8));
+        final Record consumerRecordAfterEnd = new Record(topic, partition, afterOffset, new Values("after-key", "after-value"));
+        final Record consumerRecordAfterEnd2 = new Record(topic, partition, afterOffset + 1, new Values("after-key2", "after-value2"));
 
         // Define expected results returned
         final Message expectedMessageBeforeEndingOffset = new Message(new MessageId(topic, partition, beforeOffset, "ConsumerId"), new Values("before-key", "before-value"));
@@ -622,9 +608,7 @@ public class VirtualSpoutTest {
         final String expectedConsumerId = "MyConsumerId";
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
+        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
 
         // Define expected result
         final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
@@ -633,9 +617,7 @@ public class VirtualSpoutTest {
         final long unexpectedOffset = expectedOffset + 2L;
         final String unexpectedKey = "NotMyKey";
         final String unexpectedValue = "NotMyValue";
-        final byte[] unexpectedKeyBytes = unexpectedKey.getBytes(Charsets.UTF_8);
-        final byte[] unexpectedValueBytes = unexpectedValue.getBytes(Charsets.UTF_8);
-        final ConsumerRecord<byte[], byte[]> unexpectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, unexpectedOffset, unexpectedKeyBytes, unexpectedValueBytes);
+        final Record unexpectedConsumerRecord = new Record(expectedTopic, expectedPartition, unexpectedOffset, new Values(unexpectedKey, unexpectedValue));
 
         // Define unexpected result
         final Message unexpectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, unexpectedOffset, expectedConsumerId), new Values(unexpectedKey, unexpectedValue));
@@ -849,7 +831,7 @@ public class VirtualSpoutTest {
 
         // No interactions w/ our mock sideline consumer for committing offsets
         verify(mockConsumer, never()).commitOffset(any(ConsumerPartition.class), anyLong());
-        verify(mockConsumer, never()).commitOffset(any(ConsumerRecord.class));
+        verify(mockConsumer, never()).commitOffset(any(Record.class));
         verify(mockRetryManager, never()).acked(anyObject());
     }
 
@@ -1373,7 +1355,7 @@ public class VirtualSpoutTest {
         final String expectedValue = "MyValue";
         final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
         final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final ConsumerRecord<byte[], byte[]> expectedConsumerRecord = new ConsumerRecord<>(expectedTopic, expectedPartition, expectedOffset, expectedKeyBytes, expectedValueBytes);
+        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
 
         // Define expected result
         final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));

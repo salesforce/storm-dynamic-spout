@@ -9,15 +9,14 @@ import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,11 +59,6 @@ public class VirtualSpout implements DelegateSpout {
      * Our underlying Kafka Consumer.
      */
     private Consumer consumer;
-
-    /**
-     * Our Deserializer, it deserializes messages from Kafka into objects.
-     */
-    private Deserializer deserializer;
 
     /**
      * Filter chain applied to messages for this virtual spout.
@@ -188,9 +182,6 @@ public class VirtualSpout implements DelegateSpout {
         logger.info("Open has starting state: {}", startingState);
         logger.info("Open has ending state: {}", endingState);
 
-        // Create our deserializer
-        deserializer = getFactoryManager().createNewDeserializerInstance();
-
         // Create our failed msg retry manager & open
         retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
         retryManager.open(getSpoutConfig());
@@ -198,6 +189,9 @@ public class VirtualSpout implements DelegateSpout {
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
         if (consumer == null) {
+            // Create our deserializer
+            final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
+
             // Create persistence manager instance and open.
             final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
             persistenceAdapter.open(getSpoutConfig());
@@ -214,7 +208,7 @@ public class VirtualSpout implements DelegateSpout {
             );
 
             // Create sideline consumer
-            consumer = new Consumer(consumerConfig, persistenceAdapter);
+            consumer = new Consumer(consumerConfig, persistenceAdapter, deserializer);
         }
 
         // Open the consumer
@@ -226,7 +220,6 @@ public class VirtualSpout implements DelegateSpout {
         nextTupleTimeBuckets.put("nextRecord", 0L);
         nextTupleTimeBuckets.put("messageId", 0L);
         nextTupleTimeBuckets.put("doesExceedEndOffset", 0L);
-        nextTupleTimeBuckets.put("deserialize", 0L);
         nextTupleTimeBuckets.put("message", 0L);
         nextTupleTimeBuckets.put("totalTime", 0L);
         nextTupleTimeBuckets.put("totalCalls", 0L);
@@ -297,7 +290,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Grab the next message from kafka
         startTime = System.currentTimeMillis();
-        ConsumerRecord<byte[], byte[]> record = consumer.nextRecord();
+        final Record record = consumer.nextRecord();
         if (record == null) {
             logger.debug("Unable to find any new messages from consumer");
             return null;
@@ -306,7 +299,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Create a Tuple Message Id
         startTime = System.currentTimeMillis();
-        final MessageId messageId = new MessageId(record.topic(), record.partition(), record.offset(), getVirtualSpoutId());
+        final MessageId messageId = new MessageId(record.getNamespace(), record.getPartition(), record.getOffset(), getVirtualSpoutId());
         nextTupleTimeBuckets.put("messageId", nextTupleTimeBuckets.get("messageId") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple exceeds our ending offset
@@ -323,20 +316,9 @@ public class VirtualSpout implements DelegateSpout {
         }
         nextTupleTimeBuckets.put("doesExceedEndOffset", nextTupleTimeBuckets.get("doesExceedEndOffset") + (System.currentTimeMillis() - startTime));
 
-        // Attempt to deserialize.
-        startTime = System.currentTimeMillis();
-        final Values deserializedValues = deserializer.deserialize(record.topic(), record.partition(), record.offset(), record.key(), record.value());
-        if (deserializedValues == null) {
-            // Failed to deserialize, just ack and return null?
-            logger.error("Deserialization returned null");
-            ack(messageId);
-            return null;
-        }
-        nextTupleTimeBuckets.put("deserialize", nextTupleTimeBuckets.get("deserialize") + (System.currentTimeMillis() - startTime));
-
         // Create Message
         startTime = System.currentTimeMillis();
-        final Message message = new Message(messageId, deserializedValues);
+        final Message message = new Message(messageId, record.getValues());
         nextTupleTimeBuckets.put("message", nextTupleTimeBuckets.get("message") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?

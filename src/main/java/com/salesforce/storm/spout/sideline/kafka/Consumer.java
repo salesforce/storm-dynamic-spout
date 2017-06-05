@@ -6,6 +6,9 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
+import com.salesforce.storm.spout.sideline.consumer.Record;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -15,6 +18,7 @@ import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +80,11 @@ public class Consumer {
     private final PersistenceAdapter persistenceAdapter;
 
     /**
+     * Our Deserializer, it deserializes messages from Kafka into objects.
+     */
+    private final Deserializer deserializer;
+
+    /**
      * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
      * instance to track its own offset.  The state of these are what gets persisted via the ConsumerStateManager.
      */
@@ -95,22 +104,26 @@ public class Consumer {
 
     /**
      * Constructor.
-     * @param consumerConfig - Configuration for our consumer
-     * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param consumerConfig Configuration for our consumer
+     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param deserializer Deserializer instance to use.
+     * @todo - Refactor this to build the Deserializer, persistence adapter based on a config.
      */
-    public Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter) {
+    public Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer) {
         this.consumerConfig = consumerConfig;
         this.persistenceAdapter = persistenceAdapter;
+        this.deserializer = deserializer;
     }
 
     /**
      * This constructor is used to inject a mock KafkaConsumer for tests.
-     * @param consumerConfig - Configuration for our consumer
-     * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
-     * @param kafkaConsumer - Inject a mock KafkaConsumer for tests.
+     * @param consumerConfig Configuration for our consumer
+     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param kafkaConsumer Inject a mock KafkaConsumer for tests.
+     * @todo - Refactor this to build the Deserializer, persistence adapter based on a config.
      */
-    protected Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
-        this(consumerConfig, persistenceAdapter);
+    protected Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+        this(consumerConfig, persistenceAdapter, deserializer);
         this.kafkaConsumer = kafkaConsumer;
     }
 
@@ -202,9 +215,9 @@ public class Consumer {
 
     /**
      * Ask the consumer for the next message from Kafka.
-     * @return Message - the next message read, or null if no such msg is available.
+     * @return The next Record read from kafka, or null if no such msg is available.
      */
-    public ConsumerRecord<byte[], byte[]> nextRecord() {
+    public Record nextRecord() {
         // Fill our buffer if its empty
         fillBuffer();
 
@@ -215,15 +228,32 @@ public class Consumer {
             return null;
         }
 
-        // Iterate to next result and return
-        ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
+        // Iterate to next result
+        final ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
+
+        // Create consumerPartition instance
+        final ConsumerPartition consumerPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
 
         // Track this new message's state
-        ConsumerPartition topicPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
-        partitionStateManagers.get(topicPartition).startOffset(nextRecord.offset());
+        partitionStateManagers.get(consumerPartition).startOffset(nextRecord.offset());
+
+        // Deserialize into values
+        final Values deserializedValues = getDeserializer().deserialize(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), nextRecord.key(), nextRecord.value());
+
+        // Handle null
+        if (deserializedValues == null) {
+            // Failed to deserialize, just ack and return null?
+            logger.debug("Deserialization returned null");
+
+            // Mark as completed.
+            commitOffset(consumerPartition, nextRecord.offset());
+
+            // return null
+            return null;
+        }
 
         // Return the record
-        return nextRecord;
+        return new Record(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), deserializedValues);
     }
 
     /**
@@ -251,17 +281,17 @@ public class Consumer {
 
     /**
      * Mark a particular message as having been successfully processed.
-     * @param consumerRecord the consumer record to mark as completed.
+     * @param record The record to mark as completed.
      */
-    public void commitOffset(final ConsumerRecord consumerRecord) {
-        commitOffset(new ConsumerPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
+    public void commitOffset(final Record record) {
+        commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
     }
 
     /**
      * Conditionally flushes the consumer state to the persistence layer based
      * on a time-out condition.
      *
-     * @return boolean - true if we flushed state, false if we didn't
+     * @return True if we flushed state, false if we didn't
      */
     protected boolean timedFlushConsumerState() {
         // If we have auto commit off, don't commit
@@ -289,7 +319,7 @@ public class Consumer {
 
     /**
      * Forces the Consumer's current state to be persisted.
-     * @return - A copy of the state that was persisted.
+     * @return A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
         // Create a consumer state builder.
@@ -355,7 +385,7 @@ public class Consumer {
      *
      * This means when we roll back, we may replay some messages :/
      *
-     * @param outOfRangeException - the exception that was raised by the consumer.
+     * @param outOfRangeException The exception that was raised by the consumer.
      */
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
         // Grab the partitions that had errors
@@ -393,7 +423,7 @@ public class Consumer {
      *
      * This should be used when no state exists for a given partition, OR if the offset
      * requested was too old.
-     * @param topicPartitions - the collection of offsets to reset offsets for to the earliest position.
+     * @param topicPartitions The collection of offsets to reset offsets for to the earliest position.
      */
     private void resetPartitionsToEarliest(Collection<TopicPartition> topicPartitions) {
         // Seek to earliest for each
@@ -432,7 +462,7 @@ public class Consumer {
     }
 
     /**
-     * @return - get the defined consumer config.
+     * @return The defined consumer config.
      */
     public ConsumerConfig getConsumerConfig() {
         return consumerConfig;
@@ -446,7 +476,7 @@ public class Consumer {
     }
 
     /**
-     * @return - A set of all the partitions currently subscribed to.
+     * @return A set of all the partitions currently subscribed to.
      */
     public Set<ConsumerPartition> getAssignedPartitions() {
         // Create our return set using abstracted TopicPartition
@@ -496,7 +526,7 @@ public class Consumer {
      * Returns what the consumer considers its current "finished" state to be.  This means the highest
      * offsets for all partitions its consuming that it has tracked as having been complete.
      *
-     * @return - Returns the Consumer's current state.
+     * @return The Consumer's current state.
      */
     public ConsumerState getCurrentState() {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
@@ -508,22 +538,29 @@ public class Consumer {
     }
 
     /**
-     * @return - returns our unique consumer identifier.
+     * @return returns our unique consumer identifier.
      */
     public String getConsumerId() {
         return getConsumerConfig().getConsumerId();
     }
 
     /**
-     * @return - return our clock implementation.  Useful for testing.
+     * @return return our clock implementation.  Useful for testing.
      */
     protected Clock getClock() {
         return clock;
     }
 
     /**
+     * @return Deserializer instance.
+     */
+    Deserializer getDeserializer() {
+        return deserializer;
+    }
+
+    /**
      * For injecting a clock implementation.  Useful for testing.
-     * @param clock - the clock implementation to use.
+     * @param clock the clock implementation to use.
      */
     protected void setClock(Clock clock) {
         this.clock = clock;
@@ -583,7 +620,7 @@ public class Consumer {
     }
 
     /**
-     * @return Returns the maximum lag.
+     * @return The maximum lag of the consumer.
      */
     public double getMaxLag() {
         for (Map.Entry<MetricName, ? extends Metric> entry : metrics().entrySet()) {

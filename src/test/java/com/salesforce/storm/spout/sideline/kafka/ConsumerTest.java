@@ -4,6 +4,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.FactoryManager;
+import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.consumer.Record;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
@@ -17,6 +23,9 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import com.google.common.base.Charsets;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -34,6 +43,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -125,17 +135,22 @@ public class ConsumerTest {
         final ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create deserializer
+        final Deserializer deserializer = new Utf8StringDeserializer();
+
         // Call constructor
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
 
         // Validate our instances got set
         assertNotNull("Config is not null", consumer.getConsumerConfig());
         assertEquals(config, consumer.getConsumerConfig());
         assertNotNull("PersistenceAdapter is not null", consumer.getPersistenceAdapter());
         assertEquals(persistenceAdapter, consumer.getPersistenceAdapter());
+        assertNotNull("Deserializer is not null", consumer.getDeserializer());
+        assertEquals(deserializer, consumer.getDeserializer());
     }
 
     /**
@@ -157,6 +172,9 @@ public class ConsumerTest {
         // Setup our config
         final ConsumerConfig config = getDefaultSidelineConsumerConfig();
 
+        // Deserializer instance
+        final Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
 
@@ -174,7 +192,7 @@ public class ConsumerTest {
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, deserializer, mockKafkaConsumer);
 
         // Now call open
         consumer.open();
@@ -205,6 +223,9 @@ public class ConsumerTest {
         // Create mock persistence manager so we can determine if it was called
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
+        // Create mock deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Create a mock clock so we can control time (bwahaha)
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
@@ -215,7 +236,7 @@ public class ConsumerTest {
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // Call constructor
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
         consumer.setClock(mockClock);
 
         consumer.open();
@@ -280,6 +301,9 @@ public class ConsumerTest {
         // Create mock persistence manager so we can determine if it was called
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
+        // Create mock deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Create a mock clock so we can control time (bwahaha)
         Instant instant = Clock.systemUTC().instant();
         Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
@@ -290,7 +314,7 @@ public class ConsumerTest {
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // Call constructor
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer);
         consumer.setClock(mockClock);
 
         consumer.open();
@@ -375,11 +399,14 @@ public class ConsumerTest {
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
 
         // Now call open
         consumer.open();
@@ -448,6 +475,9 @@ public class ConsumerTest {
         // Create instance of a PersistenceAdapter, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
@@ -457,7 +487,7 @@ public class ConsumerTest {
         when(mockKafkaConsumer.position(kafkaTopicPartition2)).thenReturn(earliestPositionPartition2);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
 
         // Now call open
         consumer.open();
@@ -532,11 +562,14 @@ public class ConsumerTest {
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(0))).thenReturn(lastCommittedOffset);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
 
         // Now call open
         consumer.open();
@@ -598,13 +631,16 @@ public class ConsumerTest {
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(lastCommittedOffsetPartition1);
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
 
         // Now call open
         consumer.open();
@@ -703,8 +739,11 @@ public class ConsumerTest {
         when(mockKafkaConsumer.position(kafkaTopicPartition1)).thenReturn(earliestOffsetPartition1);
         when(mockKafkaConsumer.position(kafkaTopicPartition3)).thenReturn(earliestOffsetPartition3);
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockKafkaConsumer);
+        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
 
         // Now call open
         consumer.open();
@@ -768,8 +807,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -801,8 +843,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -834,8 +879,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -894,8 +942,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -987,27 +1038,42 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
-            assertNotNull(foundRecord);
+            // Get the next record
+            final Record foundRecord = consumer.nextRecord();
 
             // Compare to what we expected
-            ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            final ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
+
+            // Validate em
+            validateRecordMatchesInput(expectedRecord, foundRecord);
         }
 
         // Next one should return null
-        ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+        Record foundRecord = consumer.nextRecord();
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         // Close out consumer
         consumer.close();
+    }
+
+    private void validateRecordMatchesInput(ProducedKafkaRecord<byte[], byte[]> expectedRecord, Record foundRecord) {
+        assertNotNull(foundRecord);
+
+        // Get values from the generated Tuple
+        final String key = (String) foundRecord.getValues().get(0);
+        final String value = (String) foundRecord.getValues().get(1);
+
+        assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), key);
+        assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), value);
     }
 
     /**
@@ -1032,25 +1098,29 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
-            assertNotNull(foundRecord);
+            // Get next record from consumer
+            final Record foundRecord = consumer.nextRecord();
 
             // Compare to what we expected
             ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+
+            // Validate we got what we expected
+            validateRecordMatchesInput(expectedRecord, foundRecord);
 
             // Ack this message
             consumer.commitOffset(foundRecord);
 
             // Verify it got updated to our current offset
-            validateConsumerState(consumer.flushConsumerState(), partition0, foundRecord.offset());
+            validateConsumerState(consumer.flushConsumerState(), partition0, foundRecord.getOffset());
         }
         logger.info("Consumer State {}", consumer.flushConsumerState());
 
@@ -1080,21 +1150,27 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Read from namespace, verify we get what we expect
-        List<ConsumerRecord> foundRecords = Lists.newArrayList();
+        List<Record> foundRecords = Lists.newArrayList();
         for (int x=0; x<numberOfRecordsToProduce; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
-            assertNotNull(foundRecord);
-            foundRecords.add(foundRecord);
+            // Get next record from consumer
+            final Record foundRecord = consumer.nextRecord();
 
-            // Compare to what we expected
+            // Get the next produced record that we expect
             ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+
+            // Validate we got what we expected
+            validateRecordMatchesInput(expectedRecord, foundRecord);
+
+            // Add to our found records
+            foundRecords.add(foundRecord);
         }
         logger.info("Consumer State {}", consumer.flushConsumerState());
 
@@ -1102,7 +1178,7 @@ public class ConsumerTest {
         validateConsumerState(consumer.flushConsumerState(), partition0, -1L);
 
         // Now ack them one by one
-        for (ConsumerRecord foundRecord : foundRecords) {
+        for (Record foundRecord : foundRecords) {
             consumer.commitOffset(foundRecord);
         }
 
@@ -1139,21 +1215,27 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Read from namespace, verify we get what we expect
-        List<ConsumerRecord> foundRecords = Lists.newArrayList();
+        List<Record> foundRecords = Lists.newArrayList();
         for (int x=0; x<numberOfRecordsToProduce; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
-            assertNotNull(foundRecord);
-            foundRecords.add(foundRecord);
+            // Get next record from consumer
+            final Record foundRecord = consumer.nextRecord();
 
-            // Compare to what we expected
+            // Get the next produced record that we expect
             ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+
+            // Validate we got what we expected
+            validateRecordMatchesInput(expectedRecord, foundRecord);
+
+            // Add to our found records list
+            foundRecords.add(foundRecord);
         }
         logger.info("Consumer State {}", consumer.flushConsumerState());
 
@@ -1205,7 +1287,67 @@ public class ConsumerTest {
     }
 
     /**
-     * Produce 10 messages into a kafka namespace: offsets [0-9]
+     * Tests what happens when you call nextRecord(), and the deserializer fails to
+     * deserialize (returns null), then nextRecord() should return null.
+     * Additionally it should mark the message as completed.
+     */
+    @Test
+    public void testNextTupleWhenSerializerFailsToDeserialize() {
+        // Define a deserializer that always returns null
+        final Deserializer nullDeserializer = new Deserializer() {
+            @Override
+            public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
+                return null;
+            }
+
+            @Override
+            public Fields getOutputFields() {
+                return new Fields();
+            }
+        };
+
+        // Define how many records to produce
+        final int numberOfRecordsToProduce = 5;
+
+        final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
+
+        // Produce 5 entries to the namespace.
+        final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, partition0.partition());
+
+        // Setup our config
+        ConsumerConfig config = getDefaultSidelineConsumerConfig();
+
+        // Create our Persistence Manager
+        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create our consumer
+        Consumer consumer = new Consumer(config, persistenceAdapter, nullDeserializer);
+        consumer.open();
+
+        // Read from namespace, verify we get what we expect
+        for (int x=0; x<numberOfRecordsToProduce; x++) {
+            // Get the next record
+            final Record foundRecord = consumer.nextRecord();
+
+            // It should be null
+            assertNull("Null Deserializer produced null return value", foundRecord);
+
+            // Validate our consumer position should increase.
+            validateConsumerState(consumer.flushConsumerState(), partition0, x);
+        }
+
+        // Next one should return null
+        Record foundRecord = consumer.nextRecord();
+        assertNull("Should have nothing new to consume and be null", foundRecord);
+
+        // Close out consumer
+        consumer.close();
+    }
+
+
+    /**
+     * Produce 10 messages into a kafka topic: offsets [0-9]
      * Setup our SidelineConsumer such that its pre-existing state says to start at offset 4
      * Consume using the SidelineConsumer, verify we only get the last 5 messages back.
      */
@@ -1213,9 +1355,6 @@ public class ConsumerTest {
     public void testConsumerWithInitialStateToSkipMessages() {
         // Define how many records to produce
         final int numberOfRecordsToProduce = 10;
-
-        // Define how many records we expect to consume
-        final int numberOfRecordsToConsume = 5;
 
         // Produce entries to the namespace.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
@@ -1234,26 +1373,27 @@ public class ConsumerTest {
         // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
         persistenceAdapter.persistConsumerState(config.getConsumerId(), 0, 4L);
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Read from namespace, verify we get what we expect, we should only get the last 5 records.
-        List<ConsumerRecord<byte[], byte[]>> consumedRecords = asyncConsumeMessages(consumer, 5);
+        List<Record> consumedRecords = asyncConsumeMessages(consumer, 5);
         Iterator<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecordsIterator = expectedProducedRecords.iterator();
-        for (ConsumerRecord<byte[], byte[]> foundRecord: consumedRecords) {
+        for (Record foundRecord: consumedRecords) {
             // Get the produced record we expected to get back.
             ProducedKafkaRecord<byte[], byte[]> expectedRecord = expectedProducedRecordsIterator.next();
 
-            // Validate it
-            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            // Validate we got what we expected
+            validateRecordMatchesInput(expectedRecord, foundRecord);
         }
 
         // Additional calls to nextRecord() should return null
         for (int x=0; x<2; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+            Record foundRecord = consumer.nextRecord();
             assertNull("Should have nothing new to consume and be null", foundRecord);
         }
 
@@ -1262,9 +1402,9 @@ public class ConsumerTest {
     }
 
     /**
-     * 1. Setup a consumer to consume from a namespace with 2 partitions.
+     * 1. Setup a consumer to consume from a topic with 2 partitions.
      * 2. Produce several messages into both partitions
-     * 3. Consume all of the msgs from the namespace.
+     * 3. Consume all of the msgs from the topic.
      * 4. Ack in various orders for the msgs
      * 5. Validate that the state is correct.
      */
@@ -1287,8 +1427,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1312,11 +1455,11 @@ public class ConsumerTest {
         int partition0Index = 0;
         int partition1Index = 0;
         for (int x=0; x<(expectedNumberOfMsgsPerPartition * 2); x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+            Record foundRecord = consumer.nextRecord();
             assertNotNull(foundRecord);
 
             // Determine which partition its from
-            final int partitionSource = foundRecord.partition();
+            final int partitionSource = foundRecord.getPartition();
             assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
 
             ProducedKafkaRecord<byte[], byte[]> expectedRecord;
@@ -1329,12 +1472,10 @@ public class ConsumerTest {
             }
 
             // Compare to what we expected
-            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            validateRecordMatchesInput(expectedRecord, foundRecord);
         }
         // Next one should return null
-        ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+        Record foundRecord = consumer.nextRecord();
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         logger.info("Consumer State {}", consumer.flushConsumerState());
@@ -1391,7 +1532,7 @@ public class ConsumerTest {
 
     /**
      * This is an integration test of multiple SidelineConsumers.
-     * We stand up a namespace with 4 partitions.
+     * We stand up a topic with 4 partitions.
      * We then have a consumer size of 2.
      * We run the test once using consumerIndex 0
      *   - Verify we only consume from partitions 0 and 1
@@ -1448,8 +1589,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1464,13 +1608,12 @@ public class ConsumerTest {
         assertTrue("Should contain 2nd partition", assignedPartitions.contains(expectedPartitions.get(1)));
 
         // Attempt to consume 21 records
-        // Read from namespace, verify we get what we expect
+        // Read from topic, verify we get what we expect
         for (int x=0; x<(numberOfMsgsPerPartition * 2) + 1; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
-            assertNotNull(foundRecord);
+            Record foundRecord = consumer.nextRecord();
 
             // Validate its from partition 0 or 1
-            final int foundPartitionId = foundRecord.partition();
+            final int foundPartitionId = foundRecord.getPartition();
             assertTrue("Should be from one of our expected partitions", foundPartitionId == expectedPartitions.get(0).partition() || foundPartitionId == expectedPartitions.get(1).partition());
 
             // Lets ack the tuple as we go
@@ -1479,7 +1622,7 @@ public class ConsumerTest {
 
         // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
         for (int x=0; x<2; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+            Record foundRecord = consumer.nextRecord();
             assertNull("Should have nothing new to consume and be null", foundRecord);
         }
 
@@ -1591,8 +1734,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1610,11 +1756,11 @@ public class ConsumerTest {
         // Attempt to consume records
         // Read from namespace, verify we get what we expect
         for (int x=0; x<expectedRecordsToConsume; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+            Record foundRecord = consumer.nextRecord();
             assertNotNull(foundRecord);
 
             // Validate its from a partition we expect
-            final int foundPartitionId = foundRecord.partition();
+            final int foundPartitionId = foundRecord.getPartition();
             assertTrue("Should be from one of our expected partitions", expectedPartitions.contains(new ConsumerPartition(topicName, foundPartitionId)));
 
             // Lets ack the tuple as we go
@@ -1623,7 +1769,7 @@ public class ConsumerTest {
 
         // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
         for (int x=0; x<2; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+            Record foundRecord = consumer.nextRecord();
             assertNull("Should have nothing new to consume and be null", foundRecord);
         }
 
@@ -1688,10 +1834,10 @@ public class ConsumerTest {
     }
 
     /**
-     * 1. Setup a consumer to consume from a namespace with 1 partition.
+     * 1. Setup a consumer to consume from a topic with 1 partition.
      * 2. Produce several messages into that partition.
-     * 3. Consume all of the msgs from the namespace.
-     * 4. Produce more msgs into the namespace.
+     * 3. Consume all of the msgs from the topic.
+     * 4. Produce more msgs into the topic.
      * 5. Unsubscribe from that partition.
      * 6. Attempt to consume more msgs, verify none are found.
      */
@@ -1707,8 +1853,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1728,18 +1877,13 @@ public class ConsumerTest {
         // Attempt to consume them
         // Read from namespace, verify we get what we expect
         for (int x=0; x<expectedNumberOfMsgs; x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
-            assertNotNull(foundRecord);
-
-            // Compare to what we expected
+            Record foundRecord = consumer.nextRecord();
             ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecords.get(x);
-            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            validateRecordMatchesInput(expectedRecord, foundRecord);
         }
 
         // Next one should return null
-        ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+        Record foundRecord = consumer.nextRecord();
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         // Now produce 5 more msgs
@@ -1786,8 +1930,11 @@ public class ConsumerTest {
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Ask the underlying consumer for our assigned partitions.
@@ -1811,11 +1958,11 @@ public class ConsumerTest {
         int partition0Index = 0;
         int partition1Index = 0;
         for (int x=0; x<(expectedNumberOfMsgsPerPartition * 2); x++) {
-            ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+            Record foundRecord = consumer.nextRecord();
             assertNotNull(foundRecord);
 
             // Determine which partition its from
-            final int partitionSource = foundRecord.partition();
+            final int partitionSource = foundRecord.getPartition();
             assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
 
             ProducedKafkaRecord<byte[], byte[]> expectedRecord;
@@ -1828,13 +1975,11 @@ public class ConsumerTest {
             }
 
             // Compare to what we expected
-            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            validateRecordMatchesInput(expectedRecord, foundRecord);
         }
 
         // Next one should return null
-        ConsumerRecord<byte[], byte[]> foundRecord = consumer.nextRecord();
+        Record foundRecord = consumer.nextRecord();
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         // Now produce 5 more msgs into each partition
@@ -1851,15 +1996,13 @@ public class ConsumerTest {
             assertNotNull(foundRecord);
 
             // Determine which partition its from, should be only 1
-            assertEquals("Should be partition 1", 1, foundRecord.partition());
+            assertEquals("Should be partition 1", 1, foundRecord.getPartition());
 
             // Validate it
             ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecordsPartition1.get(x);
 
             // Compare to what we expected
-            logger.info("Expected {} Actual {}", expectedRecord.getKey(), foundRecord.key());
-            assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), new String(foundRecord.key(), Charsets.UTF_8));
-            assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), new String(foundRecord.value(), Charsets.UTF_8));
+            validateRecordMatchesInput(expectedRecord, foundRecord);
         }
 
         // Next one should return null
@@ -1932,8 +2075,11 @@ public class ConsumerTest {
         // it should reset to earliest, meaning offset 0 in this case.
         persistenceAdapter.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
 
+        // Create our Deserializer, it deserializes into Values(<key>,<value>)
+        Deserializer deserializer = new Utf8StringDeserializer();
+
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter);
+        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
         consumer.open();
 
         // Validate PartitionOffsetManager is correctly setup
@@ -1950,18 +2096,21 @@ public class ConsumerTest {
             "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
         );
 
-        List<ConsumerRecord> records = Lists.newArrayList();
-        ConsumerRecord consumerRecord;
+        List<Record> records = Lists.newArrayList();
+        Record consumerRecord;
+        int attempts = 0;
         do {
             consumerRecord = consumer.nextRecord();
             if (consumerRecord != null) {
-                logger.info("Found offset {} on {}", consumerRecord.offset(), consumerRecord.partition());
+                logger.info("Found offset {} on {}", consumerRecord.getOffset(), consumerRecord.getPartition());
                 records.add(consumerRecord);
 
                 // Remove from our expected set
-                expectedValues.remove("partition" + consumerRecord.partition() + "-offset" + consumerRecord.offset());
+                expectedValues.remove("partition" + consumerRecord.getPartition() + "-offset" + consumerRecord.getOffset());
+            } else {
+                attempts++;
             }
-        } while (consumerRecord != null);
+        } while (attempts <= 2);
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
@@ -2016,13 +2165,13 @@ public class ConsumerTest {
         return config;
     }
 
-    private List<ConsumerRecord<byte[], byte[]>> asyncConsumeMessages(final Consumer consumer, final int numberOfMessagesToConsume) {
-        List<ConsumerRecord<byte[], byte[]>> consumedMessages = Lists.newArrayList();
+    private List<Record> asyncConsumeMessages(final Consumer consumer, final int numberOfMessagesToConsume) {
+        List<Record> consumedMessages = Lists.newArrayList();
 
         await()
             .atMost(5, TimeUnit.SECONDS)
             .until(() -> {
-                ConsumerRecord<byte[], byte[]> nextRecord = consumer.nextRecord();
+                Record nextRecord = consumer.nextRecord();
                 if (nextRecord != null) {
                     consumedMessages.add(nextRecord);
                 }
