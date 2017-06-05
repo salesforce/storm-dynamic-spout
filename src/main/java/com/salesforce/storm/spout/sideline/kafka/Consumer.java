@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
 import com.salesforce.storm.spout.sideline.consumer.Record;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -79,6 +80,11 @@ public class Consumer {
     private final PersistenceAdapter persistenceAdapter;
 
     /**
+     * Our Deserializer, it deserializes messages from Kafka into objects.
+     */
+    private final Deserializer deserializer;
+
+    /**
      * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
      * instance to track its own offset.  The state of these are what gets persisted via the ConsumerStateManager.
      */
@@ -101,9 +107,10 @@ public class Consumer {
      * @param consumerConfig - Configuration for our consumer
      * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
      */
-    public Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter) {
+    public Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, Deserializer deserializer) {
         this.consumerConfig = consumerConfig;
         this.persistenceAdapter = persistenceAdapter;
+        this.deserializer = deserializer;
     }
 
     /**
@@ -112,8 +119,8 @@ public class Consumer {
      * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
      * @param kafkaConsumer - Inject a mock KafkaConsumer for tests.
      */
-    protected Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
-        this(consumerConfig, persistenceAdapter);
+    protected Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, Deserializer deserializer, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+        this(consumerConfig, persistenceAdapter, deserializer);
         this.kafkaConsumer = kafkaConsumer;
     }
 
@@ -205,7 +212,7 @@ public class Consumer {
 
     /**
      * Ask the consumer for the next message from Kafka.
-     * @return Message - the next message read, or null if no such msg is available.
+     * @return Record - the next Record read, or null if no such msg is available.
      */
     public Record nextRecord() {
         // Fill our buffer if its empty
@@ -214,28 +221,36 @@ public class Consumer {
         // Check our iterator for the next message
         if (!bufferIterator.hasNext()) {
             // Oh no!  No new msg found.
-            logger.debug("Unable to fill buffer...nothing new!");
+            logger.info("Unable to fill buffer...nothing new!");
             return null;
         }
 
         // Iterate to next result
-        ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
+        final ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
+
+        // Create consumerPartition instance
+        final ConsumerPartition consumerPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
+
+        // Track this new message's state
+        partitionStateManagers.get(consumerPartition).startOffset(nextRecord.offset());
 
         // Deserialize into values
-        Values myValues = new Utf8StringDeserializer().deserialize(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), nextRecord.key(), nextRecord.value());
+        final Values deserializedValues = getDeserializer().deserialize(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), nextRecord.key(), nextRecord.value());
 
         // Handle null
-        if (myValues == null) {
-            // Dunno yet.
+        if (deserializedValues == null) {
+            // Failed to deserialize, just ack and return null?
+            logger.info("Deserialization returned null");
+
+            // Mark as completed.
+            commitOffset(consumerPartition, nextRecord.offset());
+
+            // return null
             return null;
         }
 
-        // Track this new message's state
-        ConsumerPartition topicPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
-        partitionStateManagers.get(topicPartition).startOffset(nextRecord.offset());
-        
         // Return the record
-        return new Record(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), myValues);
+        return new Record(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), deserializedValues);
     }
 
     /**
@@ -263,10 +278,10 @@ public class Consumer {
 
     /**
      * Mark a particular message as having been successfully processed.
-     * @param consumerRecord the consumer record to mark as completed.
+     * @param record the record to mark as completed.
      */
-    public void commitOffset(final ConsumerRecord consumerRecord) {
-        commitOffset(new ConsumerPartition(consumerRecord.topic(), consumerRecord.partition()), consumerRecord.offset());
+    public void commitOffset(final Record record) {
+        commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
     }
 
     /**
@@ -520,22 +535,29 @@ public class Consumer {
     }
 
     /**
-     * @return - returns our unique consumer identifier.
+     * @return returns our unique consumer identifier.
      */
     public String getConsumerId() {
         return getConsumerConfig().getConsumerId();
     }
 
     /**
-     * @return - return our clock implementation.  Useful for testing.
+     * @return return our clock implementation.  Useful for testing.
      */
     protected Clock getClock() {
         return clock;
     }
 
     /**
+     * @return Deserializer instance.
+     */
+    Deserializer getDeserializer() {
+        return deserializer;
+    }
+
+    /**
      * For injecting a clock implementation.  Useful for testing.
-     * @param clock - the clock implementation to use.
+     * @param clock the clock implementation to use.
      */
     protected void setClock(Clock clock) {
         this.clock = clock;
