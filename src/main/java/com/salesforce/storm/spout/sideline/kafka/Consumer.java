@@ -221,7 +221,7 @@ public class Consumer {
         // Check our iterator for the next message
         if (!bufferIterator.hasNext()) {
             // Oh no!  No new msg found.
-            logger.info("Unable to fill buffer...nothing new!");
+            logger.debug("Unable to fill buffer...nothing new!");
             return null;
         }
 
@@ -240,7 +240,7 @@ public class Consumer {
         // Handle null
         if (deserializedValues == null) {
             // Failed to deserialize, just ack and return null?
-            logger.info("Deserialization returned null");
+            logger.debug("Deserialization returned null");
 
             // Mark as completed.
             commitOffset(consumerPartition, nextRecord.offset());
