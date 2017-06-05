@@ -104,10 +104,12 @@ public class Consumer {
 
     /**
      * Constructor.
-     * @param consumerConfig - Configuration for our consumer
-     * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param consumerConfig Configuration for our consumer
+     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param deserializer Deserializer instance to use.
+     * @todo - Refactor this to build the Deserializer, persistence adapter based on a config.
      */
-    public Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, Deserializer deserializer) {
+    public Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer) {
         this.consumerConfig = consumerConfig;
         this.persistenceAdapter = persistenceAdapter;
         this.deserializer = deserializer;
@@ -115,11 +117,12 @@ public class Consumer {
 
     /**
      * This constructor is used to inject a mock KafkaConsumer for tests.
-     * @param consumerConfig - Configuration for our consumer
-     * @param persistenceAdapter - Implementation of PersistenceAdapter to use for storing consumer state.
-     * @param kafkaConsumer - Inject a mock KafkaConsumer for tests.
+     * @param consumerConfig Configuration for our consumer
+     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param kafkaConsumer Inject a mock KafkaConsumer for tests.
+     * @todo - Refactor this to build the Deserializer, persistence adapter based on a config.
      */
-    protected Consumer(ConsumerConfig consumerConfig, PersistenceAdapter persistenceAdapter, Deserializer deserializer, KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+    protected Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final KafkaConsumer<byte[], byte[]> kafkaConsumer) {
         this(consumerConfig, persistenceAdapter, deserializer);
         this.kafkaConsumer = kafkaConsumer;
     }
@@ -212,7 +215,7 @@ public class Consumer {
 
     /**
      * Ask the consumer for the next message from Kafka.
-     * @return Record - the next Record read, or null if no such msg is available.
+     * @return The next Record read from kafka, or null if no such msg is available.
      */
     public Record nextRecord() {
         // Fill our buffer if its empty
@@ -278,7 +281,7 @@ public class Consumer {
 
     /**
      * Mark a particular message as having been successfully processed.
-     * @param record the record to mark as completed.
+     * @param record The record to mark as completed.
      */
     public void commitOffset(final Record record) {
         commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
@@ -288,7 +291,7 @@ public class Consumer {
      * Conditionally flushes the consumer state to the persistence layer based
      * on a time-out condition.
      *
-     * @return boolean - true if we flushed state, false if we didn't
+     * @return True if we flushed state, false if we didn't
      */
     protected boolean timedFlushConsumerState() {
         // If we have auto commit off, don't commit
@@ -316,7 +319,7 @@ public class Consumer {
 
     /**
      * Forces the Consumer's current state to be persisted.
-     * @return - A copy of the state that was persisted.
+     * @return A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
         // Create a consumer state builder.
@@ -382,7 +385,7 @@ public class Consumer {
      *
      * This means when we roll back, we may replay some messages :/
      *
-     * @param outOfRangeException - the exception that was raised by the consumer.
+     * @param outOfRangeException The exception that was raised by the consumer.
      */
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
         // Grab the partitions that had errors
@@ -420,7 +423,7 @@ public class Consumer {
      *
      * This should be used when no state exists for a given partition, OR if the offset
      * requested was too old.
-     * @param topicPartitions - the collection of offsets to reset offsets for to the earliest position.
+     * @param topicPartitions The collection of offsets to reset offsets for to the earliest position.
      */
     private void resetPartitionsToEarliest(Collection<TopicPartition> topicPartitions) {
         // Seek to earliest for each
@@ -459,7 +462,7 @@ public class Consumer {
     }
 
     /**
-     * @return - get the defined consumer config.
+     * @return The defined consumer config.
      */
     public ConsumerConfig getConsumerConfig() {
         return consumerConfig;
@@ -473,7 +476,7 @@ public class Consumer {
     }
 
     /**
-     * @return - A set of all the partitions currently subscribed to.
+     * @return A set of all the partitions currently subscribed to.
      */
     public Set<ConsumerPartition> getAssignedPartitions() {
         // Create our return set using abstracted TopicPartition
@@ -523,7 +526,7 @@ public class Consumer {
      * Returns what the consumer considers its current "finished" state to be.  This means the highest
      * offsets for all partitions its consuming that it has tracked as having been complete.
      *
-     * @return - Returns the Consumer's current state.
+     * @return The Consumer's current state.
      */
     public ConsumerState getCurrentState() {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
@@ -617,7 +620,7 @@ public class Consumer {
     }
 
     /**
-     * @return Returns the maximum lag.
+     * @return The maximum lag of the consumer.
      */
     public double getMaxLag() {
         for (Map.Entry<MetricName, ? extends Metric> entry : metrics().entrySet()) {
