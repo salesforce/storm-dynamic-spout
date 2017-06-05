@@ -9,6 +9,7 @@ import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
@@ -297,7 +298,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Grab the next message from kafka
         startTime = System.currentTimeMillis();
-        ConsumerRecord<byte[], byte[]> record = consumer.nextRecord();
+        Record record = consumer.nextRecord();
         if (record == null) {
             logger.debug("Unable to find any new messages from consumer");
             return null;
@@ -306,7 +307,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Create a Tuple Message Id
         startTime = System.currentTimeMillis();
-        final MessageId messageId = new MessageId(record.topic(), record.partition(), record.offset(), getVirtualSpoutId());
+        final MessageId messageId = new MessageId(record.getNamespace(), record.getPartition(), record.getOffset(), getVirtualSpoutId());
         nextTupleTimeBuckets.put("messageId", nextTupleTimeBuckets.get("messageId") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple exceeds our ending offset
@@ -323,20 +324,9 @@ public class VirtualSpout implements DelegateSpout {
         }
         nextTupleTimeBuckets.put("doesExceedEndOffset", nextTupleTimeBuckets.get("doesExceedEndOffset") + (System.currentTimeMillis() - startTime));
 
-        // Attempt to deserialize.
-        startTime = System.currentTimeMillis();
-        final Values deserializedValues = deserializer.deserialize(record.topic(), record.partition(), record.offset(), record.key(), record.value());
-        if (deserializedValues == null) {
-            // Failed to deserialize, just ack and return null?
-            logger.error("Deserialization returned null");
-            ack(messageId);
-            return null;
-        }
-        nextTupleTimeBuckets.put("deserialize", nextTupleTimeBuckets.get("deserialize") + (System.currentTimeMillis() - startTime));
-
         // Create Message
         startTime = System.currentTimeMillis();
-        final Message message = new Message(messageId, deserializedValues);
+        final Message message = new Message(messageId, record.getValues());
         nextTupleTimeBuckets.put("message", nextTupleTimeBuckets.get("message") + (System.currentTimeMillis() - startTime));
 
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?

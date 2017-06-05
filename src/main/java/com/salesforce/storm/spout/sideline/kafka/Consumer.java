@@ -6,6 +6,8 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
+import com.salesforce.storm.spout.sideline.consumer.Record;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -15,6 +17,7 @@ import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,7 +207,7 @@ public class Consumer {
      * Ask the consumer for the next message from Kafka.
      * @return Message - the next message read, or null if no such msg is available.
      */
-    public ConsumerRecord<byte[], byte[]> nextRecord() {
+    public Record nextRecord() {
         // Fill our buffer if its empty
         fillBuffer();
 
@@ -215,15 +218,24 @@ public class Consumer {
             return null;
         }
 
-        // Iterate to next result and return
+        // Iterate to next result
         ConsumerRecord<byte[], byte[]> nextRecord = bufferIterator.next();
+
+        // Deserialize into values
+        Values myValues = new Utf8StringDeserializer().deserialize(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), nextRecord.key(), nextRecord.value());
+
+        // Handle null
+        if (myValues == null) {
+            // Dunno yet.
+            return null;
+        }
 
         // Track this new message's state
         ConsumerPartition topicPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
         partitionStateManagers.get(topicPartition).startOffset(nextRecord.offset());
-
+        
         // Return the record
-        return nextRecord;
+        return new Record(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), myValues);
     }
 
     /**
