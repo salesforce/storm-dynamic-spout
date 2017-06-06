@@ -180,7 +180,7 @@ public class SidelineSpoutTest {
 
         // Call our method with a postfix
         VirtualSpoutIdentifier result = spout.generateVirtualSpoutId("main");
-        assertEquals("Should generate expected virtual spout it", result, expectedPrefix + ":main");
+        assertEquals("Should generate expected virtual spout it", result, new VirtualSpoutIdentifier(expectedPrefix + ":main"));
 
         // Call close.
         spout.close();
@@ -1050,7 +1050,8 @@ public class SidelineSpoutTest {
         assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
         assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
 
-        assertEquals("Expected Source Consumer Id", expectedConsumerId, messageId.getSrcVirtualSpoutId());
+        // TODO: Should revisit this and refactor the test to properly pass around identifiers for validation
+        assertEquals("Expected Source Consumer Id", expectedConsumerId, messageId.getSrcVirtualSpoutId().toString());
 
         // Validate Tuple Contents
         List<Object> tupleValues = spoutEmission.getTuple();
