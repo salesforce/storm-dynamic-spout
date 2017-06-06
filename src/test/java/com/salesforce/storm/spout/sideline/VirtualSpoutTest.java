@@ -1,7 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
@@ -20,9 +19,6 @@ import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
-import org.apache.kafka.common.Node;
-import org.apache.kafka.common.PartitionInfo;
-import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.junit.Rule;
@@ -30,8 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -65,7 +60,7 @@ public class VirtualSpoutTest {
     @Test
     public void testConstructor() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map<String, Object> expectedTopologyConfig = new HashMap<>();
         expectedTopologyConfig.put("Key1", "Value1");
         expectedTopologyConfig.put("Key2", "Value2");
         expectedTopologyConfig.put("Key3", "Value3");
@@ -109,7 +104,7 @@ public class VirtualSpoutTest {
     @Test
     public void testGetTopologyConfigItem() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map<String, Object> expectedTopologyConfig = new HashMap<>();
         expectedTopologyConfig.put("Key1", "Value1");
         expectedTopologyConfig.put("Key2", "Value2");
         expectedTopologyConfig.put("Key3", "Value3");
@@ -149,7 +144,7 @@ public class VirtualSpoutTest {
         final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(new HashMap(), new MockTopologyContext(), new FactoryManager(new HashMap()), getDefaultMetricsRecorder());
 
         // Set it
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
@@ -167,7 +162,7 @@ public class VirtualSpoutTest {
         final SidelineRequestIdentifier expectedId = new SidelineRequestIdentifier();
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(new HashMap(), new MockTopologyContext(), new FactoryManager(new HashMap()), getDefaultMetricsRecorder());
 
         // Defaults null
         assertNull("should be null", virtualSpout.getSidelineRequestIdentifier());
@@ -185,7 +180,7 @@ public class VirtualSpoutTest {
     @Test
     public void testSetAndGetStopRequested() {
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(new HashMap(), new MockTopologyContext(), new FactoryManager(new HashMap()), getDefaultMetricsRecorder());
 
         // Should default to false
         assertFalse("Should default to false", virtualSpout.isStopRequested());
@@ -205,8 +200,6 @@ public class VirtualSpoutTest {
 
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-
-        final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
 
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
@@ -239,8 +232,6 @@ public class VirtualSpoutTest {
 
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
-
-        final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
 
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
@@ -1338,9 +1329,6 @@ public class VirtualSpoutTest {
         final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
 
         // Define expected result
         final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
@@ -1435,8 +1423,8 @@ public class VirtualSpoutTest {
     /**
      * Utility method to generate a standard config map.
      */
-    private Map getDefaultConfig() {
-        final Map defaultConfig = Maps.newHashMap();
+    private Map<String, Object> getDefaultConfig() {
+        final Map<String, Object> defaultConfig = new HashMap<>();
         defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
         defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, "MyTopic");
         defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
