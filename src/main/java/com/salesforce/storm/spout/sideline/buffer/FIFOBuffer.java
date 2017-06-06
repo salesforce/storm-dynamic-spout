@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 
 import java.util.Map;
@@ -54,7 +55,7 @@ public class FIFOBuffer implements MessageBuffer {
      * @param virtualSpoutId - Identifier of new Virtual Spout.
      */
     @Override
-    public void addVirtualSpoutId(final String virtualSpoutId) {
+    public void addVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
         // Nothing to do in this implementation.
     }
 
@@ -63,7 +64,7 @@ public class FIFOBuffer implements MessageBuffer {
      * @param virtualSpoutId - Identifier of Virtual Spout to be cleaned up.
      */
     @Override
-    public void removeVirtualSpoutId(final String virtualSpoutId) {
+    public void removeVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
         // Nothing to do in this implementation.
     }
 

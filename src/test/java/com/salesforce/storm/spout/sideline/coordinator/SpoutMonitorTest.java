@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
@@ -72,8 +73,8 @@ public class SpoutMonitorTest {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
         final MessageBuffer messageBuffer = new FIFOBuffer();
-        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -184,7 +185,7 @@ public class SpoutMonitorTest {
 
         // Create a mock spout
         DelegateSpout mockSpout = mock(DelegateSpout.class);
-        when(mockSpout.getVirtualSpoutId()).thenReturn("MySpoutId");
+        when(mockSpout.getVirtualSpoutId()).thenReturn(new VirtualSpoutIdentifier("MySpoutId"));
 
         // Add it to our queue
         newSpoutQueue.add(mockSpout);
@@ -254,7 +255,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        MockDelegateSpout mockSpout = new MockDelegateSpout("MySpoutId");
+        MockDelegateSpout mockSpout = new MockDelegateSpout(new VirtualSpoutIdentifier("MySpoutId"));
         mockSpout.requestedStop = false;
 
         // Add it to our queue
@@ -321,7 +322,7 @@ public class SpoutMonitorTest {
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
         for (int x=0; x<maxConccurentInstances + 2; x++) {
-            mockSpouts.add(new MockDelegateSpout("SpoutInstance" + x));
+            mockSpouts.add(new MockDelegateSpout(new VirtualSpoutIdentifier("SpoutInstance" + x)));
         }
 
         // Our new spout queue
@@ -411,7 +412,7 @@ public class SpoutMonitorTest {
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
         for (int x=0; x<maxConccurentInstances + 1; x++) {
-            mockSpouts.add(new MockDelegateSpout("SpoutInstance" + x));
+            mockSpouts.add(new MockDelegateSpout(new VirtualSpoutIdentifier("SpoutInstance" + x)));
         }
 
         // Our new spout queue
@@ -523,7 +524,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        MockDelegateSpout mockSpout = new MockDelegateSpout("MySpoutId");
+        MockDelegateSpout mockSpout = new MockDelegateSpout(new VirtualSpoutIdentifier("MySpoutId"));
         mockSpout.requestedStop = false;
 
         // Add it to our queue
@@ -582,8 +583,8 @@ public class SpoutMonitorTest {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
         final MessageBuffer messageBuffer = new FIFOBuffer();
-        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -596,14 +597,14 @@ public class SpoutMonitorTest {
 
         // Create instance.
         SpoutMonitor spoutMonitor = new SpoutMonitor(
-                newSpoutQueue,
+            newSpoutQueue,
             messageBuffer,
-                ackQueue,
-                failQueue,
-                latch,
-                clock,
-                topologyConfig,
-                metricsRecorder
+            ackQueue,
+            failQueue,
+            latch,
+            clock,
+            topologyConfig,
+            metricsRecorder
         );
 
         return spoutMonitor;
