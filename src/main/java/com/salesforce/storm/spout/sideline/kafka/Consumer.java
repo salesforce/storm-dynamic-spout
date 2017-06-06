@@ -103,24 +103,18 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     private transient Clock clock = Clock.systemUTC();
     private long lastFlushTime = 0;
 
-    // Default constructor
+    /**
+     * Default constructor.
+     */
     public Consumer() {
-
-    }
-
-    public Consumer(final KafkaConsumer<byte[], byte[]> kafkaConsumer) {
-        this();
-        this.kafkaConsumer = kafkaConsumer;
     }
 
     /**
-     * Constructor.
+     * Constructor used for testing, allows for injecting a KafkaConsumer instance.
      */
-    // TODO REMOVE CONSTRUCTOR
-    public Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer) {
-        this.consumerConfig = consumerConfig;
-        this.persistenceAdapter = persistenceAdapter;
-        this.deserializer = deserializer;
+    Consumer(final KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+        this();
+        this.kafkaConsumer = kafkaConsumer;
     }
 
     /**
@@ -137,11 +131,6 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
         }
 
         return kafkaConsumer;
-    }
-
-    // TODO REMOVE
-    public void open(final ConsumerState startingState) {
-        open(getConsumerConfig(), getPersistenceAdapter(), getDeserializer(), startingState);
     }
 
     /**
