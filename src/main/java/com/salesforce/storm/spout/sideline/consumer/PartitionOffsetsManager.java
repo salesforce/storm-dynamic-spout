@@ -13,7 +13,7 @@ import java.util.Set;
  * Since offsets are managed on a per partition basis, each ConsumerPartition has its own PartitionStateManager
  * instance to track its own offset.
  */
-public class OffsetsManager {
+public class PartitionOffsetsManager {
     /**
      * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
      * instance to track its own offset.  The state of these are what gets persisted via the ConsumerStateManager.
@@ -137,6 +137,6 @@ public class OffsetsManager {
 
     @Override
     public String toString() {
-        return "OffsetsManager{" + partitionStateManagers.toString() + '}';
+        return "PartitionOffsetsManager{" + partitionStateManagers.toString() + '}';
     }
 }
