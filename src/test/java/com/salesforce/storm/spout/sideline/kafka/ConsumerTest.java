@@ -4,9 +4,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.sideline.kafka.deserializer.NullDeserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -25,6 +29,7 @@ import org.apache.storm.tuple.Values;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,11 +42,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -127,26 +135,43 @@ public class ConsumerTest {
     @Test
     public void testOpenSetsProperties() {
         // Create config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
-        // Create deserializer
-        final Deserializer deserializer = new Utf8StringDeserializer();
+        // Generate a VirtualSpoutIdentifier
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = getDefaultVSpoutId();
+
+        // Generate a consumer cohort def
+        final ConsumerCohortDefinition consumerCohortDefinition = getDefaultConsumerCohortDefinition();
+
+        // Define expected kafka brokers
+        final String expectedKafkaBrokers =
+            kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":"
+            + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort();
 
         // Call constructor
         Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        consumer.open(config, virtualSpoutIdentifier, consumerCohortDefinition, persistenceAdapter, null);
 
         // Validate our instances got set
         assertNotNull("Config is not null", consumer.getConsumerConfig());
-        assertEquals(config, consumer.getConsumerConfig());
+
+        // Deeper validation of generated ConsumerConfig
+        final ConsumerConfig foundConsumerConfig = consumer.getConsumerConfig();
+        assertEquals("ConsumerIdSet as expected", virtualSpoutIdentifier.toString(), foundConsumerConfig.getConsumerId());
+        assertEquals("Topic set correctly", topicName, foundConsumerConfig.getTopic());
+        assertEquals("KafkaBrokers set correctly", expectedKafkaBrokers, foundConsumerConfig.getKafkaConsumerProperties().getProperty(BOOTSTRAP_SERVERS_CONFIG));
+        assertEquals("Set Number of Consumers as expected", consumerCohortDefinition.getTotalInstances(), consumer.getConsumerConfig().getNumberOfConsumers());
+        assertEquals("Set Index of OUR Consumer is set as expected", consumerCohortDefinition.getInstanceNumber(), consumer.getConsumerConfig().getIndexOfConsumer());
+
+        // Additional properties set correctly
         assertNotNull("PersistenceAdapter is not null", consumer.getPersistenceAdapter());
         assertEquals(persistenceAdapter, consumer.getPersistenceAdapter());
         assertNotNull("Deserializer is not null", consumer.getDeserializer());
-        assertEquals(deserializer, consumer.getDeserializer());
+        assertTrue(consumer.getDeserializer() instanceof Utf8StringDeserializer);
 
         consumer.close();
     }
@@ -168,10 +193,7 @@ public class ConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Deserializer instance
-        final Deserializer deserializer = new Utf8StringDeserializer();
+        final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -195,36 +217,38 @@ public class ConsumerTest {
         Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, mockPersistenceAdapter, deserializer,null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter,null);
 
         // Now call open again, we expect this to throw an exception
         expectedException.expect(IllegalStateException.class);
         expectedException.expectMessage("open more than once");
 
         // Call it
-        consumer.open(config, mockPersistenceAdapter, deserializer,null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(),mockPersistenceAdapter, null);
     }
 
     /**
      * Tests that our logic for flushing consumer state works if auto commit is enabled.
      * This is kind of a weak test for this.
+     *
+     * This test is disabled because we have no way exposed to set this property anymore.
      */
     @Test
+    @Ignore
     public void testTimedFlushConsumerState() throws InterruptedException {
         final String expectedConsumerId = "MyConsumerId";
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        final Map<String, Object> config = getDefaultConfig();
 
+        // TODO - We used to be able to set this, but its not accessible anymore.
         // Enable auto commit and Set timeout to 1 second.
-        config.setConsumerStateAutoCommit(true);
-        config.setConsumerStateAutoCommitIntervalMs(1000);
+        // ConsumerConfig consumerConfig = new ConsumerConfig();
+        //consumerConfig.setConsumerStateAutoCommit(true);
+        //consumerConfig.setConsumerStateAutoCommitIntervalMs(1000);
 
         // Create mock persistence manager so we can determine if it was called
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-
-        // Create mock deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Create a mock clock so we can control time (bwahaha)
         Instant instant = Clock.systemUTC().instant();
@@ -238,7 +262,7 @@ public class ConsumerTest {
         // Call constructor
         Consumer consumer = new Consumer(mockKafkaConsumer);
         consumer.setClock(mockClock);
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // Call our method once
         consumer.timedFlushConsumerState();
@@ -291,17 +315,15 @@ public class ConsumerTest {
     @Test
     public void testTimedFlushConsumerStateWhenAutoCommitIsDisabled() throws InterruptedException {
         // Create config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        final Map<String, Object> config = getDefaultConfig(topicName);
 
+        // This is disabled by default... so this test should still run ok
         // Disable and set interval to 1 second.
-        config.setConsumerStateAutoCommit(false);
-        config.setConsumerStateAutoCommitIntervalMs(1000);
+        //config.setConsumerStateAutoCommit(false);
+        //config.setConsumerStateAutoCommitIntervalMs(1000);
 
         // Create mock persistence manager so we can determine if it was called
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-
-        // Create mock deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Create a mock clock so we can control time (bwahaha)
         Instant instant = Clock.systemUTC().instant();
@@ -316,7 +338,7 @@ public class ConsumerTest {
         Consumer consumer = new Consumer();
         consumer.setClock(mockClock);
 
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer,null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // Call our method once
         consumer.timedFlushConsumerState();
@@ -383,7 +405,7 @@ public class ConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -406,7 +428,7 @@ public class ConsumerTest {
 
         // Call constructor injecting our mocks
         Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(kafkaTopicPartition0)));
@@ -456,7 +478,7 @@ public class ConsumerTest {
         final long earliestPositionPartition2 = 2324L;
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -472,9 +494,6 @@ public class ConsumerTest {
         // Create instance of a PersistenceAdapter, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
@@ -485,7 +504,7 @@ public class ConsumerTest {
 
         // Call constructor injecting our mocks
         Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -545,7 +564,7 @@ public class ConsumerTest {
         final long expectedOffsetToStartConsumeFrom = lastCommittedOffset + 1;
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -557,15 +576,12 @@ public class ConsumerTest {
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(0))).thenReturn(lastCommittedOffset);
 
         // Call constructor injecting our mocks
         Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer,null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
@@ -608,7 +624,7 @@ public class ConsumerTest {
         final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -624,9 +640,6 @@ public class ConsumerTest {
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition0.partition()))).thenReturn(lastCommittedOffsetPartition0);
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition1.partition()))).thenReturn(lastCommittedOffsetPartition1);
@@ -636,7 +649,7 @@ public class ConsumerTest {
         Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -702,10 +715,7 @@ public class ConsumerTest {
         final long expectedStateOffsetPartition3 = earliestOffsetPartition3 - 1;
 
         // Setup our config
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        final ConsumerConfig config = new ConsumerConfig(brokerHosts, consumerId, topicName);
-        config.setNumberOfConsumers(1);
-        config.setIndexOfConsumer(0);
+        final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Create mock KafkaConsumer instance
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -732,14 +742,11 @@ public class ConsumerTest {
         when(mockKafkaConsumer.position(kafkaTopicPartition1)).thenReturn(earliestOffsetPartition1);
         when(mockKafkaConsumer.position(kafkaTopicPartition3)).thenReturn(earliestOffsetPartition3);
 
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // Call constructor injecting our mocks
         Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -794,18 +801,10 @@ public class ConsumerTest {
         final int expectedPartitionId = 0;
 
         // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
+        final Map<String, Object> config = getDefaultConfig();
 
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, mockDeserializer,null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -829,19 +828,8 @@ public class ConsumerTest {
         final int expectedNumberOfPartitions = 5;
         kafkaTestServer.createTopic(expectedTopicName, expectedNumberOfPartitions);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig(expectedTopicName);
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, mockDeserializer,null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen(expectedTopicName);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -865,19 +853,11 @@ public class ConsumerTest {
         // Define our expected namespace/partition
         final ConsumerPartition expectedTopicPartition = new ConsumerPartition(topicName, 0);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, mockDeserializer,null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen(topicName);
+
+        // Grab persistence adapter instance.
+        final PersistenceAdapter persistenceAdapter = consumer.getPersistenceAdapter();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -928,19 +908,11 @@ public class ConsumerTest {
         final int expectedNumberOfPartitions = 5;
         kafkaTestServer.createTopic(expectedTopicName, expectedNumberOfPartitions);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig(expectedTopicName);
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create mock Deserializer
-        Deserializer mockDeserializer = mock(Deserializer.class);
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, mockDeserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen(expectedTopicName);
+
+        // Grab persistence adapter instance.
+        final PersistenceAdapter persistenceAdapter = consumer.getPersistenceAdapter();
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1024,19 +996,8 @@ public class ConsumerTest {
         // Produce 5 entries to the namespace.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen();
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -1058,17 +1019,6 @@ public class ConsumerTest {
         consumer.close();
     }
 
-    private void validateRecordMatchesInput(ProducedKafkaRecord<byte[], byte[]> expectedRecord, Record foundRecord) {
-        assertNotNull(foundRecord);
-
-        // Get values from the generated Tuple
-        final String key = (String) foundRecord.getValues().get(0);
-        final String value = (String) foundRecord.getValues().get(1);
-
-        assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), key);
-        assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), value);
-    }
-
     /**
      * We attempt to consume from the namespace and get our expected messages.
      * We ack the messages each as we get it, in order, one by one.
@@ -1084,19 +1034,8 @@ public class ConsumerTest {
         // Produce 5 entries to the namespace.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen();
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -1136,19 +1075,8 @@ public class ConsumerTest {
         // Produce 5 entries to the namespace.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen();
 
         // Read from namespace, verify we get what we expect
         List<Record> foundRecords = Lists.newArrayList();
@@ -1201,19 +1129,8 @@ public class ConsumerTest {
         // Produce 5 entries to the namespace.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, 0);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen();
 
         // Read from namespace, verify we get what we expect
         List<Record> foundRecords = Lists.newArrayList();
@@ -1286,19 +1203,6 @@ public class ConsumerTest {
      */
     @Test
     public void testNextTupleWhenSerializerFailsToDeserialize() {
-        // Define a deserializer that always returns null
-        final Deserializer nullDeserializer = new Deserializer() {
-            @Override
-            public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-                return null;
-            }
-
-            @Override
-            public Fields getOutputFields() {
-                return new Fields();
-            }
-        };
-
         // Define how many records to produce
         final int numberOfRecordsToProduce = 5;
 
@@ -1307,8 +1211,11 @@ public class ConsumerTest {
         // Produce 5 entries to the namespace.
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToProduce, partition0.partition());
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        // Create config
+        Map<String, Object> config = getDefaultConfig(topicName);
+
+        // Set deserializer instance to our null deserializer
+        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -1316,7 +1223,7 @@ public class ConsumerTest {
 
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, nullDeserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -1338,7 +1245,6 @@ public class ConsumerTest {
         consumer.close();
     }
 
-
     /**
      * Produce 10 messages into a kafka topic: offsets [0-9]
      * Setup our SidelineConsumer such that its pre-existing state says to start at offset 4
@@ -1356,7 +1262,10 @@ public class ConsumerTest {
         List<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecords = producedRecords.subList(5,10);
 
         // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
+        Map<String, Object> config = getDefaultConfig();
+
+        // Create virtualSpoutId
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = getDefaultVSpoutId();
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -1364,14 +1273,11 @@ public class ConsumerTest {
 
         // Create a state in which we have already acked the first 5 messages
         // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
-        persistenceAdapter.persistConsumerState(config.getConsumerId(), 0, 4L);
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
+        persistenceAdapter.persistConsumerState(virtualSpoutIdentifier.toString(), 0, 4L);
 
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        consumer.open(config, virtualSpoutIdentifier, getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
 
         // Read from namespace, verify we get what we expect, we should only get the last 5 records.
         List<Record> consumedRecords = asyncConsumeMessages(consumer, 5);
@@ -1413,19 +1319,8 @@ public class ConsumerTest {
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
         final ConsumerPartition partition1 = new ConsumerPartition(topicName, 1);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen(topicName);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1572,22 +1467,21 @@ public class ConsumerTest {
         }
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
-        config.setIndexOfConsumer(consumerIndex);
-        config.setNumberOfConsumers(2);
+        final ConsumerCohortDefinition consumerCohortDefinition = new ConsumerCohortDefinition(2, consumerIndex);
+
+        // create our vspout id
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        consumer.open(config, virtualSpoutIdentifier, consumerCohortDefinition, persistenceAdapter, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1631,10 +1525,10 @@ public class ConsumerTest {
         assertEquals("Offset stored should be 10 on 2nd expected partition", (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(1)));
 
         // And double check w/ persistence manager directly
-        final Long partition0Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 0);
-        final Long partition1Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 1);
-        final Long partition2Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 2);
-        final Long partition3Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 3);
+        final Long partition0Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 0);
+        final Long partition1Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 1);
+        final Long partition2Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 2);
+        final Long partition3Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 3);
 
         if (consumerIndex == 0) {
             assertNotNull("Partition0 offset should be not null", partition0Offset);
@@ -1717,22 +1611,21 @@ public class ConsumerTest {
         }
 
         // Setup our config
-        final ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
-        config.setIndexOfConsumer(consumerIndex);
-        config.setNumberOfConsumers(2);
+        final ConsumerCohortDefinition consumerCohortDefinition = new ConsumerCohortDefinition(2, consumerIndex);
+
+        // create our vspout id
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(Maps.newHashMap());
 
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        consumer.open(config, virtualSpoutIdentifier, consumerCohortDefinition, persistenceAdapter, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1784,11 +1677,11 @@ public class ConsumerTest {
         }
 
         // And double check w/ persistence manager directly
-        final Long partition0Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 0);
-        final Long partition1Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 1);
-        final Long partition2Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 2);
-        final Long partition3Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 3);
-        final Long partition4Offset = persistenceAdapter.retrieveConsumerState(config.getConsumerId(), 4);
+        final Long partition0Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 0);
+        final Long partition1Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 1);
+        final Long partition2Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 2);
+        final Long partition3Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 3);
+        final Long partition4Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 4);
 
         if (consumerIndex == 0) {
             assertNotNull("Partition0 offset should be not null", partition0Offset);
@@ -1839,19 +1732,8 @@ public class ConsumerTest {
         // Define our expected namespace/partition
         final ConsumerPartition expectedTopicPartition = new ConsumerPartition(topicName, 0);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig();
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen(topicName);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1916,19 +1798,8 @@ public class ConsumerTest {
         final ConsumerPartition expectedTopicPartition0 = new ConsumerPartition(topicName, 0);
         final ConsumerPartition expectedTopicPartition1 = new ConsumerPartition(topicName, 1);
 
-        // Setup our config
-        ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
-
-        // Create our Persistence Manager
-        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
-
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
-        Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        Consumer consumer = getDefaultConsumerInstanceAndOpen(topicName);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -2054,7 +1925,7 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
+        Map<String, Object> config = getDefaultConfig(topicName);
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2068,12 +1939,9 @@ public class ConsumerTest {
         // it should reset to earliest, meaning offset 0 in this case.
         persistenceAdapter.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
 
-        // Create our Deserializer, it deserializes into Values(<key>,<value>)
-        Deserializer deserializer = new Utf8StringDeserializer();
-
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, persistenceAdapter, deserializer, null);
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
 
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();
@@ -2143,19 +2011,79 @@ public class ConsumerTest {
         return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
     }
 
-    private ConsumerConfig getDefaultSidelineConsumerConfig() {
-        return getDefaultSidelineConsumerConfig(topicName);
+    /**
+     * Utility to validate the records consumed from kafka match what was produced into kafka.
+     * @param expectedRecord Records produced to kafka
+     * @param foundRecord Records read from kafka
+     */
+    private void validateRecordMatchesInput(ProducedKafkaRecord<byte[], byte[]> expectedRecord, Record foundRecord) {
+        assertNotNull(foundRecord);
+
+        // Get values from the generated Tuple
+        final String key = (String) foundRecord.getValues().get(0);
+        final String value = (String) foundRecord.getValues().get(1);
+
+        assertEquals("Found expected key",  new String(expectedRecord.getKey(), Charsets.UTF_8), key);
+        assertEquals("Found expected value", new String(expectedRecord.getValue(), Charsets.UTF_8), value);
     }
 
-    private ConsumerConfig getDefaultSidelineConsumerConfig(final String topicName) {
-        List<String> brokerHosts = Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort());
-        ConsumerConfig config = new ConsumerConfig(brokerHosts, "MyConsumerId", topicName);
+    /**
+     * Utility method to generate a standard config map.
+     */
+    private Map<String, Object> getDefaultConfig() {
+        return getDefaultConfig(topicName);
+    }
 
-        // Set values for consumer count and index
-        config.setNumberOfConsumers(1);
-        config.setIndexOfConsumer(0);
+    /**
+     * Utility method to generate a standard config map.
+     */
+    private Map<String, Object> getDefaultConfig(final String topicName) {
+        final Map<String, Object> defaultConfig = new HashMap<>();
+        defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
+        defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        defaultConfig.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
-        return config;
+        return SidelineSpoutConfig.setDefaults(defaultConfig);
+    }
+
+    /**
+     * Utility method to generate a default ConsumerCohortDefinition instance.
+     */
+    private ConsumerCohortDefinition getDefaultConsumerCohortDefinition() {
+        return new ConsumerCohortDefinition(1, 0);
+    }
+
+    /**
+     * Utility method to generate a default VirtualSpoutIdentifier instance.
+     */
+    private VirtualSpoutIdentifier getDefaultVSpoutId() {
+        return new VirtualSpoutIdentifier("MyConsumerId");
+    }
+
+    /**
+     * Utility method to generate a defaultly configured and opened Consumer instance.
+     */
+    private Consumer getDefaultConsumerInstanceAndOpen(final String topicName) {
+        // Create our Persistence Manager
+        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create our consumer
+        Consumer consumer = new Consumer();
+        consumer.open(getDefaultConfig(topicName), getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        return consumer;
+    }
+
+    /**
+     * Utility method to generate a defaultly configured and opened Consumer instance.
+     */
+    private Consumer getDefaultConsumerInstanceAndOpen() {
+        return getDefaultConsumerInstanceAndOpen(topicName);
     }
 
     private List<Record> asyncConsumeMessages(final Consumer consumer, final int numberOfMessagesToConsume) {
