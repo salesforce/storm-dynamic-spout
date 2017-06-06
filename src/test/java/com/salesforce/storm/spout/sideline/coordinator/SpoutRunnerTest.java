@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.coordinator;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
@@ -36,6 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -75,8 +77,8 @@ public class SpoutRunnerTest {
     public void testConstructor() {
         // Define inputs
         final MessageBuffer messageBuffer = new FIFOBuffer();
-        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
 
@@ -126,7 +128,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final String virtualSpoutId = "MyVirtualSpoutId";
+        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -138,11 +140,11 @@ public class SpoutRunnerTest {
         final MessageBuffer messageBuffer = mock(MessageBuffer.class);
 
         // Setup mock ack queue
-        final Map<String, Queue<MessageId>> ackQueue = mock(Map.class);
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = mock(Map.class);
         when(ackQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Setup mock fail queue
-        final Map<String, Queue<MessageId>> failQueue = mock(Map.class);
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = mock(Map.class);
         when(failQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Create config
@@ -185,7 +187,7 @@ public class SpoutRunnerTest {
         verify(failQueue, times(1)).put(eq(virtualSpoutId), any(Queue.class));
 
         // But not torn down yet
-        verify(messageBuffer, never()).removeVirtualSpoutId(anyString());
+        verify(messageBuffer, never()).removeVirtualSpoutId(anyObject());
         verify(ackQueue, never()).remove(anyString());
         verify(failQueue, never()).remove(anyString());
 
@@ -235,7 +237,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final String virtualSpoutId = "MyVirtualSpoutId";
+        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -247,11 +249,11 @@ public class SpoutRunnerTest {
         final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
 
         // Setup mock ack queue
-        final Map<String, Queue<MessageId>> ackQueue = mock(Map.class);
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = mock(Map.class);
         when(ackQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Setup mock fail queue
-        final Map<String, Queue<MessageId>> failQueue = mock(Map.class);
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = mock(Map.class);
         when(failQueue.get(eq(virtualSpoutId))).thenReturn(new LinkedBlockingQueue<>());
 
         // Create config
@@ -326,7 +328,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final String virtualSpoutId = "MyVirtualSpoutId";
+        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -336,11 +338,11 @@ public class SpoutRunnerTest {
 
         // Create our queues
         final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
-        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
-        final String otherVirtualSpoutId = "OtherVirtualSpout";
+        final VirtualSpoutIdentifier otherVirtualSpoutId = new VirtualSpoutIdentifier("OtherVirtualSpout");
         ackQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
         failQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
 
@@ -349,13 +351,13 @@ public class SpoutRunnerTest {
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
-                mockSpout,
+            mockSpout,
             messageBuffer,
-                ackQueue,
-                failQueue,
-                latch,
-                clock,
-                topologyConfig
+            ackQueue,
+            failQueue,
+            latch,
+            clock,
+            topologyConfig
         );
 
         // Sanity test
@@ -441,7 +443,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final String virtualSpoutId = "MyVirtualSpoutId";
+        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -451,11 +453,11 @@ public class SpoutRunnerTest {
 
         // Create our queues
         final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
-        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
-        final String otherVirtualSpoutId = "OtherVirtualSpout";
+        final VirtualSpoutIdentifier otherVirtualSpoutId = new VirtualSpoutIdentifier("OtherVirtualSpout");
         ackQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
         failQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
 
@@ -556,7 +558,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final String virtualSpoutId = "MyVirtualSpoutId";
+        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -566,11 +568,11 @@ public class SpoutRunnerTest {
 
         // Create our queues
         final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
-        final Map<String, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<String, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
-        final String otherVirtualSpoutId = "OtherVirtualSpout";
+        final VirtualSpoutIdentifier otherVirtualSpoutId = new VirtualSpoutIdentifier("OtherVirtualSpout");
         ackQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
         failQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
 
@@ -579,13 +581,13 @@ public class SpoutRunnerTest {
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
-                mockSpout,
+            mockSpout,
             messageBuffer,
-                ackQueue,
-                failQueue,
-                latch,
-                clock,
-                topologyConfig
+            ackQueue,
+            failQueue,
+            latch,
+            clock,
+            topologyConfig
         );
 
         // Sanity test

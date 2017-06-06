@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -20,14 +21,16 @@ public class FailedTuplesFirstRetryManagerTest {
      */
     @Test
     public void testFailedSimpleCase() {
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // construct manager and call open
         FailedTuplesFirstRetryManager retryManager = new FailedTuplesFirstRetryManager();
         retryManager.open(Maps.newHashMap());
 
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
-        final MessageId messageId3 = new MessageId("MyTopic", 0, 103L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
+        final MessageId messageId3 = new MessageId("MyTopic", 0, 103L, consumerId);
 
         // Mark first as having failed
         retryManager.failed(messageId1);

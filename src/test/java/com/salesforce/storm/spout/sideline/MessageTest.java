@@ -21,7 +21,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
 
@@ -57,7 +57,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
 
@@ -82,7 +82,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
 
@@ -110,7 +110,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
 
         // Define expected values components
@@ -136,7 +136,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Define expected values components
         final String expectedValue1 = "This is value 1";
@@ -164,7 +164,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Define expected values components
         final String expectedValue1 = "This is value 1";
@@ -191,7 +191,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Define expected values components
         final String expectedValue1 = "This is value 1";
@@ -226,7 +226,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Define expected values components
         final String expectedValue1 = "This is value 1";
@@ -261,7 +261,7 @@ public class MessageTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
 
         // Define expected values components
         final String expectedValue1 = "This is value 1";

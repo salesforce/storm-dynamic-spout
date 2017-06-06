@@ -8,6 +8,7 @@ import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
@@ -94,7 +95,7 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Is our unique VirtualSpoutId.
      */
-    private String virtualSpoutId;
+    private VirtualSpoutIdentifier virtualSpoutId;
 
     /**
      * If this VirtualSpout is associated with a sideline request,
@@ -199,7 +200,7 @@ public class VirtualSpout implements DelegateSpout {
             // Construct SidelineConsumerConfig based on topology config.
             final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
             final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-            final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
+            final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId().toString(), topic);
             consumerConfig.setNumberOfConsumers(
                 topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
             );
@@ -516,7 +517,7 @@ public class VirtualSpout implements DelegateSpout {
      * @return - Return this instance's unique virtual spout it.
      */
     @Override
-    public String getVirtualSpoutId() {
+    public VirtualSpoutIdentifier getVirtualSpoutId() {
         return virtualSpoutId;
     }
 
@@ -524,8 +525,8 @@ public class VirtualSpout implements DelegateSpout {
      * Define the virtualSpoutId for this VirtualSpout.
      * @param virtualSpoutId - The unique identifier for this consumer.
      */
-    public void setVirtualSpoutId(final String virtualSpoutId) {
-        if (Strings.isNullOrEmpty(virtualSpoutId)) {
+    public void setVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
+        if (Strings.isNullOrEmpty(virtualSpoutId.toString())) {
             throw new IllegalStateException("Consumer id cannot be null or empty! (" + virtualSpoutId + ")");
         }
         this.virtualSpoutId = virtualSpoutId;

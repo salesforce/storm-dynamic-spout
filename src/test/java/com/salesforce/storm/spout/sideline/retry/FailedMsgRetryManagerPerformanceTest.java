@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.retry;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ public class FailedMsgRetryManagerPerformanceTest {
         final long numberOfTuples = 30000;
         final String topicName = "MyTopic";
         final int partition = 0;
-        final String consumerId = "MyConsumer";
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumer");
 
         // Add msgs
         logger.info("Starting to add {} failed msgs", numberOfTuples);

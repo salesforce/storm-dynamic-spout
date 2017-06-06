@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class RoundRobinBuffer implements MessageBuffer {
     /**
      * A Map of VirtualSpoutIds => Its own Blocking Queue.
      */
-    private final Map<String, BlockingQueue<Message>> messageBuffer = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, BlockingQueue<Message>> messageBuffer = new ConcurrentHashMap<>();
 
     /**
      * Defines the bounded size of our buffer PER VirtualSpout.
@@ -42,7 +43,7 @@ public class RoundRobinBuffer implements MessageBuffer {
     /**
      * An iterator over the Keys in buffer.  Used to Round Robin through the VirtualSpouts.
      */
-    private Iterator<String> consumerIdIterator = null;
+    private Iterator<VirtualSpoutIdentifier> consumerIdIterator = null;
 
     public RoundRobinBuffer() {
     }
@@ -78,7 +79,7 @@ public class RoundRobinBuffer implements MessageBuffer {
      * @param virtualSpoutId - Identifier of new Virtual Spout.
      */
     @Override
-    public void addVirtualSpoutId(final String virtualSpoutId) {
+    public void addVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
         synchronized (messageBuffer) {
             messageBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
         }
@@ -89,7 +90,7 @@ public class RoundRobinBuffer implements MessageBuffer {
      * @param virtualSpoutId - Identifier of Virtual Spout to be cleaned up.
      */
     @Override
-    public void removeVirtualSpoutId(String virtualSpoutId) {
+    public void removeVirtualSpoutId(VirtualSpoutIdentifier virtualSpoutId) {
         synchronized (messageBuffer) {
             messageBuffer.remove(virtualSpoutId);
         }
@@ -103,7 +104,7 @@ public class RoundRobinBuffer implements MessageBuffer {
     @Override
     public void put(final Message message) throws InterruptedException {
         // Grab the source virtual spoutId
-        final String virtualSpoutId = message.getMessageId().getSrcVirtualSpoutId();
+        final VirtualSpoutIdentifier virtualSpoutId = message.getMessageId().getSrcVirtualSpoutId();
 
         // Add to correct buffer
         BlockingQueue virtualSpoutQueue = messageBuffer.get(virtualSpoutId);
@@ -144,7 +145,7 @@ public class RoundRobinBuffer implements MessageBuffer {
         while (returnMsg == null && consumerIdIterator.hasNext()) {
 
             // Advance iterator
-            final String nextConsumerId = consumerIdIterator.next();
+            final VirtualSpoutIdentifier nextConsumerId = consumerIdIterator.next();
 
             // Find our buffer
             final BlockingQueue<Message> queue = messageBuffer.get(nextConsumerId);

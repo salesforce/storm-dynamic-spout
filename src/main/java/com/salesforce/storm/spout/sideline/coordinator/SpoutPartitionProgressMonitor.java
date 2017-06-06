@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.coordinator;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -47,10 +48,11 @@ public class SpoutPartitionProgressMonitor {
     }
 
     private SidelineRequestIdentifier getSidelineRequestIdentifier(final DelegateSpout spout) {
-        final String virtualSpoutId = spout.getVirtualSpoutId();
+        final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
 
+        // TODO: Revisit this after more work has been done to the vspoutid object
         // Parse out the SidelineRequestId, this is not ideal.
-        final String[] bits = virtualSpoutId.split(":");
+        final String[] bits = virtualSpoutId.toString().split(":");
         if (bits.length != 2) {
             logger.error("Unable to parse virtualSpoutId: {}", virtualSpoutId);
             return null;
@@ -98,7 +100,7 @@ public class SpoutPartitionProgressMonitor {
         // Create return map
         Map<ConsumerPartition, PartitionProgress> progressMap = Maps.newHashMap();
 
-        final String virtualSpoutId = spout.getVirtualSpoutId();
+        final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
         final SidelineRequestIdentifier sidelineRequestIdentifier = getSidelineRequestIdentifier(spout);
         final ConsumerState currentState = spout.getCurrentState();
 
@@ -116,7 +118,7 @@ public class SpoutPartitionProgressMonitor {
             }
 
             // Get the state
-            Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId, consumerPartition.partition());
+            Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId.toString(), consumerPartition.partition());
             if (currentOffset == null) {
                 logger.info("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
                 continue;

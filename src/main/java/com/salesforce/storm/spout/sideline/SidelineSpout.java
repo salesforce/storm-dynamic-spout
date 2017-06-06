@@ -176,7 +176,7 @@ public class SidelineSpout extends DynamicSpout {
         final ConsumerState endingState
     ) {
         // Generate our virtualSpoutId using the payload id.
-        final String virtualSpoutId = generateVirtualSpoutId(id.toString());
+        final VirtualSpoutIdentifier virtualSpoutId = generateVirtualSpoutId(id.toString());
 
         // This info is repeated in VirtualSidelineSpout.open(), not needed here.
         logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);

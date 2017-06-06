@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.buffer;
 
 import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 
 import java.util.Map;
 
@@ -24,13 +25,13 @@ public interface MessageBuffer {
      * Let the Implementation know that we're adding a new VirtualSpoutId.
      * @param virtualSpoutId - Identifier of new Virtual Spout.
      */
-    void addVirtualSpoutId(final String virtualSpoutId);
+    void addVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId);
 
     /**
      * Let the Implementation know that we're removing/cleaning up from closing a VirtualSpout.
      * @param virtualSpoutId - Identifier of Virtual Spout to be cleaned up.
      */
-    void removeVirtualSpoutId(final String virtualSpoutId);
+    void removeVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId);
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.

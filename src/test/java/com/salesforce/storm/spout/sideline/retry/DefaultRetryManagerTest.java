@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,10 +99,12 @@ public class DefaultRetryManagerTest {
         // Calculate the 1st retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
-        final MessageId messageId3 = new MessageId("MyTopic", 0, 103L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
+        final MessageId messageId3 = new MessageId("MyTopic", 0, 103L, consumerId);
 
         // Mark first as having failed
         retryManager.failed(messageId1);
@@ -145,9 +148,11 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -212,8 +217,10 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -263,8 +270,10 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId = new MessageId("MyTopic", 0, 100L, "MyConsumerId");
+        final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
         assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
         assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
@@ -288,8 +297,10 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId = new MessageId("MyTopic", 0, 100L, "MyConsumerId");
+        final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
         for (int x=0; x<100; x++) {
             assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(messageId));
@@ -313,8 +324,10 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId = new MessageId("MyTopic", 0, 100L, "MyConsumerId");
+        final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
         for (int x=0; x<100; x++) {
             // Fail tuple
@@ -345,9 +358,11 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -414,9 +429,11 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
 
         // Mark both as having been failed.
         retryManager.failed(messageId1);
@@ -453,9 +470,11 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Define our tuple message id
-        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, "MyConsumerId");
-        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, "MyConsumerId");
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
 
         // Mark messageId1 as having failed
         retryManager.failed(messageId1);

@@ -163,7 +163,7 @@ public class SidelineSpoutTest {
         // Now call our method with empty string
         boolean threwException = false;
         try {
-            String result = spout.generateVirtualSpoutId("");
+            VirtualSpoutIdentifier result = spout.generateVirtualSpoutId("");
         } catch (IllegalArgumentException e) {
             threwException = true;
         }
@@ -172,14 +172,14 @@ public class SidelineSpoutTest {
         // Call our method with null
         threwException = false;
         try {
-            String result = spout.generateVirtualSpoutId(null);
+            VirtualSpoutIdentifier result = spout.generateVirtualSpoutId(null);
         } catch (IllegalArgumentException e) {
             threwException = true;
         }
         assertTrue("Should have thrown an IllegalArguementException", threwException);
 
         // Call our method with a postfix
-        String result = spout.generateVirtualSpoutId("main");
+        VirtualSpoutIdentifier result = spout.generateVirtualSpoutId("main");
         assertEquals("Should generate expected virtual spout it", result, expectedPrefix + ":main");
 
         // Call close.
@@ -1088,8 +1088,8 @@ public class SidelineSpoutTest {
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the acked queue.
-                Map<String, Queue<MessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
-                for (String key : queueMap.keySet()) {
+                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
+                for (VirtualSpoutIdentifier key : queueMap.keySet()) {
                     // If any queue has entries, return false
                     if (!queueMap.get(key).isEmpty()) {
                         logger.debug("Ack queue {} has {}", key, queueMap.get(key).size());
@@ -1124,8 +1124,8 @@ public class SidelineSpoutTest {
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the fail queue.
-                Map<String, Queue<MessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
-                for (String key : queueMap.keySet()) {
+                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
+                for (VirtualSpoutIdentifier key : queueMap.keySet()) {
                     // If any queue has entries, return false
                     if (!queueMap.get(key).isEmpty()) {
                         logger.debug("Fail queue {} has {}", key, queueMap.get(key).size());

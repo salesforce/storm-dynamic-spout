@@ -9,7 +9,7 @@ public class MessageId {
     private final String namespace;
     private final int partition;
     private final long offset;
-    private final String srcVirtualSpoutId;
+    private final VirtualSpoutIdentifier srcVirtualSpoutId;
     private final long timestamp;
 
     /**
@@ -19,7 +19,7 @@ public class MessageId {
      * @param offset - the offset this tuple came from.
      * @param srcVirtualSpoutId - the VirtualSpout's identifier this tuple came from.
      */
-    public MessageId(final String namespace, final int partition, final long offset, final String srcVirtualSpoutId) {
+    public MessageId(final String namespace, final int partition, final long offset, final VirtualSpoutIdentifier srcVirtualSpoutId) {
         this.namespace = namespace;
         this.partition = partition;
         this.offset = offset;
@@ -39,7 +39,7 @@ public class MessageId {
         return offset;
     }
 
-    public String getSrcVirtualSpoutId() {
+    public VirtualSpoutIdentifier getSrcVirtualSpoutId() {
         return srcVirtualSpoutId;
     }
 

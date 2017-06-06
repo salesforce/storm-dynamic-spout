@@ -69,7 +69,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * For collecting metrics.
      */
     private transient MetricsRecorder metricsRecorder;
-    private transient Map<String, Long> emitCountMetrics;
+    private transient Map<VirtualSpoutIdentifier, Long> emitCountMetrics;
     private long emitCounter = 0L;
 
     /**
@@ -177,7 +177,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
         // Everything below is temporary emit metrics for debugging.
 
         // Update / Display emit metrics
-        final String srcId = message.getMessageId().getSrcVirtualSpoutId();
+        final VirtualSpoutIdentifier srcId = message.getMessageId().getSrcVirtualSpoutId();
         if (!emitCountMetrics.containsKey(srcId)) {
             emitCountMetrics.put(srcId, 1L);
         } else {
@@ -185,7 +185,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
         }
         emitCounter++;
         if (emitCounter >= 5_000_000L) {
-            for (Map.Entry<String, Long> entry : emitCountMetrics.entrySet()) {
+            for (Map.Entry<VirtualSpoutIdentifier, Long> entry : emitCountMetrics.entrySet()) {
                 logger.info("Emit Count on {} => {}", entry.getKey(), entry.getValue());
             }
             emitCountMetrics.clear();
@@ -389,7 +389,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * @param id Id to add after the prefix
      * @return Generates VirtualSpoutId.
      */
-    String generateVirtualSpoutId(final String id) {
+    VirtualSpoutIdentifier generateVirtualSpoutId(final String id) {
         if (Strings.isNullOrEmpty(id)) {
             throw new IllegalArgumentException("Id cannot be null or empty!");
         }
@@ -400,6 +400,6 @@ public abstract class DynamicSpout extends BaseRichSpout {
         newId += ":" + id;
 
         // return it
-        return newId;
+        return new VirtualSpoutIdentifier(newId);
     }
 }
