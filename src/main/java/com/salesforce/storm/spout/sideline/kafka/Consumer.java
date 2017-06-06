@@ -250,7 +250,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * @param consumerPartition The Topic & Partition the offset belongs to
      * @param offset The offset that should be marked as completed.
      */
-    public void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
+    private void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
         // Track internally which offsets we've marked completed
         partitionStateManagers.get(consumerPartition).finishOffset(offset);
 
@@ -259,21 +259,13 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     }
 
     /**
-     * Mark a particular offset on a Topic/Partition as having been successfully processed.
+     * Marks a particular offset on a Topic/Partition as having been successfully processed.
      * @param namespace The topic offset belongs to.
      * @param partition The partition the offset belongs to.
      * @param offset The offset that should be marked as completed.
      */
     public void commitOffset(final String namespace, final int partition, final long offset) {
         commitOffset(new ConsumerPartition(namespace, partition), offset);
-    }
-
-    /**
-     * Mark a particular message as having been successfully processed.
-     * @param record The record to mark as completed.
-     */
-    public void commitOffset(final Record record) {
-        commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
     }
 
     /**
@@ -529,7 +521,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     /**
      * @return returns our unique consumer identifier.
      */
-    public String getConsumerId() {
+    String getConsumerId() {
         return getConsumerConfig().getConsumerId();
     }
 
@@ -541,18 +533,18 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     }
 
     /**
-     * @return Deserializer instance.
-     */
-    Deserializer getDeserializer() {
-        return deserializer;
-    }
-
-    /**
      * For injecting a clock implementation.  Useful for testing.
      * @param clock the clock implementation to use.
      */
     protected void setClock(Clock clock) {
         this.clock = clock;
+    }
+
+    /**
+     * @return Deserializer instance.
+     */
+    Deserializer getDeserializer() {
+        return deserializer;
     }
 
     /**
