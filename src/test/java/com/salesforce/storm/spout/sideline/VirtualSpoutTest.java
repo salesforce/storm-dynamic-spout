@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
@@ -37,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -193,74 +195,80 @@ public class VirtualSpoutTest {
     /**
      * Calling open() more than once should throw an exception.
      */
-//    @Test
-//    public void testCallingOpenTwiceThrowsException() {
-//        // Create test config
-//        final Map topologyConfig = getDefaultConfig();
-//
-//        // Create mock topology context
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        final Consumer mockConsumer = mock(Consumer.class);
-//
-//        // Create factory manager
-//        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
-//
-//        // Create spout
-//        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-//        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
-//
-//        // Call it once.
-//        virtualSpout.open();
-//
-//        // Validate that open() on SidelineConsumer is called once.
-//        verify(mockConsumer, times(1)).open(any(ConsumerConfig.class), any(ZookeeperPersistenceAdapter.class), any(Utf8StringDeserializer.class), eq(null));
-//
-//        // Set expected exception
-//        expectedException.expect(IllegalStateException.class);
-//        virtualSpout.open();
-//    }
-//
-//    /**
-//     * Validate that Open behaves like we expect.
-//     */
-//    @Test
-//    public void testOpen() {
-//        // Create test config
-//        final Map topologyConfig = getDefaultConfig();
-//
-//        // Create mock topology context
-//        final TopologyContext mockTopologyContext = new MockTopologyContext();
-//
-//        // Create a mock SidelineConsumer
-//        final Consumer mockConsumer = mock(Consumer.class);
-//
-//        // Create a mock Deserializer
-//        Deserializer mockDeserializer = mock(Deserializer.class);
-//        RetryManager mockRetryManager = mock(RetryManager.class);
-//        PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-//
-//        // Create factory manager
-//        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager, null);
-//        when(mockFactoryManager.createNewPersistenceAdapterInstance()).thenReturn(mockPersistenceAdapter);
-//
-//        // Create spout
-//        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-//        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
-//
-//        // Call open
-//        virtualSpout.open();
-//
-//        // Validate that we asked factory manager for a failed msg retry manager
-//        verify(mockFactoryManager, times(1)).createNewFailedMsgRetryManagerInstance();
-//
-//        // Validate we called open on the RetryManager
-//        verify(mockRetryManager, times(1)).open(topologyConfig);
-//
-//        // Validate that open() on SidelineConsumer is called once.
-//        verify(mockConsumer, times(1)).open(any(ConsumerConfig.class), eq(mockPersistenceAdapter), eq(mockDeserializer), eq(null));
-//    }
+    @Test
+    public void testCallingOpenTwiceThrowsException() {
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create mock topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        final Consumer mockConsumer = mock(Consumer.class);
+
+        // Create factory manager
+        final FactoryManager factoryManager = new FactoryManager(topologyConfig);
+
+        // Create virtual spout identifier
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
+
+        // Create spout
+        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
+        virtualSpout.setVirtualSpoutId(virtualSpoutIdentifier);
+
+        // Call it once.
+        virtualSpout.open();
+
+        // Validate that open() on SidelineConsumer is called once.
+        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerCohortDefinition.class), any(ZookeeperPersistenceAdapter.class), eq(null));
+
+        // Set expected exception
+        expectedException.expect(IllegalStateException.class);
+        virtualSpout.open();
+    }
+
+    /**
+     * Validate that Open behaves like we expect.
+     */
+    @Test
+    public void testOpen() {
+        // Create test config
+        final Map topologyConfig = getDefaultConfig();
+
+        // Create mock topology context
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create a mock SidelineConsumer
+        final Consumer mockConsumer = mock(Consumer.class);
+
+        // Create a mock Deserializer
+        Deserializer mockDeserializer = mock(Deserializer.class);
+        RetryManager mockRetryManager = mock(RetryManager.class);
+        PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager, null);
+        when(mockFactoryManager.createNewPersistenceAdapterInstance()).thenReturn(mockPersistenceAdapter);
+
+        // Create virtual spout identifier
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
+
+        // Create spout
+        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
+        virtualSpout.setVirtualSpoutId(virtualSpoutIdentifier);
+
+        // Call open
+        virtualSpout.open();
+
+        // Validate that we asked factory manager for a failed msg retry manager
+        verify(mockFactoryManager, times(1)).createNewFailedMsgRetryManagerInstance();
+
+        // Validate we called open on the RetryManager
+        verify(mockRetryManager, times(1)).open(topologyConfig);
+
+        // Validate that open() on SidelineConsumer is called once.
+        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerCohortDefinition.class), any(ZookeeperPersistenceAdapter.class), eq(null));
+    }
 
     /**
      * Tests when you call nextTuple() and the underlying consumer.nextRecord() returns null,
