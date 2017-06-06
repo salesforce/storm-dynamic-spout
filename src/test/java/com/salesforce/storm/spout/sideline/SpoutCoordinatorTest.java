@@ -59,10 +59,11 @@ public class SpoutCoordinatorTest {
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, actual);
-        coordinator.addVirtualSpout(fireHoseSpout);
         coordinator.open(config);
 
-        assertEquals(1, coordinator.getTotalSpouts());
+        coordinator.addVirtualSpout(fireHoseSpout);
+
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> coordinator.getTotalSpouts(), equalTo(1));
 
         coordinator.addVirtualSpout(sidelineSpout1);
         coordinator.addVirtualSpout(sidelineSpout2);
@@ -130,5 +131,25 @@ public class SpoutCoordinatorTest {
 
         // Verify the executor is terminated, and has no active tasks
         assertTrue("Executor is terminated", coordinator.getExecutor().isTerminated());
+    }
+
+    /**
+     * Test that if we try to add a spout before the coordinator is open it'll blow up.
+     * @throws Exception Can't do that!
+     */
+    @Test(expected = RuntimeException.class)
+    public void testAddingSpoutBeforeOpen() throws Exception {
+        final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+
+        // Define our configuration
+        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+
+        // Create coordinator
+        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+
+        coordinator.addVirtualSpout(new MockDelegateSpout());
     }
 }
