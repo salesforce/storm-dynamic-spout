@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
@@ -186,30 +187,22 @@ public class VirtualSpout implements DelegateSpout {
         // Create underlying Consumer implementation - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
         if (consumer == null) {
-            // Create sideline consumer
-            consumer = new com.salesforce.storm.spout.sideline.kafka.Consumer();
+            // Create consumer from Factory Manager.
+            consumer = getFactoryManager().createNewConsumerInstance();
         }
 
         // Create consumer dependencies
-        final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
         final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
         persistenceAdapter.open(getSpoutConfig());
 
-        // Construct SidelineConsumerConfig based on topology config.
-        // TODO - this needs to be moved into KafkaConsumer instance.
-        final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-        final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-        // TODO ConsumerConfig should use a VirtualSpoutIdentifier
-        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId().toString(), topic);
-        consumerConfig.setNumberOfConsumers(
-            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
-        );
-        consumerConfig.setIndexOfConsumer(
+        // Define consumer cohort definition.
+        final ConsumerCohortDefinition consumerCohortDefinition = new ConsumerCohortDefinition(
+            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size(),
             topologyContext.getThisTaskIndex()
         );
 
         // Open consumer
-        consumer.open(consumerConfig, persistenceAdapter, deserializer, startingState);
+        consumer.open(spoutConfig, getVirtualSpoutId(), consumerCohortDefinition, persistenceAdapter, startingState);
 
         // Temporary metric buckets.
         // TODO - convert to using proper metrics recorder?

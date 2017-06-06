@@ -4,8 +4,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
@@ -18,6 +22,7 @@ import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,18 +142,37 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
-     * @param consumerConfig Configuration for our consumer
-     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
-     * @param deserializer Deserializer instance to use.
-     * @param startingState Starting state that the consumer should use.  optional, can be null.
+     * @param spoutConfig Configuration of Spout.
+     * @param virtualSpoutIdentifier VirtualSpout running this consumer.
+     * @param consumerCohortDefinition defines how many instances in total are running of this consumer.
+     * @param persistenceAdapter The persistence adapter used to manage any state.
+     * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
      */
-    @Override
-    public void open(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final ConsumerState startingState) {
+    public void open(final Map<String, Object> spoutConfig, final VirtualSpoutIdentifier virtualSpoutIdentifier, final ConsumerCohortDefinition consumerCohortDefinition, final PersistenceAdapter persistenceAdapter, final ConsumerState startingState) {
         // Simple state enforcement.
         if (isOpen) {
             throw new IllegalStateException("Cannot call open more than once.");
         }
         isOpen = true;
+
+        // Build ConsumerConfig from spout Config
+        // Construct SidelineConsumerConfig based on topology config.
+        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(SidelineSpoutConfig.KAFKA_BROKERS);
+        final String topic = (String) spoutConfig.get(SidelineSpoutConfig.KAFKA_TOPIC);
+
+        // TODO ConsumerConfig should use a VirtualSpoutIdentifier
+        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);
+
+        // Use ConsumerCohortDefinition to setup how many instances we have.
+        consumerConfig.setNumberOfConsumers(
+            consumerCohortDefinition.getTotalInstances()
+        );
+        consumerConfig.setIndexOfConsumer(
+            consumerCohortDefinition.getInstanceNumber()
+        );
+
+        // Create deserializer.
+        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewDeserializerInstance();
 
         // Save references
         this.consumerConfig = consumerConfig;
