@@ -97,10 +97,10 @@ public class SpoutCoordinator {
      */
     public void addVirtualSpout(final DelegateSpout spout) {
         if (!isOpen) {
-            throw new RuntimeException("You cannot add a spout to the coordinator before it has been opened!");
+            throw new IllegalStateException("You cannot add a spout to the coordinator before it has been opened!");
         }
         if (spoutMonitor.hasSpout(spout.getVirtualSpoutId())) {
-            throw new RuntimeException("A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!");
+            throw new IllegalStateException("A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!");
         }
         getNewSpoutQueue().add(spout);
     }
@@ -109,6 +109,11 @@ public class SpoutCoordinator {
      * Open the coordinator and begin spinning up virtual spout threads.
      */
     public void open(Map<String, Object> topologyConfig) {
+        if (isOpen) {
+            logger.warn("SpoutCoordinator is already opened, refusing to open again!");
+            return;
+        }
+
         // Create copy of topology config
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
 

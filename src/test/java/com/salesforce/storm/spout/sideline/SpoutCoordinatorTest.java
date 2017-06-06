@@ -9,7 +9,9 @@ import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
 import org.apache.storm.tuple.Values;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,9 @@ import static org.junit.Assert.assertTrue;
 
 public class SpoutCoordinatorTest {
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void testCoordinator() throws Exception {
@@ -137,7 +142,7 @@ public class SpoutCoordinatorTest {
      * Test that if we try to add a spout before the coordinator is open it'll blow up.
      * @throws Exception Can't do that!
      */
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testAddingSpoutBeforeOpen() throws Exception {
         final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
 
@@ -150,6 +155,40 @@ public class SpoutCoordinatorTest {
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
 
+        expectedException.expect(IllegalStateException.class);
+
         coordinator.addVirtualSpout(new MockDelegateSpout());
+    }
+
+    /**
+     * Test that adding a spout with the same id will throw an exception
+     * @throws Exception
+     */
+    @Test
+    public void testAddDuplicateSpout() throws Exception {
+        final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+
+        // Define our configuration
+        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+
+        // Create coordinator
+        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        coordinator.open(config);
+
+        expectedException.expect(IllegalStateException.class);
+
+        VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("Foobar");
+
+        DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+        DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);
+
+        coordinator.addVirtualSpout(spout1);
+
+        expectedException.expect(IllegalStateException.class);
+
+        coordinator.addVirtualSpout(spout2);
     }
 }
