@@ -4,6 +4,7 @@ import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
@@ -56,14 +57,14 @@ public class SpoutMonitor implements Runnable {
      * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be acked.
      * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
      */
-    private final Map<String,Queue<MessageId>> ackedTuplesQueue;
+    private final Map<VirtualSpoutIdentifier,Queue<MessageId>> ackedTuplesQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be failed by VirtualSidelineSpouts.
      * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be failed.
      * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
      */
-    private final Map<String,Queue<MessageId>> failedTuplesQueue;
+    private final Map<VirtualSpoutIdentifier,Queue<MessageId>> failedTuplesQueue;
 
     /**
      * This latch allows the SpoutCoordinator to block on start up until its initial
@@ -91,8 +92,8 @@ public class SpoutMonitor implements Runnable {
      */
     private SpoutPartitionProgressMonitor consumerMonitor;
 
-    private final Map<String, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
-    private final Map<String,CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
 
     /**
      * Flag used to determine if we should stop running or not.
@@ -105,15 +106,15 @@ public class SpoutMonitor implements Runnable {
     private long lastStatusReport = 0;
 
     public SpoutMonitor(
-            final Queue<DelegateSpout> newSpoutQueue,
-            final MessageBuffer tupleOutputQueue,
-            final Map<String, Queue<MessageId>> ackedTuplesQueue,
-            final Map<String, Queue<MessageId>> failedTuplesQueue,
-            final CountDownLatch latch,
-            final Clock clock,
-            final Map<String, Object> topologyConfig,
-            final MetricsRecorder metricsRecorder
-            ) {
+        final Queue<DelegateSpout> newSpoutQueue,
+        final MessageBuffer tupleOutputQueue,
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue,
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue,
+        final CountDownLatch latch,
+        final Clock clock,
+        final Map<String, Object> topologyConfig,
+        final MetricsRecorder metricsRecorder
+    ) {
         this.newSpoutQueue = newSpoutQueue;
         this.tupleOutputQueue = tupleOutputQueue;
         this.ackedTuplesQueue = ackedTuplesQueue;
@@ -206,8 +207,8 @@ public class SpoutMonitor implements Runnable {
      */
     private void watchForCompletedTasks() {
         // Cleanup loop
-        for (Map.Entry<String, CompletableFuture> entry: spoutThreads.entrySet()) {
-            final String virtualSpoutId = entry.getKey();
+        for (Map.Entry<VirtualSpoutIdentifier, CompletableFuture> entry: spoutThreads.entrySet()) {
+            final VirtualSpoutIdentifier virtualSpoutId = entry.getKey();
             final CompletableFuture future = entry.getValue();
             final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
 

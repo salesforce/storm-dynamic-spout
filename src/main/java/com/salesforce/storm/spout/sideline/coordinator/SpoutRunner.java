@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.coordinator;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
@@ -37,12 +38,12 @@ public class SpoutRunner implements Runnable {
     /**
      * This is the queue we read tuples that need to be acked off of.
      */
-    private final Map<String, Queue<MessageId>> ackedTupleQueue;
+    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTupleQueue;
 
     /**
      * This is the queue we read tuples that need to be failed off of.
      */
-    private final Map<String, Queue<MessageId>> failedTupleQueue;
+    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTupleQueue;
 
     /**
      * For access to the system clock.
@@ -71,13 +72,13 @@ public class SpoutRunner implements Runnable {
     private volatile boolean requestedStop = false;
 
     SpoutRunner(
-            final DelegateSpout spout,
-            final MessageBuffer tupleQueue,
-            final Map<String, Queue<MessageId>> ackedTupleQueue,
-            final Map<String, Queue<MessageId>> failedTupleInputQueue,
-            final CountDownLatch latch,
-            final Clock clock,
-            final Map<String, Object> topologyConfig
+        final DelegateSpout spout,
+        final MessageBuffer tupleQueue,
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTupleQueue,
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTupleInputQueue,
+        final CountDownLatch latch,
+        final Clock clock,
+        final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
         this.tupleQueue = tupleQueue;
@@ -95,7 +96,7 @@ public class SpoutRunner implements Runnable {
     public void run() {
         try {
             // Rename thread to use the spout's consumer id
-            Thread.currentThread().setName(spout.getVirtualSpoutId());
+            Thread.currentThread().setName(spout.getVirtualSpoutId().toString());
 
             logger.info("Opening {} spout", spout.getVirtualSpoutId());
             spout.open();
@@ -215,11 +216,11 @@ public class SpoutRunner implements Runnable {
         return spout;
     }
 
-    Map<String, Queue<MessageId>> getAckedTupleQueue() {
+    Map<VirtualSpoutIdentifier, Queue<MessageId>> getAckedTupleQueue() {
         return ackedTupleQueue;
     }
 
-    Map<String, Queue<MessageId>> getFailedTupleQueue() {
+    Map<VirtualSpoutIdentifier, Queue<MessageId>> getFailedTupleQueue() {
         return failedTupleQueue;
     }
 

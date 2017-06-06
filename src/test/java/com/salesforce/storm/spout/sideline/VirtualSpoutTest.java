@@ -145,7 +145,7 @@ public class VirtualSpoutTest {
     @Test
     public void testSetAndGetConsumerId() {
         // Define input
-        final String expectedConsumerId = "myConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
@@ -215,7 +215,7 @@ public class VirtualSpoutTest {
 
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
 
         // Call it once.
         virtualSpout.open();
@@ -255,7 +255,7 @@ public class VirtualSpoutTest {
 
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
 
         // Call open
         virtualSpout.open();
@@ -296,7 +296,7 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call nextTuple()
@@ -333,7 +333,7 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call nextTuple()
@@ -353,7 +353,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 3;
         final long expectedOffset = 434323L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
@@ -409,7 +409,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 3;
         final long expectedOffset = 434323L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
@@ -484,9 +484,11 @@ public class VirtualSpoutTest {
         final Record consumerRecordAfterEnd = new Record(topic, partition, afterOffset, new Values("after-key", "after-value"));
         final Record consumerRecordAfterEnd2 = new Record(topic, partition, afterOffset + 1, new Values("after-key2", "after-value2"));
 
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
+
         // Define expected results returned
-        final Message expectedMessageBeforeEndingOffset = new Message(new MessageId(topic, partition, beforeOffset, "ConsumerId"), new Values("before-key", "before-value"));
-        final Message expectedMessageEqualEndingOffset = new Message(new MessageId(topic, partition, endingOffset, "ConsumerId"), new Values("equal-key", "equal-value"));
+        final Message expectedMessageBeforeEndingOffset = new Message(new MessageId(topic, partition, beforeOffset, expectedConsumerId), new Values("before-key", "before-value"));
+        final Message expectedMessageEqualEndingOffset = new Message(new MessageId(topic, partition, endingOffset, expectedConsumerId), new Values("equal-key", "equal-value"));
 
         // Defining our Ending State
         final ConsumerState endingState = ConsumerState.builder()
@@ -517,7 +519,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, endingState);
-        virtualSpout.setVirtualSpoutId("ConsumerId");
+        virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 
         // Call nextTuple(), this should return our entry BEFORE the ending offset
@@ -589,7 +591,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 3;
         final long expectedOffset = 434323L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
@@ -733,7 +735,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -771,7 +773,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -807,7 +809,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -844,7 +846,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -861,7 +863,7 @@ public class VirtualSpoutTest {
         final String expectedTopicName = "MyTopic";
         final int expectedPartitionId = 33;
         final long expectedOffset = 313376L;
-        final MessageId messageId = new MessageId(expectedTopicName, expectedPartitionId, expectedOffset, "RandomConsumer");
+        final MessageId messageId = new MessageId(expectedTopicName, expectedPartitionId, expectedOffset, new VirtualSpoutIdentifier("RandomConsumer"));
 
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
@@ -883,7 +885,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Never called yet
@@ -926,14 +928,14 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Create our test MessageId
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
-        final String consumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Call our method & validate.
@@ -956,7 +958,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
-        final String consumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("myConsumerId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position equal to our MessageId
@@ -975,7 +977,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, endingState);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate.
@@ -997,7 +999,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
-        final String consumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position less than our MessageId
@@ -1016,7 +1018,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, endingState);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate.
@@ -1038,7 +1040,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
-        final String consumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position greater than than our MessageId
@@ -1057,7 +1059,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, endingState);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate.
@@ -1081,7 +1083,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 1;
         final long expectedOffset = 31332L;
-        final String consumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, consumerId);
 
         // Define our endingState with a position greater than than our MessageId, but on a different partition
@@ -1100,7 +1102,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, endingState);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate exception is thrown
@@ -1135,7 +1137,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Create our test MessageId
@@ -1179,7 +1181,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
         virtualSpout.open();
 
@@ -1240,7 +1242,7 @@ public class VirtualSpoutTest {
             startingState,
             null
         );
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
         virtualSpout.open();
 
@@ -1292,7 +1294,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
@@ -1334,7 +1336,7 @@ public class VirtualSpoutTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 3;
         final long expectedOffset = 434323L;
-        final String expectedConsumerId = "MyConsumerId";
+        final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
@@ -1409,7 +1411,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId("MyConsumerId");
+        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         final ConsumerState expectedConsumerState = ConsumerState

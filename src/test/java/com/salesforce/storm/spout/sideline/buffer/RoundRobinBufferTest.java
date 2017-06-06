@@ -6,6 +6,7 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -59,7 +60,7 @@ public class RoundRobinBufferTest {
         messageBuffer.open(config);
 
         // Keep track of our order per spoutId
-        final Map<String, Queue<Message>> submittedOrder = Maps.newHashMap();
+        final Map<VirtualSpoutIdentifier, Queue<Message>> submittedOrder = Maps.newHashMap();
 
         // Create random number generator
         Random random = new Random();
@@ -67,7 +68,7 @@ public class RoundRobinBufferTest {
         // Generate messages
         for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
             // Generate source spout id
-            final String sourceSpoutId = "srcSpoutId" + random.nextInt(numberOfVSpoutIds);
+            final VirtualSpoutIdentifier sourceSpoutId = new VirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
             final int partition = random.nextInt(10);
 
 
@@ -89,9 +90,9 @@ public class RoundRobinBufferTest {
         assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
 
         // Now ask for the messages back, they should get round robin'd
-        Iterator<String> keyIterator = Iterators.cycle(submittedOrder.keySet());
+        Iterator<VirtualSpoutIdentifier> keyIterator = Iterators.cycle(submittedOrder.keySet());
         for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
-            String nextSourceSpout = keyIterator.next();
+            VirtualSpoutIdentifier nextSourceSpout = keyIterator.next();
 
             // Pop a msg
             final Message bufferedMsg = messageBuffer.poll();
@@ -104,7 +105,7 @@ public class RoundRobinBufferTest {
             }
 
             // Get which spout this was a source from
-            final String bufferedSrcSpoutId = bufferedMsg.getMessageId().getSrcVirtualSpoutId();
+            final VirtualSpoutIdentifier bufferedSrcSpoutId = bufferedMsg.getMessageId().getSrcVirtualSpoutId();
 
             // Get the next message from this
             Message nextExpectedKafkaMsg = null;

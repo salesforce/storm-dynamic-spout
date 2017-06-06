@@ -14,7 +14,7 @@ public interface DelegateSpout {
 
     void fail(Object msgId);
 
-    String getVirtualSpoutId();
+    VirtualSpoutIdentifier getVirtualSpoutId();
 
     void flushState();
 

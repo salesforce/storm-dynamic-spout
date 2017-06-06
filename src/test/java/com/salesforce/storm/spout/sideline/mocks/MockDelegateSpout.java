@@ -4,6 +4,7 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 
@@ -15,7 +16,7 @@ import java.util.UUID;
  * A test mock.
  */
 public class MockDelegateSpout implements DelegateSpout {
-    private final String virtualSpoutId;
+    private final VirtualSpoutIdentifier virtualSpoutId;
     public volatile boolean requestedStop = false;
     public volatile boolean wasOpenCalled = false;
     public volatile boolean wasCloseCalled = false;
@@ -27,10 +28,10 @@ public class MockDelegateSpout implements DelegateSpout {
     public volatile Queue<Message> emitQueue = Queues.newConcurrentLinkedQueue();
 
     public MockDelegateSpout() {
-        this.virtualSpoutId = this.getClass().getSimpleName() + UUID.randomUUID().toString();
+        this.virtualSpoutId = new VirtualSpoutIdentifier(this.getClass().getSimpleName() + UUID.randomUUID().toString());
     }
 
-    public MockDelegateSpout(final String virtualSpoutId) {
+    public MockDelegateSpout(final VirtualSpoutIdentifier virtualSpoutId) {
         this.virtualSpoutId = virtualSpoutId;
     }
 
@@ -63,7 +64,7 @@ public class MockDelegateSpout implements DelegateSpout {
     }
 
     @Override
-    public String getVirtualSpoutId() {
+    public VirtualSpoutIdentifier getVirtualSpoutId() {
         return virtualSpoutId;
     }
 

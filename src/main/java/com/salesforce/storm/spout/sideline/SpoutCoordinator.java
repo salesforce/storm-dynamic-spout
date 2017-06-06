@@ -48,12 +48,12 @@ public class SpoutCoordinator {
     /**
      * Buffer by spout consumer id of messages that have been acked.
      */
-    private final Map<String,Queue<MessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
      * Buffer by spout consumer id of messages that have been failed.
      */
-    private final Map<String,Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
      * For capturing metrics.
@@ -77,7 +77,8 @@ public class SpoutCoordinator {
 
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
-     * @param spout Fire hose spout
+     * @param metricsRecorder Recorder for capturing metrics
+     * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
      */
     public SpoutCoordinator(MetricsRecorder metricsRecorder, MessageBuffer messageBuffer) {
         this.metricsRecorder = metricsRecorder;
@@ -220,14 +221,14 @@ public class SpoutCoordinator {
     /**
      * @return - The acked tuples queues.
      */
-    Map<String, Queue<MessageId>> getAckedTuplesQueue() {
+    Map<VirtualSpoutIdentifier, Queue<MessageId>> getAckedTuplesQueue() {
         return ackedTuplesQueue;
     }
 
     /**
      * @return - The failed tuples queues.
      */
-    Map<String, Queue<MessageId>> getFailedTuplesQueue() {
+    Map<VirtualSpoutIdentifier, Queue<MessageId>> getFailedTuplesQueue() {
         return failedTuplesQueue;
     }
 

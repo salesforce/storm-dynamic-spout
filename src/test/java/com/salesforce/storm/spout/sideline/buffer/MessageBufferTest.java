@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -92,7 +93,7 @@ public class MessageBufferTest {
                 final long startTime = System.currentTimeMillis();
                 for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
                     // Generate source spout id
-                    final String sourceSpoutId = "srcSpoutId" + random.nextInt(numberOfVSpoutIds);
+                    final VirtualSpoutIdentifier sourceSpoutId = new VirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
                     final int partition = random.nextInt(10);
 
 

@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
@@ -16,28 +17,30 @@ public class FilterChainTest {
      */
     @Test
     public void testChain() {
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("FakeConsumer");
+
         final Message message1 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(1)
         );
 
         final Message message2 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(2)
         );
 
         final Message message3 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(3)
         );
 
         final Message message4 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(4)
         );
 
         final Message message5 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(5)
         );
 
@@ -60,13 +63,15 @@ public class FilterChainTest {
      */
     @Test
     public void testNegatingChain() {
+        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("FakeConsumer");
+
         final Message message1 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(1)
         );
 
         final Message message2 = new Message(
-            new MessageId("foobar", 1, 0L, "FakeConsumer"),
+            new MessageId("foobar", 1, 0L, consumerId),
             new Values(2)
         );
 
