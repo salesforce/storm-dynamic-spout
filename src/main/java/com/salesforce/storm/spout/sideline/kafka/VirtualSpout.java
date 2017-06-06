@@ -189,32 +189,31 @@ public class VirtualSpout implements DelegateSpout {
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
         if (consumer == null) {
-            // Create our deserializer
-            final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
-
-            // Create persistence manager instance and open.
-            final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-            persistenceAdapter.open(getSpoutConfig());
-
-            // Construct SidelineConsumerConfig based on topology config.
-            final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-            final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-            final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
-            consumerConfig.setNumberOfConsumers(
-                topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
-            );
-            consumerConfig.setIndexOfConsumer(
-                topologyContext.getThisTaskIndex()
-            );
-
             // Create sideline consumer
-            consumer = new Consumer(consumerConfig, persistenceAdapter, deserializer);
+            consumer = new Consumer();
         }
 
-        // Open the consumer
-        consumer.open(startingState);
+        // Create consumer dependencies
+        final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
+        final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
+        persistenceAdapter.open(getSpoutConfig());
 
-        // TEMP
+        // Construct SidelineConsumerConfig based on topology config.
+        final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
+        final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
+        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
+        consumerConfig.setNumberOfConsumers(
+            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
+        );
+        consumerConfig.setIndexOfConsumer(
+            topologyContext.getThisTaskIndex()
+        );
+
+        // Open consumer
+        consumer.open(consumerConfig, persistenceAdapter, deserializer, startingState);
+
+        // Temporary metric buckets.
+        // TODO - convert to using proper metrics recorder?
         nextTupleTimeBuckets.put("failedRetry", 0L);
         nextTupleTimeBuckets.put("isFiltered", 0L);
         nextTupleTimeBuckets.put("nextRecord", 0L);

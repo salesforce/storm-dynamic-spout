@@ -11,30 +11,30 @@ import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
  * This was created by looking at our Kafka based consumer and pulling all of the public methods.
  */
 public interface Consumer {
-    public void open(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final ConsumerState startingState);
+    void open(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final ConsumerState startingState);
 
     // Next entry to process
     public Record nextRecord();
 
     // Which of these three is best?
-    public void commitOffset(final ConsumerPartition consumerPartition, final long offset);
-    public void commitOffset(final String namespace, final int partition, final long offset);
-    public void commitOffset(final Record record);
+    void commitOffset(final ConsumerPartition consumerPartition, final long offset);
+    void commitOffset(final String namespace, final int partition, final long offset);
+    void commitOffset(final Record record);
 
     // State related methods
     public ConsumerState getCurrentState();
     public ConsumerState flushConsumerState();
 
     // This feels like it should be removed as well? Maybe?
-    public void removeConsumerState();
+    void removeConsumerState();
 
     // Maybe the logic in VSpout that needs this can be refactored within KafkaConsumer?
-    public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe);
+    boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe);
 
     // Not sure if this is needed or not.
-    public String getConsumerId();
+    String getConsumerId();
 
-    public double getMaxLag();
+    double getMaxLag();
 
-    public void close();
+    void close();
 }

@@ -59,12 +59,13 @@ import java.util.Set;
  *
  * Internally the consumer will recognize that 3 -> 5 are all complete, and now mark offset #5 as the last finished offset.
  */
-public class Consumer {
+// TODO - rename this class
+public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Consumer {
     // For logging.
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
     // Kafka Consumer Instance and its Config.
-    private final ConsumerConfig consumerConfig;
+    private ConsumerConfig consumerConfig;
     private KafkaConsumer<byte[], byte[]> kafkaConsumer;
 
     /**
@@ -77,12 +78,12 @@ public class Consumer {
      * ConsumerStateManager - Used to manage persisting consumer state, and when the consumer is restarted,
      * loading the last known consumer state back in.
      */
-    private final PersistenceAdapter persistenceAdapter;
+    private PersistenceAdapter persistenceAdapter;
 
     /**
      * Our Deserializer, it deserializes messages from Kafka into objects.
      */
-    private final Deserializer deserializer;
+    private Deserializer deserializer;
 
     /**
      * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
@@ -102,13 +103,20 @@ public class Consumer {
     private transient Clock clock = Clock.systemUTC();
     private long lastFlushTime = 0;
 
+    // Default constructor
+    public Consumer() {
+
+    }
+
+    public Consumer(final KafkaConsumer<byte[], byte[]> kafkaConsumer) {
+        this();
+        this.kafkaConsumer = kafkaConsumer;
+    }
+
     /**
      * Constructor.
-     * @param consumerConfig Configuration for our consumer
-     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
-     * @param deserializer Deserializer instance to use.
-     * @todo - Refactor this to build the Deserializer, persistence adapter based on a config.
      */
+    // TODO REMOVE CONSTRUCTOR
     public Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer) {
         this.consumerConfig = consumerConfig;
         this.persistenceAdapter = persistenceAdapter;
@@ -116,22 +124,10 @@ public class Consumer {
     }
 
     /**
-     * This constructor is used to inject a mock KafkaConsumer for tests.
-     * @param consumerConfig Configuration for our consumer
-     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
-     * @param kafkaConsumer Inject a mock KafkaConsumer for tests.
-     * @todo - Refactor this to build the Deserializer, persistence adapter based on a config.
-     */
-    protected Consumer(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final KafkaConsumer<byte[], byte[]> kafkaConsumer) {
-        this(consumerConfig, persistenceAdapter, deserializer);
-        this.kafkaConsumer = kafkaConsumer;
-    }
-
-    /**
      * Get the kafka consumer, if it has been retried yet, set it up.
      * @return Kafka consumer
      */
-    private KafkaConsumer getKafkaConsumer() {
+    private KafkaConsumer<byte[], byte[]> getKafkaConsumer() {
         // If kafkaConsumer is not null, we'll create one.
         // If it is NOT null, we'll re-use the instance we got passed in from the constructor.
         // Typically you'd pass in an instance for testing.
@@ -143,39 +139,43 @@ public class Consumer {
         return kafkaConsumer;
     }
 
-    /**
-     * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
-     * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
-     * each partition.
-     */
-    public void open() {
-        open(null);
+    // TODO REMOVE
+    public void open(final ConsumerState startingState) {
+        open(getConsumerConfig(), getPersistenceAdapter(), getDeserializer(), startingState);
     }
 
     /**
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
+     * @param consumerConfig Configuration for our consumer
+     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
+     * @param deserializer Deserializer instance to use.
+     * @param startingState Starting state that the consumer should use.  optional, can be null.
      */
-    public void open(final ConsumerState startingState) {
+    @Override
+    public void open(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final ConsumerState startingState) {
         // Simple state enforcement.
         if (isOpen) {
             throw new IllegalStateException("Cannot call open more than once.");
         }
         isOpen = true;
 
-        List<TopicPartition> topicPartitions = getPartitions();
+        // Save references
+        this.consumerConfig = consumerConfig;
+        this.persistenceAdapter = persistenceAdapter;
+        this.deserializer = deserializer;
 
+        // Get partitions
+        List<TopicPartition> topicPartitions = getPartitions();
         if (topicPartitions.isEmpty()) {
             throw new RuntimeException("Cannot assign partitions when there are none!");
         }
 
-        final KafkaConsumer kafkaConsumer = getKafkaConsumer();
-
         logger.info("Assigning namespace and partitions = {}", topicPartitions);
 
         // Assign our consumer to the given partitions
-        kafkaConsumer.assign(topicPartitions);
+        getKafkaConsumer().assign(topicPartitions);
 
         for (TopicPartition topicPartition : topicPartitions) {
             Long startingOffset = null;
@@ -197,7 +197,7 @@ public class Consumer {
                 getKafkaConsumer().seek(topicPartition, (offset + 1));
             } else {
                 // We do not have an existing offset saved, so start from the head
-                kafkaConsumer.seekToBeginning(Collections.singletonList(topicPartition));
+                getKafkaConsumer().seekToBeginning(Collections.singletonList(topicPartition));
                 offset = getKafkaConsumer().position(topicPartition) - 1;
                 logger.info("Starting at the beginning of namespace {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
             }
@@ -354,7 +354,7 @@ public class Consumer {
         if (buffer == null || !bufferIterator.hasNext()) {
             // Time to refill the buffer
             try {
-                buffer = kafkaConsumer.poll(300);
+                buffer = getKafkaConsumer().poll(300);
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
                 handleOffsetOutOfRange(outOfRangeException);
@@ -483,7 +483,7 @@ public class Consumer {
         Set<ConsumerPartition> assignedPartitions = new HashSet<>();
 
         // Loop over resumes from underlying kafka consumer
-        for (TopicPartition topicPartition: kafkaConsumer.assignment()) {
+        for (TopicPartition topicPartition: getKafkaConsumer().assignment()) {
             // Convert object type
             assignedPartitions.add(new ConsumerPartition(topicPartition.topic(), topicPartition.partition()));
         }
