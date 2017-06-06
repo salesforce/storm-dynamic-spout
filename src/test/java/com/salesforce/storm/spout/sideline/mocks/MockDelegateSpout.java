@@ -5,7 +5,7 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 
 import java.util.Queue;

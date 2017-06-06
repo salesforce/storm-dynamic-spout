@@ -7,7 +7,7 @@ import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
-import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
+import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.slf4j.Logger;

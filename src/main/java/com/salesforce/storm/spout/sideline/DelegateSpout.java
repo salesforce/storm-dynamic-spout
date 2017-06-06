@@ -1,6 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 
 public interface DelegateSpout {
 

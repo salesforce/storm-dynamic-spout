@@ -1,17 +1,17 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.FactoryManager;
-import com.salesforce.storm.spout.sideline.Message;
-import com.salesforce.storm.spout.sideline.MessageId;
-import com.salesforce.storm.spout.sideline.ConsumerPartition;
-import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.kafka.Consumer;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
@@ -19,11 +19,11 @@ import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.junit.Rule;
 import org.junit.Test;
@@ -221,7 +221,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(eq(null));
+        verify(mockConsumer, times(1)).open(any(ConsumerConfig.class), any(ZookeeperPersistenceAdapter.class), any(Utf8StringDeserializer.class), eq(null));
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -247,9 +247,11 @@ public class VirtualSpoutTest {
         // Create a mock Deserializer
         Deserializer mockDeserializer = mock(Deserializer.class);
         RetryManager mockRetryManager = mock(RetryManager.class);
+        PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager, null);
+        when(mockFactoryManager.createNewPersistenceAdapterInstance()).thenReturn(mockPersistenceAdapter);
 
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
@@ -265,7 +267,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(eq(null));
+        verify(mockConsumer, times(1)).open(any(ConsumerConfig.class), eq(mockPersistenceAdapter), eq(mockDeserializer), eq(null));
     }
 
     /**
@@ -309,29 +311,11 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * Tests what happens when you call nextTuple(), and the underlying deserializer fails to
-     * deserialize (returns null), then nextTuple() should return null.
+     * Tests what happens when you call nextTuple(), and the underlying consumer
+     * returns null.
      */
     @Test
     public void testNextTupleWhenSerializerFailsToDeserialize() {
-        // Define a deserializer that always returns null
-        final Deserializer nullDeserializer = new Deserializer() {
-            @Override
-            public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-                return null;
-            }
-
-            @Override
-            public Fields getOutputFields() {
-                return new Fields();
-            }
-        };
-
-        // Define some inputs
-        final String expectedTopic = "MyTopic";
-        final int expectedPartition = 3;
-        final long expectedOffset = 434323L;
-
         // Create test config
         final Map topologyConfig = getDefaultConfig();
 
@@ -339,13 +323,12 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(nullDeserializer, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, null, null);
 
         // Create a mock Consumer
         final Consumer mockConsumer = mock(Consumer.class);
-        when(mockConsumer.getCurrentState()).thenReturn(ConsumerState.builder().build());
 
-        // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
+        // When nextRecord() is called on the mockSidelineConsumer, we need to return null
         when(mockConsumer.nextRecord()).thenReturn(null);
 
         // Create spout & open
@@ -645,7 +628,7 @@ public class VirtualSpoutTest {
         when(mockRetryManager.nextFailedMessageToRetry()).thenReturn(null, expectedMessage.getMessageId(), null);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -739,7 +722,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
@@ -813,7 +796,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
@@ -888,7 +871,7 @@ public class VirtualSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
@@ -1376,7 +1359,7 @@ public class VirtualSpoutTest {
         RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -1418,7 +1401,7 @@ public class VirtualSpoutTest {
         Consumer mockConsumer = mock(Consumer.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -1460,6 +1443,7 @@ public class VirtualSpoutTest {
         defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
         defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
+        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
         defaultConfig.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         return SidelineSpoutConfig.setDefaults(defaultConfig);
@@ -1468,7 +1452,7 @@ public class VirtualSpoutTest {
     /**
      * Utility method for creating a mock factory manager.
      */
-    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager) {
+    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager, PersistenceAdapter persistenceAdapter) {
         // Create our mock
         FactoryManager factoryManager = mock(FactoryManager.class);
 
@@ -1484,6 +1468,11 @@ public class VirtualSpoutTest {
             retryManager = new NeverRetryManager();
         }
         when(factoryManager.createNewFailedMsgRetryManagerInstance()).thenReturn(retryManager);
+
+        if (persistenceAdapter == null) {
+            persistenceAdapter = new InMemoryPersistenceAdapter();
+        }
+        when(factoryManager.createNewPersistenceAdapterInstance()).thenReturn(persistenceAdapter);
 
         return factoryManager;
     }
