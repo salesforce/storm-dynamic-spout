@@ -19,6 +19,19 @@ public class VirtualSpoutIdentifierTest {
     }
 
     /**
+     * Test that two identifiers that are different do not match
+     * @throws Exception Bad identifier
+     */
+    @Test
+    public void test_not_toString_and_equals() throws Exception {
+        final VirtualSpoutIdentifier virtualSpoutIdentifier1 = new VirtualSpoutIdentifier("Foo");
+        final VirtualSpoutIdentifier virtualSpoutIdentifier2 = new VirtualSpoutIdentifier("Bar");
+
+        assertNotEquals(virtualSpoutIdentifier1, virtualSpoutIdentifier2);
+        assertNotEquals(virtualSpoutIdentifier1.toString(), virtualSpoutIdentifier2.toString());
+    }
+
+    /**
      * Test that supplying null will throw an exception
      */
     @Test(expected = IllegalArgumentException.class)
