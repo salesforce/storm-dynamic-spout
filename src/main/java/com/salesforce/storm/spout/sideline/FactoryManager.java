@@ -181,7 +181,7 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured MessageBuffer interface.
+     * @return returns a new instance of the configured Consumer interface.
      */
     public synchronized Consumer createNewConsumerInstance() {
         if (consumerClass == null) {
