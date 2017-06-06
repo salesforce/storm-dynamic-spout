@@ -1,5 +1,6 @@
-package com.salesforce.storm.spout.sideline;
+package com.salesforce.storm.spout.sideline.consumer;
 
+import com.salesforce.storm.spout.sideline.consumer.PartitionDistributor;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
