@@ -1110,7 +1110,7 @@ public class ConsumerTest {
             validateRecordMatchesInput(expectedRecord, foundRecord);
 
             // Ack this message
-            consumer.commitOffset(foundRecord);
+            consumer.commitOffset(foundRecord.getNamespace(), foundRecord.getPartition(), foundRecord.getOffset());
 
             // Verify it got updated to our current offset
             validateConsumerState(consumer.flushConsumerState(), partition0, foundRecord.getOffset());
@@ -1172,7 +1172,7 @@ public class ConsumerTest {
 
         // Now ack them one by one
         for (Record foundRecord : foundRecords) {
-            consumer.commitOffset(foundRecord);
+            consumer.commitOffset(foundRecord.getNamespace(), foundRecord.getPartition(), foundRecord.getOffset());
         }
 
         // Now validate state.
@@ -1237,39 +1237,39 @@ public class ConsumerTest {
 
         // Now ack in the following order:
         // commit offset 2 => offset should be 0 still
-        consumer.commitOffset(partition0, 2L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 2L);
         validateConsumerState(consumer.flushConsumerState(), partition0, -1L);
 
         // commit offset 1 => offset should be 0 still
-        consumer.commitOffset(partition0, 1L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 1L);
         validateConsumerState(consumer.flushConsumerState(), partition0, -1L);
 
         // commit offset 0 => offset should be 2 now
-        consumer.commitOffset(partition0, 0L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 0L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
 
         // commit offset 3 => offset should be 3 now
-        consumer.commitOffset(partition0, 3L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 3L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 3L);
 
         // commit offset 4 => offset should be 4 now
-        consumer.commitOffset(partition0, 4L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 4L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 4L);
 
         // commit offset 5 => offset should be 5 now
-        consumer.commitOffset(partition0, 5L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 5L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 5L);
 
         // commit offset 7 => offset should be 5 still
-        consumer.commitOffset(partition0, 7L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 7L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 5L);
 
         // commit offset 8 => offset should be 5 still
-        consumer.commitOffset(partition0, 8L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 8L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 5L);
 
         // commit offset 6 => offset should be 8 now
-        consumer.commitOffset(partition0, 6L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 6L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 8L);
 
         // Now validate state.
@@ -1480,42 +1480,42 @@ public class ConsumerTest {
         validateConsumerState(consumer.flushConsumerState(), partition1, -1L);
 
         // Ack offset 1 on partition 0, state should be: [partition0: -1, partition1: -1]
-        consumer.commitOffset(partition0, 1L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 1L);
         validateConsumerState(consumer.flushConsumerState(), partition0, -1L);
         validateConsumerState(consumer.flushConsumerState(), partition1, -1L);
 
         // Ack offset 0 on partition 0, state should be: [partition0: 1, partition1: -1]
-        consumer.commitOffset(partition0, 0L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 0L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 1L);
         validateConsumerState(consumer.flushConsumerState(), partition1, -1L);
 
         // Ack offset 2 on partition 0, state should be: [partition0: 2, partition1: -1]
-        consumer.commitOffset(partition0, 2L);
+        consumer.commitOffset(partition0.namespace(), partition0.partition(), 2L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
         validateConsumerState(consumer.flushConsumerState(), partition1, -1L);
 
         // Ack offset 0 on partition 1, state should be: [partition0: 2, partition1: 0]
-        consumer.commitOffset(partition1, 0L);
+        consumer.commitOffset(partition1.namespace(), partition1.partition(), 0L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
         validateConsumerState(consumer.flushConsumerState(), partition1, 0L);
 
         // Ack offset 2 on partition 1, state should be: [partition0: 2, partition1: 0]
-        consumer.commitOffset(partition1, 2L);
+        consumer.commitOffset(partition1.namespace(), partition1.partition(), 2L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
         validateConsumerState(consumer.flushConsumerState(), partition1, 0L);
 
         // Ack offset 0 on partition 1, state should be: [partition0: 2, partition1: 0]
-        consumer.commitOffset(partition1, 0L);
+        consumer.commitOffset(partition1.namespace(), partition1.partition(), 0L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
         validateConsumerState(consumer.flushConsumerState(), partition1, 0L);
 
         // Ack offset 1 on partition 1, state should be: [partition0: 2, partition1: 2]
-        consumer.commitOffset(partition1, 1L);
+        consumer.commitOffset(partition1.namespace(), partition1.partition(), 1L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
         validateConsumerState(consumer.flushConsumerState(), partition1, 2L);
 
         // Ack offset 3 on partition 1, state should be: [partition0: 2, partition1: 3]
-        consumer.commitOffset(partition1, 3L);
+        consumer.commitOffset(partition1.namespace(), partition1.partition(), 3L);
         validateConsumerState(consumer.flushConsumerState(), partition0, 2L);
         validateConsumerState(consumer.flushConsumerState(), partition1, 3L);
 
@@ -1610,7 +1610,7 @@ public class ConsumerTest {
             assertTrue("Should be from one of our expected partitions", foundPartitionId == expectedPartitions.get(0).partition() || foundPartitionId == expectedPartitions.get(1).partition());
 
             // Lets ack the tuple as we go
-            consumer.commitOffset(foundRecord);
+            consumer.commitOffset(foundRecord.getNamespace(), foundRecord.getPartition(), foundRecord.getOffset());
         }
 
         // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
@@ -1757,7 +1757,7 @@ public class ConsumerTest {
             assertTrue("Should be from one of our expected partitions", expectedPartitions.contains(new ConsumerPartition(topicName, foundPartitionId)));
 
             // Lets ack the tuple as we go
-            consumer.commitOffset(foundRecord);
+            consumer.commitOffset(foundRecord.getNamespace(), foundRecord.getPartition(), foundRecord.getOffset());
         }
 
         // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.

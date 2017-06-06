@@ -43,6 +43,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -306,8 +307,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null",  result);
 
         // Verify ack is never called on underlying mock sideline consumer
-        verify(mockConsumer, never()).commitOffset(any(), anyLong());
-        verify(mockConsumer, never()).commitOffset(any());
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
     }
 
     /**
@@ -568,8 +568,8 @@ public class VirtualSpoutTest {
         verify(mockConsumer, times(2)).unsubscribeConsumerPartition(eq(new ConsumerPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
-        verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset);
-        verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset + 1);
+        verify(mockConsumer, times(0)).commitOffset(topic, partition, afterOffset);
+        verify(mockConsumer, times(0)).commitOffset(topic, partition, afterOffset + 1);
     }
 
     /**
@@ -745,7 +745,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, never()).retryFurther(anyObject());
         verify(mockRetryManager, never()).acked(anyObject());
         verify(mockRetryManager, never()).failed(anyObject());
-        verify(mockConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
     }
 
     /**
@@ -816,8 +816,7 @@ public class VirtualSpoutTest {
         virtualSpout.ack(null);
 
         // No interactions w/ our mock sideline consumer for committing offsets
-        verify(mockConsumer, never()).commitOffset(any(ConsumerPartition.class), anyLong());
-        verify(mockConsumer, never()).commitOffset(any(Record.class));
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
     }
 
@@ -889,7 +888,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Never called yet
-        verify(mockConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
 
         // Call ack with a string object, it should throw an exception.
