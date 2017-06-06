@@ -4,12 +4,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
-import com.salesforce.storm.spout.sideline.FactoryManager;
-import com.salesforce.storm.spout.sideline.Message;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
-import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
@@ -17,13 +15,11 @@ import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import com.google.common.base.Charsets;
-import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.junit.AfterClass;
@@ -43,7 +39,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -127,10 +122,10 @@ public class ConsumerTest {
     }
 
     /**
-     * Tests the constructor saves off instances of things passed into it properly.
+     * Tests that open() saves off instances of things passed into it properly.
      */
     @Test
-    public void testConstructor() {
+    public void testOpenSetsProperties() {
         // Create config
         final ConsumerConfig config = getDefaultSidelineConsumerConfig(topicName);
 
@@ -142,7 +137,8 @@ public class ConsumerTest {
         final Deserializer deserializer = new Utf8StringDeserializer();
 
         // Call constructor
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Validate our instances got set
         assertNotNull("Config is not null", consumer.getConsumerConfig());
@@ -151,6 +147,8 @@ public class ConsumerTest {
         assertEquals(persistenceAdapter, consumer.getPersistenceAdapter());
         assertNotNull("Deserializer is not null", consumer.getDeserializer());
         assertEquals(deserializer, consumer.getDeserializer());
+
+        consumer.close();
     }
 
     /**
@@ -179,7 +177,9 @@ public class ConsumerTest {
         KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), we should return a single partition number 0 for our namespace.
-        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]));
+        List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
+            new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0])
+        );
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // When we ask for the position of partition 0, we should return 1000L
@@ -192,17 +192,17 @@ public class ConsumerTest {
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, deserializer, mockKafkaConsumer);
+        Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open();
+        consumer.open(config, mockPersistenceAdapter, deserializer,null);
 
         // Now call open again, we expect this to throw an exception
         expectedException.expect(IllegalStateException.class);
         expectedException.expectMessage("open more than once");
 
         // Call it
-        consumer.open();
+        consumer.open(config, mockPersistenceAdapter, deserializer,null);
     }
 
     /**
@@ -236,10 +236,9 @@ public class ConsumerTest {
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // Call constructor
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
+        Consumer consumer = new Consumer(mockKafkaConsumer);
         consumer.setClock(mockClock);
-
-        consumer.open();
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
 
         // Call our method once
         consumer.timedFlushConsumerState();
@@ -314,10 +313,10 @@ public class ConsumerTest {
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
         // Call constructor
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer);
+        Consumer consumer = new Consumer();
         consumer.setClock(mockClock);
 
-        consumer.open();
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer,null);
 
         // Call our method once
         consumer.timedFlushConsumerState();
@@ -406,10 +405,8 @@ public class ConsumerTest {
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
-
-        // Now call open
-        consumer.open();
+        Consumer consumer = new Consumer(mockKafkaConsumer);
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(kafkaTopicPartition0)));
@@ -487,10 +484,8 @@ public class ConsumerTest {
         when(mockKafkaConsumer.position(kafkaTopicPartition2)).thenReturn(earliestPositionPartition2);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
-
-        // Now call open
-        consumer.open();
+        Consumer consumer = new Consumer(mockKafkaConsumer);
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -569,10 +564,8 @@ public class ConsumerTest {
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(0))).thenReturn(lastCommittedOffset);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
-
-        // Now call open
-        consumer.open();
+        Consumer consumer = new Consumer(mockKafkaConsumer);
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer,null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(partition0)));
@@ -640,10 +633,10 @@ public class ConsumerTest {
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), eq(partition2.partition()))).thenReturn(lastCommittedOffsetPartition2);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
+        Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open();
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -743,10 +736,10 @@ public class ConsumerTest {
         Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Call constructor injecting our mocks
-        Consumer consumer = new Consumer(config, mockPersistenceAdapter, mockDeserializer, mockKafkaConsumer);
+        Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open();
+        consumer.open(config, mockPersistenceAdapter, mockDeserializer, null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
@@ -811,8 +804,8 @@ public class ConsumerTest {
         Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, mockDeserializer,null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -847,8 +840,8 @@ public class ConsumerTest {
         Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, mockDeserializer,null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -883,8 +876,8 @@ public class ConsumerTest {
         Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, mockDeserializer,null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -946,8 +939,8 @@ public class ConsumerTest {
         Deserializer mockDeserializer = mock(Deserializer.class);
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, mockDeserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, mockDeserializer, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1042,8 +1035,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -1102,8 +1095,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -1154,8 +1147,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Read from namespace, verify we get what we expect
         List<Record> foundRecords = Lists.newArrayList();
@@ -1219,8 +1212,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Read from namespace, verify we get what we expect
         List<Record> foundRecords = Lists.newArrayList();
@@ -1322,8 +1315,8 @@ public class ConsumerTest {
         persistenceAdapter.open(Maps.newHashMap());
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, nullDeserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, nullDeserializer, null);
 
         // Read from namespace, verify we get what we expect
         for (int x=0; x<numberOfRecordsToProduce; x++) {
@@ -1377,8 +1370,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Read from namespace, verify we get what we expect, we should only get the last 5 records.
         List<Record> consumedRecords = asyncConsumeMessages(consumer, 5);
@@ -1431,8 +1424,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1593,8 +1586,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1738,8 +1731,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1857,8 +1850,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1934,8 +1927,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -2079,8 +2072,8 @@ public class ConsumerTest {
         Deserializer deserializer = new Utf8StringDeserializer();
 
         // Create our consumer
-        Consumer consumer = new Consumer(config, persistenceAdapter, deserializer);
-        consumer.open();
+        Consumer consumer = new Consumer();
+        consumer.open(config, persistenceAdapter, deserializer, null);
 
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();

@@ -1,16 +1,13 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.DelegateSpout;
-import com.salesforce.storm.spout.sideline.FactoryManager;
-import com.salesforce.storm.spout.sideline.Message;
-import com.salesforce.storm.spout.sideline.ConsumerPartition;
-import com.salesforce.storm.spout.sideline.Tools;
-import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
+import com.salesforce.storm.spout.sideline.kafka.Consumer;
+import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -189,32 +186,31 @@ public class VirtualSpout implements DelegateSpout {
         // Create underlying kafka consumer - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
         if (consumer == null) {
-            // Create our deserializer
-            final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
-
-            // Create persistence manager instance and open.
-            final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-            persistenceAdapter.open(getSpoutConfig());
-
-            // Construct SidelineConsumerConfig based on topology config.
-            final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-            final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-            final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
-            consumerConfig.setNumberOfConsumers(
-                topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
-            );
-            consumerConfig.setIndexOfConsumer(
-                topologyContext.getThisTaskIndex()
-            );
-
             // Create sideline consumer
-            consumer = new Consumer(consumerConfig, persistenceAdapter, deserializer);
+            consumer = new Consumer();
         }
 
-        // Open the consumer
-        consumer.open(startingState);
+        // Create consumer dependencies
+        final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
+        final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
+        persistenceAdapter.open(getSpoutConfig());
 
-        // TEMP
+        // Construct SidelineConsumerConfig based on topology config.
+        final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
+        final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
+        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId(), topic);
+        consumerConfig.setNumberOfConsumers(
+            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
+        );
+        consumerConfig.setIndexOfConsumer(
+            topologyContext.getThisTaskIndex()
+        );
+
+        // Open consumer
+        consumer.open(consumerConfig, persistenceAdapter, deserializer, startingState);
+
+        // Temporary metric buckets.
+        // TODO - convert to using proper metrics recorder?
         nextTupleTimeBuckets.put("failedRetry", 0L);
         nextTupleTimeBuckets.put("isFiltered", 0L);
         nextTupleTimeBuckets.put("nextRecord", 0L);

@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.storm.spout.SpoutOutputCollector;
