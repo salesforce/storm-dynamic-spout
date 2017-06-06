@@ -9,6 +9,9 @@ import java.util.Set;
 
 /**
  * Utility class to help with managing offsets across multiple ConsumerPartitions from a single Consumer instance.
+ *
+ * Since offsets are managed on a per partition basis, each ConsumerPartition has its own PartitionStateManager
+ * instance to track its own offset.
  */
 public class OffsetsManager {
     /**
