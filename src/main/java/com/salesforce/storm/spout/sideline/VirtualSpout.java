@@ -7,7 +7,7 @@ import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;

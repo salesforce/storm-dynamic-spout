@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline.kafka;
+package com.salesforce.storm.spout.sideline.consumer;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;

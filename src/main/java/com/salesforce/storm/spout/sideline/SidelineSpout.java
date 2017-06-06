@@ -3,7 +3,7 @@ package com.salesforce.storm.spout.sideline;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;

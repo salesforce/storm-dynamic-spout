@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

@@ -2,7 +2,6 @@ package com.salesforce.storm.spout.sideline.consumer;
 
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 
