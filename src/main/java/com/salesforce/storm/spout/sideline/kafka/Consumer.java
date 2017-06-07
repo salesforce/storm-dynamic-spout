@@ -1,13 +1,11 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.PartitionDistributor;
-import com.salesforce.storm.spout.sideline.consumer.PartitionOffsetManager;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
@@ -212,7 +210,11 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 // We do not have an existing offset saved, so start from the head
                 getKafkaConsumer().seekToBeginning(Collections.singletonList(topicPartition));
                 offset = getKafkaConsumer().position(topicPartition) - 1;
-                logger.info("Starting at the beginning of namespace {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
+
+                logger.info(
+                    "Starting at the beginning of namespace {} partition {} => offset {}",
+                    topicPartition.topic(), topicPartition.partition(), offset
+                );
             }
 
             // Start tracking offsets on ConsumerPartition
@@ -469,7 +471,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     /**
      * @return The defined consumer config.
      */
-    public ConsumerConfig getConsumerConfig() {
+    ConsumerConfig getConsumerConfig() {
         return consumerConfig;
     }
 
@@ -483,7 +485,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     /**
      * @return A set of all the partitions currently subscribed to.
      */
-    public Set<ConsumerPartition> getAssignedPartitions() {
+    Set<ConsumerPartition> getAssignedPartitions() {
         // Create our return set using abstracted TopicPartition
         Set<ConsumerPartition> assignedPartitions = new HashSet<>();
 

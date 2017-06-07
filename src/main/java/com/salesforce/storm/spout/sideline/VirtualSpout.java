@@ -42,7 +42,7 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Holds reference to our spout configuration.
      */
-    private final Map spoutConfig;
+    private final Map<String, Object> spoutConfig;
 
     /**
      * Our Factory Manager.
@@ -351,7 +351,7 @@ public class VirtualSpout implements DelegateSpout {
      * @param messageId - The MessageId to check.
      * @return - Boolean - True if it does, false if it does not.
      */
-    protected boolean doesMessageExceedEndingOffset(final MessageId messageId) {
+    boolean doesMessageExceedEndingOffset(final MessageId messageId) {
         // If no end offsets defined
         if (endingState == null) {
             // Then this check is a no-op, return false
