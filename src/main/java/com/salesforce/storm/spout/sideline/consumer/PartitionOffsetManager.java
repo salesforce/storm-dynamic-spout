@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline;
+package com.salesforce.storm.spout.sideline.consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,7 +7,23 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 /**
- * Tracks which offsets for a specific namespace/partition have been processed.
+ * Tracks which offsets for a specific namespace/partition have been started or processed.
+ *
+ * An offset is considered "started" when it has been emitted into the topology, but not yet confirmed
+ * as being fully completed.
+ *
+ * An offset is considered "finished" when it has been acked by the topology confirming it has been fully processed.
+ *
+ * The "last started offset" is defined as being the LOWEST "started" and NOT "finished" offset.
+ *
+ * The "last finished offset" is defined as being the HIGHEST continuous offset that has been "finished".
+ *
+ * Example:
+ *   We have started offsets:  [0,1,2,3,4,5]
+ *   We have finished offsets: [0,1,3,5]
+ *
+ *   The "last started offset" would be 5
+ *   The "last finished offset" would be 3, since 0-3 have been finished, but 4 has not.
  */
 public class PartitionOffsetManager {
     private static final Logger logger = LoggerFactory.getLogger(PartitionOffsetManager.class);
@@ -134,6 +150,7 @@ public class PartitionOffsetManager {
         // if we haven't started tracking anything yet.
         if ((lastFinishedOffset + 1) > lastStartedOffset) {
             // return last finished offset + 1,
+            // @todo Stephen - I think this may be the source of some invalid offset bugs.
             return (lastFinishedOffset + 1);
         }
         return lastStartedOffset;

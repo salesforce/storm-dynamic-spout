@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -50,7 +51,16 @@ public class FactoryManager implements Serializable {
      */
     private transient Class<? extends MessageBuffer> messageBufferClass;
 
-    public FactoryManager(Map spoutConfig) {
+    /**
+     * Class instance of our Consumer.
+     */
+    private transient Class<? extends Consumer> consumerClass;
+
+    /**
+     * Constructor.
+     * @param spoutConfig Spout config.
+     */
+    public FactoryManager(Map<String, Object> spoutConfig) {
         // Create immutable copy of configuration.
         this.spoutConfig = Tools.immutableCopy(spoutConfig);
     }
@@ -169,4 +179,28 @@ public class FactoryManager implements Serializable {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * @return returns a new instance of the configured Consumer interface.
+     */
+    public synchronized Consumer createNewConsumerInstance() {
+        if (consumerClass == null) {
+            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.CONSUMER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_CLASS);
+            }
+
+            try {
+                consumerClass = (Class<? extends Consumer>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return consumerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

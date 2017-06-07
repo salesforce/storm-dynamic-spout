@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer;
@@ -29,6 +30,15 @@ public class SidelineSpoutConfig {
      * Should be a full classpath to a class that implements the Deserializer interface.
      */
     public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
+
+///////////////////////////////////
+// Consumer Config
+///////////////////////////////////
+    /**
+     * (String) Defines which Consumer implementation to use.
+     * Should be a full classpath to a class that implements the Consumer interface.
+     */
+    public static final String CONSUMER_CLASS = "sideline_spout.consumer.class";
 
 ///////////////////////////////////
 // Kafka Consumer Config
@@ -227,6 +237,11 @@ public class SidelineSpoutConfig {
         if (!clonedConfig.containsKey(OUTPUT_STREAM_ID)) {
             clonedConfig.put(OUTPUT_STREAM_ID, "default");
             logger.info("Unspecified configuration value for {} using default value {}", OUTPUT_STREAM_ID, clonedConfig.get(OUTPUT_STREAM_ID));
+        }
+        if (!clonedConfig.containsKey(CONSUMER_CLASS)) {
+            // For now default KafkaConsumer
+            clonedConfig.put(CONSUMER_CLASS, Consumer.class);
+            logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_CLASS, clonedConfig.get(CONSUMER_CLASS));
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());

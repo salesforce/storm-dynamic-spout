@@ -1,12 +1,11 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
@@ -20,9 +19,6 @@ import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
-import org.apache.kafka.common.Node;
-import org.apache.kafka.common.PartitionInfo;
-import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.junit.Rule;
@@ -30,8 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +37,9 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -64,7 +61,7 @@ public class VirtualSpoutTest {
     @Test
     public void testConstructor() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map<String, Object> expectedTopologyConfig = new HashMap<>();
         expectedTopologyConfig.put("Key1", "Value1");
         expectedTopologyConfig.put("Key2", "Value2");
         expectedTopologyConfig.put("Key3", "Value3");
@@ -108,7 +105,7 @@ public class VirtualSpoutTest {
     @Test
     public void testGetTopologyConfigItem() {
         // Create inputs
-        final Map expectedTopologyConfig = Maps.newHashMap();
+        final Map<String, Object> expectedTopologyConfig = new HashMap<>();
         expectedTopologyConfig.put("Key1", "Value1");
         expectedTopologyConfig.put("Key2", "Value2");
         expectedTopologyConfig.put("Key3", "Value3");
@@ -148,7 +145,7 @@ public class VirtualSpoutTest {
         final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("myConsumerId");
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(new HashMap(), new MockTopologyContext(), new FactoryManager(new HashMap()), getDefaultMetricsRecorder());
 
         // Set it
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
@@ -166,7 +163,7 @@ public class VirtualSpoutTest {
         final SidelineRequestIdentifier expectedId = new SidelineRequestIdentifier();
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(new HashMap(), new MockTopologyContext(), new FactoryManager(new HashMap()), getDefaultMetricsRecorder());
 
         // Defaults null
         assertNull("should be null", virtualSpout.getSidelineRequestIdentifier());
@@ -184,7 +181,7 @@ public class VirtualSpoutTest {
     @Test
     public void testSetAndGetStopRequested() {
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
+        VirtualSpout virtualSpout = new VirtualSpout(new HashMap(), new MockTopologyContext(), new FactoryManager(new HashMap()), getDefaultMetricsRecorder());
 
         // Should default to false
         assertFalse("Should default to false", virtualSpout.isStopRequested());
@@ -205,23 +202,24 @@ public class VirtualSpoutTest {
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
-        final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
-
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
 
         // Create factory manager
         final FactoryManager factoryManager = new FactoryManager(topologyConfig);
 
+        // Create virtual spout identifier
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
+        virtualSpout.setVirtualSpoutId(virtualSpoutIdentifier);
 
         // Call it once.
         virtualSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(any(ConsumerConfig.class), any(ZookeeperPersistenceAdapter.class), any(Utf8StringDeserializer.class), eq(null));
+        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerPeerContext.class), any(ZookeeperPersistenceAdapter.class), eq(null));
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -239,8 +237,6 @@ public class VirtualSpoutTest {
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
-        final List<PartitionInfo> partitions = Collections.singletonList(new PartitionInfo("foobar", 0, new Node(1, "localhost", 1234), new Node[]{}, new Node[]{}));
-
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -253,9 +249,12 @@ public class VirtualSpoutTest {
         final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager, null);
         when(mockFactoryManager.createNewPersistenceAdapterInstance()).thenReturn(mockPersistenceAdapter);
 
+        // Create virtual spout identifier
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
+
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, getDefaultMetricsRecorder(), mockConsumer, null, null);
-        virtualSpout.setVirtualSpoutId(new VirtualSpoutIdentifier("MyConsumerId"));
+        virtualSpout.setVirtualSpoutId(virtualSpoutIdentifier);
 
         // Call open
         virtualSpout.open();
@@ -267,7 +266,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(any(ConsumerConfig.class), eq(mockPersistenceAdapter), eq(mockDeserializer), eq(null));
+        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerPeerContext.class), any(ZookeeperPersistenceAdapter.class), eq(null));
     }
 
     /**
@@ -306,8 +305,7 @@ public class VirtualSpoutTest {
         assertNull("Should be null",  result);
 
         // Verify ack is never called on underlying mock sideline consumer
-        verify(mockConsumer, never()).commitOffset(any(), anyLong());
-        verify(mockConsumer, never()).commitOffset(any());
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
     }
 
     /**
@@ -568,8 +566,8 @@ public class VirtualSpoutTest {
         verify(mockConsumer, times(2)).unsubscribeConsumerPartition(eq(new ConsumerPartition(topic, partition)));
 
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
-        verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset);
-        verify(mockConsumer, times(0)).commitOffset(new ConsumerPartition(topic, partition), afterOffset + 1);
+        verify(mockConsumer, times(0)).commitOffset(topic, partition, afterOffset);
+        verify(mockConsumer, times(0)).commitOffset(topic, partition, afterOffset + 1);
     }
 
     /**
@@ -745,7 +743,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, never()).retryFurther(anyObject());
         verify(mockRetryManager, never()).acked(anyObject());
         verify(mockRetryManager, never()).failed(anyObject());
-        verify(mockConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
     }
 
     /**
@@ -816,8 +814,7 @@ public class VirtualSpoutTest {
         virtualSpout.ack(null);
 
         // No interactions w/ our mock sideline consumer for committing offsets
-        verify(mockConsumer, never()).commitOffset(any(ConsumerPartition.class), anyLong());
-        verify(mockConsumer, never()).commitOffset(any(Record.class));
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
     }
 
@@ -889,7 +886,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Never called yet
-        verify(mockConsumer, never()).commitOffset(anyObject(), anyLong());
+        verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
 
         // Call ack with a string object, it should throw an exception.
@@ -1339,9 +1336,6 @@ public class VirtualSpoutTest {
         final VirtualSpoutIdentifier expectedConsumerId = new VirtualSpoutIdentifier("MyConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final byte[] expectedKeyBytes = expectedKey.getBytes(Charsets.UTF_8);
-        final byte[] expectedValueBytes = expectedValue.getBytes(Charsets.UTF_8);
-        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
 
         // Define expected result
         final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
@@ -1436,8 +1430,8 @@ public class VirtualSpoutTest {
     /**
      * Utility method to generate a standard config map.
      */
-    private Map getDefaultConfig() {
-        final Map defaultConfig = Maps.newHashMap();
+    private Map<String, Object> getDefaultConfig() {
+        final Map<String, Object> defaultConfig = new HashMap<>();
         defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
         defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, "MyTopic");
         defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");

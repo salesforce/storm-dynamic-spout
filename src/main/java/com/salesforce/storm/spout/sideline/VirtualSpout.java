@@ -2,13 +2,11 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.Consumer;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
-import com.salesforce.storm.spout.sideline.kafka.Consumer;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -17,7 +15,6 @@ import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,7 +42,7 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Holds reference to our spout configuration.
      */
-    private final Map spoutConfig;
+    private final Map<String, Object> spoutConfig;
 
     /**
      * Our Factory Manager.
@@ -53,7 +50,7 @@ public class VirtualSpout implements DelegateSpout {
     private final FactoryManager factoryManager;
 
     /**
-     * Our underlying Kafka Consumer.
+     * Our underlying Consumer implementation.
      */
     private Consumer consumer;
 
@@ -159,7 +156,7 @@ public class VirtualSpout implements DelegateSpout {
     protected VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
         this(spoutConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
-        // Inject the sideline consumer.
+        // Inject the consumer.
         this.consumer = consumer;
     }
 
@@ -183,32 +180,25 @@ public class VirtualSpout implements DelegateSpout {
         retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
         retryManager.open(getSpoutConfig());
 
-        // Create underlying kafka consumer - Normal Behavior is for this to be null here.
+        // Create underlying Consumer implementation - Normal Behavior is for this to be null here.
         // The only time this would be non-null would be if it was injected for tests.
         if (consumer == null) {
-            // Create sideline consumer
-            consumer = new Consumer();
+            // Create consumer from Factory Manager.
+            consumer = getFactoryManager().createNewConsumerInstance();
         }
 
         // Create consumer dependencies
-        final Deserializer deserializer = getFactoryManager().createNewDeserializerInstance();
         final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
         persistenceAdapter.open(getSpoutConfig());
 
-        // Construct SidelineConsumerConfig based on topology config.
-        final List<String> kafkaBrokers = (List<String>) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_BROKERS);
-        final String topic = (String) getSpoutConfigItem(SidelineSpoutConfig.KAFKA_TOPIC);
-        // TODO ConsumerConfig should use a VirtualSpoutIdentifier
-        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, getVirtualSpoutId().toString(), topic);
-        consumerConfig.setNumberOfConsumers(
-            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size()
-        );
-        consumerConfig.setIndexOfConsumer(
+        // Define consumer cohort definition.
+        final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(
+            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size(),
             topologyContext.getThisTaskIndex()
         );
 
         // Open consumer
-        consumer.open(consumerConfig, persistenceAdapter, deserializer, startingState);
+        consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
         // Temporary metric buckets.
         // TODO - convert to using proper metrics recorder?
@@ -285,7 +275,7 @@ public class VirtualSpout implements DelegateSpout {
         }
         nextTupleTimeBuckets.put("failedRetry", nextTupleTimeBuckets.get("failedRetry") + (System.currentTimeMillis() - startTime));
 
-        // Grab the next message from kafka
+        // Grab the next message from Consumer instance.
         startTime = System.currentTimeMillis();
         final Record record = consumer.nextRecord();
         if (record == null) {
@@ -361,7 +351,7 @@ public class VirtualSpout implements DelegateSpout {
      * @param messageId - The MessageId to check.
      * @return - Boolean - True if it does, false if it does not.
      */
-    protected boolean doesMessageExceedEndingOffset(final MessageId messageId) {
+    boolean doesMessageExceedEndingOffset(final MessageId messageId) {
         // If no end offsets defined
         if (endingState == null) {
             // Then this check is a no-op, return false
