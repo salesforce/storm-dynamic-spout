@@ -2,8 +2,6 @@ package com.salesforce.storm.spout.sideline.consumer;
 
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 
 import java.util.Map;
@@ -20,11 +18,11 @@ public interface Consumer {
      * This method should handle all setup and configuration.
      * @param spoutConfig Configuration of Spout.
      * @param virtualSpoutIdentifier VirtualSpout running this consumer.
-     * @param consumerCohortDefinition defines how many instances in total are running of this consumer.
+     * @param consumerPeerContext defines how many instances in total are running of this consumer.
      * @param persistenceAdapter The persistence adapter used to manage any state.
      * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
      */
-    void open(final Map<String, Object> spoutConfig, final VirtualSpoutIdentifier virtualSpoutIdentifier, final ConsumerCohortDefinition consumerCohortDefinition, final PersistenceAdapter persistenceAdapter, final ConsumerState startingState);
+    void open(final Map<String, Object> spoutConfig, final VirtualSpoutIdentifier virtualSpoutIdentifier, final ConsumerPeerContext consumerPeerContext, final PersistenceAdapter persistenceAdapter, final ConsumerState startingState);
 
     /**
      * This method is called when a VirtualSpout is shutting down.  It should perform any necessary cleanup.

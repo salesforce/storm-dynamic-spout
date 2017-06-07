@@ -2,14 +2,11 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
-import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -18,7 +15,6 @@ import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -196,13 +192,13 @@ public class VirtualSpout implements DelegateSpout {
         persistenceAdapter.open(getSpoutConfig());
 
         // Define consumer cohort definition.
-        final ConsumerCohortDefinition consumerCohortDefinition = new ConsumerCohortDefinition(
+        final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(
             topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size(),
             topologyContext.getThisTaskIndex()
         );
 
         // Open consumer
-        consumer.open(spoutConfig, getVirtualSpoutId(), consumerCohortDefinition, persistenceAdapter, startingState);
+        consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
         // Temporary metric buckets.
         // TODO - convert to using proper metrics recorder?

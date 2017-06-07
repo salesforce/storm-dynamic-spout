@@ -6,7 +6,7 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
@@ -24,8 +24,6 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import com.google.common.base.Charsets;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -145,7 +143,7 @@ public class ConsumerTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = getDefaultVSpoutId();
 
         // Generate a consumer cohort def
-        final ConsumerCohortDefinition consumerCohortDefinition = getDefaultConsumerCohortDefinition();
+        final ConsumerPeerContext consumerPeerContext = getDefaultConsumerCohortDefinition();
 
         // Define expected kafka brokers
         final String expectedKafkaBrokers =
@@ -154,7 +152,7 @@ public class ConsumerTest {
 
         // Call constructor
         Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, consumerCohortDefinition, persistenceAdapter, null);
+        consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, null);
 
         // Validate our instances got set
         assertNotNull("Config is not null", consumer.getConsumerConfig());
@@ -164,8 +162,8 @@ public class ConsumerTest {
         assertEquals("ConsumerIdSet as expected", virtualSpoutIdentifier.toString(), foundConsumerConfig.getConsumerId());
         assertEquals("Topic set correctly", topicName, foundConsumerConfig.getTopic());
         assertEquals("KafkaBrokers set correctly", expectedKafkaBrokers, foundConsumerConfig.getKafkaConsumerProperties().getProperty(BOOTSTRAP_SERVERS_CONFIG));
-        assertEquals("Set Number of Consumers as expected", consumerCohortDefinition.getTotalInstances(), consumer.getConsumerConfig().getNumberOfConsumers());
-        assertEquals("Set Index of OUR Consumer is set as expected", consumerCohortDefinition.getInstanceNumber(), consumer.getConsumerConfig().getIndexOfConsumer());
+        assertEquals("Set Number of Consumers as expected", consumerPeerContext.getTotalInstances(), consumer.getConsumerConfig().getNumberOfConsumers());
+        assertEquals("Set Index of OUR Consumer is set as expected", consumerPeerContext.getInstanceNumber(), consumer.getConsumerConfig().getIndexOfConsumer());
 
         // Additional properties set correctly
         assertNotNull("PersistenceAdapter is not null", consumer.getPersistenceAdapter());
@@ -1470,7 +1468,7 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
-        final ConsumerCohortDefinition consumerCohortDefinition = new ConsumerCohortDefinition(2, consumerIndex);
+        final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
 
         // create our vspout id
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
@@ -1481,7 +1479,7 @@ public class ConsumerTest {
 
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, consumerCohortDefinition, persistenceAdapter, null);
+        consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1614,7 +1612,7 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
-        final ConsumerCohortDefinition consumerCohortDefinition = new ConsumerCohortDefinition(2, consumerIndex);
+        final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
 
         // create our vspout id
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
@@ -1625,7 +1623,7 @@ public class ConsumerTest {
 
         // Create our consumer
         Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, consumerCohortDefinition, persistenceAdapter, null);
+        consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, null);
 
         // Ask the underlying consumer for our assigned partitions.
         Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -2051,10 +2049,10 @@ public class ConsumerTest {
     }
 
     /**
-     * Utility method to generate a default ConsumerCohortDefinition instance.
+     * Utility method to generate a default ConsumerPeerContext instance.
      */
-    private ConsumerCohortDefinition getDefaultConsumerCohortDefinition() {
-        return new ConsumerCohortDefinition(1, 0);
+    private ConsumerPeerContext getDefaultConsumerCohortDefinition() {
+        return new ConsumerPeerContext(1, 0);
     }
 
     /**

@@ -2,11 +2,10 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
-import com.salesforce.storm.spout.sideline.consumer.ConsumerCohortDefinition;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
-import com.salesforce.storm.spout.sideline.kafka.ConsumerConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
@@ -220,7 +219,7 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerCohortDefinition.class), any(ZookeeperPersistenceAdapter.class), eq(null));
+        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerPeerContext.class), any(ZookeeperPersistenceAdapter.class), eq(null));
 
         // Set expected exception
         expectedException.expect(IllegalStateException.class);
@@ -267,7 +266,7 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerCohortDefinition.class), any(ZookeeperPersistenceAdapter.class), eq(null));
+        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerPeerContext.class), any(ZookeeperPersistenceAdapter.class), eq(null));
     }
 
     /**

@@ -4,7 +4,7 @@ package com.salesforce.storm.spout.sideline.consumer;
  * This class presents information to a Consumer about how many total instances of it are running, along with
  * the unique instance number the consumer is.
  */
-public class ConsumerCohortDefinition {
+public class ConsumerPeerContext {
     /**
      * This represents how many consumer instances are running.
      * This should always be AT LEAST 1.
@@ -24,7 +24,7 @@ public class ConsumerCohortDefinition {
      * @param totalInstances Total number of consumer instances running.
      * @param instanceNumber The instance number.
      */
-    public ConsumerCohortDefinition(int totalInstances, int instanceNumber) {
+    public ConsumerPeerContext(int totalInstances, int instanceNumber) {
         this.totalInstances = totalInstances;
         this.instanceNumber = instanceNumber;
     }
@@ -45,7 +45,7 @@ public class ConsumerCohortDefinition {
 
     @Override
     public String toString() {
-        return "ConsumerCohortDefinition{"
+        return "ConsumerPeerContext{"
             + "totalInstances=" + totalInstances
             + ", instanceNumber=" + instanceNumber
             + '}';
