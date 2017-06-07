@@ -28,6 +28,11 @@ public class SpoutCoordinator {
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
     /**
+     * Track whether or not the coordinator has been opened.
+     */
+    private boolean isOpen = false;
+
+    /**
      * Which Clock instance to get reference to the system time.
      * We use this to allow injecting a fake System clock in tests.
      *
@@ -91,6 +96,12 @@ public class SpoutCoordinator {
      * @param spout New delegate spout
      */
     public void addVirtualSpout(final DelegateSpout spout) {
+        if (!isOpen) {
+            throw new IllegalStateException("You cannot add a spout to the coordinator before it has been opened!");
+        }
+        if (spoutMonitor.hasSpout(spout.getVirtualSpoutId())) {
+            throw new IllegalStateException("A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!");
+        }
         getNewSpoutQueue().add(spout);
     }
 
@@ -98,6 +109,11 @@ public class SpoutCoordinator {
      * Open the coordinator and begin spinning up virtual spout threads.
      */
     public void open(Map<String, Object> topologyConfig) {
+        if (isOpen) {
+            logger.warn("SpoutCoordinator is already opened, refusing to open again!");
+            return;
+        }
+
         // Create copy of topology config
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
@@ -125,6 +141,8 @@ public class SpoutCoordinator {
         // Block/wait for all of our VirtualSpout instances to start before continuing on.
         try {
             latch.await();
+
+            isOpen = true;
         } catch (InterruptedException ex) {
             logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
         }

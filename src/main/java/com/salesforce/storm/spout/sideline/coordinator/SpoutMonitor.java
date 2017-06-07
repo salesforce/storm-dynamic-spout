@@ -144,6 +144,20 @@ public class SpoutMonitor implements Runnable {
         );
     }
 
+    /**
+     * Check if the spout monitor contains a spout by the given identifier.
+     * @param virtualSpoutIdentifier Identifier of the spout we're looking for.
+     * @return Whether or not a spout with that identifier exists.
+     */
+    public boolean hasSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        for (DelegateSpout spout : newSpoutQueue) {
+            if (spout.getVirtualSpoutId().equals(virtualSpoutIdentifier)) {
+                return true;
+            }
+        }
+        return spoutRunners.containsKey(virtualSpoutIdentifier);
+    }
+
     @Override
     public void run() {
         try {
