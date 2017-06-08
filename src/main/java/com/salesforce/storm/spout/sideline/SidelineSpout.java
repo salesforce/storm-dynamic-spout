@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
@@ -319,12 +320,13 @@ public class SidelineSpout extends DynamicSpout {
      * Generates a VirtualSpoutId from a sideline request id.
      *
      * @param sidelineRequestIdentifier Sideline request to use for constructing the id
-     * @return Generates VirtualSpoutId.
+     * @return Generated VirtualSpoutId.
      */
     VirtualSpoutIdentifier generateVirtualSpoutId(final SidelineRequestIdentifier sidelineRequestIdentifier) {
-        if (Strings.isNullOrEmpty(sidelineRequestIdentifier.toString())) {
-            throw new IllegalArgumentException("SidelineRequestIdentifier cannot be null or empty!");
-        }
+        Preconditions.checkArgument(
+            !Strings.isNullOrEmpty(sidelineRequestIdentifier.toString()),
+            "SidelineRequestIdentifier cannot be null or empty!"
+        );
 
         // Also prefixed with our configured prefix
         final String prefix = (String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
