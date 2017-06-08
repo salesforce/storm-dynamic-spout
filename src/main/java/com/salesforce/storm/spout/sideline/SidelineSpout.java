@@ -225,7 +225,8 @@ public class SidelineSpout extends DynamicSpout {
 
         })
          **/
-        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId("main"));
+        // This isn't a sideline request, but just make something up anyhow, who cares!
+        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId(new SidelineRequestIdentifier("main")));
 
         // Our main firehose spout instance.
         addVirtualSpout(fireHoseSpout);
@@ -313,24 +314,6 @@ public class SidelineSpout extends DynamicSpout {
     void onActivate() {}
 
     void onDeactivate() {}
-
-    /**
-     * Generates a VirtualSpoutId from a sideline request id.
-     *
-     * @param suffix Suffix to use when generating a sideline id
-     * @return Generates VirtualSpoutId.
-     */
-    VirtualSpoutIdentifier generateVirtualSpoutId(final String suffix) {
-        if (Strings.isNullOrEmpty(suffix)) {
-            throw new IllegalArgumentException("Suffix cannot be null or empty!");
-        }
-
-        // Also prefixed with our configured prefix
-        final String prefix = (String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
-
-        // return it
-        return new SidelineVirtualSpoutIdentifier(prefix, suffix);
-    }
 
     /**
      * Generates a VirtualSpoutId from a sideline request id.

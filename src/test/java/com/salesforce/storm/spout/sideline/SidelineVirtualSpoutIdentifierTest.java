@@ -14,18 +14,18 @@ public class SidelineVirtualSpoutIdentifierTest {
     @Test
     public void test_toString() throws Exception {
         VirtualSpoutIdentifier virtualSpoutIdentifier1 = new SidelineVirtualSpoutIdentifier(
-            "foobar",
-            "main"
+            "foo",
+            new SidelineRequestIdentifier("main")
         );
 
-        assertEquals("foobar:main", virtualSpoutIdentifier1.toString());
+        assertEquals("foo:main", virtualSpoutIdentifier1.toString());
 
         VirtualSpoutIdentifier virtualSpoutIdentifier2 = new SidelineVirtualSpoutIdentifier(
-            "foobar",
-            new SidelineRequestIdentifier("foobar")
+            "foo",
+            new SidelineRequestIdentifier("bar")
         );
 
-        assertEquals("foobar:foobar", virtualSpoutIdentifier2.toString());
+        assertEquals("foo:bar", virtualSpoutIdentifier2.toString());
     }
 
     /**
@@ -35,18 +35,18 @@ public class SidelineVirtualSpoutIdentifierTest {
     @Test
     public void test_equals() throws Exception {
         VirtualSpoutIdentifier virtualSpoutIdentifier1 = new SidelineVirtualSpoutIdentifier(
-            "foobar",
-            "main"
+            "foo",
+            new SidelineRequestIdentifier("main")
         );
 
         VirtualSpoutIdentifier virtualSpoutIdentifier2 = new SidelineVirtualSpoutIdentifier(
-            "foobar",
-            "main"
+            "foo",
+            new SidelineRequestIdentifier("main")
         );
 
         VirtualSpoutIdentifier virtualSpoutIdentifier3 = new SidelineVirtualSpoutIdentifier(
-            "foobar",
-            new SidelineRequestIdentifier("foobar")
+            "foo",
+            new SidelineRequestIdentifier("bar")
         );
 
         assertTrue(virtualSpoutIdentifier1.equals(virtualSpoutIdentifier2));

@@ -1271,7 +1271,7 @@ public class VirtualSpoutTest {
             null
         );
         // Only happens when we are on the fire hose, aka 'main'
-        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", "main"));
+        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", new SidelineRequestIdentifier("main")));
         virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
