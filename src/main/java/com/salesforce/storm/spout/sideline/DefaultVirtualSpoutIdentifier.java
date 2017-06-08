@@ -6,7 +6,7 @@ import com.google.common.base.Strings;
 /**
  * Identifier for a virtual spout.
  */
-public class VirtualSpoutIdentifier {
+public class DefaultVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
 
     /**
      * The actual identifier.
@@ -17,7 +17,7 @@ public class VirtualSpoutIdentifier {
      * Create a new virtual spout identifier from a string.
      * @param id String of the id
      */
-    public VirtualSpoutIdentifier(final String id) {
+    public DefaultVirtualSpoutIdentifier(final String id) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(id), "You must provide something in order to create an identifier!");
         this.id = id;
     }
@@ -26,6 +26,7 @@ public class VirtualSpoutIdentifier {
      * Get the string form of the identifier.
      * @return A string of the identifier
      */
+    @Override
     public String toString() {
         return id;
     }
@@ -44,7 +45,7 @@ public class VirtualSpoutIdentifier {
             return false;
         }
 
-        VirtualSpoutIdentifier that = (VirtualSpoutIdentifier) obj;
+        DefaultVirtualSpoutIdentifier that = (DefaultVirtualSpoutIdentifier) obj;
 
         return id != null ? id.equals(that.id) : that.id == null;
     }
