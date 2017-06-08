@@ -146,6 +146,8 @@ public class SidelineSpoutTest {
      */
     @Test
     public void testGenerateVirtualSpoutId() {
+        // TODO: This no longer happens here
+        /*
         final String expectedPrefix = "MyVirtualSpoutPrefix";
 
         // Create our config missing the consumerIdPrefix
@@ -176,6 +178,7 @@ public class SidelineSpoutTest {
 
         // Call close.
         spout.close();
+        */
     }
 
     /**
@@ -375,6 +378,7 @@ public class SidelineSpoutTest {
 
         // Create our spout, add references to our static trigger, and call open().
         final SidelineSpout spout = new SidelineSpout(config);
+        // TODO: Need to factorize these or something
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -597,6 +601,7 @@ public class SidelineSpoutTest {
 
         // Create our spout, add references to our static trigger, and call open().
         SidelineSpout spout = new SidelineSpout(config);
+        // TODO: Need to factorize these or something
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -666,6 +671,7 @@ public class SidelineSpoutTest {
 
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
+        // TODO: Need to factorize these or something
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -711,6 +717,7 @@ public class SidelineSpoutTest {
 
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
+        // TODO: Need to factorize these or something
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -774,6 +781,7 @@ public class SidelineSpoutTest {
 
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
+        // TODO: Need to factorize these or something
         spout.setStartingTrigger(staticTrigger);
         spout.setStoppingTrigger(staticTrigger);
         spout.open(config, topologyContext, spoutOutputCollector);

@@ -1,13 +1,15 @@
 package com.salesforce.storm.spout.sideline.handler;
 
+import com.salesforce.storm.spout.sideline.DynamicSpout;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
+import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
 
 public interface SpoutHandler {
 
-    default void open(Map config, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+    default void open(Map spoutConfig) {
 
     }
 
@@ -15,7 +17,7 @@ public interface SpoutHandler {
 
     }
 
-    default void onSpoutOpen() {
+    default void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
 
     }
 

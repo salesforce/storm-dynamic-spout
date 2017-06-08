@@ -23,7 +23,7 @@ import java.util.Map;
  * spouts underneath it.  This is done in such a way that Storm does not have to be aware of all the contributing
  * spouts in the implementation.
  */
-public abstract class DynamicSpout extends BaseRichSpout {
+public class DynamicSpout extends BaseRichSpout {
 
     // Logging
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpout.class);
@@ -144,21 +144,9 @@ public abstract class DynamicSpout extends BaseRichSpout {
         emitCountMetrics = Maps.newHashMap();
 
         spoutHandler = getFactoryManager().createSpoutHandler();
-        spoutHandler.open(spoutConfig, factoryManager, metricsRecorder);
-
-        onOpen(topologyConfig, topologyContext, spoutOutputCollector);
+        spoutHandler.open(spoutConfig);
+        spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
     }
-
-    /**
-     * Called after open() this is essentially a callback or a hook to any spout implementing the virtual spout
-     * framework.
-     *
-     * @param topologyConfig The Storm Topology configuration.
-     * @param topologyContext The Storm Topology context.
-     * @param spoutOutputCollector The output collector to emit tuples via.
-     */
-    @Deprecated
-    abstract void onOpen(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector);
 
     /**
      * Get the next tuple from the spout
@@ -244,16 +232,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
             spoutHandler.close();
             spoutHandler = null;
         }
-
-        onClose();
     }
-
-    /**
-     * Called after close() this is essentially a callback or a hook to any spout implementing the virtual spout
-     * framework.
-     */
-    @Deprecated
-    abstract void onClose();
 
     /**
      * Currently a no-op.  We could make this pause things in the coordinator.
@@ -261,14 +240,10 @@ public abstract class DynamicSpout extends BaseRichSpout {
     @Override
     public void activate() {
         logger.debug("Activating spout");
-        onActivate();
+        if (spoutHandler != null) {
+            spoutHandler.onSpoutActivate();
+        }
     }
-
-    /**
-     * Called after activate() this is essentially a callback or a hook to any spout implementing the virtual spout
-     * framework.
-     */
-    abstract void onActivate();
 
     /**
      * Currently a no-op.  We could make this un-pause things in the coordinator.
@@ -276,14 +251,10 @@ public abstract class DynamicSpout extends BaseRichSpout {
     @Override
     public void deactivate() {
         logger.debug("Deactivate spout");
-        onDeactivate();
+        if (spoutHandler != null) {
+            spoutHandler.onSpoutDeactivate();
+        }
     }
-
-    /**
-     * Called after deactivate() this is essentially a callback or a hook to any spout implementing the virtual spout
-     * framework.
-     */
-    abstract void onDeactivate();
 
     /**
      * Called for a Tuple MessageId when the tuple has been fully processed.
@@ -319,7 +290,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    protected Map getSpoutConfig() {
+    public Map getSpoutConfig() {
         return spoutConfig;
     }
 
@@ -343,7 +314,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * Add a delegate spout to the coordinator
      * @param spout Delegate spout to add
      */
-    protected void addVirtualSpout(DelegateSpout spout) {
+    public void addVirtualSpout(DelegateSpout spout) {
         getCoordinator().addVirtualSpout(spout);
     }
 
@@ -357,14 +328,14 @@ public abstract class DynamicSpout extends BaseRichSpout {
     /**
      * @return The factory manager instance.
      */
-    FactoryManager getFactoryManager() {
+    public FactoryManager getFactoryManager() {
         return factoryManager;
     }
 
     /**
      * @return The spout's metrics recorder implementation.
      */
-    MetricsRecorder getMetricsRecorder() {
+    public MetricsRecorder getMetricsRecorder() {
         return metricsRecorder;
     }
 
@@ -378,7 +349,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
     /**
      * @return The persistence manager.
      */
-    PersistenceAdapter getPersistenceAdapter() {
+    public PersistenceAdapter getPersistenceAdapter() {
         return persistenceAdapter;
     }
 
