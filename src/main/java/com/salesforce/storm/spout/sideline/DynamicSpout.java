@@ -380,25 +380,4 @@ public abstract class DynamicSpout extends BaseRichSpout {
         }
         return outputStreamId;
     }
-
-    /**
-     * Generates a VirtualSpoutId using an optional postfix.  It also appends
-     * the Task index id.  This will probably cause problems if you decrease the number of instances of the spout.
-     *
-     * @param id Id to add after the prefix
-     * @return Generates VirtualSpoutId.
-     */
-    VirtualSpoutIdentifier generateVirtualSpoutId(final String id) {
-        if (Strings.isNullOrEmpty(id)) {
-            throw new IllegalArgumentException("Id cannot be null or empty!");
-        }
-
-        // Also prefixed with our configured prefix
-        String newId = (String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
-        // append it
-        newId += ":" + id;
-
-        // return it
-        return new DefaultVirtualSpoutIdentifier(newId);
-    }
 }

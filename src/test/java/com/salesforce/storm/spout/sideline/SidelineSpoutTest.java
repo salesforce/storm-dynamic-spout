@@ -169,15 +169,6 @@ public class SidelineSpoutTest {
         }
         assertTrue("Should have thrown an IllegalArguementException", threwException);
 
-        // Call our method with null
-        threwException = false;
-        try {
-            VirtualSpoutIdentifier result = spout.generateVirtualSpoutId(null);
-        } catch (IllegalArgumentException e) {
-            threwException = true;
-        }
-        assertTrue("Should have thrown an IllegalArguementException", threwException);
-
         // Call our method with a postfix
         VirtualSpoutIdentifier result = spout.generateVirtualSpoutId("main");
         assertEquals("Should generate expected virtual spout it", result, new DefaultVirtualSpoutIdentifier(expectedPrefix + ":main"));

@@ -158,27 +158,6 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * Test setter and getter
-     */
-    @Test
-    public void testSetAndGetSidelineRequestId() {
-        // Define input
-        final SidelineRequestIdentifier expectedId = new SidelineRequestIdentifier();
-
-        // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(Maps.newHashMap(), new MockTopologyContext(), new FactoryManager(Maps.newHashMap()), getDefaultMetricsRecorder());
-
-        // Defaults null
-        assertNull("should be null", virtualSpout.getSidelineRequestIdentifier());
-
-        // Set it
-        virtualSpout.setSidelineRequestIdentifier(expectedId);
-
-        // Verify it
-        assertEquals("Got expected requext id", expectedId, virtualSpout.getSidelineRequestIdentifier());
-    }
-
-    /**
      * Test setter and getter.
      */
     @Test
@@ -1181,8 +1160,7 @@ public class VirtualSpoutTest {
             getDefaultMetricsRecorder(),
             mockConsumer,
             null, null);
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
-        virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
+        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId));
         virtualSpout.open();
 
         // Mark sure is completed field is set to false before calling close
@@ -1242,8 +1220,7 @@ public class VirtualSpoutTest {
             startingState,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
-        virtualSpout.setSidelineRequestIdentifier(sidelineRequestId);
+        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId));
         virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
@@ -1293,8 +1270,11 @@ public class VirtualSpoutTest {
             factoryManager,
             getDefaultMetricsRecorder(),
             mockConsumer,
-            null, null);
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
+            null,
+            null
+        );
+        // Only happens when we are on the fire hose, aka 'main'
+        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", "main"));
         virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close

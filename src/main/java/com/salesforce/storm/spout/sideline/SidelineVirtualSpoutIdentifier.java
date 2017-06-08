@@ -30,6 +30,18 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
         this.sidelineRequestIdentifier = sidelineRequestIdentifier;
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public SidelineRequestIdentifier getSidelineRequestIdentifier() {
+        return sidelineRequestIdentifier;
+    }
+
     @Override
     public String toString() {
         final StringBuilder builder = new StringBuilder();

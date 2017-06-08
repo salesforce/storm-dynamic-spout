@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
@@ -175,7 +176,7 @@ public class SidelineSpout extends DynamicSpout {
         final ConsumerState endingState
     ) {
         // Generate our virtualSpoutId using the payload id.
-        final VirtualSpoutIdentifier virtualSpoutId = generateVirtualSpoutId(id.toString());
+        final VirtualSpoutIdentifier virtualSpoutId = generateVirtualSpoutId(id);
 
         // This info is repeated in VirtualSidelineSpout.open(), not needed here.
         logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
@@ -192,7 +193,6 @@ public class SidelineSpout extends DynamicSpout {
 
         // TODO: Sort this out so that we can track the sideline request identifier inside of the virtual spout identifier
         spout.setVirtualSpoutId(virtualSpoutId);
-        spout.setSidelineRequestIdentifier(id);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         spout.getFilterChain().addStep(id, step);
@@ -313,4 +313,40 @@ public class SidelineSpout extends DynamicSpout {
     void onActivate() {}
 
     void onDeactivate() {}
+
+    /**
+     * Generates a VirtualSpoutId from a sideline request id.
+     *
+     * @param suffix Suffix to use when generating a sideline id
+     * @return Generates VirtualSpoutId.
+     */
+    VirtualSpoutIdentifier generateVirtualSpoutId(final String suffix) {
+        if (Strings.isNullOrEmpty(suffix)) {
+            throw new IllegalArgumentException("Suffix cannot be null or empty!");
+        }
+
+        // Also prefixed with our configured prefix
+        final String prefix = (String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+
+        // return it
+        return new SidelineVirtualSpoutIdentifier(prefix, suffix);
+    }
+
+    /**
+     * Generates a VirtualSpoutId from a sideline request id.
+     *
+     * @param sidelineRequestIdentifier Sideline request to use for constructing the id
+     * @return Generates VirtualSpoutId.
+     */
+    VirtualSpoutIdentifier generateVirtualSpoutId(final SidelineRequestIdentifier sidelineRequestIdentifier) {
+        if (Strings.isNullOrEmpty(sidelineRequestIdentifier.toString())) {
+            throw new IllegalArgumentException("SidelineRequestIdentifier cannot be null or empty!");
+        }
+
+        // Also prefixed with our configured prefix
+        final String prefix = (String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+
+        // return it
+        return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);
+    }
 }
