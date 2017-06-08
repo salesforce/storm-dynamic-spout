@@ -8,7 +8,7 @@ import java.util.Map;
 
 public interface VirtualSpoutHandler {
 
-    default void open(Map config, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+    default void open(Map spoutConfig) {
 
     }
 

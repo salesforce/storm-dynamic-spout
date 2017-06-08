@@ -197,7 +197,7 @@ public class VirtualSpout implements DelegateSpout {
         consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
         virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
-        virtualSpoutHandler.open(spoutConfig, factoryManager, metricsRecorder);
+        virtualSpoutHandler.open(spoutConfig);
         virtualSpoutHandler.onVirtualSpoutOpen(this);
 
         // Temporary metric buckets.
