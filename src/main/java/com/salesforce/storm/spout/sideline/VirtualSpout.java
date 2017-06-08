@@ -11,7 +11,6 @@ import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,9 +196,9 @@ public class VirtualSpout implements DelegateSpout {
         // Open consumer
         consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
-        virtualSpoutHandler = factoryManager.createVirtualSpoutHandler();
+        virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
         virtualSpoutHandler.open(spoutConfig, factoryManager, metricsRecorder);
-        virtualSpoutHandler.onVirtualSpoutOpen();
+        virtualSpoutHandler.onVirtualSpoutOpen(this);
 
         // Temporary metric buckets.
         // TODO - convert to using proper metrics recorder?
@@ -224,21 +223,11 @@ public class VirtualSpout implements DelegateSpout {
     public void close() {
         // If we've successfully completed processing
         if (isCompleted()) {
+            // Let our handler know that the virtual spout has been completed
+            virtualSpoutHandler.onVirtualSpoutCompletion(this);
+
             // We should clean up consumer state
             consumer.removeConsumerState();
-
-            // TODO: This should be moved out of here so that the vspout has no notion of a sideline request
-            final SidelineRequestIdentifier sidelineRequestIdentifier = ((SidelineVirtualSpoutIdentifier) getVirtualSpoutId()).getSidelineRequestIdentifier();
-
-            // Clean up sideline request
-            if (sidelineRequestIdentifier != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
-                for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
-                    consumer.getPersistenceAdapter().clearSidelineRequest(
-                        sidelineRequestIdentifier,
-                        consumerPartition.partition()
-                    );
-                }
-            }
         } else {
             // We are just closing up shop,
             // First flush our current consumer state.
@@ -248,7 +237,7 @@ public class VirtualSpout implements DelegateSpout {
         consumer.close();
         consumer = null;
 
-        virtualSpoutHandler.onVirtualSpoutClose();
+        virtualSpoutHandler.onVirtualSpoutClose(this);
         virtualSpoutHandler.close();
 
         startingState = null;
@@ -532,6 +521,14 @@ public class VirtualSpout implements DelegateSpout {
         return consumer.getCurrentState();
     }
 
+    public ConsumerState getStartingState() {
+        return startingState;
+    }
+
+    public ConsumerState getEndingState() {
+        return endingState;
+    }
+
     @Override
     public double getMaxLag() {
         return consumer.getMaxLag();
@@ -557,8 +554,12 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Used in tests.
      */
-    protected FactoryManager getFactoryManager() {
+    public FactoryManager getFactoryManager() {
         return factoryManager;
+    }
+
+    public Consumer getConsumer() {
+        return consumer;
     }
 
     /**

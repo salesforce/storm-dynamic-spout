@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -48,8 +49,18 @@ public class SidelineSpout extends DynamicSpout {
      */
     private VirtualSpout fireHoseSpout;
 
+    /**
+     * Used to overload and modify settings before passing them to the constructor.
+     * @param config Supplied configuration.
+     * @return Resulting configuration.
+     */
+    private static Map getConfig(Map config) {
+        config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        return config;
+    }
+
     public SidelineSpout(Map config) {
-        super(config);
+        super(getConfig(config));
     }
 
     /**

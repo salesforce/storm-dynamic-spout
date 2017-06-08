@@ -19,6 +19,14 @@ public interface SpoutHandler {
 
     }
 
+    default void onSpoutActivate() {
+
+    }
+
+    default void onSpoutDeactivate() {
+
+    }
+
     default void onSpoutClose() {
 
     }

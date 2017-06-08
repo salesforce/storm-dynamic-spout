@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.consumer.Consumer;
 
 public interface DelegateSpout {
 
@@ -24,7 +25,13 @@ public interface DelegateSpout {
 
     ConsumerState getCurrentState();
 
+    ConsumerState getStartingState();
+
+    ConsumerState getEndingState();
+
     double getMaxLag();
 
     int getNumberOfFiltersApplied();
+
+    Consumer getConsumer();
 }

@@ -1,5 +1,6 @@
 package com.salesforce.storm.spout.sideline.handler;
 
+import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 
@@ -15,11 +16,15 @@ public interface VirtualSpoutHandler {
 
     }
 
-    default void onVirtualSpoutOpen() {
+    default void onVirtualSpoutOpen(DelegateSpout virtualSpout) {
 
     }
 
-    default void onVirtualSpoutClose() {
+    default void onVirtualSpoutClose(DelegateSpout virtualSpout) {
+
+    }
+
+    default void onVirtualSpoutCompletion(DelegateSpout virtualSpout) {
 
     }
 }

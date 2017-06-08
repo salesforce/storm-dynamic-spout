@@ -6,6 +6,7 @@ import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 
@@ -90,6 +91,16 @@ public class MockDelegateSpout implements DelegateSpout {
     }
 
     @Override
+    public ConsumerState getStartingState() {
+        return ConsumerState.builder().build();
+    }
+
+    @Override
+    public ConsumerState getEndingState() {
+        return ConsumerState.builder().build();
+    }
+
+    @Override
     public double getMaxLag() {
         return 0;
     }
@@ -97,5 +108,11 @@ public class MockDelegateSpout implements DelegateSpout {
     @Override
     public int getNumberOfFiltersApplied() {
         return 0;
+    }
+
+    @Override
+    public Consumer getConsumer() {
+        // TODO: Implement this when it is needed
+        return null;
     }
 }

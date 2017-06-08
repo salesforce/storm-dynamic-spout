@@ -5,6 +5,9 @@ import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
@@ -225,7 +228,7 @@ public class VirtualSpoutTest {
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(mockDeserializer, mockRetryManager, null, null);
         when(mockFactoryManager.createNewPersistenceAdapterInstance()).thenReturn(mockPersistenceAdapter);
 
         // Create virtual spout identifier
@@ -300,7 +303,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, null, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, null, null, null);
 
         // Create a mock Consumer
         final Consumer mockConsumer = mock(Consumer.class);
@@ -605,7 +608,7 @@ public class VirtualSpoutTest {
         when(mockRetryManager.nextFailedMessageToRetry()).thenReturn(null, expectedMessage.getMessageId(), null);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -699,7 +702,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
@@ -773,7 +776,7 @@ public class VirtualSpoutTest {
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
@@ -847,7 +850,7 @@ public class VirtualSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
 
         // Create a mock SidelineConsumer
         Consumer mockConsumer = mock(Consumer.class);
@@ -1190,6 +1193,7 @@ public class VirtualSpoutTest {
     public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
+        topologyConfig.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier();
 
@@ -1333,7 +1337,7 @@ public class VirtualSpoutTest {
         RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -1375,7 +1379,7 @@ public class VirtualSpoutTest {
         Consumer mockConsumer = mock(Consumer.class);
 
         // Create factory manager
-        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null);
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
@@ -1426,7 +1430,7 @@ public class VirtualSpoutTest {
     /**
      * Utility method for creating a mock factory manager.
      */
-    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager, PersistenceAdapter persistenceAdapter) {
+    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager, PersistenceAdapter persistenceAdapter, VirtualSpoutHandler virtualSpoutHandler) {
         // Create our mock
         FactoryManager factoryManager = mock(FactoryManager.class);
 
@@ -1447,6 +1451,11 @@ public class VirtualSpoutTest {
             persistenceAdapter = new InMemoryPersistenceAdapter();
         }
         when(factoryManager.createNewPersistenceAdapterInstance()).thenReturn(persistenceAdapter);
+
+        if (virtualSpoutHandler == null) {
+            virtualSpoutHandler = new NoopVirtualSpoutHandler();
+        }
+        when(factoryManager.createVirtualSpoutHandler()).thenReturn(virtualSpoutHandler);
 
         return factoryManager;
     }
