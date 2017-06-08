@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline;
+package com.salesforce.storm.spout.sideline.consumer;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -138,12 +138,12 @@ public class PartitionOffsetManagerTest {
         // Create our manager we want to test with starting offset set to 0
         long startingOffset = 0L;
         PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, startingOffset);
-        assertEquals("Should be startingOffset + 1", (startingOffset + 1), offsetManager.lastStartedOffset());
+        assertEquals("Should be startingOffset", startingOffset, offsetManager.lastStartedOffset());
 
         // Create our manager we want to test with starting offset set to 100
         startingOffset = 100L;
         offsetManager = new PartitionOffsetManager("Test Topic", 1, startingOffset);
-        assertEquals("Should be startingOffset + 1", (startingOffset + 1), offsetManager.lastStartedOffset());
+        assertEquals("Should be startingOffset + 1", startingOffset, offsetManager.lastStartedOffset());
     }
 
     /**
@@ -180,7 +180,7 @@ public class PartitionOffsetManagerTest {
 
         offsetManager.finishOffset(2L);
         result = offsetManager.lastStartedOffset();
-        assertEquals("Should be 4L + 1 => 5L", 5L, result);
+        assertEquals("Should be 4L => 4L", 4L, result);
     }
 
     /**

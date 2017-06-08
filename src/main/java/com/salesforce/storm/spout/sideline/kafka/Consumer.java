@@ -1,12 +1,15 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
-import com.salesforce.storm.spout.sideline.PartitionDistributor;
-import com.salesforce.storm.spout.sideline.PartitionOffsetManager;
+import com.salesforce.storm.spout.sideline.FactoryManager;
+import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
+import com.salesforce.storm.spout.sideline.consumer.PartitionDistributor;
+import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.consumer.PartitionOffsetsManager;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -89,7 +92,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
      * instance to track its own offset.  The state of these are what gets persisted via the ConsumerStateManager.
      */
-    private final Map<ConsumerPartition, PartitionOffsetManager> partitionStateManagers = Maps.newHashMap();
+    private final PartitionOffsetsManager partitionOffsetsManager = new PartitionOffsetsManager();
 
     /**
      * Used to buffers messages read from Kafka.
@@ -121,7 +124,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * Get the kafka consumer, if it has been retried yet, set it up.
      * @return Kafka consumer
      */
-    private KafkaConsumer<byte[], byte[]> getKafkaConsumer() {
+    KafkaConsumer<byte[], byte[]> getKafkaConsumer() {
         // If kafkaConsumer is not null, we'll create one.
         // If it is NOT null, we'll re-use the instance we got passed in from the constructor.
         // Typically you'd pass in an instance for testing.
@@ -137,18 +140,37 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
-     * @param consumerConfig Configuration for our consumer
-     * @param persistenceAdapter Implementation of PersistenceAdapter to use for storing consumer state.
-     * @param deserializer Deserializer instance to use.
-     * @param startingState Starting state that the consumer should use.  optional, can be null.
+     * @param spoutConfig Configuration of Spout.
+     * @param virtualSpoutIdentifier VirtualSpout running this consumer.
+     * @param consumerPeerContext defines how many instances in total are running of this consumer.
+     * @param persistenceAdapter The persistence adapter used to manage any state.
+     * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
      */
-    @Override
-    public void open(final ConsumerConfig consumerConfig, final PersistenceAdapter persistenceAdapter, final Deserializer deserializer, final ConsumerState startingState) {
+    public void open(final Map<String, Object> spoutConfig, final VirtualSpoutIdentifier virtualSpoutIdentifier, final ConsumerPeerContext consumerPeerContext, final PersistenceAdapter persistenceAdapter, final ConsumerState startingState) {
         // Simple state enforcement.
         if (isOpen) {
             throw new IllegalStateException("Cannot call open more than once.");
         }
         isOpen = true;
+
+        // Build ConsumerConfig from spout Config
+        // Construct SidelineConsumerConfig based on topology config.
+        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(SidelineSpoutConfig.KAFKA_BROKERS);
+        final String topic = (String) spoutConfig.get(SidelineSpoutConfig.KAFKA_TOPIC);
+
+        // TODO ConsumerConfig should use a VirtualSpoutIdentifier
+        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);
+
+        // Use ConsumerPeerContext to setup how many instances we have.
+        consumerConfig.setNumberOfConsumers(
+            consumerPeerContext.getTotalInstances()
+        );
+        consumerConfig.setIndexOfConsumer(
+            consumerPeerContext.getInstanceNumber()
+        );
+
+        // Create deserializer.
+        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewDeserializerInstance();
 
         // Save references
         this.consumerConfig = consumerConfig;
@@ -188,16 +210,17 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 // We do not have an existing offset saved, so start from the head
                 getKafkaConsumer().seekToBeginning(Collections.singletonList(topicPartition));
                 offset = getKafkaConsumer().position(topicPartition) - 1;
-                logger.info("Starting at the beginning of namespace {} partition {} => offset {}", topicPartition.topic(), topicPartition.partition(), offset);
+
+                logger.info(
+                    "Starting at the beginning of namespace {} partition {} => offset {}",
+                    topicPartition.topic(), topicPartition.partition(), offset
+                );
             }
 
-            partitionStateManagers.put(
+            // Start tracking offsets on ConsumerPartition
+            partitionOffsetsManager.replaceEntry(
                 new ConsumerPartition(topicPartition.topic(), topicPartition.partition()),
-                new PartitionOffsetManager(
-                    topicPartition.topic(),
-                    topicPartition.partition(),
-                    offset
-                )
+                offset
             );
         }
     }
@@ -224,7 +247,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
         final ConsumerPartition consumerPartition = new ConsumerPartition(nextRecord.topic(), nextRecord.partition());
 
         // Track this new message's state
-        partitionStateManagers.get(consumerPartition).startOffset(nextRecord.offset());
+        partitionOffsetsManager.startOffset(consumerPartition, nextRecord.offset());
 
         // Deserialize into values
         final Values deserializedValues = getDeserializer().deserialize(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), nextRecord.key(), nextRecord.value());
@@ -250,30 +273,22 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * @param consumerPartition The Topic & Partition the offset belongs to
      * @param offset The offset that should be marked as completed.
      */
-    public void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
+    private void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
         // Track internally which offsets we've marked completed
-        partitionStateManagers.get(consumerPartition).finishOffset(offset);
+        partitionOffsetsManager.finishOffset(consumerPartition, offset);
 
         // Occasionally flush
         timedFlushConsumerState();
     }
 
     /**
-     * Mark a particular offset on a Topic/Partition as having been successfully processed.
+     * Marks a particular offset on a Topic/Partition as having been successfully processed.
      * @param namespace The topic offset belongs to.
      * @param partition The partition the offset belongs to.
      * @param offset The offset that should be marked as completed.
      */
     public void commitOffset(final String namespace, final int partition, final long offset) {
         commitOffset(new ConsumerPartition(namespace, partition), offset);
-    }
-
-    /**
-     * Mark a particular message as having been successfully processed.
-     * @param record The record to mark as completed.
-     */
-    public void commitOffset(final Record record) {
-        commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
     }
 
     /**
@@ -311,27 +326,25 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * @return A copy of the state that was persisted.
      */
     public ConsumerState flushConsumerState() {
-        // Create a consumer state builder.
-        ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+        // Get the current state
+        final ConsumerState consumerState = partitionOffsetsManager.getCurrentState();
 
-        // Loop through all of our partition managers
-        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
-            final ConsumerPartition topicPartition = entry.getKey();
+        // Persist each partition offset
 
-            final long lastFinishedOffset = entry.getValue().lastFinishedOffset();
-
-            // Set the current offset for each partition.
-            builder.withPartition(topicPartition, lastFinishedOffset);
+        for (Map.Entry<ConsumerPartition, Long> entry: consumerState.entrySet()) {
+            final ConsumerPartition consumerPartition = entry.getKey();
+            final long lastFinishedOffset = entry.getValue();
 
             // Persist it.
             persistenceAdapter.persistConsumerState(
                 getConsumerId(),
-                topicPartition.partition(),
+                consumerPartition.partition(),
                 lastFinishedOffset
             );
         }
 
-        return builder.build();
+        // return the state.
+        return consumerState;
     }
 
     /**
@@ -378,27 +391,41 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      */
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
         // Grab the partitions that had errors
-        final Set outOfRangePartitions = outOfRangeException.partitions();
+        final Set<TopicPartition> outOfRangePartitions = outOfRangeException.partitions();
 
         // Grab all partitions our consumer is subscribed too.
         Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
 
         // Loop over all subscribed partitions
-        for (ConsumerPartition assignedTopicPartition : allAssignedPartitions) {
+        for (ConsumerPartition assignedConsumerPartition : allAssignedPartitions) {
+            // Convert to TopicPartition
+            final TopicPartition assignedTopicPartition = new TopicPartition(assignedConsumerPartition.namespace(), assignedConsumerPartition.partition());
+
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
             if (outOfRangePartitions.contains(assignedTopicPartition)) {
                 final long offset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
-                logger.error("DATA LOSS ERROR - offset {} for partition {} was out of range", offset, assignedTopicPartition);
+                logger.error("DATA LOSS ERROR - offset {} for partition {} was out of range", offset, assignedConsumerPartition);
                 continue;
             }
 
             // This partition did NOT have any errors, but its possible that we "lost" some messages
             // during the poll() call.  This partition needs to seek back to its previous position
             // before the exception was thrown.
-            final long offset = partitionStateManagers.get(assignedTopicPartition).lastStartedOffset();
-            logger.info("Backtracking {} offset to {}", assignedTopicPartition, offset);
-            getKafkaConsumer().seek(new TopicPartition(assignedTopicPartition.namespace(), assignedTopicPartition.partition()), offset);
+
+            // Annoyingly we can't ask the KafkaConsumer for the current position via position() because
+            // it will assume we've consumed the messages it received prior to throwing the exception
+            // and we'll skip message, and we have no way to access those already consumed messages.
+
+            // Whatever offset is returned here, we've already played into the system.  We could try to seek
+            // to the this offset + 1, but there's no promise that offset actually exists!  If we did that and it doesn't
+            // exist, we'll reset that partition back to the earliest erroneously.
+
+            // The short of this means, we're going to replay a message from each partition we seek back to, but
+            // thats better than missing offsets entirely.
+            final long offset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
+            logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
+            getKafkaConsumer().seek(assignedTopicPartition, offset);
         }
 
         // All of the error'd partitions we need to seek to earliest available position.
@@ -428,7 +455,9 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             // We need to reset the saved offset to the current value
             // Replace PartitionOffsetManager with new instance from new position.
             logger.info("Partition {} using new earliest offset {}", topicPartition, newOffset);
-            partitionStateManagers.put(new ConsumerPartition(topicPartition.topic(), topicPartition.partition()), new PartitionOffsetManager(topicPartition.topic(), topicPartition.partition(), newOffset));
+            partitionOffsetsManager.replaceEntry(
+                new ConsumerPartition(topicPartition.topic(), topicPartition.partition()), newOffset
+            );
         }
     }
 
@@ -453,7 +482,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     /**
      * @return The defined consumer config.
      */
-    public ConsumerConfig getConsumerConfig() {
+    ConsumerConfig getConsumerConfig() {
         return consumerConfig;
     }
 
@@ -467,7 +496,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     /**
      * @return A set of all the partitions currently subscribed to.
      */
-    public Set<ConsumerPartition> getAssignedPartitions() {
+    Set<ConsumerPartition> getAssignedPartitions() {
         // Create our return set using abstracted TopicPartition
         Set<ConsumerPartition> assignedPartitions = new HashSet<>();
 
@@ -518,18 +547,13 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * @return The Consumer's current state.
      */
     public ConsumerState getCurrentState() {
-        final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
-
-        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
-            builder.withPartition(entry.getKey(), entry.getValue().lastFinishedOffset());
-        }
-        return builder.build();
+        return partitionOffsetsManager.getCurrentState();
     }
 
     /**
      * @return returns our unique consumer identifier.
      */
-    public String getConsumerId() {
+    String getConsumerId() {
         return getConsumerConfig().getConsumerId();
     }
 
@@ -541,18 +565,18 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     }
 
     /**
-     * @return Deserializer instance.
-     */
-    Deserializer getDeserializer() {
-        return deserializer;
-    }
-
-    /**
      * For injecting a clock implementation.  Useful for testing.
      * @param clock the clock implementation to use.
      */
     protected void setClock(Clock clock) {
         this.clock = clock;
+    }
+
+    /**
+     * @return Deserializer instance.
+     */
+    Deserializer getDeserializer() {
+        return deserializer;
     }
 
     /**
@@ -563,10 +587,9 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
 
-        final Set<ConsumerPartition> topicPartitions = partitionStateManagers.keySet();
-
-        for (ConsumerPartition topicPartition : topicPartitions) {
-            getPersistenceAdapter().clearConsumerState(getConsumerId(), topicPartition.partition());
+        final Set<ConsumerPartition> consumerPartitions = partitionOffsetsManager.getAllManagedConsumerPartitions();
+        for (ConsumerPartition consumerPartition : consumerPartitions) {
+            getPersistenceAdapter().clearConsumerState(getConsumerId(), consumerPartition.partition());
         }
     }
 

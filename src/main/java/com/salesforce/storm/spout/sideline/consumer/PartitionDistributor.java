@@ -1,4 +1,4 @@
-package com.salesforce.storm.spout.sideline;
+package com.salesforce.storm.spout.sideline.consumer;
 
 import com.google.common.collect.Lists;
 

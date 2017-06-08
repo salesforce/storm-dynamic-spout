@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.retry.FailedTuplesFirstRetryManager;
@@ -1326,6 +1327,7 @@ public class SidelineSpoutTest {
         final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
 
         final Map<String, Object> config = Maps.newHashMap();
+        config.put(SidelineSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
         config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
