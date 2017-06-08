@@ -180,7 +180,7 @@ public class SpoutCoordinatorTest {
 
         expectedException.expect(IllegalStateException.class);
 
-        VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("Foobar");
+        DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
 
         DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
         DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);

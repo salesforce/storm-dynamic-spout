@@ -3,6 +3,7 @@ package com.salesforce.storm.spout.sideline.coordinator;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
@@ -128,7 +129,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -237,7 +238,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -328,7 +329,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -342,7 +343,7 @@ public class SpoutRunnerTest {
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
-        final VirtualSpoutIdentifier otherVirtualSpoutId = new VirtualSpoutIdentifier("OtherVirtualSpout");
+        final VirtualSpoutIdentifier otherVirtualSpoutId = new DefaultVirtualSpoutIdentifier("OtherVirtualSpout");
         ackQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
         failQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
 
@@ -443,7 +444,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final VirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -457,7 +458,7 @@ public class SpoutRunnerTest {
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
-        final VirtualSpoutIdentifier otherVirtualSpoutId = new VirtualSpoutIdentifier("OtherVirtualSpout");
+        final DefaultVirtualSpoutIdentifier otherVirtualSpoutId = new DefaultVirtualSpoutIdentifier("OtherVirtualSpout");
         ackQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
         failQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
 
@@ -558,7 +559,7 @@ public class SpoutRunnerTest {
         // Define inputs
         final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
-        final VirtualSpoutIdentifier virtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
         // Define some config params
         final long consumerStateFlushInterval = TimeUnit.MILLISECONDS.convert(maxWaitTime, TimeUnit.SECONDS);
@@ -572,7 +573,7 @@ public class SpoutRunnerTest {
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
         // Add other virtual spout id in ack and fail queues
-        final VirtualSpoutIdentifier otherVirtualSpoutId = new VirtualSpoutIdentifier("OtherVirtualSpout");
+        final DefaultVirtualSpoutIdentifier otherVirtualSpoutId = new DefaultVirtualSpoutIdentifier("OtherVirtualSpout");
         ackQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
         failQueue.put(otherVirtualSpoutId, new ConcurrentLinkedQueue<>());
 

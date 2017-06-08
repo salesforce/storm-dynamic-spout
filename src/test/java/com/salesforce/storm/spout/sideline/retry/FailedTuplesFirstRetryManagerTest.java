@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
-import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -21,7 +21,7 @@ public class FailedTuplesFirstRetryManagerTest {
      */
     @Test
     public void testFailedSimpleCase() {
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // construct manager and call open
         FailedTuplesFirstRetryManager retryManager = new FailedTuplesFirstRetryManager();

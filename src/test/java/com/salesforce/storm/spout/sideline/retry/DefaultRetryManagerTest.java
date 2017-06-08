@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
-import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,7 +99,7 @@ public class DefaultRetryManagerTest {
         // Calculate the 1st retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
@@ -148,7 +148,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
@@ -217,7 +217,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
@@ -270,7 +270,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
@@ -297,7 +297,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
@@ -324,7 +324,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
@@ -358,7 +358,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
@@ -429,7 +429,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
@@ -470,7 +470,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("MyConsumerId");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);

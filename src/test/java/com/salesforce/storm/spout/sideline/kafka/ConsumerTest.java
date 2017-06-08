@@ -1,11 +1,11 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
@@ -1473,7 +1473,7 @@ public class ConsumerTest {
         final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
 
         // create our vspout id
-        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -1617,7 +1617,7 @@ public class ConsumerTest {
         final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
 
         // create our vspout id
-        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("MyConsumerId");
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2225,7 +2225,7 @@ public class ConsumerTest {
      * Utility method to generate a default VirtualSpoutIdentifier instance.
      */
     private VirtualSpoutIdentifier getDefaultVSpoutId() {
-        return new VirtualSpoutIdentifier("MyConsumerId");
+        return new DefaultVirtualSpoutIdentifier("MyConsumerId");
     }
 
     /**

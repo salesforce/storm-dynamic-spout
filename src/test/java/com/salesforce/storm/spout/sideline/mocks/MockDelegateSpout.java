@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.mocks;
 
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
@@ -28,7 +29,7 @@ public class MockDelegateSpout implements DelegateSpout {
     public volatile Queue<Message> emitQueue = Queues.newConcurrentLinkedQueue();
 
     public MockDelegateSpout() {
-        this.virtualSpoutId = new VirtualSpoutIdentifier(this.getClass().getSimpleName() + UUID.randomUUID().toString());
+        this.virtualSpoutId = new DefaultVirtualSpoutIdentifier(this.getClass().getSimpleName() + UUID.randomUUID().toString());
     }
 
     public MockDelegateSpout(final VirtualSpoutIdentifier virtualSpoutId) {

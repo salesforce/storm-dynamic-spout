@@ -6,6 +6,7 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -60,7 +61,7 @@ public class RoundRobinBufferTest {
         messageBuffer.open(config);
 
         // Keep track of our order per spoutId
-        final Map<VirtualSpoutIdentifier, Queue<Message>> submittedOrder = Maps.newHashMap();
+        final Map<DefaultVirtualSpoutIdentifier, Queue<Message>> submittedOrder = Maps.newHashMap();
 
         // Create random number generator
         Random random = new Random();
@@ -68,7 +69,7 @@ public class RoundRobinBufferTest {
         // Generate messages
         for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
             // Generate source spout id
-            final VirtualSpoutIdentifier sourceSpoutId = new VirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
+            final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
             final int partition = random.nextInt(10);
 
 
@@ -90,9 +91,9 @@ public class RoundRobinBufferTest {
         assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
 
         // Now ask for the messages back, they should get round robin'd
-        Iterator<VirtualSpoutIdentifier> keyIterator = Iterators.cycle(submittedOrder.keySet());
+        Iterator<DefaultVirtualSpoutIdentifier> keyIterator = Iterators.cycle(submittedOrder.keySet());
         for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
-            VirtualSpoutIdentifier nextSourceSpout = keyIterator.next();
+            DefaultVirtualSpoutIdentifier nextSourceSpout = keyIterator.next();
 
             // Pop a msg
             final Message bufferedMsg = messageBuffer.poll();

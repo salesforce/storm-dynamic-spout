@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
-import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class FilterChainTest {
      */
     @Test
     public void testChain() {
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("FakeConsumer");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("FakeConsumer");
 
         final Message message1 = new Message(
             new MessageId("foobar", 1, 0L, consumerId),
@@ -63,7 +63,7 @@ public class FilterChainTest {
      */
     @Test
     public void testNegatingChain() {
-        final VirtualSpoutIdentifier consumerId = new VirtualSpoutIdentifier("FakeConsumer");
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("FakeConsumer");
 
         final Message message1 = new Message(
             new MessageId("foobar", 1, 0L, consumerId),

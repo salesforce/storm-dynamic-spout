@@ -91,12 +91,6 @@ public class VirtualSpout implements DelegateSpout {
     private VirtualSpoutIdentifier virtualSpoutId;
 
     /**
-     * If this VirtualSpout is associated with a sideline request,
-     * the requestId will be stored here.
-     */
-    private SidelineRequestIdentifier sidelineRequestIdentifier = null;
-
-    /**
      * For tracking failed messages, and knowing when to replay them.
      */
     private RetryManager retryManager;
@@ -227,11 +221,13 @@ public class VirtualSpout implements DelegateSpout {
             consumer.removeConsumerState();
 
             // TODO: This should be moved out of here so that the vspout has no notion of a sideline request
+            final SidelineRequestIdentifier sidelineRequestIdentifier = ((SidelineVirtualSpoutIdentifier) getVirtualSpoutId()).getSidelineRequestIdentifier();
+
             // Clean up sideline request
-            if (getSidelineRequestIdentifier() != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
+            if (sidelineRequestIdentifier != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
                 for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
                     consumer.getPersistenceAdapter().clearSidelineRequest(
-                        getSidelineRequestIdentifier(),
+                        sidelineRequestIdentifier,
                         consumerPartition.partition()
                     );
                 }
@@ -516,24 +512,6 @@ public class VirtualSpout implements DelegateSpout {
             throw new IllegalStateException("Consumer id cannot be null or empty! (" + virtualSpoutId + ")");
         }
         this.virtualSpoutId = virtualSpoutId;
-    }
-
-    /**
-     * If this VirtualSpout instance is associated with SidelineRequest, this will return
-     * the SidelineRequestId.
-     *
-     * @return - The associated SidelineRequestId if one is associated, or null.
-     */
-    public SidelineRequestIdentifier getSidelineRequestIdentifier() {
-        return sidelineRequestIdentifier;
-    }
-
-    /**
-     * If this VirtualSpout instance is associated with SidelineRequest, set that reference here.
-     * @param id - The SidelineRequestIdentifierId.
-     */
-    public void setSidelineRequestIdentifier(SidelineRequestIdentifier id) {
-        this.sidelineRequestIdentifier = id;
     }
 
     public FilterChain getFilterChain() {
