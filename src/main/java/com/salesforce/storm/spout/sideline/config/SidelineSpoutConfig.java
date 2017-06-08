@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
@@ -325,7 +326,7 @@ public class SidelineSpoutConfig {
         }
 
         if (!clonedConfig.containsKey(VIRTUAL_SPOUT_HANDLER_CLASS)) {
-            clonedConfig.put(VIRTUAL_SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
+            clonedConfig.put(VIRTUAL_SPOUT_HANDLER_CLASS, NoopVirtualSpoutHandler.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", VIRTUAL_SPOUT_HANDLER_CLASS, clonedConfig.get(VIRTUAL_SPOUT_HANDLER_CLASS));
         }
 
