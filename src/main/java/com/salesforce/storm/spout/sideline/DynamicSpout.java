@@ -4,6 +4,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -63,6 +64,11 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * Stores state from the spout
      */
     private PersistenceAdapter persistenceAdapter;
+
+    /**
+     * Handles call backs on this spout
+     */
+    private SpoutHandler spoutHandler;
 
     /**
      * For collecting metrics.
@@ -137,6 +143,9 @@ public abstract class DynamicSpout extends BaseRichSpout {
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
 
+        spoutHandler = getFactoryManager().createSpoutHandler();
+        spoutHandler.open(spoutConfig, factoryManager, metricsRecorder);
+
         onOpen(topologyConfig, topologyContext, spoutOutputCollector);
     }
 
@@ -148,6 +157,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * @param topologyContext The Storm Topology context.
      * @param spoutOutputCollector The output collector to emit tuples via.
      */
+    @Deprecated
     abstract void onOpen(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector);
 
     /**
@@ -229,6 +239,12 @@ public abstract class DynamicSpout extends BaseRichSpout {
             metricsRecorder = null;
         }
 
+        if (spoutHandler != null) {
+            spoutHandler.onSpoutClose();
+            spoutHandler.close();
+            spoutHandler = null;
+        }
+
         onClose();
     }
 
@@ -236,6 +252,7 @@ public abstract class DynamicSpout extends BaseRichSpout {
      * Called after close() this is essentially a callback or a hook to any spout implementing the virtual spout
      * framework.
      */
+    @Deprecated
     abstract void onClose();
 
     /**

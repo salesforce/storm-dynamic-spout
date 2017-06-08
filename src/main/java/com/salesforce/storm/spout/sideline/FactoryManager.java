@@ -3,6 +3,8 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
+import com.salesforce.storm.spout.sideline.handler.SpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -55,6 +57,17 @@ public class FactoryManager implements Serializable {
      * Class instance of our Consumer.
      */
     private transient Class<? extends Consumer> consumerClass;
+
+    /**
+     * Class instance of our SpoutHandler.
+     */
+    private transient Class<? extends SpoutHandler> spoutHandlerClass;
+
+    /**
+     * Class instance of our VirtualSpoutHandler.
+     */
+    private transient Class<? extends VirtualSpoutHandler> virtualSpoutHandlerClass;
+
 
     /**
      * Constructor.
@@ -203,4 +216,51 @@ public class FactoryManager implements Serializable {
         }
     }
 
+    /**
+     * Create an instance of the configured SpoutHandler.
+     * @return Instance of a SpoutHandler
+     */
+    public synchronized SpoutHandler createSpoutHandler() {
+        if (spoutHandlerClass == null) {
+            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.SPOUT_HANDLER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.SPOUT_HANDLER_CLASS);
+            }
+
+            try {
+                spoutHandlerClass = (Class<? extends SpoutHandler>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return spoutHandlerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create an instance of the configured VirtualSpoutHandler.
+     * @return Instance of a VirtualSpoutHandler
+     */
+    public synchronized VirtualSpoutHandler createVirtualSpoutHandler() {
+        if (virtualSpoutHandlerClass == null) {
+            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
+            if (Strings.isNullOrEmpty(classStr)) {
+                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
+            }
+
+            try {
+                virtualSpoutHandlerClass = (Class<? extends VirtualSpoutHandler>) Class.forName(classStr);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            return virtualSpoutHandlerClass.newInstance();
+        } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

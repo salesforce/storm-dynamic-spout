@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -101,6 +102,8 @@ public class VirtualSpout implements DelegateSpout {
      */
     private final MetricsRecorder metricsRecorder;
 
+    private VirtualSpoutHandler virtualSpoutHandler;
+
     // TEMP
     private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
     private final Map<String, Long> ackTimeBuckets = Maps.newHashMap();
@@ -194,6 +197,10 @@ public class VirtualSpout implements DelegateSpout {
         // Open consumer
         consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
+        virtualSpoutHandler = factoryManager.createVirtualSpoutHandler();
+        virtualSpoutHandler.open(spoutConfig, factoryManager, metricsRecorder);
+        virtualSpoutHandler.onVirtualSpoutOpen();
+
         // Temporary metric buckets.
         // TODO - convert to using proper metrics recorder?
         nextTupleTimeBuckets.put("failedRetry", 0L);
@@ -240,6 +247,9 @@ public class VirtualSpout implements DelegateSpout {
         // Call close & null reference.
         consumer.close();
         consumer = null;
+
+        virtualSpoutHandler.onVirtualSpoutClose();
+        virtualSpoutHandler.close();
 
         startingState = null;
         endingState = null;

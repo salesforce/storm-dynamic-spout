@@ -1,6 +1,7 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
@@ -218,6 +219,20 @@ public class SidelineSpoutConfig {
      */
     public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "sideline_spout.coordinator.max_concurrent_virtual_spouts";
 
+    /**
+     * (String) Defines which SpoutHandler implementation to use.
+     * Should be a fully qualified class path that implements the SpoutHandler interface.
+     * Default value: com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler
+     */
+    public static final String SPOUT_HANDLER_CLASS = "sideline_spout.spout_handler_class";
+
+    /**
+     * (String) Defines which VirtualSpoutHandler implementation to use.
+     * Should be a fully qualified class path that implements the VirtualSpoutHandler interface.
+     * Default value: com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler
+     */
+    public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "sideline_spout.virtual_spout_handler_class";
+
 ///////////////////////////////////
 // Utility Methods.
 ///////////////////////////////////
@@ -302,6 +317,16 @@ public class SidelineSpoutConfig {
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_INTERVAL)) {
             clonedConfig.put(PERSISTENCE_ZK_RETRY_INTERVAL, 10);
             logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_RETRY_INTERVAL, clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL));
+        }
+
+        if (!clonedConfig.containsKey(SPOUT_HANDLER_CLASS)) {
+            clonedConfig.put(SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
+            logger.info("Unspecified configuration value for {} using default value {}", SPOUT_HANDLER_CLASS, clonedConfig.get(SPOUT_HANDLER_CLASS));
+        }
+
+        if (!clonedConfig.containsKey(VIRTUAL_SPOUT_HANDLER_CLASS)) {
+            clonedConfig.put(VIRTUAL_SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
+            logger.info("Unspecified configuration value for {} using default value {}", VIRTUAL_SPOUT_HANDLER_CLASS, clonedConfig.get(VIRTUAL_SPOUT_HANDLER_CLASS));
         }
 
         return clonedConfig;
