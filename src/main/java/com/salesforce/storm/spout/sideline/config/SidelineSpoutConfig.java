@@ -240,7 +240,7 @@ public class SidelineSpoutConfig {
         }
         if (!clonedConfig.containsKey(CONSUMER_CLASS)) {
             // For now default KafkaConsumer
-            clonedConfig.put(CONSUMER_CLASS, Consumer.class);
+            clonedConfig.put(CONSUMER_CLASS, Consumer.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_CLASS, clonedConfig.get(CONSUMER_CLASS));
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
