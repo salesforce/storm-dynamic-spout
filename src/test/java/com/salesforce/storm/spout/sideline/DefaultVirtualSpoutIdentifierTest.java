@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class VirtualSpoutIdentifierTest {
+public class DefaultVirtualSpoutIdentifierTest {
 
     /**
      * Test that two identifiers created with the same string match
@@ -12,10 +12,10 @@ public class VirtualSpoutIdentifierTest {
      */
     @Test
     public void test_toString_and_equals() throws Exception {
-        final VirtualSpoutIdentifier virtualSpoutIdentifier = new VirtualSpoutIdentifier("FooBar");
+        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("FooBar");
 
-        assertEquals(virtualSpoutIdentifier, new VirtualSpoutIdentifier("FooBar"));
-        assertEquals(virtualSpoutIdentifier.toString(), new VirtualSpoutIdentifier("FooBar").toString());
+        assertEquals(virtualSpoutIdentifier, new DefaultVirtualSpoutIdentifier("FooBar"));
+        assertEquals(virtualSpoutIdentifier.toString(), new DefaultVirtualSpoutIdentifier("FooBar").toString());
     }
 
     /**
@@ -24,8 +24,8 @@ public class VirtualSpoutIdentifierTest {
      */
     @Test
     public void test_not_toString_and_equals() throws Exception {
-        final VirtualSpoutIdentifier virtualSpoutIdentifier1 = new VirtualSpoutIdentifier("Foo");
-        final VirtualSpoutIdentifier virtualSpoutIdentifier2 = new VirtualSpoutIdentifier("Bar");
+        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier1 = new DefaultVirtualSpoutIdentifier("Foo");
+        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier2 = new DefaultVirtualSpoutIdentifier("Bar");
 
         assertNotEquals(virtualSpoutIdentifier1, virtualSpoutIdentifier2);
         assertNotEquals(virtualSpoutIdentifier1.toString(), virtualSpoutIdentifier2.toString());
@@ -36,7 +36,7 @@ public class VirtualSpoutIdentifierTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void test_nullIdentifier() {
-        new VirtualSpoutIdentifier(null);
+        new DefaultVirtualSpoutIdentifier(null);
     }
 
     /**
@@ -44,6 +44,6 @@ public class VirtualSpoutIdentifierTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void test_emptyIdentifier() {
-        new VirtualSpoutIdentifier("");
+        new DefaultVirtualSpoutIdentifier("");
     }
 }

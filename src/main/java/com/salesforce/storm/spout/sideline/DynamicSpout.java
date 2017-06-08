@@ -399,6 +399,6 @@ public abstract class DynamicSpout extends BaseRichSpout {
         newId += ":" + id;
 
         // return it
-        return new VirtualSpoutIdentifier(newId);
+        return new DefaultVirtualSpoutIdentifier(newId);
     }
 }

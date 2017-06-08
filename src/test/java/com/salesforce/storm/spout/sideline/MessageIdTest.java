@@ -21,7 +21,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate MessageId
@@ -40,7 +40,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate its equal to itself
@@ -56,7 +56,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
         final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
@@ -74,7 +74,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
         final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition + 1, expectedOffset, expectedVirtualSpoutId);
 
@@ -92,7 +92,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
         final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset + 1, expectedVirtualSpoutId);
 
@@ -110,7 +110,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
         final MessageId messageId2 = new MessageId(expectedTopic + "A", expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
@@ -128,8 +128,8 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, new VirtualSpoutIdentifier("MyVirtualSpoutId"));
-        final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset, new VirtualSpoutIdentifier("MyVirtualSpoutId+A"));
+        final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId"));
+        final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset, new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId+A"));
 
         // Validate not equal
         assertFalse("Should not be equal", messageId1.equals(messageId2));
@@ -145,7 +145,7 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final VirtualSpoutIdentifier expectedVirtualSpoutId = new VirtualSpoutIdentifier("MyVirtualSpoutId");
+        final DefaultVirtualSpoutIdentifier expectedVirtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
         final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
         final MessageId messageId2 = null;
 

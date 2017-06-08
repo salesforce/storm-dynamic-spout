@@ -2,7 +2,7 @@ package com.salesforce.storm.spout.sideline.retry;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
-import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -21,10 +21,10 @@ public class NeverRetryManagerTest {
         // Create instance.
         NeverRetryManager retryManager = new NeverRetryManager();
 
-        final VirtualSpoutIdentifier consumerId1 = new VirtualSpoutIdentifier("ConsumerId1");
-        final VirtualSpoutIdentifier consumerId2 = new VirtualSpoutIdentifier("ConsumerId2");
-        final VirtualSpoutIdentifier consumerId3 = new VirtualSpoutIdentifier("ConsumerId3");
-        final VirtualSpoutIdentifier consumerId4 = new VirtualSpoutIdentifier("ConsumerId4");
+        final DefaultVirtualSpoutIdentifier consumerId1 = new DefaultVirtualSpoutIdentifier("ConsumerId1");
+        final DefaultVirtualSpoutIdentifier consumerId2 = new DefaultVirtualSpoutIdentifier("ConsumerId2");
+        final DefaultVirtualSpoutIdentifier consumerId3 = new DefaultVirtualSpoutIdentifier("ConsumerId3");
+        final DefaultVirtualSpoutIdentifier consumerId4 = new DefaultVirtualSpoutIdentifier("ConsumerId4");
 
         retryManager.open(Maps.newHashMap());
 

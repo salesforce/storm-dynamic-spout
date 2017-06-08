@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.salesforce.storm.spout.sideline.MessageId;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
@@ -185,7 +186,7 @@ public class SpoutMonitorTest {
 
         // Create a mock spout
         DelegateSpout mockSpout = mock(DelegateSpout.class);
-        when(mockSpout.getVirtualSpoutId()).thenReturn(new VirtualSpoutIdentifier("MySpoutId"));
+        when(mockSpout.getVirtualSpoutId()).thenReturn(new DefaultVirtualSpoutIdentifier("MySpoutId"));
 
         // Add it to our queue
         newSpoutQueue.add(mockSpout);
@@ -255,7 +256,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        MockDelegateSpout mockSpout = new MockDelegateSpout(new VirtualSpoutIdentifier("MySpoutId"));
+        MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
         mockSpout.requestedStop = false;
 
         // Add it to our queue
@@ -322,7 +323,7 @@ public class SpoutMonitorTest {
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
         for (int x=0; x<maxConccurentInstances + 2; x++) {
-            mockSpouts.add(new MockDelegateSpout(new VirtualSpoutIdentifier("SpoutInstance" + x)));
+            mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
 
         // Our new spout queue
@@ -412,7 +413,7 @@ public class SpoutMonitorTest {
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
         for (int x=0; x<maxConccurentInstances + 1; x++) {
-            mockSpouts.add(new MockDelegateSpout(new VirtualSpoutIdentifier("SpoutInstance" + x)));
+            mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
 
         // Our new spout queue
@@ -524,7 +525,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        MockDelegateSpout mockSpout = new MockDelegateSpout(new VirtualSpoutIdentifier("MySpoutId"));
+        MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
         mockSpout.requestedStop = false;
 
         // Add it to our queue
