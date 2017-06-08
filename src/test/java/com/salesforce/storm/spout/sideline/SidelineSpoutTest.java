@@ -172,7 +172,7 @@ public class SidelineSpoutTest {
 
         // Call our method with a postfix
         VirtualSpoutIdentifier result = spout.generateVirtualSpoutId("main");
-        assertEquals("Should generate expected virtual spout it", result, new DefaultVirtualSpoutIdentifier(expectedPrefix + ":main"));
+        assertEquals("Should generate expected virtual spout it", result, new SidelineVirtualSpoutIdentifier(expectedPrefix, "main"));
 
         // Call close.
         spout.close();
