@@ -37,7 +37,7 @@ public class PartitionOffsetManager {
     private final TreeSet<Long> finishedOffsets = new TreeSet<>();
 
     private long lastFinishedOffset = 0;
-    private long lastStartedOffset = 0;
+    private long lastStartedOffset = -1;
 
     /**
      * Constructor.
@@ -146,12 +146,10 @@ public class PartitionOffsetManager {
      *           This is NOT the same as the "Last Finished Offset"
      */
     public long lastStartedOffset() {
-        // If the last finished offset happens to be higher, which is the case
-        // if we haven't started tracking anything yet.
-        if ((lastFinishedOffset + 1) > lastStartedOffset) {
-            // return last finished offset + 1,
-            // @todo Stephen - I think this may be the source of some invalid offset bugs.
-            return (lastFinishedOffset + 1);
+        // If the last started offset is -1 that means we haven't started tracking any offsets yet.
+        if (lastStartedOffset == -1) {
+            // So we'll return the last finished offset...
+            return lastFinishedOffset;
         }
         return lastStartedOffset;
     }

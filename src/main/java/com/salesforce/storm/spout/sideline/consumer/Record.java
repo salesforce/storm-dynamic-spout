@@ -36,4 +36,14 @@ public class Record {
     public Values getValues() {
         return values;
     }
+
+    @Override
+    public String toString() {
+        return "Record{"
+            + "namespace='" + namespace + '\''
+            + ", partition=" + partition
+            + ", offset=" + offset
+            + ", values=" + values
+            + '}';
+    }
 }

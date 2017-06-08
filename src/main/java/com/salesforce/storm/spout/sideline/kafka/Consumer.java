@@ -124,7 +124,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * Get the kafka consumer, if it has been retried yet, set it up.
      * @return Kafka consumer
      */
-    private KafkaConsumer<byte[], byte[]> getKafkaConsumer() {
+    KafkaConsumer<byte[], byte[]> getKafkaConsumer() {
         // If kafkaConsumer is not null, we'll create one.
         // If it is NOT null, we'll re-use the instance we got passed in from the constructor.
         // Typically you'd pass in an instance for testing.
@@ -412,6 +412,17 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             // This partition did NOT have any errors, but its possible that we "lost" some messages
             // during the poll() call.  This partition needs to seek back to its previous position
             // before the exception was thrown.
+
+            // Annoyingly we can't ask the KafkaConsumer for the current position via position() because
+            // it will assume we've consumed the messages it received prior to throwing the exception
+            // and we'll skip message, and we have no way to access those already consumed messages.
+
+            // Whatever offset is returned here, we've already played into the system.  We could try to seek
+            // to the this offset + 1, but there's no promise that offset actually exists!  If we did that and it doesn't
+            // exist, we'll reset that partition back to the earliest erroneously.
+
+            // The short of this means, we're going to replay a message from each partition we seek back to, but
+            // thats better than missing offsets entirely.
             final long offset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
             logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
             getKafkaConsumer().seek(assignedTopicPartition, offset);

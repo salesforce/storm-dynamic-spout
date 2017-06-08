@@ -1,5 +1,7 @@
 package com.salesforce.storm.spout.sideline.kafka;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -1948,8 +1950,8 @@ public class ConsumerTest {
 
         // Define the values we expect to get
         final Set<String> expectedValues = Sets.newHashSet(
-            // Partition 0 should not skip any messages!
-            "partition0-offset2", "partition0-offset3",
+            // Partition 0 should not skip any messages, but unfortunately it will replay partition0-offset1
+            "partition0-offset1", "partition0-offset2", "partition0-offset3",
 
             // Partition 1 should get reset to offset 0
             "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
@@ -1973,7 +1975,7 @@ public class ConsumerTest {
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
-        assertEquals("Should have 6 messages from kafka", numberOfExpectedMessages, records.size());
+        assertEquals("Should have 7 messages from kafka", numberOfExpectedMessages + 1, records.size());
         assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
 
         // Call nextRecord 2 more times, both should be null
@@ -1988,6 +1990,170 @@ public class ConsumerTest {
 
         // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
         assertEquals("Partition 1's last committed offset should be reset to earliest, or -1 in our case", (Long)(-1L), consumerState.getOffsetForNamespaceAndPartition(topicPartition1));
+
+        // Close consumer
+        consumer.close();
+    }
+
+    /**
+     * This tests what happens if we ask to consume from an offset that is invalid (does not exist).
+     * Here's what we setup:
+     *
+     * 2 partitions, produce 4 messages into each.
+     *
+     * Start a consumer, asking to start at:
+     *   offset 0 for partition 0, (recorded completed offset = -1)
+     *   offset 0 for partition 1. (recorded completed offset = -1)
+     *
+     * We then consume and expect to receive messages:
+     *   partition 0 -> messages 0,1,2,3  (because we started at offset 0)
+     *   partition 1 -> messages 0,1,2,3  (because we started at offset 0)
+     *
+     * Then we should produce 4 more messages into each topic.
+     * Before we consume, we should set partition 1's position to offset 21, which is invalid.
+     *
+     * Then we attempt to consume, partition1's offset will be deemed invalid, and should roll back
+     * to the earliest (expected) and partition0's offset should restart from offset 3.
+     */
+    @Test
+    public void testWhatHappensIfOffsetIsInvalidShouldResetSmallestExtendedTest() {
+        // Kafka namespace setup
+        this.topicName = "testWhatHappensIfOffsetIsInvalidShouldResetSmallest" + System.currentTimeMillis();
+        final int numberOfPartitions = 2;
+        final int numberOfMsgsPerPartition = 4;
+
+        // How many msgs we should expect, 4 for partition 0, 4 from partition1
+        final int numberOfExpectedMessages = 8;
+
+        // Define our namespace/partitions
+        final ConsumerPartition topicPartition0 = new ConsumerPartition(topicName, 0);
+        final ConsumerPartition topicPartition1 = new ConsumerPartition(topicName, 1);
+
+        // Define starting offsets for partitions
+        final long partition0StartingOffset = -1L;
+        final long partition1StartingOffset = -1L;
+
+        // Create our multi-partition namespace.
+        kafkaTestServer.createTopic(topicName, numberOfPartitions);
+
+        // Produce messages into both topics
+        produceRecords(numberOfMsgsPerPartition, 0);
+        produceRecords(numberOfMsgsPerPartition, 1);
+
+        // Setup our config set to reset to none
+        // We should handle this internally now.
+        Map<String, Object> config = getDefaultConfig(topicName);
+
+        // Create our Persistence Manager
+        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create & persist the starting state for our test
+        // Partition 0 has starting offset = -1
+        persistenceAdapter.persistConsumerState("MyConsumerId", 0, partition0StartingOffset);
+
+        // Partition 1 has starting offset = -1
+        persistenceAdapter.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
+
+        // Create our consumer
+        Consumer consumer = new Consumer();
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        // Validate PartitionOffsetManager is correctly setup
+        ConsumerState consumerState = consumer.getCurrentState();
+        assertEquals("Partition 0's last committed offset should be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0));
+        assertEquals("Partition 1's last committed offset should be its starting offset", (Long) partition1StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition1));
+
+        // Define the values we expect to get
+        final Set<String> expectedValues = Sets.newHashSet(
+            // Partition 0 should not skip any messages!
+            "partition0-offset0", "partition0-offset1", "partition0-offset2", "partition0-offset3",
+
+            // Partition 1 should not skip any messages!
+            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
+        );
+
+        List<Record> records = Lists.newArrayList();
+        Record consumerRecord;
+        int attempts = 0;
+        do {
+            consumerRecord = consumer.nextRecord();
+            if (consumerRecord != null) {
+                logger.info("Found offset {} on {}", consumerRecord.getOffset(), consumerRecord.getPartition());
+                records.add(consumerRecord);
+
+                // Remove from our expected set
+                expectedValues.remove("partition" + consumerRecord.getPartition() + "-offset" + consumerRecord.getOffset());
+            } else {
+                attempts++;
+            }
+        } while (attempts <= 2);
+
+        // Now do validation
+        logger.info("Found {} msgs", records.size());
+        assertEquals("Should have 8 messages from kafka", numberOfExpectedMessages, records.size());
+        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+
+        // Now produce more msgs to partition 0 and 1
+        produceRecords(numberOfMsgsPerPartition, 1);
+        produceRecords(numberOfMsgsPerPartition, 0);
+
+        // Re-define what we expect to see.
+        expectedValues.clear();
+        expectedValues.addAll(ImmutableSet.of(
+            // The next 4 entries from partition 0, plus the 1 replayed message @ offset 3
+            "partition0-offset3","partition0-offset4", "partition0-offset5", "partition0-offset6", "partition0-offset7",
+
+            // Partition1 gets reset to earliest, so it should be offsets 0->7
+            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3", "partition1-offset4", "partition1-offset5", "partition1-offset6", "partition1-offset7"
+        ));
+
+        // Now set partition 1's offset to something invalid
+        consumer.getKafkaConsumer().seek(new TopicPartition(topicName, 1), 1000L);
+
+        // Reset loop vars
+        records = Lists.newArrayList();
+        attempts = 0;
+        do {
+            // Get the next record
+            consumerRecord = consumer.nextRecord();
+            if (consumerRecord != null) {
+                logger.info("Found offset {} on {}", consumerRecord.getOffset(), consumerRecord.getPartition());
+                records.add(consumerRecord);
+
+                // Remove from our expected set
+                boolean didRemove = expectedValues.remove("partition" + consumerRecord.getPartition() + "-offset" + consumerRecord.getOffset());
+
+                // If we didn't remove something
+                if (!didRemove) {
+                    // That means something funky is afoot.
+                    logger.info("Found unexpected message from consumer: {}", consumerRecord);
+                }
+            } else {
+                attempts++;
+            }
+        } while (attempts <= 2);
+
+        // Now do validation
+        logger.info("Found {} msgs", records.size());
+        assertEquals("Should have 12 (4 from partition0, 8 from partition1 + 1 replayed) messages from kafka", (3*numberOfMsgsPerPartition)+1, records.size());
+        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+
+        // Call nextRecord 2 more times, both should be null
+        for (int x=0; x<2; x++) {
+            assertNull("Should be null", consumer.nextRecord());
+        }
+
+        // Validate PartitionOffsetManager is correctly setup
+        // We have not acked anything,
+        consumerState = consumer.getCurrentState();
+        assertEquals("Partition 0's last committed offset should still be its starting offset", (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0));
+
+        // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
+        assertEquals("Partition 1's last committed offset should be reset to earliest, or -1 in our case", (Long)(-1L), consumerState.getOffsetForNamespaceAndPartition(topicPartition1));
+
+        // Close consumer
+        consumer.close();
     }
 
     /**
