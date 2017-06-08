@@ -234,6 +234,20 @@ public class SidelineSpoutConfig {
      */
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "sideline_spout.virtual_spout_handler_class";
 
+    /**
+     * (String) Defines with StartingTrigger (if any) implementation to use.
+     * Should be a fully qualified class path that implements thee StartingTrigger interface
+     * Default value: null
+     */
+    public static final String STARTING_TRIGGER_CLASS = "sideline_spout.starting_trigger_class";
+
+    /**
+     * (String) Defines with StoppingTrigger (if any) implementation to use.
+     * Should be a fully qualified class path that implements thee StoppingTrigger interface
+     * Default value: null
+     */
+    public static final String STOPPING_TRIGGER_CLASS = "sideline_spout.stopping_trigger_class";
+
 ///////////////////////////////////
 // Utility Methods.
 ///////////////////////////////////

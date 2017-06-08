@@ -76,6 +76,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
     @Override
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         this.spout = spout;
+        this.startingTrigger = createStartingTrigger();
+        this.stoppingTrigger = createStoppingTrigger();
 
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
         if (startingTrigger != null) {
@@ -334,5 +336,42 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // return it
         return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);
+    }
+
+
+    /**
+     * Create an instance of the configured StartingTrigger.
+     * @return Instance of a StartingTrigger
+     */
+    private synchronized StartingTrigger createStartingTrigger() {
+        String classStr = (String) spoutConfig.get(SidelineSpoutConfig.STARTING_TRIGGER_CLASS);
+        // Empty class is allowed, this is not required to be configured
+        if (Strings.isNullOrEmpty(classStr)) {
+            return null;
+        }
+
+        try {
+            return ((Class<? extends StartingTrigger>) Class.forName(classStr)).newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create an instance of the configured StoppingTrigger.
+     * @return Instance of a StoppingTrigger
+     */
+    private synchronized StoppingTrigger createStoppingTrigger() {
+        String classStr = (String) spoutConfig.get(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS);
+        // Empty class is allowed, this is not required to be configured
+        if (Strings.isNullOrEmpty(classStr)) {
+            return null;
+        }
+
+        try {
+            return ((Class<? extends StoppingTrigger>) Class.forName(classStr)).newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
