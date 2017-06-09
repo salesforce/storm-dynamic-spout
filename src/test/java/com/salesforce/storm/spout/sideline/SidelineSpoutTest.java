@@ -7,6 +7,7 @@ import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
@@ -1383,9 +1384,9 @@ public class SidelineSpoutTest {
         // For now use the Log Recorder
         config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
-        config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
+        config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
 
-        config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, NoopVirtualSpoutHandler.class.getName());
+        config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
 
         config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, StaticTrigger.class.getName());
 
