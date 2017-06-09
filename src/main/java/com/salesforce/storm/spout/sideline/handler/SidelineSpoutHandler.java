@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class SidelineSpoutHandler implements SpoutHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(SidelineSpout.class);
+    private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutHandler.class);
 
     /**
      * The Topology configuration map.
