@@ -76,6 +76,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
     @Override
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         this.spout = spout;
+        this.topologyConfig = topologyConfig;
+        this.topologyContext = topologyContext;
         this.startingTrigger = createStartingTrigger();
         this.stoppingTrigger = createStoppingTrigger();
 
