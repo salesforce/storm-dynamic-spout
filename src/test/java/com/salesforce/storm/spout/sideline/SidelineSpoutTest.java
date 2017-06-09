@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
@@ -612,6 +614,7 @@ public class SidelineSpoutTest {
         StaticTrigger staticTrigger = new StaticTrigger();
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
         final SidelineSpoutHandler sidelineSpoutHandlerSpy = Mockito.spy(sidelineSpoutHandler);
         Mockito.when(sidelineSpoutHandlerSpy.createStartingTrigger()).thenReturn(staticTrigger);
         Mockito.when(sidelineSpoutHandlerSpy.createStoppingTrigger()).thenReturn(staticTrigger);
@@ -1356,7 +1359,8 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
 
-        final Map<String, Object> config = Maps.newHashMap();
+        final Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+
         config.put(SidelineSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
@@ -1377,6 +1381,14 @@ public class SidelineSpoutTest {
 
         // For now use the Log Recorder
         config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+
+        config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
+
+        config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, NoopVirtualSpoutHandler.class.getName());
+
+        config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, StaticTrigger.class.getName());
+
+        config.put(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS, StaticTrigger.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
