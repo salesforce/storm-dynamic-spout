@@ -382,6 +382,7 @@ public class SidelineSpoutTest {
         final StaticTrigger staticTrigger = new StaticTrigger();
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
         final SidelineSpoutHandler sidelineSpoutHandlerSpy = Mockito.spy(sidelineSpoutHandler);
         Mockito.when(sidelineSpoutHandlerSpy.createStartingTrigger()).thenReturn(staticTrigger);
         Mockito.when(sidelineSpoutHandlerSpy.createStoppingTrigger()).thenReturn(staticTrigger);
