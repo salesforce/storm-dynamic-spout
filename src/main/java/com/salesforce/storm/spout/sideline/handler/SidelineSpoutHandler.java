@@ -343,7 +343,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * Create an instance of the configured StartingTrigger.
      * @return Instance of a StartingTrigger
      */
-    private synchronized StartingTrigger createStartingTrigger() {
+    public synchronized StartingTrigger createStartingTrigger() {
         String classStr = (String) spoutConfig.get(SidelineSpoutConfig.STARTING_TRIGGER_CLASS);
         // Empty class is allowed, this is not required to be configured
         if (Strings.isNullOrEmpty(classStr)) {
@@ -361,7 +361,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * Create an instance of the configured StoppingTrigger.
      * @return Instance of a StoppingTrigger
      */
-    private synchronized StoppingTrigger createStoppingTrigger() {
+    public synchronized StoppingTrigger createStoppingTrigger() {
         String classStr = (String) spoutConfig.get(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS);
         // Empty class is allowed, this is not required to be configured
         if (Strings.isNullOrEmpty(classStr)) {
