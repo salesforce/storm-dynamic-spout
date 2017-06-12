@@ -25,6 +25,11 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.config.annotation.Category;
+import com.salesforce.storm.spout.sideline.config.annotation.DefaultValue;
+import com.salesforce.storm.spout.sideline.config.annotation.Description;
+import com.salesforce.storm.spout.sideline.config.annotation.Required;
+import com.salesforce.storm.spout.sideline.config.annotation.Type;
 import com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
@@ -42,28 +47,24 @@ import java.util.Map;
  * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
  */
 public class SidelineSpoutConfig {
-///////////////////////////////////
-// Spout Config
-///////////////////////////////////
 
     /**
      * (String) Defines the name of the output stream tuples will be emitted out of.
      */
+    @Description("Defines the name of the output stream tuples will be emitted out of.")
+    @Type("String")
     public static final String OUTPUT_STREAM_ID = "sideline_spout.output_stream_id";
-
-    /**
-     * (String) Defines which Deserializer (Schema?) implementation to use.
-     * Should be a full classpath to a class that implements the Deserializer interface.
-     */
-    public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
 
 ///////////////////////////////////
 // Consumer Config
 ///////////////////////////////////
+
     /**
      * (String) Defines which Consumer implementation to use.
      * Should be a full classpath to a class that implements the Consumer interface.
      */
+    @Description("Defines which Consumer implementation to use. Should be a full classpath to a class that implements the Consumer interface.")
+    @Type("String")
     public static final String CONSUMER_CLASS = "sideline_spout.consumer.class";
 
 ///////////////////////////////////
@@ -71,20 +72,38 @@ public class SidelineSpoutConfig {
 ///////////////////////////////////
 
     /**
+     * (String) Defines which Deserializer (Schema?) implementation to use.
+     * Should be a full classpath to a class that implements the Deserializer interface.
+     */
+    @Category(Category.Type.KAFKA)
+    @Description("Defines which Deserializer (Schema?) implementation to use. Should be a full classpath to a class that implements the Deserializer interface.")
+    @Type("String, class name")
+    public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
+
+    /**
      * (String) Defines which Kafka topic we will consume messages from.
      */
+    @Category(Category.Type.KAFKA)
+    @Description("Defines which Kafka topic we will consume messages from.")
+    @Type("String")
     public static final String KAFKA_TOPIC = "sideline_spout.kafka.topic";
 
     /**
      * (List<String>) Holds a list of Kafka Broker hostnames + ports in the following format:
      * ["broker1:9092", "broker2:9092", ...]
      */
+    @Category(Category.Type.KAFKA)
+    @Description("Holds a list of Kafka Broker hostnames + ports in the following format: [\"broker1:9092\", \"broker2:9092\", ...]")
+    @Type("List<String>")
     public static final String KAFKA_BROKERS = "sideline_spout.kafka.brokers";
 
     /**
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
      * This must be unique to your spout instance, and must not change between deploys.
      */
+    @Category(Category.Type.KAFKA)
+    @Description("Defines a consumerId prefix to use for all consumers created by the spout. This must be unique to your spout instance, and must not change between deploys.")
+    @Type("String")
     public static final String CONSUMER_ID_PREFIX = "sideline_spout.consumer_id_prefix";
 
 ///////////////////////////////////
@@ -96,6 +115,11 @@ public class SidelineSpoutConfig {
      * Should be a full classpath to a class that implements the PersistenceAdapter interface.
      * Default Value: "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter"
      */
+    @Category(Category.Type.PERSISTENCE)
+    @Description("Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface.")
+    @Type("String, class name")
+    @DefaultValue("com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter")
+    @Required
     public static final String PERSISTENCE_ADAPTER_CLASS = "sideline_spout.persistence_adapter.class";
 
 ///////////////////////////////////
@@ -108,6 +132,9 @@ public class SidelineSpoutConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
+    @Category(Category.Type.PERSISTENCE_ZOOKEEPER)
+    @Description("Holds a list of Zookeeper server Hostnames + Ports in the following format:[\"zkhost1:2181\", \"zkhost2:2181\", ...]")
+    @Type("List<String>")
     public static final String PERSISTENCE_ZK_SERVERS = "sideline_spout.persistence.zookeeper.servers";
 
     /**
@@ -116,37 +143,56 @@ public class SidelineSpoutConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
+    @Category(Category.Type.PERSISTENCE_ZOOKEEPER)
+    @Description("Defines the root path to persist state under. Example: \"/sideline-consumer-state\"")
+    @Type("String")
     public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zookeeper.root";
 
     /**
      * (Integer) Zookeeper session timeout.
      */
+    @Category(Category.Type.PERSISTENCE_ZOOKEEPER)
+    @Description("Zookeeper session timeout.")
+    @Type("Integer")
     public static final String PERSISTENCE_ZK_SESSION_TIMEOUT = "sideline_spout.persistence.zookeeper.session_timeout";
 
     /**
      * (Integer) Zookeeper connection timeout.
      */
+    @Category(Category.Type.PERSISTENCE_ZOOKEEPER)
+    @Description("Zookeeper connection timeout.")
+    @Type("Integer")
     public static final String PERSISTENCE_ZK_CONNECTION_TIMEOUT = "sideline_spout.persistence.zookeeper.connection_timeout";
 
     /**
      * (Integer) Zookeeper retry attempts.
      */
+    @Category(Category.Type.PERSISTENCE_ZOOKEEPER)
+    @Description("Zookeeper retry attempts.")
+    @Type("Integer")
     public static final String PERSISTENCE_ZK_RETRY_ATTEMPTS = "sideline_spout.persistence.zookeeper.retry_attempts";
 
     /**
      * (Integer) Zookeeper retry interval.
      */
+    @Category(Category.Type.PERSISTENCE_ZOOKEEPER)
+    @Description("Zookeeper retry interval.")
+    @Type("Integer")
     public static final String PERSISTENCE_ZK_RETRY_INTERVAL = "sideline_spout.persistence.zookeeper.retry_interval";
 
 ///////////////////////////////////
 // Failed Message Retry Config
 ///////////////////////////////////
-
+    
     /**
      * (String) Defines which RetryManager implementation to use.
      * Should be a full classpath to a class that implements the RetryManager interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.kafka.retry.DefaultRetryManager"
+     * Default Value: "com.salesforce.storm.spout.sideline.retry.DefaultRetryManager"
      */
+    @Description("Defines which RetryManager implementation to use. Should be a full classpath to a class that implements the RetryManager interface.")
+    @DefaultValue("com.salesforce.storm.spout.sideline.retry.DefaultRetryManager")
+    @Type("String")
+    @Required
     public static final String RETRY_MANAGER_CLASS = "sideline_spout.retry_manager.class";
 
     /**
@@ -158,6 +204,9 @@ public class SidelineSpoutConfig {
      * Default Value: -1
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
+    @Description("Defines how many times a failed message will be replayed before just being acked. A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. A positive value means tuples will be retried up to this limit, then dropped.")
+    @DefaultValue("-1")
+    @Type("Integer")
     public static final String RETRY_MANAGER_RETRY_LIMIT = "sideline_spout.retry_manager.retry_limit";
 
     /**
@@ -170,6 +219,9 @@ public class SidelineSpoutConfig {
      * Default Value: 2000 (2 seconds)
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
+    @Description("Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt.")
+    @DefaultValue("2000")
+    @Type("Long")
     public static final String RETRY_MANAGER_INITIAL_DELAY_MS = "sideline_spout.retry_manager.initial_delay_ms";
 
     /**
@@ -180,6 +232,9 @@ public class SidelineSpoutConfig {
      * Default Value: 2.0
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
+    @Description("Defines how quickly the delay increases after each failed tuple. Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.")
+    @DefaultValue("2.0")
+    @Type("Double")
     public static final String RETRY_MANAGER_DELAY_MULTIPLIER = "sideline_spout.retry_manager.delay_multiplier";
 
     /**
@@ -188,6 +243,9 @@ public class SidelineSpoutConfig {
      * Default Value: 900000 (15 minutes)
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
+    @Description("Defines an upper bound of the max delay time between retried a failed tuple.")
+    @DefaultValue("900000")
+    @Type("Long")
     public static final String RETRY_MANAGER_MAX_DELAY_MS = "sideline_spout.retry_manager.retry_delay_max_ms";
 
 ///////////////////////////////////
@@ -199,6 +257,9 @@ public class SidelineSpoutConfig {
      * Should be a full classpath to a class that implements the MetricsRecorder interface.
      * Default Value: "com.salesforce.storm.spout.sideline.metrics.LogRecorder"
      */
+    @Description("Defines which MetricsRecorder implementation to use. Should be a full classpath to a class that implements the MetricsRecorder interface.")
+    @DefaultValue("com.salesforce.storm.spout.sideline.metrics.LogRecorder")
+    @Type("String, class name")
     public static final String METRICS_RECORDER_CLASS = "sideline_spout.metrics.class";
 
 ///////////////////////////////////
@@ -208,8 +269,11 @@ public class SidelineSpoutConfig {
     /**
      * (String) Defines which MessageBuffer implementation to use.
      * Should be a full classpath to a class that implements the MessageBuffer interface.
-     * Default Value: "com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer"
+     * Default Value: com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer
      */
+    @Description("Defines which MessageBuffer implementation to use. Should be a full classpath to a class that implements the MessageBuffer interface.")
+    @DefaultValue("com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer")
+    @Type("String, class name")
     public static final String TUPLE_BUFFER_CLASS = "sideline_spout.coordinator.tuple_buffer.class";
 
     /**
@@ -217,12 +281,18 @@ public class SidelineSpoutConfig {
      * the internal kafka consumers will be blocked from consuming.
      * Default Value: 2000
      */
+    @Description("Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal kafka consumers will be blocked from consuming.")
+    @DefaultValue("2000")
+    @Type("Integer")
     public static final String TUPLE_BUFFER_MAX_SIZE = "sideline_spout.coordinator.tuple_buffer.max_size";
 
     /**
      * (long) How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.
      * Default Value: 2000
      */
+    @Description("How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.")
+    @DefaultValue("2000")
+    @Type("Long")
     public static final String MONITOR_THREAD_INTERVAL_MS = "sideline_spout.coordinator.monitor_thread_interval_ms";
 
     /**
@@ -230,18 +300,27 @@ public class SidelineSpoutConfig {
      * them with force, in Milliseconds.
      * Default Value: 10000
      */
+    @Description("How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop them with force, in Milliseconds.")
+    @DefaultValue("10000")
+    @Type("Long")
     public static final String MAX_SPOUT_SHUTDOWN_TIME_MS = "sideline_spout.coordinator.max_spout_shutdown_time_ms";
 
     /**
      * (long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
      * Default Value: 30000
      */
+    @Description("How often we'll make sure each VirtualSpout persists its state, in Milliseconds.")
+    @DefaultValue("30000")
+    @Type("Long")
     public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "sideline_spout.coordinator.consumer_state_flush_interval_ms";
 
     /**
      * (int) The size of the thread pool for running virtual spouts for sideline requests.
      * Default Value: 10
      */
+    @Description("The size of the thread pool for running virtual spouts for sideline requests.")
+    @DefaultValue("10")
+    @Type("Integer")
     public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "sideline_spout.coordinator.max_concurrent_virtual_spouts";
 
     /**
@@ -249,6 +328,9 @@ public class SidelineSpoutConfig {
      * Should be a fully qualified class path that implements the SpoutHandler interface.
      * Default value: com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler
      */
+    @Description("Defines which SpoutHandler implementation to use. Should be a fully qualified class path that implements the SpoutHandler interface.")
+    @DefaultValue("com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler")
+    @Type("String, class name")
     public static final String SPOUT_HANDLER_CLASS = "sideline_spout.spout_handler_class";
 
     /**
@@ -256,20 +338,27 @@ public class SidelineSpoutConfig {
      * Should be a fully qualified class path that implements the VirtualSpoutHandler interface.
      * Default value: com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler
      */
+    @Description("Defines which VirtualSpoutHandler implementation to use. Should be a fully qualified class path that implements the VirtualSpoutHandler interface.")
+    @DefaultValue("com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler")
+    @Type("String, class name")
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "sideline_spout.virtual_spout_handler_class";
 
     /**
      * (String) Defines with StartingTrigger (if any) implementation to use.
      * Should be a fully qualified class path that implements thee StartingTrigger interface
-     * Default value: null
      */
+    @Category(Category.Type.SIDELINE)
+    @Description("Defines with StartingTrigger (if any) implementation to use.  Should be a fully qualified class path that implements thee StartingTrigger interface")
+    @Type("String, class name")
     public static final String STARTING_TRIGGER_CLASS = "sideline_spout.starting_trigger_class";
 
     /**
      * (String) Defines with StoppingTrigger (if any) implementation to use.
      * Should be a fully qualified class path that implements thee StoppingTrigger interface
-     * Default value: null
      */
+    @Category(Category.Type.SIDELINE)
+    @Description("Defines with StoppingTrigger (if any) implementation to use. Should be a fully qualified class path that implements thee StoppingTrigger interface")
+    @Type("String, class name")
     public static final String STOPPING_TRIGGER_CLASS = "sideline_spout.stopping_trigger_class";
 
 ///////////////////////////////////
