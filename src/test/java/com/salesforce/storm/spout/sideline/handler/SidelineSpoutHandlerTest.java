@@ -1,13 +1,18 @@
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.sideline.DynamicSpout;
+import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.consumer.MockConsumer;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
+import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.NoopStartingStoppingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -22,6 +27,7 @@ import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -164,6 +170,68 @@ public class SidelineSpoutHandlerTest {
     }
 
     /**
+     * Test that when start sidelining is called the firehose gets a new filter from the sideline request
+     */
+    @Test
+    public void testStartSidelining() {
+        final Map<String, Object> config = SidelineSpoutConfig.setDefaults(new HashMap<>());
+        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SidelineSpoutConfig.KAFKA_TOPIC, "KafkaTopic");
+        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(SidelineSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+
+        final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
+        final StaticMessageFilter startFilter = new StaticMessageFilter();
+        final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
+
+        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(config);
+
+        final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
+        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
+        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
+        Mockito.when(spout.getMetricsRecorder()).thenReturn(new LogRecorder());
+
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
+
+        // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
+        sidelineSpoutHandler.getFireHoseSpout().open();
+
+        // Tell our mock consumer that these are the partitions we're working with
+        MockConsumer.partitions = Arrays.asList(0, 5);
+
+        // Finally, start a sideline with out given request
+        sidelineSpoutHandler.startSidelining(startRequest);
+
+        // Make sure we have a firehose
+        assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
+
+        // Our firehose should have gotten a filter chain step on resume
+        assertEquals(1, sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size());
+        // When we fetch that step by startRequestId it should be our start filter
+        assertEquals(
+            startFilter,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().get(startRequestId)
+        );
+
+        SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 0);
+
+        assertEquals(startRequestId, partition0.id);
+        assertEquals(startRequest, partition0.request);
+        assertEquals(Long.valueOf(1L), partition0.startingOffset);
+        assertNull(partition0.endingOffset);
+
+        SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 5);
+
+        assertEquals(startRequestId, partition5.id);
+        assertEquals(startRequest, partition5.request);
+        assertEquals(Long.valueOf(1L), partition5.startingOffset);
+        assertNull(partition5.endingOffset);
+    }
+
+    /**
      * Test upon spout closing the triggers are cleaned up.
      */
     @Test
@@ -239,7 +307,7 @@ public class SidelineSpoutHandlerTest {
 
         expectedException.expect(RuntimeException.class);
 
-        StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
+        sidelineSpoutHandler.createStartingTrigger();
     }
 
     /**
@@ -287,7 +355,7 @@ public class SidelineSpoutHandlerTest {
 
         expectedException.expect(RuntimeException.class);
 
-        StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
+        sidelineSpoutHandler.createStoppingTrigger();
     }
 
     /**
