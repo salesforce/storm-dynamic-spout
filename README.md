@@ -168,9 +168,11 @@ any where you would like.  Mysql? Redis? Kafka? Sure!  Contribute an adapter to 
 
 ## Configuration
 
-[SidelineSpoutConfig](src/main/java/com/salesforce/storm/spout/sideline/config/SidelineSpoutConfig.java) contains a complete list of configuration options.
+[SidelineSpoutConfig](src/main/java/com/salesforce/storm/spout/sideline/config/SidelineSpoutConfig.java) contains a complete list of configuration options. To update this section, manually execute [ConfigPrinter](src/main/java/com/salesforce/storm/spout/sideline/config/ConfigPrinter.java) class. Do not edit it manually!
 
 ### Required Configuration
+
+[//]: <> (CONFIGURATION_BEGIN_DELIMITER)
 
 Config Key   | Type | Description | Default Value |
 ------------ | ---- | ----------- | --------------
@@ -180,6 +182,8 @@ sideline_spout.consumer_id_prefix | String | Defines a consumerId prefix to use 
 sideline_spout.output_stream_id | String | Defines the name of the output stream tuples will be emitted out of. | "default"
 sideline_spout.deserializer.class | String | Defines which Deserializer implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | *null*
 sideline_spout.persistence_adapter.class | String | Defines which PersistenceAdapter implementation to use.  Should be a full classpath to a class that implements the PersistenceAdapter interface. | *null* 
+
+[//]: <> (CONFIGURATION_END_DELIMITER)
 
 ## Required Interface Implementations
 ### [Deserializer](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java)
