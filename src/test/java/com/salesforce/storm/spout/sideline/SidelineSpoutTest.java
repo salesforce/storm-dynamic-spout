@@ -4,8 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
-import com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler;
-import com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
@@ -32,7 +30,6 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.Factory;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -144,47 +141,6 @@ public class SidelineSpoutTest {
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);
-    }
-
-    /**
-     * Internal method, but we're gonna test it.  Make sure we generate virtual spout ids
-     * in consistent ways.
-     */
-    @Test
-    public void testGenerateVirtualSpoutId() {
-        // TODO: This no longer happens here
-        /*
-        final String expectedPrefix = "MyVirtualSpoutPrefix";
-
-        // Create our config missing the consumerIdPrefix
-        final Map<String, Object> config = getDefaultConfig(expectedPrefix, null);
-
-        // Setup our mock TopologyContext
-        final MockTopologyContext topologyContext = new MockTopologyContext();
-
-        // Mock output collector
-        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
-
-        // Create spout and call open
-        final SidelineSpout spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
-
-        // Now call our method with empty string
-        boolean threwException = false;
-        try {
-            VirtualSpoutIdentifier result = spout.generateVirtualSpoutId(new SidelineRequestIdentifier(""));
-        } catch (IllegalArgumentException e) {
-            threwException = true;
-        }
-        assertTrue("Should have thrown an IllegalArguementException", threwException);
-
-        // Call our method with a postfix
-        VirtualSpoutIdentifier result = spout.generateVirtualSpoutId(new SidelineRequestIdentifier("main"));
-        assertEquals("Should generate expected virtual spout it", result, new SidelineVirtualSpoutIdentifier(expectedPrefix, new SidelineRequestIdentifier("main")));
-
-        // Call close.
-        spout.close();
-        */
     }
 
     /**
