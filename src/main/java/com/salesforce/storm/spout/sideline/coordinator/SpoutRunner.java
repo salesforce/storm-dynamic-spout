@@ -190,7 +190,7 @@ public class SpoutRunner implements Runnable {
 
             // We re-throw the exception
             // SpoutMonitor should detect this failed.
-            // TODO: DO we even want to bother catching this here?
+            // TODO: Do we even want to bother catching this here?
             throw ex;
         }
     }

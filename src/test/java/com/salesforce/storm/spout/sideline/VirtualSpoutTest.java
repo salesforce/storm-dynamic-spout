@@ -389,8 +389,7 @@ public class VirtualSpoutTest {
             mockConsumer,
             null, null
         );
-        // @TODO Lemon - need to refactor this to not use your Deprecated thing
-        virtualSpout.getFilterChain().addStep(new SidelineRequestIdentifier(), filterStep);
+        virtualSpout.getFilterChain().addStep(new SidelineRequestIdentifier("Foobar"), filterStep);
         virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 

@@ -327,7 +327,6 @@ public class SidelineSpoutHandler implements SpoutHandler {
             endingState
         );
 
-        // TODO: Sort this out so that we can track the sideline request identifier inside of the virtual spout identifier
         virtualSpout.setVirtualSpoutId(virtualSpoutId);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
