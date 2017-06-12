@@ -19,8 +19,8 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * A base class for creating a virtualized spout, one spout implementation that is dynamically juggling multiple
- * spouts underneath it.  This is done in such a way that Storm does not have to be aware of all the contributing
+ * DynamicSpout's contain other virtualized spouts, and provide mechanisms for interacting with the spout life cycle
+ * through a set of handlers.  This is done in such a way that Storm does not have to be aware of all the contributing
  * spouts in the implementation.
  */
 public class DynamicSpout extends BaseRichSpout {
@@ -89,7 +89,7 @@ public class DynamicSpout extends BaseRichSpout {
      *
      * @param spoutConfig Our configuration.
      */
-    public DynamicSpout(Map spoutConfig) {
+    public DynamicSpout(Map<String, Object> spoutConfig) {
         // Save off config, injecting appropriate default values for anything not explicitly configured.
         this.spoutConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(spoutConfig));
 
@@ -290,7 +290,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    public Map getSpoutConfig() {
+    public Map<String, Object> getSpoutConfig() {
         return spoutConfig;
     }
 
