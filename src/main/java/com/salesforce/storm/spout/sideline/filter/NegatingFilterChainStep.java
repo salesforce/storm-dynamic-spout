@@ -37,4 +37,19 @@ public class NegatingFilterChainStep implements FilterChainStep {
     public boolean filter(Message message) {
         return !this.step.filter(message);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NegatingFilterChainStep that = (NegatingFilterChainStep) o;
+
+        return step != null ? step.equals(that.step) : that.step == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return step != null ? step.hashCode() : 0;
+    }
 }
