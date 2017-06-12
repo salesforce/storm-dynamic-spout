@@ -234,6 +234,10 @@ public class SidelineSpoutHandlerTest {
         assertNull(partition5.endingOffset);
     }
 
+    /**
+     * Test that when a sideline is stopped, the filter is removed from the firehose and a virtual spout
+     * is spun up with the negated filter and correct offsets.
+     */
     @Test
     public void testStopSidelining() {
         final Map<String, Object> config = SidelineSpoutConfig.setDefaults(new HashMap<>());

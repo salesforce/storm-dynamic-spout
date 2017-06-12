@@ -2,6 +2,7 @@ package com.salesforce.storm.spout.sideline.consumer;
 
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 
 import java.util.Collections;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 public class MockConsumer implements Consumer {
 
+    public static PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
     public static String topic = "MyTopic";
     public static List<Integer> partitions = Collections.singletonList(1);
 
@@ -35,13 +37,7 @@ public class MockConsumer implements Consumer {
 
     @Override
     public ConsumerState getCurrentState() {
-        ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
-
-        for (Integer partition : partitions) {
-            builder.withPartition(topic, partition, 1L);
-        }
-
-        return builder.build();
+        return buildConsumerState(partitions);
     }
 
     @Override
@@ -61,11 +57,21 @@ public class MockConsumer implements Consumer {
 
     @Override
     public PersistenceAdapter getPersistenceAdapter() {
-        return null;
+        return persistenceAdapter;
     }
 
     @Override
     public boolean unsubscribeConsumerPartition(ConsumerPartition consumerPartitionToUnsubscribe) {
         return false;
+    }
+
+    public static ConsumerState buildConsumerState(List<Integer> partitions) {
+        ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
+
+        for (Integer partition : partitions) {
+            builder.withPartition(topic, partition, 1L);
+        }
+
+        return builder.build();
     }
 }
