@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * Spout instance.
+ * Spout that supports sidelining messages by filters.
  */
 public class SidelineSpout extends DynamicSpout {
 
@@ -20,13 +20,18 @@ public class SidelineSpout extends DynamicSpout {
      * @param config Supplied configuration.
      * @return Resulting configuration.
      */
-    private static Map getConfig(Map config) {
+    private static Map<String, Object> modifyConfig(Map<String, Object> _config) {
+        final Map<String, Object> config = Tools.immutableCopy(_config);
         config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
         config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
         return config;
     }
 
+    /**
+     * Spout that supports sidelining messages by filters.
+     * @param config Spout configuration.
+     */
     public SidelineSpout(Map config) {
-        super(getConfig(config));
+        super(modifyConfig(config));
     }
 }
