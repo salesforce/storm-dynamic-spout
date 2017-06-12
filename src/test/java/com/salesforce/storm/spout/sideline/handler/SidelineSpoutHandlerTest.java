@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -52,6 +51,9 @@ public class SidelineSpoutHandlerTest {
         );
     }
 
+    /**
+     * Test upon spout opening that we have a firehose virtual spout instance.
+     */
     @Test
     public void testOnSpoutOpenCreatesFirehose() {
         final Map<String, Object> config = new HashMap<>();
@@ -70,6 +72,9 @@ public class SidelineSpoutHandlerTest {
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
     }
 
+    /**
+     * Test upon spout opening sidelines, both starts and stops are resumed properly.
+     */
     @Test
     public void testOnSpoutOpenResumesSidelines() {
         final Map<String, Object> config = new HashMap<>();
@@ -156,6 +161,37 @@ public class SidelineSpoutHandlerTest {
             stopFilter,
             sidelineSpout.get().getFilterChain().getSteps().get(stopRequestId)
         );
+    }
+
+    /**
+     * Test upon spout closing the triggers are cleaned up.
+     */
+    @Test
+    public void testOnSpoutClose() {
+        final Map<String, Object> config = new HashMap<>();
+        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+        config.put(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+
+        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(config);
+
+        final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
+        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
+
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+
+        assertNotNull(sidelineSpoutHandler.getStartingTrigger());
+        assertTrue(sidelineSpoutHandler.getStartingTrigger() instanceof NoopStartingStoppingTrigger);
+        assertNotNull(sidelineSpoutHandler.getStoppingTrigger());
+        assertTrue(sidelineSpoutHandler.getStoppingTrigger() instanceof NoopStartingStoppingTrigger);
+
+        sidelineSpoutHandler.onSpoutClose();
+
+        assertNull(sidelineSpoutHandler.getStartingTrigger());
+        assertNull(sidelineSpoutHandler.getStoppingTrigger());
     }
 
     /**

@@ -196,6 +196,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
         if (stoppingTrigger != null) {
             stoppingTrigger.close();
         }
+
+        startingTrigger = null;
+        stoppingTrigger = null;
     }
 
     /**
@@ -405,6 +408,22 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * @return Spout config.
      */
     Map<String, Object> getSpoutConfig() {
-        return this.spoutConfig;
+        return spoutConfig;
+    }
+
+    /**
+     * Get the stopping trigger.
+     * @return Stopping trigger.
+     */
+    StartingTrigger getStartingTrigger() {
+        return startingTrigger;
+    }
+
+    /**
+     * Get the starting trigger.
+     * @return Starting trigger.
+     */
+    StoppingTrigger getStoppingTrigger() {
+        return stoppingTrigger;
     }
 }
