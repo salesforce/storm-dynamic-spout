@@ -66,7 +66,7 @@ public class DynamicSpout extends BaseRichSpout {
     private PersistenceAdapter persistenceAdapter;
 
     /**
-     * Handles call backs on this spout
+     * Handler for callbacks at various stages of a dynamic spout's lifecycle.
      */
     private SpoutHandler spoutHandler;
 

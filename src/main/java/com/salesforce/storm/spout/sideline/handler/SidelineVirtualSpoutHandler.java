@@ -7,10 +7,19 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Handler for sideline virtual spouts.
+ */
 public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
 
+    // Logger for logging
     private static final Logger logger = LoggerFactory.getLogger(SidelineVirtualSpoutHandler.class);
 
+    /**
+     * Handler for when a sideline spout is completed.  When a sideline spout completes clean up the metadata for the
+     * given sideline request.
+     * @param virtualSpout Virtual Spout instance that is completing..
+     */
     @Override
     public void onVirtualSpoutCompletion(DelegateSpout virtualSpout) {
         try {

@@ -335,11 +335,15 @@ public class SidelineSpoutConfig {
         }
 
         if (!clonedConfig.containsKey(SPOUT_HANDLER_CLASS)) {
+            // If we don't have a spout handler configured use the noop one, which does nothing but helps
+            // us avoid null pointers in the main spout code.
             clonedConfig.put(SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", SPOUT_HANDLER_CLASS, clonedConfig.get(SPOUT_HANDLER_CLASS));
         }
 
         if (!clonedConfig.containsKey(VIRTUAL_SPOUT_HANDLER_CLASS)) {
+            // If we don't have a spout handler configured use the noop one, which does nothing but helps
+            // us avoid null pointers in the main spout code.
             clonedConfig.put(VIRTUAL_SPOUT_HANDLER_CLASS, NoopVirtualSpoutHandler.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", VIRTUAL_SPOUT_HANDLER_CLASS, clonedConfig.get(VIRTUAL_SPOUT_HANDLER_CLASS));
         }

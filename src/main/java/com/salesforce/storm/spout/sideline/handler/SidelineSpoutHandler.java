@@ -64,15 +64,25 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
     /**
      * This is our main Virtual Spout instance which consumes from the configured namespace.
-     * TODO: Do we need access to this here?  Could this be moved into the Coordinator?
      */
     private VirtualSpout fireHoseSpout;
 
+    /**
+     * When this handler is opened this method stores spout config for use by the instance.
+     * @param spoutConfig Spout configuration.
+     */
     @Override
     public void open(Map spoutConfig) {
         this.spoutConfig = spoutConfig;
     }
 
+    /**
+     * Handler called when the dynamic spout opens, this method is responsible for creating and setting triggers for
+     * handling the spinning up and down of sidelines.
+     * @param spout Dynamic spout instance.
+     * @param topologyConfig Topology configuration.
+     * @param topologyContext Topology context.
+     */
     @Override
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         this.spout = spout;
@@ -173,6 +183,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
         }
     }
 
+    /**
+     * Handler called when the dynamic spout closes, this method is responsible for tearing down triggers  sidelining.
+     */
     @Override
     public void onSpoutClose() {
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), close it

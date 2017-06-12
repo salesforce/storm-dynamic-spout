@@ -101,6 +101,9 @@ public class VirtualSpout implements DelegateSpout {
      */
     private final MetricsRecorder metricsRecorder;
 
+    /**
+     * Handler for callbacks at various stages of a virtual spout's lifecycle.
+     */
     private VirtualSpoutHandler virtualSpoutHandler;
 
     // TEMP
@@ -558,6 +561,10 @@ public class VirtualSpout implements DelegateSpout {
         return factoryManager;
     }
 
+    /**
+     * Get the consumer instance configured and used by the virtual spout.
+     * @return Consumer instance.
+     */
     public Consumer getConsumer() {
         return consumer;
     }
