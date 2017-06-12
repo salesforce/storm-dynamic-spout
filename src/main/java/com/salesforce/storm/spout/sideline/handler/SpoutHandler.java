@@ -17,7 +17,7 @@ public interface SpoutHandler {
      * Open the handler.
      * @param spoutConfig Spout configuration.
      */
-    default void open(Map spoutConfig) {
+    default void open(Map<String, Object> spoutConfig) {
 
     }
 

@@ -20,11 +20,10 @@ public class SidelineSpout extends DynamicSpout {
      * @param config Supplied configuration.
      * @return Resulting configuration.
      */
-    private static Map<String, Object> modifyConfig(Map<String, Object> _config) {
-        final Map<String, Object> config = Tools.immutableCopy(_config);
+    private static Map<String, Object> modifyConfig(Map<String, Object> config) {
         config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
         config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
-        return config;
+        return Tools.immutableCopy(config);
     }
 
     /**

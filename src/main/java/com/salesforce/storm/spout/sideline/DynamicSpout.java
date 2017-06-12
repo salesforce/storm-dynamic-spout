@@ -36,7 +36,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * The Spout configuration map
      */
-    private Map spoutConfig;
+    private Map<String, Object> spoutConfig;
 
     /**
      * Spout's output collector, for emitting tuples out into the topology.
@@ -290,7 +290,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    public Map<String, Object> getSpoutConfig() {
+    private Map<String, Object> getSpoutConfig() {
         return spoutConfig;
     }
 
@@ -299,14 +299,14 @@ public class DynamicSpout extends BaseRichSpout {
      * @param key The configuration item to retrieve
      * @return The configuration item's value.
      */
-    protected Object getSpoutConfigItem(final String key) {
+    private Object getSpoutConfigItem(final String key) {
         return getSpoutConfig().get(key);
     }
 
     /**
      * @return The Storm topology context.
      */
-    protected TopologyContext getTopologyContext() {
+    private TopologyContext getTopologyContext() {
         return topologyContext;
     }
 

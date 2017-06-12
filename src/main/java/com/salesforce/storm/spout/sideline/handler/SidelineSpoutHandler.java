@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.DynamicSpout;
-import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
@@ -27,19 +26,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Handler for managing sidelines on a DynamicSpout.
+ */
 public class SidelineSpoutHandler implements SpoutHandler {
 
+    // Logger
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutHandler.class);
 
     /**
-     * The Topology configuration map.
+     * The Spout configuration map.
      */
-    private Map topologyConfig;
-
-    /**
-     * The Spout configuration map
-     */
-    private Map spoutConfig;
+    private Map<String, Object> spoutConfig;
 
     /**
      * The Topology Context object.
@@ -47,14 +45,14 @@ public class SidelineSpoutHandler implements SpoutHandler {
     private TopologyContext topologyContext;
 
     /**
-     * Starting Trigger
+     * Starting Trigger.
      *
      * This is an instance that is responsible for telling the sideline spout when to begin sidelining.
      */
     private StartingTrigger startingTrigger;
 
     /**
-     * Stopping Trigger
+     * Stopping Trigger.
      *
      * This is an instance is responsible for telling the sideline spout when to stop sidelining
      */
@@ -72,7 +70,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * @param spoutConfig Spout configuration.
      */
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         this.spoutConfig = spoutConfig;
     }
 
@@ -86,24 +84,25 @@ public class SidelineSpoutHandler implements SpoutHandler {
     @Override
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         this.spout = spout;
-        this.topologyConfig = topologyConfig;
         this.topologyContext = topologyContext;
         this.startingTrigger = createStartingTrigger();
         this.stoppingTrigger = createStoppingTrigger();
 
-        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
+        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this
+        // spout), set the spout proxy on it
         if (startingTrigger != null) {
             startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
-        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), set the spout proxy on it
+        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this
+        // spout), set the spout proxy on it
         if (stoppingTrigger != null) {
             stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
         }
 
         // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
-            spout.getSpoutConfig(),
+            getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
             spout.getMetricsRecorder()
@@ -115,7 +114,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // Our main firehose spout instance.
         spout.addVirtualSpout(fireHoseSpout);
 
-        final String topic = (String) spout.getSpoutConfig().get(SidelineSpoutConfig.KAFKA_TOPIC);
+        final String topic = (String) getSpoutConfig().get(SidelineSpoutConfig.KAFKA_TOPIC);
 
         final List<SidelineRequestIdentifier> existingRequestIds = spout.getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
@@ -170,14 +169,14 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), open it
         if (startingTrigger != null) {
-            startingTrigger.open(spout.getSpoutConfig());
+            startingTrigger.open(getSpoutConfig());
         } else {
             logger.warn("Sideline spout is configured without a starting trigger");
         }
 
         // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), open it
         if (stoppingTrigger != null) {
-            stoppingTrigger.open(spout.getSpoutConfig());
+            stoppingTrigger.open(getSpoutConfig());
         } else {
             logger.warn("Sideline spout is configured without a stopping trigger");
         }
@@ -240,7 +239,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         if (id == null) {
             logger.error(
-                "Received STOP sideline request, but I don't actually have any filter chain steps for it! Make sure you check that your filter implements an equals() method. {} {}",
+                "Received STOP sideline request, but I don't actually have any filter chain steps for it! Make sure "
+                + "you check that your filter implements an equals() method. {} {}",
                 sidelineRequest.step,
                 fireHoseSpout.getFilterChain().getSteps()
             );
@@ -296,7 +296,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
 
     /**
-     * Open a virtual spout (like when a sideline stop request is made)
+     * Open a virtual spout (like when a sideline stop request is made).
      * @param id Id of the sideline request
      * @param step Filter chain step (it will be negate)
      * @param startingState Starting consumer state
@@ -316,7 +316,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Create spout instance.
         final VirtualSpout virtualSpout = new VirtualSpout(
-            spout.getSpoutConfig(),
+            getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
             spout.getMetricsRecorder(),
@@ -347,7 +347,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         );
 
         // Also prefixed with our configured prefix
-        final String prefix = (String) spout.getSpoutConfig().get(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        final String prefix = (String) getSpoutConfig().get(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
 
         // return it
         return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);
@@ -358,8 +358,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * Create an instance of the configured StartingTrigger.
      * @return Instance of a StartingTrigger
      */
+    @SuppressWarnings("unchecked")
     public synchronized StartingTrigger createStartingTrigger() {
-        String classStr = (String) spoutConfig.get(SidelineSpoutConfig.STARTING_TRIGGER_CLASS);
+        String classStr = (String) getSpoutConfig().get(SidelineSpoutConfig.STARTING_TRIGGER_CLASS);
         // Empty class is allowed, this is not required to be configured
         if (Strings.isNullOrEmpty(classStr)) {
             return null;
@@ -376,8 +377,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * Create an instance of the configured StoppingTrigger.
      * @return Instance of a StoppingTrigger
      */
+    @SuppressWarnings("unchecked")
     public synchronized StoppingTrigger createStoppingTrigger() {
-        String classStr = (String) spoutConfig.get(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS);
+        String classStr = (String) getSpoutConfig().get(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS);
         // Empty class is allowed, this is not required to be configured
         if (Strings.isNullOrEmpty(classStr)) {
             return null;
@@ -388,5 +390,21 @@ public class SidelineSpoutHandler implements SpoutHandler {
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Get the firehose virtual spout
+     * @return Firehose virtual spout.
+     */
+    VirtualSpout getFireHoseSpout() {
+        return fireHoseSpout;
+    }
+
+    /**
+     * Get the spout config.
+     * @return Spout config.
+     */
+    Map<String, Object> getSpoutConfig() {
+        return this.spoutConfig;
     }
 }

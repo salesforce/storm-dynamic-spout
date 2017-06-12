@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface Trigger extends Serializable {
 
-    void open(Map config);
+    default void open(Map config) {}
 
-    void close();
+    default void close() {}
 }
