@@ -1,3 +1,36 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Dynamic Spout Framework](#dynamic-spout-framework)
+  - [Purpose of this project](#purpose-of-this-project)
+    - [Example use case: Multi-tenant processing](#example-use-case-multi-tenant-processing)
+  - [How does it work?](#how-does-it-work)
+  - [How does it  _really_ work?](#how-does-it--_really_-work)
+  - [Dependencies](#dependencies)
+  - [When the Topology Starts](#when-the-topology-starts)
+  - [Configuration](#configuration)
+  - [Components](#components)
+  - [Provided Implementations](#provided-implementations)
+    - [PersistenceAdapter Implementations](#persistenceadapter-implementations)
+    - [RetryManager Implementations](#retrymanager-implementations)
+    - [MessageBuffer Implementations](#messagebuffer-implementations)
+    - [MetricsRecorder Implementations](#metricsrecorder-implementations)
+  - [Handlers](#handlers)
+    - [SpoutHandler](#spouthandler)
+    - [VirtualSpoutHandler](#virtualspouthandler)
+  - [Metrics](#metrics)
+- [Sidelining](#sidelining)
+  - [Getting Started](#getting-started)
+  - [Starting Sideline Request](#starting-sideline-request)
+  - [Stoping Sideline Request](#stoping-sideline-request)
+  - [Dependencies](#dependencies-1)
+  - [Components](#components-1)
+  - [Example Trigger Implementation](#example-trigger-implementation)
+  - [Stopping & Redeploying the topology?](#stopping--redeploying-the-topology)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Dynamic Spout Framework
 
 ## Purpose of this project
@@ -145,10 +178,10 @@ Timer | TIMERS.\<className\>.\<metricName\>
 ## Handlers
 Handlers are attached to the `DynamicSpout` and `VirtualSpout` and provide a way for interacting with the spout lifecycle without having to extend a base class.
 
-### [SpoutHandler]
+### SpoutHandler
 Coming soon...
 
-### [VirtualSpoutHandler]
+### VirtualSpoutHandler
 Coming soon...
 
 
@@ -169,19 +202,19 @@ Class | Key | Type | Description
 ------|-----|------|------------
 SidelineSpout | start-sideline | Counter | How many `Start Sideline` requests have been received.
 SidelineSpout | stop-sideline | Counter | How many `Stop Sideline` requests have been received.
-VirtualSidelineSpout | `virtual-spout-id`.emit | Counter | Tuple emit count per VirtualSpout instance.
-VirtualSidelineSpout | `virtual-spout-id`.ack | Counter | Tuple ack count per VirtualSpout instance.
-VirtualSidelineSpout | `virtual-spout-id`.fail | Counter | Messages who have failed.
-VirtualSidelineSpout | `virtual-spout-id`.filtered | Counter | Filtered messages per VirtualSpout instance.
-VirtualSidelineSpout | `virtual-spout-id`.exceeded_retry_limit | Counter | Messages who have exceeded the maximum configured retry count.
-VirtualSidelineSpout | `virtual-spout-id`.number_filters_applied | Gauge | How many Filters are being applied against the VirtualSpout instance.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalMessages | Gauge | Total number of messages to be processed by the VirtualSpout for the given partition.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalProcessed | Gauge | Number of messages processed by the VirtualSpout instance for the given partition.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.totalUnprocessed | Gauge | Number of messages remaining to be processed by the VirtualSpout instance for the given partition.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.percentComplete | Gauge | Percentage of messages processed out of the total for the given partition.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.startingOffset | Gauge | The starting offset position for the given partition.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.currentOffset | Gauge | The offset currently being processed for the given partition.
-VirtualSidelineSpout | `virtual-spout-id`.partitionX.endingOffset | Gauge | The ending offset for the given partition.
+VirtualSpout | `virtual-spout-id`.emit | Counter | Tuple emit count per VirtualSpout instance.
+VirtualSpout | `virtual-spout-id`.ack | Counter | Tuple ack count per VirtualSpout instance.
+VirtualSpout | `virtual-spout-id`.fail | Counter | Messages who have failed.
+VirtualSpout | `virtual-spout-id`.filtered | Counter | Filtered messages per VirtualSpout instance.
+VirtualSpout | `virtual-spout-id`.exceeded_retry_limit | Counter | Messages who have exceeded the maximum configured retry count.
+VirtualSpout | `virtual-spout-id`.number_filters_applied | Gauge | How many Filters are being applied against the VirtualSpout instance.
+VirtualSpout | `virtual-spout-id`.partitionX.totalMessages | Gauge | Total number of messages to be processed by the VirtualSpout for the given partition.
+VirtualSpout | `virtual-spout-id`.partitionX.totalProcessed | Gauge | Number of messages processed by the VirtualSpout instance for the given partition.
+VirtualSpout | `virtual-spout-id`.partitionX.totalUnprocessed | Gauge | Number of messages remaining to be processed by the VirtualSpout instance for the given partition.
+VirtualSpout | `virtual-spout-id`.partitionX.percentComplete | Gauge | Percentage of messages processed out of the total for the given partition.
+VirtualSpout | `virtual-spout-id`.partitionX.startingOffset | Gauge | The starting offset position for the given partition.
+VirtualSpout | `virtual-spout-id`.partitionX.currentOffset | Gauge | The offset currently being processed for the given partition.
+VirtualSpout | `virtual-spout-id`.partitionX.endingOffset | Gauge | The ending offset for the given partition.
 SpoutMonitor | poolSize | Gauge | The max number of VirtualSpout instances that will be run concurrently.
 SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
 SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
@@ -198,25 +231,16 @@ criteria changes!
  Sidelining uses the `DynamicSpout` framework and begins by creating the *main* `VirtualSpout` instance (sometimes called the firehose).  This *main* `VirtualSpout` instance is always running within the spout, and its job is to consume from your Kafka topic.  As it consumes messages from Kafka, it deserializes them using your [`Deserializer`](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java) implementation.  It then runs it thru a [`FilterChain`](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChain.java), which is a collection of[`FilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/FilterChainStep.java) objects.  These filters determine what messages should be *sidelined* and which should be emitted out. When no sideline requests are active, the `FilterChain` is empty, and all messages consumed from Kafka will be converted to Tuples and emitted to your topology.
 
 
+## Getting Started
+In order to begin using sidelining you will need to create a `FilterChainStep`, a `StartingTrigger` and `StoppingTrigger`, implementing classes are all required for this spout to function properly.
+
 ## Starting Sideline Request
 Your implemented [`StartingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java) will notify the `SpoutMonitor` that a new sideline request has been started.  The `SpoutMonitor`
 will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
 your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
 
 ## Stoping Sideline Request
-Your implemented[`StoppingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) will notify the `SpoutMonitor` that it would like to stop a sideline request.  The `SpoutMonitor`
-will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's
-`FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your
-configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered.
-The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets
-recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
-
-## Stopping & Redeploying the topology?
-The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were
-when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic.
-Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering
-messages from being emitted into the topology.  Metadata aboutsideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are
-created and will resume consuming messages at the last previously acked offsets.
+Your implemented[`StoppingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) will notify the `SpoutMonitor` that it would like to stop a sideline request.  The `SpoutMonitor` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
 
 
 ## Dependencies
@@ -324,3 +348,6 @@ public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger 
     }
 }
 ```
+
+## Stopping & Redeploying the topology?
+The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata aboutsideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.
