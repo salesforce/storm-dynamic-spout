@@ -53,12 +53,7 @@ public class DynamicSpout extends BaseRichSpout {
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpout.class);
 
     /**
-     * The Topology configuration map.
-     */
-    private Map topologyConfig;
-
-    /**
-     * The Spout configuration map
+     * The Spout configuration map.
      */
     private Map<String, Object> spoutConfig;
 
@@ -85,7 +80,7 @@ public class DynamicSpout extends BaseRichSpout {
     private final FactoryManager factoryManager;
 
     /**
-     * Stores state from the spout
+     * Stores state from the spout.
      */
     private PersistenceAdapter persistenceAdapter;
 
@@ -114,11 +109,10 @@ public class DynamicSpout extends BaseRichSpout {
 
     /**
      * Constructor to create our spout.
-     * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
-     *
      * @param spoutConfig Our configuration.
      */
     public DynamicSpout(Map<String, Object> spoutConfig) {
+        // TODO: This method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
         // Save off config, injecting appropriate default values for anything not explicitly configured.
         this.spoutConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(spoutConfig));
 
@@ -142,7 +136,6 @@ public class DynamicSpout extends BaseRichSpout {
         }
 
         // Save references.
-        this.topologyConfig = topologyConfig;
         this.topologyContext = topologyContext;
         this.outputCollector = spoutOutputCollector;
 
@@ -151,13 +144,17 @@ public class DynamicSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
         }
 
+        // We do not use the getters for things like the metricsRecorder, persistenceAdapter and coordinator here
+        // because each of these getters perform a check to see if the spout is open, and it's not yet until we've
+        // finished setting all of these things up.
+
         // Initialize Metrics Collection
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
-        getMetricsRecorder().open(getSpoutConfig(), getTopologyContext());
+        metricsRecorder.open(getSpoutConfig(), getTopologyContext());
 
         // Create and open() persistence manager passing appropriate configuration.
         persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-        getPersistenceAdapter().open(getSpoutConfig());
+        persistenceAdapter.open(getSpoutConfig());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
@@ -166,35 +163,35 @@ public class DynamicSpout extends BaseRichSpout {
         // Create Spout Coordinator.
         coordinator = new SpoutCoordinator(
             // Our metrics recorder.
-            getMetricsRecorder(),
+            metricsRecorder,
             // Our MessageBuffer/Queue Implementation.
             messageBuffer
         );
 
         // Call open on coordinator.
-        getCoordinator().open(getSpoutConfig());
+        coordinator.open(getSpoutConfig());
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
 
+        // Our spout is open, it's not dependent upon the handler to finish opening for us to be 'opened'
+        // This is important, because if we waited most of our getters that check the opened state of the
+        // spout would throw an exception and make them unusable.
+        isOpen = true;
+
         spoutHandler = getFactoryManager().createSpoutHandler();
         spoutHandler.open(spoutConfig);
         spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
-
-        isOpen = true;
     }
 
     /**
-     * Get the next tuple from the spout
+     * Get the next tuple from the spout.
      */
     @Override
     public void nextTuple() {
-        /**
-         * Ask the SpoutCoordinator for the next message that should be emitted.
-         * If it returns null, then there's nothing new to emit!
-         * If a Message object is returned, it contains the appropriately
-         * mapped MessageId and Values for the tuple that should be emitted.
-         */
+         // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
+        // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
+        // Values for the tuple that should be emitted.
         final Message message = getCoordinator().nextMessage();
         if (message == null) {
             // Nothing new to emit!
@@ -354,10 +351,11 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Add a delegate spout to the coordinator
+     * Add a delegate spout to the coordinator.
      * @param spout Delegate spout to add
      */
     public void addVirtualSpout(DelegateSpout spout) {
+        checkSpoutOpened();
         getCoordinator().addVirtualSpout(spout);
     }
 
@@ -372,6 +370,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return The factory manager instance.
      */
     public FactoryManager getFactoryManager() {
+        // No need to check if the spout is opened because this is setup inside of the contructor
         return factoryManager;
     }
 
@@ -379,6 +378,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return The spout's metrics recorder implementation.
      */
     public MetricsRecorder getMetricsRecorder() {
+        checkSpoutOpened();
         return metricsRecorder;
     }
 
@@ -386,6 +386,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return The virtual spout coordinator.
      */
     SpoutCoordinator getCoordinator() {
+        checkSpoutOpened();
         return coordinator;
     }
 
@@ -393,6 +394,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return The persistence manager.
      */
     public PersistenceAdapter getPersistenceAdapter() {
+        checkSpoutOpened();
         return persistenceAdapter;
     }
 
@@ -410,5 +412,14 @@ public class DynamicSpout extends BaseRichSpout {
             }
         }
         return outputStreamId;
+    }
+
+    /**
+     * Check whether or not the spout has been opened. If it's not violently throw an exception!!!
+     */
+    private void checkSpoutOpened() {
+        if (!isOpen) {
+            throw new SpoutNotOpenedException();
+        }
     }
 }
