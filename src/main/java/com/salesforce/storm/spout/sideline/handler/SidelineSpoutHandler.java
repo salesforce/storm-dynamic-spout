@@ -8,7 +8,7 @@ import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
@@ -107,19 +107,18 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
+            generateVirtualSpoutId(new SidelineRequestIdentifier(MAIN_ID)),
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
-            spout.getMetricsRecorder()
+            null,
+            null
         );
-
-        // This isn't a sideline request, but just make something up anyhow, who cares!
-        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId(new SidelineRequestIdentifier(MAIN_ID)));
 
         // Our main firehose spout instance.
         spout.addVirtualSpout(fireHoseSpout);
 
-        final String topic = (String) getSpoutConfig().get(SidelineSpoutConfig.KAFKA_TOPIC);
+        final String topic = (String) getSpoutConfig().get(SpoutConfig.KAFKA_TOPIC);
 
         final List<SidelineRequestIdentifier> existingRequestIds = spout.getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
@@ -324,15 +323,13 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Create spout instance.
         final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutId,
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
-            spout.getMetricsRecorder(),
             startingState,
             endingState
         );
-
-        virtualSpout.setVirtualSpoutId(virtualSpoutId);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         virtualSpout.getFilterChain().addStep(id, step);
@@ -354,7 +351,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         );
 
         // Also prefixed with our configured prefix
-        final String prefix = (String) getSpoutConfig().get(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        final String prefix = (String) getSpoutConfig().get(SpoutConfig.CONSUMER_ID_PREFIX);
 
         // return it
         return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);
@@ -367,7 +364,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      */
     @SuppressWarnings("unchecked")
     public synchronized StartingTrigger createStartingTrigger() {
-        String classStr = (String) getSpoutConfig().get(SidelineSpoutConfig.STARTING_TRIGGER_CLASS);
+        String classStr = (String) getSpoutConfig().get(SpoutConfig.STARTING_TRIGGER_CLASS);
         // Empty class is allowed, this is not required to be configured
         if (Strings.isNullOrEmpty(classStr)) {
             return null;
@@ -386,7 +383,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      */
     @SuppressWarnings("unchecked")
     public synchronized StoppingTrigger createStoppingTrigger() {
-        String classStr = (String) getSpoutConfig().get(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS);
+        String classStr = (String) getSpoutConfig().get(SpoutConfig.STOPPING_TRIGGER_CLASS);
         // Empty class is allowed, this is not required to be configured
         if (Strings.isNullOrEmpty(classStr)) {
             return null;

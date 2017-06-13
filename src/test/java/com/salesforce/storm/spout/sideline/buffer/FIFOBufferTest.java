@@ -29,7 +29,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -65,7 +65,7 @@ public class FIFOBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer & open
         MessageBuffer messageBuffer = new FIFOBuffer();
@@ -129,7 +129,7 @@ public class FIFOBufferTest {
     public void testConstructorWithConfigValue(Number inputValue) throws InterruptedException {
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
         FIFOBuffer messageBuffer = new FIFOBuffer();

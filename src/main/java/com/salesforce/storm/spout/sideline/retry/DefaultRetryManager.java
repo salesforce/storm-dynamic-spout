@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.MessageId;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 
 import java.time.Clock;
 import java.util.Map;
@@ -90,17 +90,17 @@ public class DefaultRetryManager implements RetryManager {
      */
     public void open(Map spoutConfig) {
         // Load config options.
-        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_RETRY_LIMIT)) {
-            retryLimit = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_RETRY_LIMIT)).intValue();
+        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)) {
+            retryLimit = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)).intValue();
         }
-        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)) {
-            initialRetryDelayMs = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)).longValue();
+        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)) {
+            initialRetryDelayMs = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)).longValue();
         }
-        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)) {
-            retryDelayMultiplier = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)).doubleValue();
+        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)) {
+            retryDelayMultiplier = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)).doubleValue();
         }
-        if (spoutConfig.containsKey(SidelineSpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)) {
-            retryDelayMaxMs = ((Number) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)).longValue();
+        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)) {
+            retryDelayMaxMs = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)).longValue();
         }
 
         // Init data structures.

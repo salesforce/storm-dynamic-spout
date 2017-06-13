@@ -29,7 +29,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -70,16 +70,16 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
      */
     public void open(Map spoutConfig) {
          // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
-        final List<String> zkServers = (List<String>) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS);
+        final List<String> zkServers = (List<String>) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_SERVERS);
 
         // Root node / prefix to write entries under.
-        String zkRoot = (String) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
+        String zkRoot = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_ROOT);
         if (Strings.isNullOrEmpty(zkRoot)) {
-            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_ZK_ROOT);
+            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.PERSISTENCE_ZK_ROOT);
         }
 
         // We append the consumerId onto the zkRootNode
-        final String consumerId = (String) spoutConfig.get(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        final String consumerId = (String) spoutConfig.get(SpoutConfig.CONSUMER_ID_PREFIX);
 
         // Save this concatenated prefix
         this.zkRoot = zkRoot + "/" + consumerId;
@@ -336,11 +336,11 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     private CuratorFramework newCurator(final Map spoutConfig) {
         return CuratorFrameworkFactory.newClient(
             zkConnectionString,
-            ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue(),
-            ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
+            ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue(),
+            ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
             new RetryNTimes(
-                ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue(),
-                ((Number) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue()
+                ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue(),
+                ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue()
             )
         );
     }

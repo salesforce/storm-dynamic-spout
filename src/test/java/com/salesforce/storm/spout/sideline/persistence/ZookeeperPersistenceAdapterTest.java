@@ -30,7 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -890,11 +890,11 @@ public class ZookeeperPersistenceAdapterTest {
      */
     private Map createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
+        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
 
-        return Tools.immutableCopy(SidelineSpoutConfig.setDefaults(config));
+        return Tools.immutableCopy(SpoutConfig.setDefaults(config));
     }
 
     /**

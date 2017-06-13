@@ -29,7 +29,7 @@ import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -435,21 +435,21 @@ public class SpoutMonitor implements Runnable {
      * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
      */
     long getMonitorThreadIntervalMs() {
-        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS)).longValue();
+        return ((Number) getTopologyConfig().get(SpoutConfig.MONITOR_THREAD_INTERVAL_MS)).longValue();
     }
 
     /**
      * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     long getMaxTerminationWaitTimeMs() {
-        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
+        return ((Number) getTopologyConfig().get(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**
      * @return - the maximum amount of concurrently running VirtualSpouts we'll start.
      */
     int getMaxConcurrentVirtualSpouts() {
-        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
+        return ((Number) getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
     }
 
     /**

@@ -89,16 +89,16 @@ public class ConfigPrinter {
     private static void mergeConfigSection(PrintWriter readmePrintWriter) throws IllegalAccessException, NoSuchFieldException {
         readmePrintWriter.println();
 
-        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         Map<Documentation.Category, List<String>> lines = new TreeMap<>();
 
-        Field[] fields = SidelineSpoutConfig.class.getDeclaredFields();
+        Field[] fields = SpoutConfig.class.getDeclaredFields();
 
         for (Field field : fields) {
             // Presumably our configuration field...
             if (field.getType() == String.class) {
-                final String configParam = (String) SidelineSpoutConfig.class.getField(field.getName()).get(SidelineSpoutConfig.class);
+                final String configParam = (String) SpoutConfig.class.getField(field.getName()).get(SpoutConfig.class);
 
                 Documentation documentation = field.getAnnotation(Documentation.class);
 

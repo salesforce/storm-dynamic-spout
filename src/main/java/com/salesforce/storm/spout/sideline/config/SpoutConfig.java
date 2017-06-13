@@ -38,12 +38,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
-// TODO: Rename this to SpoutConfig and rename keys accordingly
-
 /**
  * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
  */
-public class SidelineSpoutConfig {
+public class SpoutConfig {
 
     /**
      * (String) Defines the name of the output stream tuples will be emitted out of.
@@ -52,7 +50,7 @@ public class SidelineSpoutConfig {
         description = "Defines the name of the output stream tuples will be emitted out of.",
         type = String.class
     )
-    public static final String OUTPUT_STREAM_ID = "sideline_spout.output_stream_id";
+    public static final String OUTPUT_STREAM_ID = "spout.output_stream_id";
 
 ///////////////////////////////////
 // Consumer Config
@@ -67,7 +65,7 @@ public class SidelineSpoutConfig {
             + "Should be a full classpath to a class that implements the Consumer interface.",
         type = String.class
     )
-    public static final String CONSUMER_CLASS = "sideline_spout.consumer.class";
+    public static final String CONSUMER_CLASS = "spout.consumer.class";
 
 ///////////////////////////////////
 // Kafka Consumer Config
@@ -83,7 +81,7 @@ public class SidelineSpoutConfig {
             + "Should be a full classpath to a class that implements the Deserializer interface.",
         type = String.class
     )
-    public static final String DESERIALIZER_CLASS = "sideline_spout.deserializer.class";
+    public static final String DESERIALIZER_CLASS = "spout.kafka.deserializer.class";
 
     /**
      * (String) Defines which Kafka topic we will consume messages from.
@@ -93,7 +91,7 @@ public class SidelineSpoutConfig {
         description = "Defines which Kafka topic we will consume messages from.",
         type = String.class
     )
-    public static final String KAFKA_TOPIC = "sideline_spout.kafka.topic";
+    public static final String KAFKA_TOPIC = "spout.kafka.topic";
 
     /**
      * (List<String>) Holds a list of Kafka Broker hostnames + ports in the following format:
@@ -105,7 +103,7 @@ public class SidelineSpoutConfig {
             + "[\"broker1:9092\", \"broker2:9092\", ...]",
         type = List.class
     )
-    public static final String KAFKA_BROKERS = "sideline_spout.kafka.brokers";
+    public static final String KAFKA_BROKERS = "spout.kafka.brokers";
 
     /**
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
@@ -117,7 +115,7 @@ public class SidelineSpoutConfig {
             + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
     )
-    public static final String CONSUMER_ID_PREFIX = "sideline_spout.consumer_id_prefix";
+    public static final String CONSUMER_ID_PREFIX = "spout.kafka.consumer_id_prefix";
 
 ///////////////////////////////////
 // Persistence Layer Config
@@ -135,7 +133,7 @@ public class SidelineSpoutConfig {
         type = String.class,
         required = true
     )
-    public static final String PERSISTENCE_ADAPTER_CLASS = "sideline_spout.persistence_adapter.class";
+    public static final String PERSISTENCE_ADAPTER_CLASS = "spout.persistence_adapter.class";
 
 ///////////////////////////////////
 // Zookeeper Persistence Config
@@ -153,20 +151,20 @@ public class SidelineSpoutConfig {
             + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
         type = List.class
     )
-    public static final String PERSISTENCE_ZK_SERVERS = "sideline_spout.persistence.zookeeper.servers";
+    public static final String PERSISTENCE_ZK_SERVERS = "spout.persistence.zookeeper.servers";
 
     /**
      * (String) Defines the root path to persist state under.
-     * Example: "/sideline-consumer-state"
+     * Example: "/consumer-state"
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
     @Documentation(
         category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
-        description = "Defines the root path to persist state under. Example: \"/sideline-consumer-state\"",
+        description = "Defines the root path to persist state under. Example: \"/consumer-state\"",
         type = String.class
     )
-    public static final String PERSISTENCE_ZK_ROOT = "sideline_spout.persistence.zookeeper.root";
+    public static final String PERSISTENCE_ZK_ROOT = "spout.persistence.zookeeper.root";
 
     /**
      * (Integer) Zookeeper session timeout.
@@ -176,7 +174,7 @@ public class SidelineSpoutConfig {
         description = "Zookeeper session timeout.",
         type = Integer.class
     )
-    public static final String PERSISTENCE_ZK_SESSION_TIMEOUT = "sideline_spout.persistence.zookeeper.session_timeout";
+    public static final String PERSISTENCE_ZK_SESSION_TIMEOUT = "spout.persistence.zookeeper.session_timeout";
 
     /**
      * (Integer) Zookeeper connection timeout.
@@ -186,7 +184,7 @@ public class SidelineSpoutConfig {
         description = "Zookeeper connection timeout.",
         type = Integer.class
     )
-    public static final String PERSISTENCE_ZK_CONNECTION_TIMEOUT = "sideline_spout.persistence.zookeeper.connection_timeout";
+    public static final String PERSISTENCE_ZK_CONNECTION_TIMEOUT = "spout.persistence.zookeeper.connection_timeout";
 
     /**
      * (Integer) Zookeeper retry attempts.
@@ -196,7 +194,7 @@ public class SidelineSpoutConfig {
         description = "Zookeeper retry attempts.",
         type = Integer.class
     )
-    public static final String PERSISTENCE_ZK_RETRY_ATTEMPTS = "sideline_spout.persistence.zookeeper.retry_attempts";
+    public static final String PERSISTENCE_ZK_RETRY_ATTEMPTS = "spout.persistence.zookeeper.retry_attempts";
 
     /**
      * (Integer) Zookeeper retry interval.
@@ -206,7 +204,7 @@ public class SidelineSpoutConfig {
         description = "Zookeeper retry interval.",
         type = Integer.class
     )
-    public static final String PERSISTENCE_ZK_RETRY_INTERVAL = "sideline_spout.persistence.zookeeper.retry_interval";
+    public static final String PERSISTENCE_ZK_RETRY_INTERVAL = "spout.persistence.zookeeper.retry_interval";
 
 ///////////////////////////////////
 // Failed Message Retry Config
@@ -223,7 +221,7 @@ public class SidelineSpoutConfig {
         type = String.class,
         required = true
     )
-    public static final String RETRY_MANAGER_CLASS = "sideline_spout.retry_manager.class";
+    public static final String RETRY_MANAGER_CLASS = "spout.retry_manager.class";
 
     /**
      * (int) Defines how many times a failed message will be replayed before just being acked.
@@ -240,7 +238,7 @@ public class SidelineSpoutConfig {
             + "A positive value means tuples will be retried up to this limit, then dropped.",
         type = Integer.class
     )
-    public static final String RETRY_MANAGER_RETRY_LIMIT = "sideline_spout.retry_manager.retry_limit";
+    public static final String RETRY_MANAGER_RETRY_LIMIT = "spout.retry_manager.retry_limit";
 
     /**
      * (long) Defines how long to wait before retry attempts are made on failed tuples, in milliseconds.
@@ -259,7 +257,7 @@ public class SidelineSpoutConfig {
             + "(5 * 1000) milliseconds before the next retry attempt.",
         type = Long.class
     )
-    public static final String RETRY_MANAGER_INITIAL_DELAY_MS = "sideline_spout.retry_manager.initial_delay_ms";
+    public static final String RETRY_MANAGER_INITIAL_DELAY_MS = "spout.retry_manager.initial_delay_ms";
 
     /**
      * (double) Defines how quickly the delay increases after each failed tuple.
@@ -274,7 +272,7 @@ public class SidelineSpoutConfig {
             + "Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.",
         type = Double.class
     )
-    public static final String RETRY_MANAGER_DELAY_MULTIPLIER = "sideline_spout.retry_manager.delay_multiplier";
+    public static final String RETRY_MANAGER_DELAY_MULTIPLIER = "spout.retry_manager.delay_multiplier";
 
     /**
      * (long) Defines an upper bound of the max delay time between retried a failed tuple.
@@ -286,7 +284,7 @@ public class SidelineSpoutConfig {
         description = "Defines an upper bound of the max delay time between retried a failed tuple.",
         type = Long.class
     )
-    public static final String RETRY_MANAGER_MAX_DELAY_MS = "sideline_spout.retry_manager.retry_delay_max_ms";
+    public static final String RETRY_MANAGER_MAX_DELAY_MS = "spout.retry_manager.retry_delay_max_ms";
 
 ///////////////////////////////////
 // Metrics Collection
@@ -302,7 +300,7 @@ public class SidelineSpoutConfig {
             + "Should be a full classpath to a class that implements the MetricsRecorder interface.",
         type = String.class
     )
-    public static final String METRICS_RECORDER_CLASS = "sideline_spout.metrics.class";
+    public static final String METRICS_RECORDER_CLASS = "spout.metrics.class";
 
 ///////////////////////////////////
 // Internal Coordinator Config
@@ -318,7 +316,7 @@ public class SidelineSpoutConfig {
             + "Should be a full classpath to a class that implements the MessageBuffer interface.",
         type = String.class
     )
-    public static final String TUPLE_BUFFER_CLASS = "sideline_spout.coordinator.tuple_buffer.class";
+    public static final String TUPLE_BUFFER_CLASS = "spout.coordinator.tuple_buffer.class";
 
     /**
      * (int) Defines maximum size of the tuple buffer.  After the buffer reaches this size
@@ -330,7 +328,7 @@ public class SidelineSpoutConfig {
             + "kafka consumers will be blocked from consuming.",
         type = Integer.class
     )
-    public static final String TUPLE_BUFFER_MAX_SIZE = "sideline_spout.coordinator.tuple_buffer.max_size";
+    public static final String TUPLE_BUFFER_MAX_SIZE = "spout.coordinator.tuple_buffer.max_size";
 
     /**
      * (long) How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.
@@ -340,7 +338,7 @@ public class SidelineSpoutConfig {
         description = "How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.",
         type = Long.class
     )
-    public static final String MONITOR_THREAD_INTERVAL_MS = "sideline_spout.coordinator.monitor_thread_interval_ms";
+    public static final String MONITOR_THREAD_INTERVAL_MS = "spout.coordinator.monitor_thread_interval_ms";
 
     /**
      * (long) How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop
@@ -351,7 +349,7 @@ public class SidelineSpoutConfig {
         description = "How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop them with force, in Milliseconds.",
         type = Long.class
     )
-    public static final String MAX_SPOUT_SHUTDOWN_TIME_MS = "sideline_spout.coordinator.max_spout_shutdown_time_ms";
+    public static final String MAX_SPOUT_SHUTDOWN_TIME_MS = "spout.coordinator.max_spout_shutdown_time_ms";
 
     /**
      * (long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
@@ -361,17 +359,17 @@ public class SidelineSpoutConfig {
         description = "How often we'll make sure each VirtualSpout persists its state, in Milliseconds.",
         type = Long.class
     )
-    public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "sideline_spout.coordinator.consumer_state_flush_interval_ms";
+    public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "spout.coordinator.consumer_state_flush_interval_ms";
 
     /**
-     * (int) The size of the thread pool for running virtual spouts for sideline requests.
+     * (int) The size of the thread pool for running virtual spouts.
      * Default Value: 10
      */
     @Documentation(
-        description = "The size of the thread pool for running virtual spouts for sideline requests.",
+        description = "The size of the thread pool for running virtual spouts.",
         type = Integer.class
     )
-    public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "sideline_spout.coordinator.max_concurrent_virtual_spouts";
+    public static final String MAX_CONCURRENT_VIRTUAL_SPOUTS = "spout.coordinator.max_concurrent_virtual_spouts";
 
     /**
      * (String) Defines which SpoutHandler implementation to use.
@@ -384,7 +382,7 @@ public class SidelineSpoutConfig {
             + "Should be a fully qualified class path that implements the SpoutHandler interface.",
         type = String.class
     )
-    public static final String SPOUT_HANDLER_CLASS = "sideline_spout.spout_handler_class";
+    public static final String SPOUT_HANDLER_CLASS = "spout.spout_handler_class";
 
     /**
      * (String) Defines which VirtualSpoutHandler implementation to use.
@@ -397,7 +395,7 @@ public class SidelineSpoutConfig {
             + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
         type = String.class
     )
-    public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "sideline_spout.virtual_spout_handler_class";
+    public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
 
     /**
      * (String) Defines with StartingTrigger (if any) implementation to use.
@@ -409,7 +407,7 @@ public class SidelineSpoutConfig {
             + "Should be a fully qualified class path that implements thee StartingTrigger interface",
         type = String.class
     )
-    public static final String STARTING_TRIGGER_CLASS = "sideline_spout.starting_trigger_class";
+    public static final String STARTING_TRIGGER_CLASS = "sideline.starting_trigger_class";
 
     /**
      * (String) Defines with StoppingTrigger (if any) implementation to use.
@@ -421,12 +419,12 @@ public class SidelineSpoutConfig {
             + "Should be a fully qualified class path that implements thee StoppingTrigger interface",
         type = String.class
     )
-    public static final String STOPPING_TRIGGER_CLASS = "sideline_spout.stopping_trigger_class";
+    public static final String STOPPING_TRIGGER_CLASS = "sideline.stopping_trigger_class";
 
 ///////////////////////////////////
 // Utility Methods.
 ///////////////////////////////////
-    private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(SpoutConfig.class);
 
     /**
      * Utility method to add any unspecified configuration value for items with their defaults.
@@ -447,6 +445,10 @@ public class SidelineSpoutConfig {
             // For now default KafkaConsumer
             clonedConfig.put(CONSUMER_CLASS, Consumer.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_CLASS, clonedConfig.get(CONSUMER_CLASS));
+        }
+        if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
+            clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+            logger.info("Unspecified configuration value for {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());

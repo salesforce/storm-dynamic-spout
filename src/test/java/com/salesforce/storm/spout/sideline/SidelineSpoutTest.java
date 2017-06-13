@@ -26,7 +26,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
@@ -150,7 +150,7 @@ public class SidelineSpoutTest {
     public void testMissingRequiredConfigurationConsumerIdPrefix() {
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(null, null);
-        config.remove(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        config.remove(SpoutConfig.CONSUMER_ID_PREFIX);
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -161,7 +161,7 @@ public class SidelineSpoutTest {
 
         // When we call open, we expect illegal state exception about our missing configuration item
         expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        expectedException.expectMessage(SpoutConfig.CONSUMER_ID_PREFIX);
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -194,7 +194,7 @@ public class SidelineSpoutTest {
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
         // Some mock storm topology stuff to get going
@@ -256,7 +256,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Configure to use our FailedTuplesFirstRetryManager retry manager.
-        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -483,7 +483,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -586,7 +586,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -855,7 +855,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -961,7 +961,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -1332,41 +1332,41 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
 
-        final Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
-        config.put(SidelineSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
-        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
-        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+        config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
+        config.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+        config.put(SpoutConfig.KAFKA_TOPIC, topicName);
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
+        config.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutMonitor thread to run every 1 second
-        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second
-        config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
+        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        config.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
-        config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
+        config.put(SpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
 
-        config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
 
-        config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, StaticTrigger.class.getName());
 
-        config.put(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, StaticTrigger.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
         return config;

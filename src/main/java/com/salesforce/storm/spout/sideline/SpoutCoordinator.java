@@ -24,7 +24,7 @@
  */
 package com.salesforce.storm.spout.sideline;
 
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.coordinator.SpoutMonitor;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
@@ -306,7 +306,7 @@ public class SpoutCoordinator {
      * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     private long getMaxTerminationWaitTimeMs() {
-        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
+        return ((Number) getTopologyConfig().get(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**

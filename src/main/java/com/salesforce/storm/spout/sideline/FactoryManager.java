@@ -25,7 +25,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Strings;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
@@ -107,9 +107,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized Deserializer createNewDeserializerInstance() {
         if (deserializerClass == null) {
-            final String classStr = (String) spoutConfig.get(SidelineSpoutConfig.DESERIALIZER_CLASS);
+            final String classStr = (String) spoutConfig.get(SpoutConfig.DESERIALIZER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.DESERIALIZER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.DESERIALIZER_CLASS);
             }
 
             try {
@@ -130,9 +130,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized RetryManager createNewFailedMsgRetryManagerInstance() {
         if (failedMsgRetryManagerClass == null) {
-            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.RETRY_MANAGER_CLASS);
+            String classStr = (String) spoutConfig.get(SpoutConfig.RETRY_MANAGER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.TUPLE_BUFFER_CLASS);
             }
 
             try {
@@ -153,9 +153,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized PersistenceAdapter createNewPersistenceAdapterInstance() {
         if (persistenceAdapterClass == null) {
-            final String classStr = (String) spoutConfig.get(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
+            final String classStr = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ADAPTER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.PERSISTENCE_ADAPTER_CLASS);
             }
 
             try {
@@ -176,9 +176,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized MetricsRecorder createNewMetricsRecorder() {
         if (metricsRecorderClass == null) {
-            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.METRICS_RECORDER_CLASS);
+            String classStr = (String) spoutConfig.get(SpoutConfig.METRICS_RECORDER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.METRICS_RECORDER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.METRICS_RECORDER_CLASS);
             }
 
             try {
@@ -199,9 +199,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized MessageBuffer createNewMessageBufferInstance() {
         if (messageBufferClass == null) {
-            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
+            String classStr = (String) spoutConfig.get(SpoutConfig.TUPLE_BUFFER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.TUPLE_BUFFER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.TUPLE_BUFFER_CLASS);
             }
 
             try {
@@ -222,9 +222,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized Consumer createNewConsumerInstance() {
         if (consumerClass == null) {
-            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.CONSUMER_CLASS);
+            String classStr = (String) spoutConfig.get(SpoutConfig.CONSUMER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.CONSUMER_CLASS);
             }
 
             try {
@@ -246,9 +246,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized SpoutHandler createSpoutHandler() {
         if (spoutHandlerClass == null) {
-            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.SPOUT_HANDLER_CLASS);
+            String classStr = (String) spoutConfig.get(SpoutConfig.SPOUT_HANDLER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.SPOUT_HANDLER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.SPOUT_HANDLER_CLASS);
             }
 
             try {
@@ -270,9 +270,9 @@ public class FactoryManager implements Serializable {
      */
     public synchronized VirtualSpoutHandler createVirtualSpoutHandler() {
         if (virtualSpoutHandlerClass == null) {
-            String classStr = (String) spoutConfig.get(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
+            String classStr = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
             if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
+                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
             }
 
             try {
