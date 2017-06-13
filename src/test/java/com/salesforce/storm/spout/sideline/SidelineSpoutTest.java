@@ -672,9 +672,6 @@ public class SidelineSpoutTest {
         topologyContext = new MockTopologyContext();
         spoutOutputCollector = new MockSpoutOutputCollector();
 
-        // Create a new static trigger for being able to easily make start and stop requests.
-        //staticTrigger = new StaticTrigger();
-
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
         spoutSpy = Mockito.spy(spout);
@@ -717,9 +714,6 @@ public class SidelineSpoutTest {
         // Create new spout instance and start
         topologyContext = new MockTopologyContext();
         spoutOutputCollector = new MockSpoutOutputCollector();
-
-        // Create a new static trigger for being able to easily make start and stop requests.
-        //staticTrigger = new StaticTrigger();
 
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
@@ -777,9 +771,6 @@ public class SidelineSpoutTest {
         // Create new spout instance and start.
         topologyContext = new MockTopologyContext();
         spoutOutputCollector = new MockSpoutOutputCollector();
-
-        // Create a new static trigger for being able to easily make start and stop requests.
-        //staticTrigger = new StaticTrigger();
 
         // A little debug log
         logger.info("=== Starting spout for last time");

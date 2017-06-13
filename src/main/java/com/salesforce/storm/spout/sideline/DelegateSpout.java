@@ -49,7 +49,7 @@ public interface DelegateSpout {
     Message nextTuple();
 
     /**
-     * Acknowledge a message that came from this spout.
+     * Acknowledge a message that came from this spout as having completed processing.
      * @param msgId Message id to acknowledge.
      */
     void ack(Object msgId);
@@ -72,7 +72,7 @@ public interface DelegateSpout {
     void flushState();
 
     /**
-     * Request that the current spout stop running.
+     * Request that the current spout stop running for async shutdown.
      */
     void requestStop();
 
