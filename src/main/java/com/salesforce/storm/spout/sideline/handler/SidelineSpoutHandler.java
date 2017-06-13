@@ -186,7 +186,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * Handler called when the dynamic spout closes, this method is responsible for tearing down triggers  sidelining.
      */
     @Override
-    public void onSpoutClose() {
+    public void onSpoutClose(DynamicSpout spout) {
         // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), close it
         if (startingTrigger != null) {
             startingTrigger.close();

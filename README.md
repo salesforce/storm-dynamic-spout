@@ -208,10 +208,10 @@ The [`SpoutHandler`](src/main/java/com/salesforce/storm/spout/sideline/handler/S
 
 There are several methods on the `SpoutHandler` you can implement. There are no-op defaults provided so you do not have to implement any of them, but there are four in particular we're going to go into detail because they are critical for most `SpoutHandler` implementations.
 
-- `void open(Map<String, Object> spoutConfig)` - This method is functionally like the `SpoutHandler`'s constructor, it's called to setup the `SpoutHandler`. Just as `open()` exists on the `ISpout` interface in Storm to setup your spout, so this method is intended for setting up your `SpoutHandler`.
+- `void open(Map<String, Object> spoutConfig)` - This method is functionally like the `SpoutHandler`'s constructor, it is called to setup the `SpoutHandler`. Just as `open()` exists on the `ISpout` interface in Storm to setup your spout, so this method is intended for setting up your `SpoutHandler`.
 - `void close()` - This method is similar to an `ISpout`'s `close()` method, it gets called when the `SpoutHandler` is torn down, and you can use it shut down any classes that you have used in the `SpoutHandler` as well as clean up any object references you have.
 - `void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext)` - This method is called after the `DynamicSpout` is opened, and with it you get the `DynamicSpout` instance to interact with.  It's here that you can do things like call `DynamicSpout.addVirtualSpout(VirtualSpout virtualSpout)` to add a new `VirtualSpout` instance into the `DynamicSpout`.
-- `void onSpoutClose()` - This method is called after `DynamicSpout` is closed, you can use it to perform shut down tasks when the `DynamicSpout` itself is closing.
+- `void onSpoutClose(DynamicSpout spout)` - This method is called after `DynamicSpout` is closed, you can use it to perform shut down tasks when the `DynamicSpout` itself is closing, and with it you get the `DynamicSpout` instance to interact with.
 
 _It's important to note that `SpoutHandler` instance methods should be blocking since they are part of the startup and shutdown flow. Only perform asyncrhonous tasks if you are certain that other spout methods can be called without depending on your asyncrhonous tasks to complete._
 
@@ -245,8 +245,15 @@ public class SimpleKafkaSpoutHandler implements SpoutHandler {
 ```
 
 ### VirtualSpoutHandler
-Coming soon...
+The [VirtualSpoutHandler](src/main/java/com/salesforce/storm/spout/sideline/handler/VirtualSpoutHandler.java) is an interface which allows you to tie into the `VirtualSpout` lifecycle. An implementation is *not required* to use the dynamic spout framework, but it can be helpful when your implementation requires you to tap into the lifecycle of each individual spout being managed by the `DynamicSpout`.
 
+There are several methods on the `VirtualSpoutHandler` you can implement. There are no-op defaults provided so you do not have to implement any of them, but there are five in particular we're going to go into detail because they are critical for most `VirtualSpoutHandler` implementations.
+
+- `void open(Map<String, Object> spoutConfig)` - This method is functionally like the `VirtualSpoutHandler`'s constructor, it is called to setup the `VirtualSpoutHandler`. Just as `open()` exists in the `ISpout` interface in Storm to setup your spout, so this method is intended for setting up your `VirtualSpoutHandler`.
+- `void close()` - This method is similar to an `ISpout`'s `close()` method, it gets called when the `VirtualSpoutHandler` is torn down, and you can use it shut down any classes that you have used in the `VirtualSpoutHandler` as well as clean up any object references you have.
+- `void onVirtualSpoutOpen(DelegateSpout virtualSpout)` - This method is called after the `VirtualSpout` is opened, and with it you get the `VirtualSpout` instance to interact with.
+- `void onVirtualSpoutClose(DelegateSpout virtualSpout)` - This method is called after the `VirtualSpout` is closed, and with it you get the `VirtualSpout` instance to interact with.
+- `void onVirtualSpoutCompletion(DelegateSpout virtualSpout)` - This method is called before `onVirtualSpoutClose()` *only* when the VirtualSpout instance is about to close and has *completed* it's work, meaning that the Consumer has reached the provided ending offset.
 
 ## Metrics
 SidelineSpout collects metrics giving you insight to what is happening under the hood.  It collects

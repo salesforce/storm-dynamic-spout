@@ -40,22 +40,25 @@ public interface SpoutHandler {
 
     /**
      * Called when the DynamicSpout is activated.
+     * @param spout DynamicSpout instance.
      */
-    default void onSpoutActivate() {
+    default void onSpoutActivate(DynamicSpout spout) {
 
     }
 
     /**
      * Called when the DynamicSpout is deactivated.
+     * @param spout DynamicSpout instance.
      */
-    default void onSpoutDeactivate() {
+    default void onSpoutDeactivate(DynamicSpout spout) {
 
     }
 
     /**
      * Called when the DynamicSpout is closed.
+     * @param spout DynamicSpout instance.
      */
-    default void onSpoutClose() {
+    default void onSpoutClose(DynamicSpout spout) {
 
     }
 }

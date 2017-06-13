@@ -341,7 +341,7 @@ public class SidelineSpoutHandlerTest {
         assertNotNull(sidelineSpoutHandler.getStoppingTrigger());
         assertTrue(sidelineSpoutHandler.getStoppingTrigger() instanceof NoopStartingStoppingTrigger);
 
-        sidelineSpoutHandler.onSpoutClose();
+        sidelineSpoutHandler.onSpoutClose(spout);
 
         assertNull(sidelineSpoutHandler.getStartingTrigger());
         assertNull(sidelineSpoutHandler.getStoppingTrigger());
