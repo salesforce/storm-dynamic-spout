@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.retry;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -609,16 +609,16 @@ public class DefaultRetryManagerTest {
     private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs, Double delayMultiplier, Long expectedMaxDelayMS) {
         Map stormConfig = Maps.newHashMap();
         if (maxRetries != null) {
-            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_RETRY_LIMIT, maxRetries);
+            stormConfig.put(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT, maxRetries);
         }
         if (minRetryTimeMs != null) {
-            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS, minRetryTimeMs);
+            stormConfig.put(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS, minRetryTimeMs);
         }
         if (delayMultiplier != null) {
-            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER, delayMultiplier);
+            stormConfig.put(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER, delayMultiplier);
         }
         if (expectedMaxDelayMS != null) {
-            stormConfig.put(SidelineSpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMS);
+            stormConfig.put(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMS);
         }
         return stormConfig;
     }

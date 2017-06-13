@@ -5,7 +5,7 @@ import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.MockConsumer;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
@@ -47,7 +47,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOpen() {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -64,7 +64,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutOpenCreatesFirehose() {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
@@ -85,8 +85,8 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutOpenResumesSidelines() {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, "KafkaTopic");
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SpoutConfig.KAFKA_TOPIC, "KafkaTopic");
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -175,11 +175,11 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testStartSidelining() {
-        final Map<String, Object> config = SidelineSpoutConfig.setDefaults(new HashMap<>());
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, "KafkaTopic");
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
-        config.put(SidelineSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SpoutConfig.KAFKA_TOPIC, "KafkaTopic");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -240,11 +240,11 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testStopSidelining() {
-        final Map<String, Object> config = SidelineSpoutConfig.setDefaults(new HashMap<>());
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, "KafkaTopic");
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
-        config.put(SidelineSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SpoutConfig.KAFKA_TOPIC, "KafkaTopic");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
 
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
@@ -322,9 +322,9 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutClose() {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
-        config.put(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
@@ -353,7 +353,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testCreateStartingTrigger() {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -385,7 +385,7 @@ public class SidelineSpoutHandlerTest {
     public void testMisconfiguredCreateStartingTrigger() {
         final Map<String, Object> config = new HashMap<>();
         // This is not a valid trigger!
-        config.put(SidelineSpoutConfig.STARTING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
+        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -401,7 +401,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testCreateStoppingTrigger() {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -433,7 +433,7 @@ public class SidelineSpoutHandlerTest {
     public void testMisconfiguredCreateStoppingTrigger() {
         final Map<String, Object> config = new HashMap<>();
         // This is not a valid trigger!
-        config.put(SidelineSpoutConfig.STOPPING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
+        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -453,7 +453,7 @@ public class SidelineSpoutHandlerTest {
 
         // Create our config, specify the consumer id because it will be used as a prefix
         final Map<String, Object> config = new HashMap<>();
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, expectedPrefix);
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, expectedPrefix);
 
         // Create a persistence adapter, this is called in the handler onSpoutOpen() method, we're just trying to avoid a NullPointer here
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();

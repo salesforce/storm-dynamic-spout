@@ -25,7 +25,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
@@ -1216,7 +1216,7 @@ public class VirtualSpoutTest {
     public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
-        topologyConfig.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        topologyConfig.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier();
 
@@ -1439,15 +1439,15 @@ public class VirtualSpoutTest {
      */
     private Map<String, Object> getDefaultConfig() {
         final Map<String, Object> defaultConfig = new HashMap<>();
-        defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
-        defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, "MyTopic");
-        defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
-        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
-        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
-        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
-        defaultConfig.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        defaultConfig.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        defaultConfig.put(SpoutConfig.KAFKA_TOPIC, "MyTopic");
+        defaultConfig.put(SpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        defaultConfig.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
-        return SidelineSpoutConfig.setDefaults(defaultConfig);
+        return SpoutConfig.setDefaults(defaultConfig);
     }
 
     /**

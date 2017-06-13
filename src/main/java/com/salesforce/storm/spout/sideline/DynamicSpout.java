@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -115,7 +115,7 @@ public class DynamicSpout extends BaseRichSpout {
      */
     public DynamicSpout(Map<String, Object> spoutConfig) {
         // Save off config, injecting appropriate default values for anything not explicitly configured.
-        this.spoutConfig = Collections.unmodifiableMap(SidelineSpoutConfig.setDefaults(spoutConfig));
+        this.spoutConfig = Collections.unmodifiableMap(SpoutConfig.setDefaults(spoutConfig));
 
         // Create our factory manager, which must be serializable.
         factoryManager = new FactoryManager(getSpoutConfig());
@@ -137,8 +137,8 @@ public class DynamicSpout extends BaseRichSpout {
         this.outputCollector = spoutOutputCollector;
 
         // Ensure a consumer id prefix has been correctly set.
-        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SidelineSpoutConfig.CONSUMER_ID_PREFIX))) {
-            throw new IllegalStateException("Missing required configuration: " + SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SpoutConfig.CONSUMER_ID_PREFIX))) {
+            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.CONSUMER_ID_PREFIX);
         }
 
         // Initialize Metrics Collection
@@ -385,7 +385,7 @@ public class DynamicSpout extends BaseRichSpout {
             if (spoutConfig == null) {
                 throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
             }
-            outputStreamId = (String) getSpoutConfigItem(SidelineSpoutConfig.OUTPUT_STREAM_ID);
+            outputStreamId = (String) getSpoutConfigItem(SpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {
                 outputStreamId = Utils.DEFAULT_STREAM_ID;
             }

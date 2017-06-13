@@ -28,7 +28,7 @@ import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.slf4j.Logger;
@@ -233,7 +233,7 @@ public class SpoutRunner implements Runnable {
      * @return - How frequently, in milliseconds, we should flush consumer state.
      */
     long getConsumerStateFlushIntervalMs() {
-        return ((Number) getTopologyConfig().get(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS)).longValue();
+        return ((Number) getTopologyConfig().get(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS)).longValue();
     }
 
     DelegateSpout getSpout() {

@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.buffer;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -53,7 +53,7 @@ public class FIFOBuffer implements MessageBuffer {
      */
     public static FIFOBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
-        map.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
+        map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
 
         FIFOBuffer buffer = new FIFOBuffer();
         buffer.open(map);
@@ -64,7 +64,7 @@ public class FIFOBuffer implements MessageBuffer {
     @Override
     public void open(Map spoutConfig) {
         // Defines the bounded size of our buffer.  Ideally this would be configurable.
-        Object maxBufferSizeObj = spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object maxBufferSizeObj = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         int maxBufferSize = DEFAULT_MAX_SIZE;
         if (maxBufferSizeObj != null && maxBufferSizeObj instanceof Number) {
             maxBufferSize = ((Number) maxBufferSizeObj).intValue();

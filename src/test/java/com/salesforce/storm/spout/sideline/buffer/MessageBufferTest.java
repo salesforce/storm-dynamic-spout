@@ -29,7 +29,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -74,7 +74,7 @@ public class MessageBufferTest {
      */
     private static MessageBuffer createInstance(Class clazz, int bufferSize) throws IllegalAccessException, InstantiationException {
         Map<String, Object> topologyConfig = Maps.newHashMap();
-        topologyConfig.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
+        topologyConfig.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
 
         MessageBuffer messageBuffer = (MessageBuffer) clazz.newInstance();
         messageBuffer.open(topologyConfig);

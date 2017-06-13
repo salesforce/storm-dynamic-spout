@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.buffer;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +77,7 @@ public class RoundRobinBuffer implements MessageBuffer {
      */
     public static RoundRobinBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
-        map.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
 
         RoundRobinBuffer buffer = new RoundRobinBuffer();
         buffer.open(map);
@@ -87,7 +87,7 @@ public class RoundRobinBuffer implements MessageBuffer {
 
     @Override
     public void open(Map spoutConfig) {
-        Object maxBufferSizeObj = spoutConfig.get(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object maxBufferSizeObj = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         if (maxBufferSizeObj == null) {
             // Not configured, use default value.
             return;

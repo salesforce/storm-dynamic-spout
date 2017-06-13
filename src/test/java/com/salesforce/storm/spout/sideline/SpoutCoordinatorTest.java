@@ -26,7 +26,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
@@ -80,11 +80,11 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Configure our internal operations to run frequently for our test case.
-        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
-        config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
+        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
+        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, actual);
@@ -174,7 +174,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
@@ -196,7 +196,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
+        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
