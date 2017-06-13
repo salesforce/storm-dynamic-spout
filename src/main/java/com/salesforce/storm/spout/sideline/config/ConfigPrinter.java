@@ -1,14 +1,13 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.annotation.Category;
-import com.salesforce.storm.spout.sideline.config.annotation.DefaultValue;
-import com.salesforce.storm.spout.sideline.config.annotation.Description;
-import com.salesforce.storm.spout.sideline.config.annotation.Required;
-import com.salesforce.storm.spout.sideline.config.annotation.Type;
-import sun.security.krb5.internal.crypto.Des;
+import com.salesforce.storm.spout.sideline.config.annotation.Documentation;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigPrinter {
@@ -18,6 +17,8 @@ public class ConfigPrinter {
     public static void main(String[] args) throws Exception {
         Map<String, Object> config = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
 
+        Map<Documentation.Category, List<String>> lines = new HashMap<>();
+
         Field[] fields = SidelineSpoutConfig.class.getDeclaredFields();
 
         for (Field field : fields) {
@@ -25,22 +26,39 @@ public class ConfigPrinter {
             if (field.getType() == String.class) {
                 final String configParam = (String) SidelineSpoutConfig.class.getField(field.getName()).get(SidelineSpoutConfig.class);
 
-                Category category = field.getAnnotation(Category.class);
-                Description description = field.getAnnotation(Description.class);
-                Type type = field.getAnnotation(Type.class);
-                Required required = field.getAnnotation(Required.class);
-                DefaultValue defaultValue = field.getAnnotation(DefaultValue.class);
+                Documentation documentation = field.getAnnotation(Documentation.class);
+
+                if (lines.get(documentation.category()) == null) {
+                    lines.put(documentation.category(), new ArrayList<>());
+                }
+
+                String description = documentation.description();
+                String type = documentation.type().getSimpleName();
+                boolean required = documentation.required();
 
                 StringBuilder builder = new StringBuilder();
-
                 builder.append(configParam).append(DELIMITER);
-                builder.append(type.value()).append(DELIMITER);
-                builder.append(required != null ? "Required" : "").append(DELIMITER);
-                builder.append(defaultValue != null ? defaultValue.value() : "").append(DELIMITER);
-                builder.append(description.value());
+                builder.append(type).append(DELIMITER);
+                builder.append(required ? "Required" : "").append(DELIMITER);
+                builder.append(config.get(configParam)).append(DELIMITER);
+                builder.append(description);
 
-                System.out.println(builder.toString());
+                lines.get(documentation.category()).add(builder.toString());
             }
+        }
+
+        for (Documentation.Category category : lines.keySet()) {
+            if (category != Documentation.Category.NONE) {
+                System.out.println(category.toString());
+            }
+
+            Collections.sort(lines.get(category));
+
+            for (String line : lines.get(category)) {
+                System.out.println(line);
+            }
+
+            System.out.println("");
         }
     }
 }
