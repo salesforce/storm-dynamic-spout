@@ -38,17 +38,15 @@ import java.util.Map;
  */
 public class SidelineSpout extends DynamicSpout {
 
-    private static final Logger logger = LoggerFactory.getLogger(SidelineSpout.class);
-
     /**
      * Used to overload and modify settings before passing them to the constructor.
-     * @param config Supplied configuration.
+     * @param spoutConfig Supplied configuration.
      * @return Resulting configuration.
      */
-    private static Map<String, Object> modifyConfig(Map<String, Object> _config) {
+    private static Map<String, Object> modifyConfig(Map<String, Object> spoutConfig) {
         Map<String, Object> config = Maps.newHashMap();
         // Start by making a copy of our existing configuration map
-        config.putAll(_config);
+        config.putAll(spoutConfig);
         // Add our opinionated configuration items
         config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
         config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
@@ -60,6 +58,7 @@ public class SidelineSpout extends DynamicSpout {
      * Spout that supports sidelining messages by filters.
      * @param config Spout configuration.
      */
+    @SuppressWarnings("unchecked")
     public SidelineSpout(Map config) {
         super(modifyConfig(config));
     }
