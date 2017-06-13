@@ -76,8 +76,8 @@ All of these options can be found inside of [SidelineSpoutConfig](src/main/java/
 
 [//]: <> (CONFIGURATION_BEGIN_DELIMITER)
 
-Config Key | Type | Description | Default Value |
----------- | ---- | ----------- | ------------- |
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
 sideline_spout.consumer.class | String |  | Defines which Consumer implementation to use. Should be a full classpath to a class that implements the Consumer interface. | com.salesforce.storm.spout.sideline.kafka.Consumer
 sideline_spout.coordinator.consumer_state_flush_interval_ms | Long |  | How often we'll make sure each VirtualSpout persists its state, in Milliseconds. | 30000
 sideline_spout.coordinator.max_concurrent_virtual_spouts | Integer |  | The size of the thread pool for running virtual spouts for sideline requests. | 10
@@ -94,29 +94,29 @@ sideline_spout.retry_manager.retry_delay_max_ms | Long |  | Defines an upper bou
 sideline_spout.retry_manager.retry_limit | Integer |  | Defines how many times a failed message will be replayed before just being acked. A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. A positive value means tuples will be retried up to this limit, then dropped. | 25
 
 ### Sideline
-Config Key | Type | Description | Default Value |
----------- | ---- | ----------- | ------------- |
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
 sideline_spout.spout_handler_class | String |  | Defines which SpoutHandler implementation to use. Should be a fully qualified class path that implements the SpoutHandler interface. | com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler
 sideline_spout.starting_trigger_class | String |  | Defines with StartingTrigger (if any) implementation to use. Should be a fully qualified class path that implements thee StartingTrigger interface | 
 sideline_spout.stopping_trigger_class | String |  | Defines with StoppingTrigger (if any) implementation to use. Should be a fully qualified class path that implements thee StoppingTrigger interface | 
 sideline_spout.virtual_spout_handler_class | String |  | Defines which VirtualSpoutHandler implementation to use. Should be a fully qualified class path that implements the VirtualSpoutHandler interface. | com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler
 
 ### Kafka
-Config Key | Type | Description | Default Value |
----------- | ---- | ----------- | ------------- |
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
 sideline_spout.consumer_id_prefix | String |  | Defines a consumerId prefix to use for all consumers created by the spout. This must be unique to your spout instance, and must not change between deploys. | 
 sideline_spout.deserializer.class | String |  | Defines which Deserializer (Schema?) implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | 
 sideline_spout.kafka.brokers | List |  | Holds a list of Kafka Broker hostnames + ports in the following format: ["broker1:9092", "broker2:9092", ...] | 
 sideline_spout.kafka.topic | String |  | Defines which Kafka topic we will consume messages from. | 
 
 ### Persistence
-Config Key | Type | Description | Default Value |
----------- | ---- | ----------- | ------------- |
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
 sideline_spout.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
 
 ### Zookeeper Persistence
-Config Key | Type | Description | Default Value |
----------- | ---- | ----------- | ------------- |
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
 sideline_spout.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 6000
 sideline_spout.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 10
 sideline_spout.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 10

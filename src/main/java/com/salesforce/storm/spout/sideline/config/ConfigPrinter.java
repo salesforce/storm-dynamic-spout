@@ -128,8 +128,8 @@ public class ConfigPrinter {
                 readmePrintWriter.println("### " + category.toString());
             }
 
-            readmePrintWriter.println("Config Key | Type | Description | Default Value |");
-            readmePrintWriter.println("---------- | ---- | ----------- | ------------- |");
+            readmePrintWriter.println("Config Key | Type | Required | Description | Default Value |");
+            readmePrintWriter.println("---------- | ---- | -------- | ----------- | ------------- |");
 
             Collections.sort(lines.get(category));
 
