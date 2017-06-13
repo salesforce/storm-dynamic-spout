@@ -43,7 +43,7 @@ public class SidelineSpout extends DynamicSpout {
      * @param spoutConfig Supplied configuration.
      * @return Resulting configuration.
      */
-    private static Map<String, Object> modifyConfig(Map<String, Object> config) {
+    private static Map<String, Object> modifyConfig(Map<String, Object> spoutConfig) {
         Map<String, Object> config = Maps.newHashMap();
         // Start by making a copy of our existing configuration map
         config.putAll(spoutConfig);
