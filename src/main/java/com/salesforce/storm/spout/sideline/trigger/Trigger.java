@@ -27,9 +27,24 @@ package com.salesforce.storm.spout.sideline.trigger;
 import java.io.Serializable;
 import java.util.Map;
 
+/**
+ * A sideline trigger starts and stops sidelines, this is a base interface for functionality common between the
+ * StartingTrigger and StoppingTrigger interfaces.
+ */
 public interface Trigger extends Serializable {
 
-    default void open(Map config) {}
+    /**
+     * Open the trigger.
+     * @param spoutConfig Spout configuration.
+     */
+    default void open(Map spoutConfig) {
 
-    default void close() {}
+    }
+
+    /**
+     * Close the trigger.
+     */
+    default void close() {
+
+    }
 }

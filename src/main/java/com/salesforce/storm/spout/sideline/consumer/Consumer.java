@@ -87,6 +87,7 @@ public interface Consumer {
 
     // The following methods are likely to be removed in future refactorings.
     void removeConsumerState();
+
     PersistenceAdapter getPersistenceAdapter();
 
     // Maybe the logic in VSpout that needs this can be refactored within KafkaConsumer?
