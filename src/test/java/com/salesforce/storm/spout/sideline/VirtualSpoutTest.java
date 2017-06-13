@@ -101,7 +101,7 @@ public class VirtualSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(expectedTopologyConfig);
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(expectedTopologyConfig, mockTopologyContext, factoryManager, null, null);
+        VirtualSpout virtualSpout = new VirtualSpout(new DefaultVirtualSpoutIdentifier("MyConsumerId"), expectedTopologyConfig, mockTopologyContext, factoryManager, null, null);
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
@@ -138,7 +138,7 @@ public class VirtualSpoutTest {
         final FactoryManager factoryManager = new FactoryManager(expectedTopologyConfig);
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(expectedTopologyConfig, mockTopologyContext, factoryManager, null, null);
+        VirtualSpout virtualSpout = new VirtualSpout(new DefaultVirtualSpoutIdentifier("MyConsumerId"), expectedTopologyConfig, mockTopologyContext, factoryManager, null, null);
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
@@ -168,10 +168,7 @@ public class VirtualSpoutTest {
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
 
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(config, new MockTopologyContext(), new FactoryManager(config), null, null);
-
-        // Set it
-        virtualSpout.setVirtualSpoutId(expectedConsumerId);
+        VirtualSpout virtualSpout = new VirtualSpout(expectedConsumerId, config, new MockTopologyContext(), new FactoryManager(config), null, null);
 
         // Verify it
         assertEquals("Got expected consumer id", expectedConsumerId, virtualSpout.getVirtualSpoutId());
@@ -184,7 +181,7 @@ public class VirtualSpoutTest {
     public void testSetAndGetStopRequested() {
         Map<String, Object> config = getDefaultConfig();
         // Create spout
-        VirtualSpout virtualSpout = new VirtualSpout(config, new MockTopologyContext(), new FactoryManager(config), null, null);
+        VirtualSpout virtualSpout = new VirtualSpout(new DefaultVirtualSpoutIdentifier("MyConsumerId"), config, new MockTopologyContext(), new FactoryManager(config), null, null);
 
         // Should default to false
         assertFalse("Should default to false", virtualSpout.isStopRequested());
@@ -216,8 +213,7 @@ public class VirtualSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Create spout
-        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, null, null);
-        virtualSpout.setVirtualSpoutId(virtualSpoutIdentifier);
+        final VirtualSpout virtualSpout = new VirtualSpout(virtualSpoutIdentifier, topologyConfig, mockTopologyContext, factoryManager, null, null);
 
         // Call it once.
         virtualSpout.open();
@@ -258,8 +254,7 @@ public class VirtualSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
         // Create spout
-        final VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, null, null);
-        virtualSpout.setVirtualSpoutId(virtualSpoutIdentifier);
+        final VirtualSpout virtualSpout = new VirtualSpout(virtualSpoutIdentifier, topologyConfig, mockTopologyContext, mockFactoryManager, null, null);
 
         // Call open
         virtualSpout.open();
@@ -300,8 +295,7 @@ public class VirtualSpoutTest {
         when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord);
 
         // Create spout & open
-        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, factoryManager, null, null);
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
+        VirtualSpout virtualSpout = new VirtualSpout(new DefaultVirtualSpoutIdentifier("MyConsumerId"), topologyConfig, mockTopologyContext, factoryManager, null, null);
         virtualSpout.open();
 
         // Call nextTuple()
@@ -338,8 +332,7 @@ public class VirtualSpoutTest {
         when(mockConsumer.nextRecord()).thenReturn(null);
 
         // Create spout & open
-        VirtualSpout virtualSpout = new VirtualSpout(topologyConfig, mockTopologyContext, mockFactoryManager, null, null);
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
+        VirtualSpout virtualSpout = new VirtualSpout(new DefaultVirtualSpoutIdentifier("MyConsumerId"), topologyConfig, mockTopologyContext, mockFactoryManager, null, null);
         virtualSpout.open();
 
         // Call nextTuple()
@@ -385,6 +378,7 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
+            expectedConsumerId,
             topologyConfig,
             mockTopologyContext,
             factoryManager,
@@ -392,7 +386,6 @@ public class VirtualSpoutTest {
             null
         );
         virtualSpout.getFilterChain().addStep(new SidelineRequestIdentifier("Foobar"), filterStep);
-        virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 
         // Call nextTuple()
@@ -440,13 +433,13 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
+            expectedConsumerId,
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 
         // Call nextTuple()
@@ -520,13 +513,13 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
+            expectedConsumerId,
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             endingState
         );
-        virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 
         // Call nextTuple(), this should return our entry BEFORE the ending offset
@@ -640,13 +633,13 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
+            expectedConsumerId,
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 
         // Call nextTuple()
@@ -738,13 +731,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -777,13 +770,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -814,13 +807,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with null, nothing should explode.
@@ -851,13 +844,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
@@ -891,13 +884,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Never called yet
@@ -935,13 +928,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Create our test MessageId
@@ -985,13 +978,13 @@ public class VirtualSpoutTest {
 
         // Create spout passing in ending state.
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             endingState
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate.
@@ -1027,13 +1020,13 @@ public class VirtualSpoutTest {
 
         // Create spout passing in ending state.
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             endingState
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate.
@@ -1069,13 +1062,13 @@ public class VirtualSpoutTest {
 
         // Create spout passing in ending state.
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             endingState
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate.
@@ -1113,13 +1106,13 @@ public class VirtualSpoutTest {
 
         // Create spout passing in ending state.
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             endingState
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Call our method & validate exception is thrown
@@ -1148,13 +1141,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         // Create our test MessageId
@@ -1193,13 +1186,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId));
         virtualSpout.open();
 
         // Mark sure is completed field is set to false before calling close
@@ -1253,13 +1246,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             startingState,
             null
         );
-        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId));
         virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
@@ -1305,14 +1298,13 @@ public class VirtualSpoutTest {
 
         // Create spout
         VirtualSpout virtualSpout = new VirtualSpout(
+            new SidelineVirtualSpoutIdentifier("MyConsumerId", new SidelineRequestIdentifier("main")),
             topologyConfig,
             mockTopologyContext,
             factoryManager,
             null,
             null
         );
-        // Only happens when we are on the fire hose, aka 'main'
-        virtualSpout.setVirtualSpoutId(new SidelineVirtualSpoutIdentifier("MyConsumerId", new SidelineRequestIdentifier("main")));
         virtualSpout.open();
 
         // Mark sure is completed field is set to true before calling close
@@ -1379,13 +1371,13 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
+            expectedConsumerId,
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(expectedConsumerId);
         virtualSpout.open();
 
         // Now call fail on this
@@ -1422,13 +1414,13 @@ public class VirtualSpoutTest {
 
         // Create spout & open
         VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
             null,
             null
         );
-        virtualSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("MyConsumerId"));
         virtualSpout.open();
 
         final ConsumerState expectedConsumerState = ConsumerState

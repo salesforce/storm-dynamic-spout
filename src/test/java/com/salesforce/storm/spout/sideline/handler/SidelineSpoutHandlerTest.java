@@ -75,7 +75,7 @@ public class SidelineSpoutHandlerTest {
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
     }
@@ -137,7 +137,7 @@ public class SidelineSpoutHandlerTest {
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Make sure we have a firehose
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
@@ -337,7 +337,7 @@ public class SidelineSpoutHandlerTest {
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getStartingTrigger());
         assertTrue(sidelineSpoutHandler.getStartingTrigger() instanceof NoopStartingStoppingTrigger);
@@ -471,7 +471,7 @@ public class SidelineSpoutHandlerTest {
         // Create our handler
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateVirtualSpoutId(expectedSidelineRequestIdentifier);
 
