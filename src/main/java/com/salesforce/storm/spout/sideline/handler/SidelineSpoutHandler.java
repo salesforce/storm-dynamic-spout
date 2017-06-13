@@ -105,7 +105,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
-            spout.getMetricsRecorder()
+            null,
+            null
         );
 
         // This isn't a sideline request, but just make something up anyhow, who cares!
@@ -322,7 +323,6 @@ public class SidelineSpoutHandler implements SpoutHandler {
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
-            spout.getMetricsRecorder(),
             startingState,
             endingState
         );
