@@ -108,6 +108,11 @@ public class DynamicSpout extends BaseRichSpout {
     private String outputStreamId = null;
 
     /**
+     * Whether or not the spout has been previously opened.
+     */
+    private boolean isOpen = false;
+
+    /**
      * Constructor to create our spout.
      * @TODO this method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
      *
@@ -131,6 +136,11 @@ public class DynamicSpout extends BaseRichSpout {
      */
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
+        if (isOpen) {
+            logger.warn("This spout has already been opened, cowardly refusing to open it again!");
+            return;
+        }
+
         // Save references.
         this.topologyConfig = topologyConfig;
         this.topologyContext = topologyContext;
@@ -170,6 +180,8 @@ public class DynamicSpout extends BaseRichSpout {
         spoutHandler = getFactoryManager().createSpoutHandler();
         spoutHandler.open(spoutConfig);
         spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
+
+        isOpen = true;
     }
 
     /**
@@ -231,6 +243,11 @@ public class DynamicSpout extends BaseRichSpout {
      */
     @Override
     public void close() {
+        if (!isOpen) {
+            logger.warn("This spout is not actually opened, cowardly refusing to try closing it!");
+            return;
+        }
+
         logger.info("Stopping the coordinator and closing all spouts");
 
         // Close coordinator
@@ -256,6 +273,8 @@ public class DynamicSpout extends BaseRichSpout {
             spoutHandler.close();
             spoutHandler = null;
         }
+
+        isOpen = false;
     }
 
     /**
