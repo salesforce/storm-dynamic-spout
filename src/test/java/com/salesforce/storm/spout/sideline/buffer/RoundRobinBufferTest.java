@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -78,7 +78,7 @@ public class RoundRobinBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer
         MessageBuffer messageBuffer = new RoundRobinBuffer();
@@ -179,7 +179,7 @@ public class RoundRobinBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
         RoundRobinBuffer messageBuffer = new RoundRobinBuffer();

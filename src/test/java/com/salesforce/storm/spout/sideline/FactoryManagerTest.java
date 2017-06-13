@@ -26,7 +26,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
@@ -83,7 +83,7 @@ public class FactoryManagerTest {
     public void testCreateNewDeserializerInstance_usingDefaultImpl() {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
+        config.put(SpoutConfig.DESERIALIZER_CLASS, "com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer");
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
@@ -136,7 +136,7 @@ public class FactoryManagerTest {
     public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
@@ -177,7 +177,7 @@ public class FactoryManagerTest {
     public void testCreateNewPersistenceAdapter_usingDefaultImpl() {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
@@ -230,7 +230,7 @@ public class FactoryManagerTest {
     public void testCreateNewMessageBuffer(final Class clazz) {
         // Try with UTF8 String deserializer
         Map config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
+        config.put(SpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances

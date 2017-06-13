@@ -27,13 +27,11 @@ package com.salesforce.storm.spout.sideline.trigger;
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 
 /**
- * An interface for a trigger that can stop sidelining.
+ * Noop starting/stopping trigger
  */
-public interface StoppingTrigger extends Trigger {
+public class NoopStartingStoppingTrigger implements StartingTrigger, StoppingTrigger {
 
-    /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
-     */
-    void setSidelineSpout(SpoutTriggerProxy spout);
+    public void setSidelineSpout(SpoutTriggerProxy spout) {
+        // Noop
+    }
 }

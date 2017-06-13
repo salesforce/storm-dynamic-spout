@@ -22,18 +22,66 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.storm.spout.sideline.trigger;
+package com.salesforce.storm.spout.sideline.config.annotation;
 
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * An interface for a trigger that can stop sidelining.
+ * Annotation for documenting spout configuration options.
  */
-public interface StoppingTrigger extends Trigger {
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Documentation {
 
     /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
+     * Enum of the categories for the configuration setting.
      */
-    void setSidelineSpout(SpoutTriggerProxy spout);
+    enum Category {
+        NONE(""),
+        SIDELINE("Sideline"),
+        KAFKA("Kafka"),
+        PERSISTENCE("Persistence"),
+        PERSISTENCE_ZOOKEEPER("Zookeeper Persistence");
+
+        private final String value;
+
+        Category(final String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
+    /**
+     * @return Description of the configuration setting.
+     */
+    String description() default "";
+
+    /**
+     * @return Whether or not the configuration setting is required.
+     */
+    boolean required() default false;
+
+    /**
+     * @return Category of the configuration setting.
+     */
+    Category category() default Category.NONE;
+
+    /**
+     * @return Type of the value for the configuration setting.
+     */
+    Class type() default DEFAULT.class;
+
+    /**
+     * Default class type for use on the type field.
+     */
+    final class DEFAULT {}
 }

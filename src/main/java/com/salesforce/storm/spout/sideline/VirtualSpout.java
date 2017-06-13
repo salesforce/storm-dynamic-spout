@@ -24,6 +24,7 @@
  */
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
@@ -31,10 +32,10 @@ import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
 import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,32 +126,41 @@ public class VirtualSpout implements DelegateSpout {
      */
     private final MetricsRecorder metricsRecorder;
 
+    /**
+     * Handler for callbacks at various stages of a virtual spout's lifecycle.
+     */
+    private VirtualSpoutHandler virtualSpoutHandler;
+
     // TEMP
     private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
     private final Map<String, Long> ackTimeBuckets = Maps.newHashMap();
 
     /**
      * Constructor.
-     * Use this constructor for your "FireHose" instance.  IE an instance that has no starting or ending state.
-     * @param spoutConfig - our topology config
-     * @param topologyContext - our topology context
-     * @param factoryManager - FactoryManager instance.
-     */
-    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
-        this(spoutConfig, topologyContext, factoryManager, metricsRecorder, null, null);
-    }
-
-    /**
-     * Constructor.
      * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
      * state.
-     * @param spoutConfig - our topology config
-     * @param topologyContext - our topology context
-     * @param factoryManager - FactoryManager instance.
-     * @param startingState - Where the underlying consumer should start from, Null if start from head.
-     * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
+     * @param virtualSpoutId Identifier for this VirtualSpout instance.
+     * @param spoutConfig Our topology config
+     * @param topologyContext Our topology context
+     * @param factoryManager FactoryManager instance.
+     * @param startingState Where the underlying consumer should start from, Null if start from head.
+     * @param endingState Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(
+        final VirtualSpoutIdentifier virtualSpoutId,
+        final Map<String, Object> spoutConfig,
+        final TopologyContext topologyContext,
+        final FactoryManager factoryManager,
+        final ConsumerState startingState,
+        final ConsumerState endingState
+    ) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(virtualSpoutId.toString()), "Consumer id cannot be null or empty!");
+        Preconditions.checkNotNull(spoutConfig, "Spout configuration cannot be null!");
+        Preconditions.checkNotNull(topologyContext, "Topology context cannot be null!");
+        Preconditions.checkNotNull(factoryManager, "Factory manager cannot be null!");
+
+        this.virtualSpoutId = virtualSpoutId;
+
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -161,21 +171,11 @@ public class VirtualSpout implements DelegateSpout {
         this.factoryManager = factoryManager;
 
         // Save metric recorder instance.
-        this.metricsRecorder = metricsRecorder;
+        this.metricsRecorder = factoryManager.createNewMetricsRecorder();
 
         // Save state
         this.startingState = startingState;
         this.endingState = endingState;
-    }
-
-    /**
-     * For testing only! Constructor used in testing to inject SidelineConsumer instance.
-     */
-    protected VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
-        this(spoutConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
-
-        // Inject the consumer.
-        this.consumer = consumer;
     }
 
     /**
@@ -218,6 +218,10 @@ public class VirtualSpout implements DelegateSpout {
         // Open consumer
         consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
+        virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
+        virtualSpoutHandler.open(spoutConfig);
+        virtualSpoutHandler.onVirtualSpoutOpen(this);
+
         // Temporary metric buckets.
         // TODO - convert to using proper metrics recorder?
         nextTupleTimeBuckets.put("failedRetry", 0L);
@@ -241,21 +245,11 @@ public class VirtualSpout implements DelegateSpout {
     public void close() {
         // If we've successfully completed processing
         if (isCompleted()) {
+            // Let our handler know that the virtual spout has been completed
+            virtualSpoutHandler.onVirtualSpoutCompletion(this);
+
             // We should clean up consumer state
             consumer.removeConsumerState();
-
-            // TODO: This should be moved out of here so that the vspout has no notion of a sideline request
-            final SidelineRequestIdentifier sidelineRequestIdentifier = ((SidelineVirtualSpoutIdentifier) getVirtualSpoutId()).getSidelineRequestIdentifier();
-
-            // Clean up sideline request
-            if (sidelineRequestIdentifier != null && startingState != null) { // TODO: Probably should find a better way to pull a list of partitions
-                for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
-                    consumer.getPersistenceAdapter().clearSidelineRequest(
-                        sidelineRequestIdentifier,
-                        consumerPartition.partition()
-                    );
-                }
-            }
         } else {
             // We are just closing up shop,
             // First flush our current consumer state.
@@ -264,6 +258,9 @@ public class VirtualSpout implements DelegateSpout {
         // Call close & null reference.
         consumer.close();
         consumer = null;
+
+        virtualSpoutHandler.onVirtualSpoutClose(this);
+        virtualSpoutHandler.close();
 
         startingState = null;
         endingState = null;
@@ -527,23 +524,20 @@ public class VirtualSpout implements DelegateSpout {
         return virtualSpoutId;
     }
 
-    /**
-     * Define the virtualSpoutId for this VirtualSpout.
-     * @param virtualSpoutId - The unique identifier for this consumer.
-     */
-    public void setVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
-        if (Strings.isNullOrEmpty(virtualSpoutId.toString())) {
-            throw new IllegalStateException("Consumer id cannot be null or empty! (" + virtualSpoutId + ")");
-        }
-        this.virtualSpoutId = virtualSpoutId;
-    }
-
     public FilterChain getFilterChain() {
         return filterChain;
     }
 
     public ConsumerState getCurrentState() {
         return consumer.getCurrentState();
+    }
+
+    public ConsumerState getStartingState() {
+        return startingState;
+    }
+
+    public ConsumerState getEndingState() {
+        return endingState;
     }
 
     @Override
@@ -569,10 +563,18 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Used in tests.
+     * Access the FactoryManager for creating various configurable classes.
      */
-    protected FactoryManager getFactoryManager() {
+    public FactoryManager getFactoryManager() {
         return factoryManager;
+    }
+
+    /**
+     * Get the consumer instance configured and used by the virtual spout.
+     * @return Consumer instance.
+     */
+    public Consumer getConsumer() {
+        return consumer;
     }
 
     /**

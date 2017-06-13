@@ -31,7 +31,7 @@ import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.PartitionOffsetsManager;
 import com.salesforce.storm.spout.sideline.consumer.Record;
@@ -179,8 +179,8 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
 
         // Build ConsumerConfig from spout Config
         // Construct SidelineConsumerConfig based on topology config.
-        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(SidelineSpoutConfig.KAFKA_BROKERS);
-        final String topic = (String) spoutConfig.get(SidelineSpoutConfig.KAFKA_TOPIC);
+        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(SpoutConfig.KAFKA_BROKERS);
+        final String topic = (String) spoutConfig.get(SpoutConfig.KAFKA_TOPIC);
 
         // TODO ConsumerConfig should use a VirtualSpoutIdentifier
         final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);

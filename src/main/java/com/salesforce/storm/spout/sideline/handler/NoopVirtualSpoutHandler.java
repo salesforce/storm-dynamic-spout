@@ -22,18 +22,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.storm.spout.sideline.trigger;
-
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
+package com.salesforce.storm.spout.sideline.handler;
 
 /**
- * An interface for a trigger that can stop sidelining.
+ * No-op Virtual Spout Handler, used by default to avoid null pointers.
  */
-public interface StoppingTrigger extends Trigger {
+public class NoopVirtualSpoutHandler implements VirtualSpoutHandler {
 
-    /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
-     */
-    void setSidelineSpout(SpoutTriggerProxy spout);
 }

@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.Record;
@@ -1239,7 +1239,7 @@ public class ConsumerTest {
         Map<String, Object> config = getDefaultConfig(topicName);
 
         // Set deserializer instance to our null deserializer
-        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
+        config.put(SpoutConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2227,15 +2227,15 @@ public class ConsumerTest {
      */
     private Map<String, Object> getDefaultConfig(final String topicName) {
         final Map<String, Object> defaultConfig = new HashMap<>();
-        defaultConfig.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-        defaultConfig.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        defaultConfig.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
-        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
-        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
-        defaultConfig.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
-        defaultConfig.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        defaultConfig.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        defaultConfig.put(SpoutConfig.KAFKA_TOPIC, topicName);
+        defaultConfig.put(SpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        defaultConfig.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
-        return SidelineSpoutConfig.setDefaults(defaultConfig);
+        return SpoutConfig.setDefaults(defaultConfig);
     }
 
     /**

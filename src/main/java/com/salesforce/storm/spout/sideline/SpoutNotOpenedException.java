@@ -22,18 +22,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.storm.spout.sideline.trigger;
+package com.salesforce.storm.spout.sideline;
 
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
+public class SpoutNotOpenedException extends RuntimeException {
 
-/**
- * An interface for a trigger that can stop sidelining.
- */
-public interface StoppingTrigger extends Trigger {
-
-    /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
-     */
-    void setSidelineSpout(SpoutTriggerProxy spout);
+    public SpoutNotOpenedException() {
+        super("Spout has not yet been opened!");
+    }
 }

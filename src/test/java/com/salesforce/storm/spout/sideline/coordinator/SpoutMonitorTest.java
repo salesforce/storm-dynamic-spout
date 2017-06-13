@@ -30,7 +30,7 @@ import com.google.common.collect.Queues;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
@@ -342,7 +342,7 @@ public class SpoutMonitorTest {
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -432,7 +432,7 @@ public class SpoutMonitorTest {
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConccurentInstances = (int) spoutMonitor.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -596,10 +596,10 @@ public class SpoutMonitorTest {
     }
 
     private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
-        final Map<String, Object> topologyConfig = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
-        topologyConfig.put(SidelineSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
-        topologyConfig.put(SidelineSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
-        topologyConfig.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);
+        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(Maps.newHashMap());
+        topologyConfig.put(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
+        topologyConfig.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
+        topologyConfig.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);
 
         return topologyConfig;
     }

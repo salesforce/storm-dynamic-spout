@@ -26,8 +26,10 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
@@ -59,6 +61,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +150,7 @@ public class SidelineSpoutTest {
     public void testMissingRequiredConfigurationConsumerIdPrefix() {
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(null, null);
-        config.remove(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        config.remove(SpoutConfig.CONSUMER_ID_PREFIX);
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -158,48 +161,10 @@ public class SidelineSpoutTest {
 
         // When we call open, we expect illegal state exception about our missing configuration item
         expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(SidelineSpoutConfig.CONSUMER_ID_PREFIX);
+        expectedException.expectMessage(SpoutConfig.CONSUMER_ID_PREFIX);
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);
-    }
-
-    /**
-     * Internal method, but we're gonna test it.  Make sure we generate virtual spout ids
-     * in consistent ways.
-     */
-    @Test
-    public void testGenerateVirtualSpoutId() {
-        final String expectedPrefix = "MyVirtualSpoutPrefix";
-
-        // Create our config missing the consumerIdPrefix
-        final Map<String, Object> config = getDefaultConfig(expectedPrefix, null);
-
-        // Setup our mock TopologyContext
-        final MockTopologyContext topologyContext = new MockTopologyContext();
-
-        // Mock output collector
-        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
-
-        // Create spout and call open
-        final SidelineSpout spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
-
-        // Now call our method with empty string
-        boolean threwException = false;
-        try {
-            VirtualSpoutIdentifier result = spout.generateVirtualSpoutId(new SidelineRequestIdentifier(""));
-        } catch (IllegalArgumentException e) {
-            threwException = true;
-        }
-        assertTrue("Should have thrown an IllegalArguementException", threwException);
-
-        // Call our method with a postfix
-        VirtualSpoutIdentifier result = spout.generateVirtualSpoutId(new SidelineRequestIdentifier("main"));
-        assertEquals("Should generate expected virtual spout it", result, new SidelineVirtualSpoutIdentifier(expectedPrefix, new SidelineRequestIdentifier("main")));
-
-        // Call close.
-        spout.close();
     }
 
     /**
@@ -229,7 +194,7 @@ public class SidelineSpoutTest {
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
         // Some mock storm topology stuff to get going
@@ -291,7 +256,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Configure to use our FailedTuplesFirstRetryManager retry manager.
-        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -397,14 +362,25 @@ public class SidelineSpoutTest {
         // Create a static trigger for being able to easily make start and stop requests.
         final StaticTrigger staticTrigger = new StaticTrigger();
 
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
+        final SidelineSpoutHandler sidelineSpoutHandlerSpy = Mockito.spy(sidelineSpoutHandler);
+        Mockito.when(sidelineSpoutHandlerSpy.createStartingTrigger()).thenReturn(staticTrigger);
+        Mockito.when(sidelineSpoutHandlerSpy.createStoppingTrigger()).thenReturn(staticTrigger);
+
+        final FactoryManager factoryManager = new FactoryManager(config);
+        final FactoryManager factoryManagerSpy = Mockito.spy(factoryManager);
+        Mockito.when(factoryManagerSpy.createSpoutHandler()).thenReturn(sidelineSpoutHandlerSpy);
+
         // Create our spout, add references to our static trigger, and call open().
         final SidelineSpout spout = new SidelineSpout(config);
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        final SidelineSpout spoutSpy = Mockito.spy(spout);
+        Mockito.when(spoutSpy.getFactoryManager()).thenReturn(factoryManagerSpy);
+
+        spoutSpy.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spoutSpy.getOutputStreamId());
 
         // Produce records into kafka
         List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(numberOfRecordsToPublish, 0);
@@ -414,16 +390,16 @@ public class SidelineSpoutTest {
         // take several calls to nextTuple() before the messages are pulled in from kafka behind the scenes and available
         // to be emitted.
         // Grab out the emissions so we can validate them.
-        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
+        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, numberOfRecordsToPublish);
 
         // Validate the tuples are what we published into kafka
         validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Lets ack our tuples, this should commit offsets 0 -> 2. (0,1,2)
-        ackTuples(spout, spoutEmissions);
+        ackTuples(spoutSpy, spoutEmissions);
 
         // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
+        assertEquals("Should have a single VirtualSpout instance", 1, spoutSpy.getCoordinator().getTotalSpouts());
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -439,46 +415,46 @@ public class SidelineSpoutTest {
         // We basically want the time that would normally pass before we check that there are no new tuples
         // Call next tuple, it should NOT receive any tuples because
         // all tuples are filtered.
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 3000L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 10, 3000L);
 
         // Send a stop sideline request
         staticTrigger.sendStopRequest(request);
 
         // We need to wait a bit for the sideline spout instance to spin up
-        waitForVirtualSpouts(spout, 2);
+        waitForVirtualSpouts(spoutSpy, 2);
 
         // Then ask the spout for tuples, we should get back the tuples that were produced while
         // sidelining was active.  These tuples should come from the VirtualSpout started by the Stop request.
-        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
+        spoutEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, numberOfRecordsToPublish);
 
         // We should validate these emissions
         validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":" + staticTrigger.getCurrentSidelineRequestIdentifier());
 
         // Call next tuple a few more times to be safe nothing else comes in.
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 10, 0L);
 
         // Validate that virtualsideline spouts are NOT closed out, but still waiting for unacked tuples.
         // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
-        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
+        assertEquals("We should have 2 virtual spouts running", 2, spoutSpy.getCoordinator().getTotalSpouts());
 
         // Lets ack our messages.
-        ackTuples(spout, spoutEmissions);
+        ackTuples(spoutSpy, spoutEmissions);
 
         // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
         // We need to wait for the monitor thread to run to clean it up.
-        waitForVirtualSpouts(spout, 1);
+        waitForVirtualSpouts(spoutSpy, 1);
 
         // Produce some more records, verify they come in the firehose.
         producedRecords = produceRecords(numberOfRecordsToPublish, 0);
 
         // Wait up to 5 seconds, our 'firehose' spout instance should pull these 3 records in when we call nextTuple().
-        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
+        spoutEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, numberOfRecordsToPublish);
 
         // Loop over what we produced into kafka and validate them
         validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Close out
-        spout.close();
+        spoutSpy.close();
     }
 
     /**
@@ -507,7 +483,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -610,7 +586,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -619,17 +595,28 @@ public class SidelineSpoutTest {
         // Create a static trigger for being able to easily make start and stop requests.
         StaticTrigger staticTrigger = new StaticTrigger();
 
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
+        final SidelineSpoutHandler sidelineSpoutHandlerSpy = Mockito.spy(sidelineSpoutHandler);
+        Mockito.when(sidelineSpoutHandlerSpy.createStartingTrigger()).thenReturn(staticTrigger);
+        Mockito.when(sidelineSpoutHandlerSpy.createStoppingTrigger()).thenReturn(staticTrigger);
+
+        final FactoryManager factoryManager = new FactoryManager(config);
+        final FactoryManager factoryManagerSpy = Mockito.spy(factoryManager);
+        Mockito.when(factoryManagerSpy.createSpoutHandler()).thenReturn(sidelineSpoutHandlerSpy);
+
         // Create our spout, add references to our static trigger, and call open().
         SidelineSpout spout = new SidelineSpout(config);
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        SidelineSpout spoutSpy = Mockito.spy(spout);
+        Mockito.when(spoutSpy.getFactoryManager()).thenReturn(factoryManagerSpy);
+
+        spoutSpy.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spoutSpy.getOutputStreamId());
 
         // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
-        final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 6);
+        final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, 6);
 
         // Validate its the messages we expected
         validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix + ":main", expectedStreamId);
@@ -641,11 +628,11 @@ public class SidelineSpoutTest {
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(5)));
+        ackTuples(spoutSpy, Lists.newArrayList(spoutEmissions.get(2)));
+        ackTuples(spoutSpy, Lists.newArrayList(spoutEmissions.get(0)));
+        ackTuples(spoutSpy, Lists.newArrayList(spoutEmissions.get(1)));
+        ackTuples(spoutSpy, Lists.newArrayList(spoutEmissions.get(3)));
+        ackTuples(spoutSpy, Lists.newArrayList(spoutEmissions.get(5)));
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -661,21 +648,21 @@ public class SidelineSpoutTest {
         List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 4 more times, we should get the remaining first 10 records because they were already buffered.
-        spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
+        spoutEmissions.addAll(consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, 4));
 
         // We'll validate them
         validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // But if we call nextTuple() 5 more times, we should never get the additional 5 records we produced.
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 5, 100L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 5, 100L);
 
         // Lets not ack any more tuples from the fire hose, that means the last completed
         // offset on the fire hose spout should still be 3.
 
         // Stop the spout.
         // A graceful shutdown of the spout should have the consumer state flushed to the persistence layer.
-        spout.close();
-        spout = null;
+        spoutSpy.close();
+        spoutSpy = null;
 
         // A little debug log
         logger.info("=== Starting spout again");
@@ -685,31 +672,29 @@ public class SidelineSpoutTest {
         topologyContext = new MockTopologyContext();
         spoutOutputCollector = new MockSpoutOutputCollector();
 
-        // Create a new static trigger for being able to easily make start and stop requests.
-        staticTrigger = new StaticTrigger();
-
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spoutSpy = Mockito.spy(spout);
+        Mockito.when(spoutSpy.getFactoryManager()).thenReturn(factoryManagerSpy);
+
+        spoutSpy.open(config, topologyContext, spoutOutputCollector);
 
         // Wait 3 seconds, then verify we have a single virtual spouts running
         Thread.sleep(3000L);
-        waitForVirtualSpouts(spout, 1);
+        waitForVirtualSpouts(spoutSpy, 1);
 
         // Call nextTuple() 20 times, we should get no tuples, last committed offset was 3, so this means we asked for
         // offsets [4,5,6,7,8,9,10,11,12,13,14] <- last committed offset now 14 on firehose.
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 20, 100L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 20, 100L);
 
         // Send a stop sideline request
         staticTrigger.sendStopRequest(request);
 
         // Verify 2 VirtualSpouts are running
-        waitForVirtualSpouts(spout, 2);
+        waitForVirtualSpouts(spoutSpy, 2);
 
         // Call nextTuple() 3 times
-        List<SpoutEmission> sidelinedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 3);
+        List<SpoutEmission> sidelinedEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, 3);
 
         // Verify we get offsets [4,5,6] by validating the tuples
         validateEmission(producedRecords.get(4), sidelinedEmissions.get(0), consumerIdPrefix + ":" + sidelineRequestIdentifier, expectedStreamId);
@@ -717,10 +702,10 @@ public class SidelineSpoutTest {
         validateEmission(producedRecords.get(6), sidelinedEmissions.get(2), consumerIdPrefix + ":" + sidelineRequestIdentifier, expectedStreamId);
 
         // Ack offsets [4,5,6] => committed offset should be 6 now on sideline consumer.
-        ackTuples(spout, sidelinedEmissions);
+        ackTuples(spoutSpy, sidelinedEmissions);
 
         // Shut down spout.
-        spout.close();
+        spoutSpy.close();
 
         // A little debug log
         logger.info("=== Starting spout again");
@@ -730,21 +715,19 @@ public class SidelineSpoutTest {
         topologyContext = new MockTopologyContext();
         spoutOutputCollector = new MockSpoutOutputCollector();
 
-        // Create a new static trigger for being able to easily make start and stop requests.
-        staticTrigger = new StaticTrigger();
-
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spoutSpy = Mockito.spy(spout);
+        Mockito.when(spoutSpy.getFactoryManager()).thenReturn(factoryManagerSpy);
+
+        spoutSpy.open(config, topologyContext, spoutOutputCollector);
 
         // Verify we have a 2 virtual spouts running
-        waitForVirtualSpouts(spout, 2);
+        waitForVirtualSpouts(spoutSpy, 2);
 
         // Since last committed offset should be 6,
         // Call nextTuple() 8 times to get offsets [7,8,9,10,11,12,13,14]
-        sidelinedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 8);
+        sidelinedEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, 8);
 
         // Verify we get offsets [7,8,9,10,11,12,13,14] by validating the tuples
         // Gather up the expected records
@@ -756,69 +739,68 @@ public class SidelineSpoutTest {
         validateTuplesFromSourceMessages(sidelineKafkaRecords, sidelinedEmissions, expectedStreamId, consumerIdPrefix + ":" + sidelineRequestIdentifier);
 
         // call nextTuple() several times, get nothing back
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 10, 0L);
 
         // Ack offsets [4,5,6,7,8,9,10,11,12,13,14] => committed offset should be 14 now on sideline consumer.
-        ackTuples(spout, sidelinedEmissions);
+        ackTuples(spoutSpy, sidelinedEmissions);
 
         // Verify 2nd VirtualSpout shuts off
-        waitForVirtualSpouts(spout, 1);
+        waitForVirtualSpouts(spoutSpy, 1);
         logger.info("=== Virtual Spout should be closed now... just fire hose left!");
 
         // Produce 5 messages into Kafka namespace with offsets [15,16,17,18,19]
         List<ProducedKafkaRecord<byte[], byte[]>> lastProducedRecords = produceRecords(5, 0);
 
         // Call nextTuple() 5 times,
-        List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 5);
+        List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, 5);
 
         // verify we get the tuples [15,16,17,18,19]
         validateTuplesFromSourceMessages(lastProducedRecords, lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Ack offsets [15,16,18] => Committed offset should be 16
-        ackTuples(spout, Lists.newArrayList(
+        ackTuples(spoutSpy, Lists.newArrayList(
             lastSpoutEmissions.get(0), lastSpoutEmissions.get(1), lastSpoutEmissions.get(3)
         ));
 
         // Verify no more tuples
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 10, 0L);
 
         // Stop spout
-        spout.close();
+        spoutSpy.close();
 
         // Create new spout instance and start.
         topologyContext = new MockTopologyContext();
         spoutOutputCollector = new MockSpoutOutputCollector();
 
-        // Create a new static trigger for being able to easily make start and stop requests.
-        staticTrigger = new StaticTrigger();
-
         // A little debug log
         logger.info("=== Starting spout for last time");
         logger.info("=== This last bit verifies that we don't resume finished sideline requests");
 
+
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
-        spout.setStartingTrigger(staticTrigger);
-        spout.setStoppingTrigger(staticTrigger);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spoutSpy = Mockito.spy(spout);
+        Mockito.when(spoutSpy.getFactoryManager()).thenReturn(factoryManagerSpy);
+
+        spoutSpy.open(config, topologyContext, spoutOutputCollector);
 
         // Verify we have a single 1 virtual spouts running,
         // This makes sure that we don't resume a previously completed sideline request.
         Thread.sleep(3000);
-        waitForVirtualSpouts(spout, 1);
+        waitForVirtualSpouts(spoutSpy, 1);
 
         // Call nextTuple() 3 times,
         // verify we get offsets [17,18,19]
-        lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 3);
+        lastSpoutEmissions = consumeTuplesFromSpout(spoutSpy, spoutOutputCollector, 3);
 
         // Validate we got the right offset [17,18,19]
         validateTuplesFromSourceMessages(lastProducedRecords.subList(2,5), lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
 
         // Verify no more tuples
-        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
+        validateNextTupleEmitsNothing(spoutSpy, spoutOutputCollector, 10, 0L);
 
         // Stop spout.
-        spout.close();
+        spoutSpy.close();
     }
 
     /**
@@ -873,7 +855,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -979,7 +961,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -1350,32 +1332,41 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun"+ System.currentTimeMillis();
 
-        final Map<String, Object> config = Maps.newHashMap();
-        config.put(SidelineSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
-        config.put(SidelineSpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
-        config.put(SidelineSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SidelineSpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SidelineSpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(SidelineSpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
-        config.put(SidelineSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+
+        config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
+        config.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+        config.put(SpoutConfig.KAFKA_TOPIC, topicName);
+        config.put(SpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
+        config.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
-        config.put(SidelineSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutMonitor thread to run every 1 second
-        config.put(SidelineSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second
-        config.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
+        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SidelineSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        config.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+
+        config.put(SpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
+
+        config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+
+        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, StaticTrigger.class.getName());
+
+        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, StaticTrigger.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SidelineSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
         return config;

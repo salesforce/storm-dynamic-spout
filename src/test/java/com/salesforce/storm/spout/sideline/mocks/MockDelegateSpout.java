@@ -30,8 +30,10 @@ import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
+import com.salesforce.storm.spout.sideline.consumer.MockConsumer;
 
 import java.util.Queue;
 import java.util.Set;
@@ -110,7 +112,17 @@ public class MockDelegateSpout implements DelegateSpout {
 
     @Override
     public ConsumerState getCurrentState() {
-        return ConsumerState.builder().build();
+        return getConsumer().getCurrentState();
+    }
+
+    @Override
+    public ConsumerState getStartingState() {
+        return MockConsumer.buildConsumerState(MockConsumer.partitions);
+    }
+
+    @Override
+    public ConsumerState getEndingState() {
+        return MockConsumer.buildConsumerState(MockConsumer.partitions);
     }
 
     @Override
@@ -121,5 +133,10 @@ public class MockDelegateSpout implements DelegateSpout {
     @Override
     public int getNumberOfFiltersApplied() {
         return 0;
+    }
+
+    @Override
+    public Consumer getConsumer() {
+        return new MockConsumer();
     }
 }

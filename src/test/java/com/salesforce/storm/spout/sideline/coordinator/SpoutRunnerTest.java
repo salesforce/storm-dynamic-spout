@@ -29,7 +29,7 @@ import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
@@ -652,8 +652,8 @@ public class SpoutRunnerTest {
     }
 
     private Map<String, Object> getDefaultConfig(long consumerStateFlushIntervalMs) {
-        final Map<String, Object> topologyConfig = SidelineSpoutConfig.setDefaults(Maps.newHashMap());
-        topologyConfig.put(SidelineSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, consumerStateFlushIntervalMs);
+        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(Maps.newHashMap());
+        topologyConfig.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, consumerStateFlushIntervalMs);
         return topologyConfig;
     }
 
