@@ -24,6 +24,7 @@
  */
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SidelineSpoutConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
@@ -44,9 +45,14 @@ public class SidelineSpout extends DynamicSpout {
      * @param config Supplied configuration.
      * @return Resulting configuration.
      */
-    private static Map<String, Object> modifyConfig(Map<String, Object> config) {
+    private static Map<String, Object> modifyConfig(Map<String, Object> _config) {
+        Map<String, Object> config = Maps.newHashMap();
+        // Start by making a copy of our existing configuration map
+        config.putAll(_config);
+        // Add our opinionated configuration items
         config.put(SidelineSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
         config.put(SidelineSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        // Return a copy of the config that cannot be modified.
         return Tools.immutableCopy(config);
     }
 

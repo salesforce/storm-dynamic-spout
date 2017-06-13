@@ -67,7 +67,8 @@ public interface DelegateSpout {
     VirtualSpoutIdentifier getVirtualSpoutId();
 
     /**
-     * Flush the state of the current spout.
+     * Flush the state of the current spout, usually this means persisting the spout's Consumer 'state' to the
+     * PersistenceAdapter.
      */
     void flushState();
 
