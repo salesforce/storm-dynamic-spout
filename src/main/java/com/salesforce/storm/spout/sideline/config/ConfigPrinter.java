@@ -111,10 +111,13 @@ public class ConfigPrinter {
                 String description = documentation.description();
                 String type = documentation.type().getSimpleName();
                 boolean required = documentation.required();
+                String defaultValue = String.valueOf(config.getOrDefault(configParam, ""));
+
+                builder.append(configParam).append(DELIMITER);
                 builder.append(type).append(DELIMITER);
                 builder.append(required ? "Required" : "").append(DELIMITER);
-                builder.append(config.get(configParam)).append(DELIMITER);
-                builder.append(description);
+                builder.append(description).append(DELIMITER);
+                builder.append(defaultValue);
 
                 lines.get(documentation.category()).add(builder.toString());
             }
