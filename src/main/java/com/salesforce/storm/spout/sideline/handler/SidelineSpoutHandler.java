@@ -35,6 +35,11 @@ public class SidelineSpoutHandler implements SpoutHandler {
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutHandler.class);
 
     /**
+     * Identifier for the firehose, or 'main' VirtualSpout instance.
+     */
+    private static final String MAIN_ID = "main";
+
+    /**
      * The Spout configuration map.
      */
     private Map<String, Object> spoutConfig;
@@ -109,7 +114,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         );
 
         // This isn't a sideline request, but just make something up anyhow, who cares!
-        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId(new SidelineRequestIdentifier("main")));
+        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId(new SidelineRequestIdentifier(MAIN_ID)));
 
         // Our main firehose spout instance.
         spout.addVirtualSpout(fireHoseSpout);
