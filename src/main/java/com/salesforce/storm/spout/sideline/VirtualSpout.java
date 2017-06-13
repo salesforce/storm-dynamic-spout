@@ -24,6 +24,7 @@
  */
 package com.salesforce.storm.spout.sideline;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
@@ -136,26 +137,30 @@ public class VirtualSpout implements DelegateSpout {
 
     /**
      * Constructor.
-     * Use this constructor for your "FireHose" instance.  IE an instance that has no starting or ending state.
-     * @param spoutConfig - our topology config
-     * @param topologyContext - our topology context
-     * @param factoryManager - FactoryManager instance.
-     */
-    public VirtualSpout(Map<String, Object> spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
-        this(spoutConfig, topologyContext, factoryManager, metricsRecorder, null, null);
-    }
-
-    /**
-     * Constructor.
      * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
      * state.
-     * @param spoutConfig - our topology config
-     * @param topologyContext - our topology context
-     * @param factoryManager - FactoryManager instance.
-     * @param startingState - Where the underlying consumer should start from, Null if start from head.
-     * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
+     * @param virtualSpoutId Identifier for this VirtualSpout instance.
+     * @param spoutConfig Our topology config
+     * @param topologyContext Our topology context
+     * @param factoryManager FactoryManager instance.
+     * @param startingState Where the underlying consumer should start from, Null if start from head.
+     * @param endingState Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSpout(Map<String, Object> spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(
+        final VirtualSpoutIdentifier virtualSpoutId,
+        final Map<String, Object> spoutConfig,
+        final TopologyContext topologyContext,
+        final FactoryManager factoryManager,
+        final ConsumerState startingState,
+        final ConsumerState endingState
+    ) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(virtualSpoutId.toString()), "Consumer id cannot be null or empty!");
+        Preconditions.checkNotNull(spoutConfig, "Spout configuration cannot be null!");
+        Preconditions.checkNotNull(topologyContext, "Topology context cannot be null!");
+        Preconditions.checkNotNull(factoryManager, "Factory manager cannot be null!");
+
+        this.virtualSpoutId = virtualSpoutId;
+
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -166,21 +171,11 @@ public class VirtualSpout implements DelegateSpout {
         this.factoryManager = factoryManager;
 
         // Save metric recorder instance.
-        this.metricsRecorder = metricsRecorder;
+        this.metricsRecorder = factoryManager.createNewMetricsRecorder();
 
         // Save state
         this.startingState = startingState;
         this.endingState = endingState;
-    }
-
-    /**
-     * For testing only! Constructor used in testing to inject SidelineConsumer instance.
-     */
-    protected VirtualSpout(Map<String, Object> spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
-        this(spoutConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
-
-        // Inject the consumer.
-        this.consumer = consumer;
     }
 
     /**
@@ -527,17 +522,6 @@ public class VirtualSpout implements DelegateSpout {
     @Override
     public VirtualSpoutIdentifier getVirtualSpoutId() {
         return virtualSpoutId;
-    }
-
-    /**
-     * Define the virtualSpoutId for this VirtualSpout.
-     * @param virtualSpoutId - The unique identifier for this consumer.
-     */
-    public void setVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
-        if (Strings.isNullOrEmpty(virtualSpoutId.toString())) {
-            throw new IllegalStateException("Consumer id cannot be null or empty! (" + virtualSpoutId + ")");
-        }
-        this.virtualSpoutId = virtualSpoutId;
     }
 
     public FilterChain getFilterChain() {

@@ -107,14 +107,13 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
+            generateVirtualSpoutId(new SidelineRequestIdentifier(MAIN_ID)),
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
-            spout.getMetricsRecorder()
+            null,
+            null
         );
-
-        // This isn't a sideline request, but just make something up anyhow, who cares!
-        fireHoseSpout.setVirtualSpoutId(generateVirtualSpoutId(new SidelineRequestIdentifier(MAIN_ID)));
 
         // Our main firehose spout instance.
         spout.addVirtualSpout(fireHoseSpout);
@@ -324,15 +323,13 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Create spout instance.
         final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutId,
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
-            spout.getMetricsRecorder(),
             startingState,
             endingState
         );
-
-        virtualSpout.setVirtualSpoutId(virtualSpoutId);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         virtualSpout.getFilterChain().addStep(id, step);

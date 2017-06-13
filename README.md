@@ -230,16 +230,17 @@ public class SimpleKafkaSpoutHandler implements SpoutHandler {
     @Override
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         // Create our main VirtualSpout that will consume off Kafka (note, you must have the Kafka Consumer configured)
-        VirtualSpout kafkaSpout = new VirtualSpout(
-            spout.getSpoutConfig(),
-            topologyContext,
-            spout.getFactoryManager(),
-            spout.getMetricsRecorder()
+        spout.addVirtualSpout(
+            new VirtualSpout(
+                // Unique identifier for this spout
+                new DefaultVirtualSpoutIdentifier("kafkaSpout"),
+                spout.getSpoutConfig(),
+                topologyContext,
+                spout.getFactoryManager(),
+                null, // Optional Starting ConsumerState
+                null // Optional Ending ConsumerState
+            )
         );
-        // Set a unique id that we can use to reference this VirtualSpout later
-        kafkaSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("kafkaSpout"));
-        // Add it to the DynamicSpout, the SpoutCoordinator will handle spinning it up and tracking it from here
-        spout.addVirtualSpout(kafkaSpout);
     }
 }
 ```

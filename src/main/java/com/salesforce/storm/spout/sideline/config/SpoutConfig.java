@@ -446,6 +446,10 @@ public class SpoutConfig {
             clonedConfig.put(CONSUMER_CLASS, Consumer.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_CLASS, clonedConfig.get(CONSUMER_CLASS));
         }
+        if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
+            clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+            logger.info("Unspecified configuration value for {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
+        }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
             logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));

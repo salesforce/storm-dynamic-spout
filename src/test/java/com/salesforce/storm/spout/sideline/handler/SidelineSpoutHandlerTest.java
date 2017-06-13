@@ -46,7 +46,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOpen() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -63,7 +63,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOnSpoutOpenCreatesFirehose() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -71,10 +71,11 @@ public class SidelineSpoutHandlerTest {
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
+        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
     }
@@ -84,7 +85,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOnSpoutOpenResumesSidelines() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
         config.put(SpoutConfig.KAFKA_TOPIC, "KafkaTopic");
 
@@ -129,13 +130,14 @@ public class SidelineSpoutHandlerTest {
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
+        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.doAnswer(addVirtualSpoutAnswer).when(spout).addVirtualSpout(
             Matchers.<VirtualSpout>any()
         );
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Make sure we have a firehose
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
@@ -321,7 +323,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOnSpoutClose() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
         config.put(SpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
         config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
@@ -331,10 +333,11 @@ public class SidelineSpoutHandlerTest {
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
+        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getStartingTrigger());
         assertTrue(sidelineSpoutHandler.getStartingTrigger() instanceof NoopStartingStoppingTrigger);
@@ -352,7 +355,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testCreateStartingTrigger() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -368,7 +371,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testNullCreateStartingTrigger() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -383,7 +386,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testMisconfiguredCreateStartingTrigger() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         // This is not a valid trigger!
         config.put(SpoutConfig.STARTING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
 
@@ -400,7 +403,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testCreateStoppingTrigger() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -416,7 +419,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testNullCreateStoppingTrigger() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -431,7 +434,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testMisconfiguredCreateStoppingTrigger() {
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         // This is not a valid trigger!
         config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
 
@@ -452,7 +455,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineRequestIdentifier expectedSidelineRequestIdentifier = new SidelineRequestIdentifier("SidelineRequestIdentifier");
 
         // Create our config, specify the consumer id because it will be used as a prefix
-        final Map<String, Object> config = new HashMap<>();
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.CONSUMER_ID_PREFIX, expectedPrefix);
 
         // Create a persistence adapter, this is called in the handler onSpoutOpen() method, we're just trying to avoid a NullPointer here
@@ -463,11 +466,12 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         // Again, trying to avoid NullPointer's here
         Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
+        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         // Create our handler
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
-        sidelineSpoutHandler.onSpoutOpen(spout, null, null);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateVirtualSpoutId(expectedSidelineRequestIdentifier);
 
