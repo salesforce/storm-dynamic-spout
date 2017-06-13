@@ -204,7 +204,45 @@ Timer | TIMERS.\<className\>.\<metricName\>
 Handlers are attached to the `DynamicSpout` and `VirtualSpout` and provide a way for interacting with the spout lifecycle without having to extend a base class.
 
 ### SpoutHandler
-Coming soon...
+The [`SpoutHandler`](src/main/java/com/salesforce/storm/spout/sideline/handler/SpoutHandler.java) is an interface which allows you to tie into the `DynamicSpout` lifecycle.  Without a class implementing this interface the `DynamicSpout` in and of itself is pretty worthless, as the `DynamicSpout` does not by itself know how to create `VirtualSpout` instances.  Your `SpoutHandler` implementation will be responsible for creating `VirtualSpout`'s and passing them back to the `DynamicSpout`'s coordinator.
+
+There are several methods on the `SpoutHandler` you can implement. There are no-op defaults provided so you do not have to implement any of them, but there are four in particular we're going to go into detail because they are critical for most `SpoutHandler` implementations.
+
+- `void open(Map<String, Object> spoutConfig)` - This method is functionally like the `SpoutHandler`'s constructor, it's called to setup the `SpoutHandler`. Just as `open()` exists on the `ISpout` interface in Storm to setup your spout, so this method is intended for setting up your `SpoutHandler`.
+- `void close()` - This method is similar to an `ISpout`'s `close()` method, it gets called when the `SpoutHandler` is torn down, and you can use it shut down any classes that you have used in the `SpoutHandler` as well as clean up any object references you have.
+- `void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext)` - This method is called after the `DynamicSpout` is opened, and with it you get the `DynamicSpout` instance to interact with.  It's here that you can do things like call `DynamicSpout.addVirtualSpout(VirtualSpout virtualSpout)` to add a new `VirtualSpout` instance into the `DynamicSpout`.
+- `void onSpoutClose()` - This method is called after `DynamicSpout` is closed, you can use it to perform shut down tasks when the `DynamicSpout` itself is closing.
+
+_It's important to note that `SpoutHandler` instance methods should be blocking since they are part of the startup and shutdown flow. Only perform asyncrhonous tasks if you are certain that other spout methods can be called without depending on your asyncrhonous tasks to complete._
+
+Here is a sample `SpoutHandler` that can be used in conjunction with the Kafka `Consumer` to read a Kafka topic:
+
+```java
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.DynamicSpout;
+import com.salesforce.storm.spout.sideline.VirtualSpout;
+import org.apache.storm.task.TopologyContext;
+
+import java.util.Map;
+
+public class SimpleKafkaSpoutHandler implements SpoutHandler {
+
+    @Override
+    public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
+        // Create our main VirtualSpout that will consume off Kafka (note, you must have the Kafka Consumer configured)
+        VirtualSpout kafkaSpout = new VirtualSpout(
+            spout.getSpoutConfig(),
+            topologyContext,
+            spout.getFactoryManager(),
+            spout.getMetricsRecorder()
+        );
+        // Set a unique id that we can use to reference this VirtualSpout later
+        kafkaSpout.setVirtualSpoutId(new DefaultVirtualSpoutIdentifier("kafkaSpout"));
+        // Add it to the DynamicSpout, the SpoutCoordinator will handle spinning it up and tracking it from here
+        spout.addVirtualSpout(kafkaSpout);
+    }
+}
+```
 
 ### VirtualSpoutHandler
 Coming soon...

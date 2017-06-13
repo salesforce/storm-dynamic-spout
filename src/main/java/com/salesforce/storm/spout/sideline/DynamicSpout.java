@@ -314,7 +314,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    private Map<String, Object> getSpoutConfig() {
+    public Map<String, Object> getSpoutConfig() {
         return spoutConfig;
     }
 
