@@ -347,10 +347,14 @@
                         <exclude>script/**</exclude>
                         <exclude>src/test/resources/**</exclude>
                         <exclude>src/main/resources/**</exclude>
+                        <exclude>src/main/resources/**</exclude>
+                        <!-- Whole bunch of stuff from CI lives in here that we shouldn't be checking for licenses -->
+                        <exclude>**/bamboo-configuration/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
                     <execution>
+                        <phase>compile</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
