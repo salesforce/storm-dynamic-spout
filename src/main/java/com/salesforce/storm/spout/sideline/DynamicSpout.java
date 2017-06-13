@@ -252,7 +252,7 @@ public class DynamicSpout extends BaseRichSpout {
         }
 
         if (spoutHandler != null) {
-            spoutHandler.onSpoutClose();
+            spoutHandler.onSpoutClose(this);
             spoutHandler.close();
             spoutHandler = null;
         }
@@ -265,7 +265,7 @@ public class DynamicSpout extends BaseRichSpout {
     public void activate() {
         logger.debug("Activating spout");
         if (spoutHandler != null) {
-            spoutHandler.onSpoutActivate();
+            spoutHandler.onSpoutActivate(this);
         }
     }
 
@@ -276,7 +276,7 @@ public class DynamicSpout extends BaseRichSpout {
     public void deactivate() {
         logger.debug("Deactivate spout");
         if (spoutHandler != null) {
-            spoutHandler.onSpoutDeactivate();
+            spoutHandler.onSpoutDeactivate(this);
         }
     }
 
@@ -314,7 +314,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    private Map<String, Object> getSpoutConfig() {
+    public Map<String, Object> getSpoutConfig() {
         return spoutConfig;
     }
 

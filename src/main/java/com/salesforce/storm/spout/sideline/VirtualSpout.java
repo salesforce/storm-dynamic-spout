@@ -141,7 +141,7 @@ public class VirtualSpout implements DelegateSpout {
      * @param topologyContext - our topology context
      * @param factoryManager - FactoryManager instance.
      */
-    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
+    public VirtualSpout(Map<String, Object> spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder) {
         this(spoutConfig, topologyContext, factoryManager, metricsRecorder, null, null);
     }
 
@@ -155,7 +155,7 @@ public class VirtualSpout implements DelegateSpout {
      * @param startingState - Where the underlying consumer should start from, Null if start from head.
      * @param endingState - Where the underlying consumer should stop processing.  Null if process forever.
      */
-    public VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
+    public VirtualSpout(Map<String, Object> spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, ConsumerState startingState, ConsumerState endingState) {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
@@ -176,7 +176,7 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * For testing only! Constructor used in testing to inject SidelineConsumer instance.
      */
-    protected VirtualSpout(Map spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
+    protected VirtualSpout(Map<String, Object> spoutConfig, TopologyContext topologyContext, FactoryManager factoryManager, MetricsRecorder metricsRecorder, Consumer consumer, ConsumerState startingState, ConsumerState endingState) {
         this(spoutConfig, topologyContext, factoryManager, metricsRecorder, startingState, endingState);
 
         // Inject the consumer.
