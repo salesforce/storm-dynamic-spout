@@ -25,6 +25,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import org.slf4j.Logger;
@@ -37,16 +38,19 @@ import java.util.Map;
  */
 public class SidelineSpout extends DynamicSpout {
 
-    private static final Logger logger = LoggerFactory.getLogger(SidelineSpout.class);
-
     /**
      * Used to overload and modify settings before passing them to the constructor.
-     * @param config Supplied configuration.
+     * @param spoutConfig Supplied configuration.
      * @return Resulting configuration.
      */
     private static Map<String, Object> modifyConfig(Map<String, Object> config) {
+        Map<String, Object> config = Maps.newHashMap();
+        // Start by making a copy of our existing configuration map
+        config.putAll(spoutConfig);
+        // Add our opinionated configuration items
         config.put(SpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
         config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        // Return a copy of the config that cannot be modified.
         return Tools.immutableCopy(config);
     }
 
@@ -54,6 +58,7 @@ public class SidelineSpout extends DynamicSpout {
      * Spout that supports sidelining messages by filters.
      * @param config Spout configuration.
      */
+    @SuppressWarnings("unchecked")
     public SidelineSpout(Map config) {
         super(modifyConfig(config));
     }
