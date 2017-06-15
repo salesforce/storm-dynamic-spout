@@ -26,7 +26,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.sideline.config.KafkaConsumerConfig;
+import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;

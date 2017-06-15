@@ -24,6 +24,8 @@
  */
 package com.salesforce.storm.spout.sideline.kafka;
 
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
+import com.salesforce.storm.spout.sideline.config.annotation.Documentation;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.util.List;
@@ -31,10 +33,83 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
- * Wrapper around Kafka's Consumer Config to abstract it and enforce some requirements.
- * TODO: should probably be immutable and use the builder pattern.
+ * Configuration items for Kafka consumer.
  */
-public class ConsumerConfig {
+public class KafkaConsumerConfig {
+///////////////////////////////////
+// Kafka Consumer Config Keys
+///////////////////////////////////
+
+    /**
+     * (String) Defines which Deserializer (Schema?) implementation to use.
+     * Should be a full classpath to a class that implements the Deserializer interface.
+     */
+    @Documentation(
+        category = Documentation.Category.KAFKA,
+        description = "Defines which Deserializer (Schema?) implementation to use. "
+            + "Should be a full classpath to a class that implements the Deserializer interface.",
+        type = String.class
+    )
+    public static final String DESERIALIZER_CLASS = "spout.kafka.deserializer.class";
+
+    /**
+     * (String) Defines which Kafka topic we will consume messages from.
+     */
+    @Documentation(
+        category = Documentation.Category.KAFKA,
+        description = "Defines which Kafka topic we will consume messages from.",
+        type = String.class
+    )
+    public static final String KAFKA_TOPIC = "spout.kafka.topic";
+
+    /**
+     * (List<String>) Holds a list of Kafka Broker hostnames + ports in the following format:
+     * ["broker1:9092", "broker2:9092", ...]
+     */
+    @Documentation(
+        category = Documentation.Category.KAFKA,
+        description = "Holds a list of Kafka Broker hostnames + ports in the following format: "
+            + "[\"broker1:9092\", \"broker2:9092\", ...]",
+        type = List.class
+    )
+    public static final String KAFKA_BROKERS = "spout.kafka.brokers";
+
+    // TODO: Alias for VSpoutIdPrefix?
+    /**
+     * (String) Defines a consumerId prefix to use for all consumers created by the spout.
+     * This must be unique to your spout instance, and must not change between deploys.
+     */
+    @Documentation(
+        category = Documentation.Category.KAFKA,
+        description = "Defines a consumerId prefix to use for all consumers created by the spout. "
+            + "This must be unique to your spout instance, and must not change between deploys.",
+        type = String.class
+    )
+    public static final String CONSUMER_ID_PREFIX = SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
+
+    /**
+     * (Boolean) TODO
+     */
+    @Documentation(
+        category = Documentation.Category.KAFKA,
+        description = "todo.",
+        type = Boolean.class
+    )
+    public static final String CONSUMER_STATE_AUTOCOMMIT = "spout.kafka.autocommit";
+
+    /**
+     * (Boolean) TODO
+     */
+    @Documentation(
+        category = Documentation.Category.KAFKA,
+        description = "todo.",
+        type = Long.class
+    )
+    public static final String CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS = "spout.kafka.autocommit_interval_ms";
+
+///////////////////////////////////
+// Kafka Consumer Config Class
+///////////////////////////////////
 
     private final Properties kafkaConsumerProperties = new Properties();
     private final String topic;
@@ -59,14 +134,14 @@ public class ConsumerConfig {
      * @param consumerId - What consumerId the consumer should use.
      * @param topic - What namespace the consumer should consume from.
      */
-    public ConsumerConfig(final List<String> brokerHosts, final String consumerId, final String topic) {
+    public KafkaConsumerConfig(final List<String> brokerHosts, final String consumerId, final String topic) {
         this.topic = topic;
         this.consumerId = consumerId;
 
         // Convert list to string
         final String brokerHostsStr = brokerHosts.stream()
-                .map(String::toString)
-                .collect(Collectors.joining(","));
+            .map(String::toString)
+            .collect(Collectors.joining(","));
 
         // Autocommit is disabled, we handle offset tracking.
         setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");

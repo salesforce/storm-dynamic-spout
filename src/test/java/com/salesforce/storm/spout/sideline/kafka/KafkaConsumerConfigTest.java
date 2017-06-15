@@ -35,7 +35,7 @@ import static org.junit.Assert.assertFalse;
 /**
  *
  */
-public class ConsumerConfigTest {
+public class KafkaConsumerConfigTest {
 
     /**
      * Validates that we have some sane default settings.
@@ -49,7 +49,7 @@ public class ConsumerConfigTest {
         final String topic = "myTopic";
 
         // Create config
-        final ConsumerConfig config = new ConsumerConfig(brokerHosts, consumerId, topic);
+        final KafkaConsumerConfig config = new KafkaConsumerConfig(brokerHosts, consumerId, topic);
 
         // now do validation on constructor arguments
         assertEquals("Topic set", topic, config.getTopic());

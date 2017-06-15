@@ -25,7 +25,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
-import com.salesforce.storm.spout.sideline.config.KafkaConsumerConfig;
+import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
@@ -42,7 +42,6 @@ import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapt
 import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
-import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;

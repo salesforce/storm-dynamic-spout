@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.KafkaConsumerConfig;
+import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;

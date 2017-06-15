@@ -31,7 +31,6 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
@@ -54,7 +53,6 @@ import com.google.common.base.Charsets;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -185,7 +183,7 @@ public class ConsumerTest {
         assertNotNull("Config is not null", consumer.getConsumerConfig());
 
         // Deeper validation of generated ConsumerConfig
-        final ConsumerConfig foundConsumerConfig = consumer.getConsumerConfig();
+        final KafkaConsumerConfig foundConsumerConfig = consumer.getConsumerConfig();
         assertEquals("ConsumerIdSet as expected", virtualSpoutIdentifier.toString(), foundConsumerConfig.getConsumerId());
         assertEquals("Topic set correctly", topicName, foundConsumerConfig.getTopic());
         assertEquals("KafkaBrokers set correctly", expectedKafkaBrokers, foundConsumerConfig.getKafkaConsumerProperties().getProperty(BOOTSTRAP_SERVERS_CONFIG));
@@ -259,18 +257,15 @@ public class ConsumerTest {
      * This test is disabled because we have no way exposed to set this property anymore.
      */
     @Test
-    @Ignore
     public void testTimedFlushConsumerState() throws InterruptedException {
         final String expectedConsumerId = "MyConsumerId";
 
         // Setup our config
         final Map<String, Object> config = getDefaultConfig();
 
-        // TODO - We used to be able to set this, but its not accessible anymore.
         // Enable auto commit and Set timeout to 1 second.
-        // ConsumerConfig consumerConfig = new ConsumerConfig();
-        //consumerConfig.setConsumerStateAutoCommit(true);
-        //consumerConfig.setConsumerStateAutoCommitIntervalMs(1000);
+        config.put(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT, true);
+        config.put(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS, 1000L);
 
         // Create mock persistence manager so we can determine if it was called
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
