@@ -28,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.FactoryManager;
+import com.salesforce.storm.spout.sideline.config.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
@@ -179,8 +180,8 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
 
         // Build ConsumerConfig from spout Config
         // Construct SidelineConsumerConfig based on topology config.
-        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(SpoutConfig.KAFKA_BROKERS);
-        final String topic = (String) spoutConfig.get(SpoutConfig.KAFKA_TOPIC);
+        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
+        final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
 
         // TODO ConsumerConfig should use a VirtualSpoutIdentifier
         final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);
@@ -194,7 +195,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
         );
 
         // Create deserializer.
-        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewDeserializerInstance();
+        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewInstance((String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS));
 
         // Save references
         this.consumerConfig = consumerConfig;

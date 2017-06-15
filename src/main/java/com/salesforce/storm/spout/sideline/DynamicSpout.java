@@ -35,10 +35,12 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -232,7 +234,24 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // Handles both explicitly defined and default stream definitions.
-        declarer.declareStream(getOutputStreamId(), factoryManager.createNewDeserializerInstance().getOutputFields());
+        final String streamId = getOutputStreamId();
+
+        // Construct fields from config
+        final Object fieldsCfgValue = getSpoutConfigItem(SpoutConfig.OUTPUT_FIELDS);
+        final Fields fields;
+        if (fieldsCfgValue instanceof String) {
+            // Comma separated
+            fields = new Fields(((String) fieldsCfgValue).split(","));
+        } else if (fieldsCfgValue instanceof Fields) {
+            fields = (Fields) fieldsCfgValue;
+        } else {
+            // Handle errors
+            // TODO clean this up.
+            throw new RuntimeException("Invalid configuration value blahb lah");
+        }
+
+        logger.debug("Declaring stream name {} with fields {}", streamId, fields);
+        declarer.declareStream(streamId, fields);
     }
 
     /**

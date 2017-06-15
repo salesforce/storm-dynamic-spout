@@ -26,6 +26,7 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.config.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
@@ -1145,6 +1146,9 @@ public class SidelineSpoutTest {
         // Create config with null stream id config option.
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
 
+        // Define our output fields as key and value.
+        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
+
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but don't call open
@@ -1173,6 +1177,9 @@ public class SidelineSpoutTest {
     public void testDeclareOutputFields_with_stream() {
         final String streamId = "foobar";
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
+
+        // Define our output fields as key and value.
+        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
@@ -1334,12 +1341,15 @@ public class SidelineSpoutTest {
 
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
+        // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
-        config.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+        config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
+        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
+        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+
+        // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.KAFKA_TOPIC, topicName);
-        config.put(SpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
         config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
