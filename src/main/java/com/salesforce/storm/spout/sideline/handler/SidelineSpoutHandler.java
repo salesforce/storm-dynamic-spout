@@ -376,7 +376,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         );
 
         // Also prefixed with our configured prefix
-        final String prefix = (String) getSpoutConfig().get(SpoutConfig.CONSUMER_ID_PREFIX);
+        final String prefix = (String) getSpoutConfig().get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // return it
         return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);

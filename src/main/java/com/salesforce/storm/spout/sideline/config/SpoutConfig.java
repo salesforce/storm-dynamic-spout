@@ -79,23 +79,6 @@ public class SpoutConfig {
     public static final String CONSUMER_CLASS = "spout.consumer.class";
 
 ///////////////////////////////////
-// Kafka Consumer Config
-///////////////////////////////////
-
-    // TODO: should this be defined as a DynamicSpout config item?
-    /**
-     * (String) Defines a consumerId prefix to use for all consumers created by the spout.
-     * This must be unique to your spout instance, and must not change between deploys.
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "Defines a consumerId prefix to use for all consumers created by the spout. "
-            + "This must be unique to your spout instance, and must not change between deploys.",
-        type = String.class
-    )
-    public static final String CONSUMER_ID_PREFIX = "spout.kafka.consumer_id_prefix";
-
-///////////////////////////////////
 // Persistence Layer Config
 ///////////////////////////////////
 
@@ -338,6 +321,18 @@ public class SpoutConfig {
         type = Long.class
     )
     public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "spout.coordinator.consumer_state_flush_interval_ms";
+
+    // TODO: Category needs to change?
+    /**
+     * (String) Defines a consumerId prefix to use for all consumers created by the spout.
+     * This must be unique to your spout instance, and must not change between deploys.
+     */
+    @Documentation(
+        description = "Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. "
+            + "This must be unique to your spout instance, and must not change between deploys.",
+        type = String.class
+    )
+    public static final String VIRTUAL_SPOUT_ID_PREFIX = "spout.coordinator.virtual_spout_id_prefix";
 
     /**
      * (int) The size of the thread pool for running virtual spouts.

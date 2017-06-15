@@ -46,6 +46,7 @@ public class KafkaConsumerConfig {
     )
     public static final String KAFKA_BROKERS = "spout.kafka.brokers";
 
+    // TODO: Alias for VSpoutIdPrefix
     /**
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
      * This must be unique to your spout instance, and must not change between deploys.
@@ -56,5 +57,5 @@ public class KafkaConsumerConfig {
             + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
     )
-    public static final String CONSUMER_ID_PREFIX = "spout.kafka.consumer_id_prefix";
+    public static final String CONSUMER_ID_PREFIX = SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
 }

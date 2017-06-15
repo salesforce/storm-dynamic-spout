@@ -151,7 +151,7 @@ public class SidelineSpoutTest {
     public void testMissingRequiredConfigurationConsumerIdPrefix() {
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(null, null);
-        config.remove(SpoutConfig.CONSUMER_ID_PREFIX);
+        config.remove(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -162,7 +162,7 @@ public class SidelineSpoutTest {
 
         // When we call open, we expect illegal state exception about our missing configuration item
         expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(SpoutConfig.CONSUMER_ID_PREFIX);
+        expectedException.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);

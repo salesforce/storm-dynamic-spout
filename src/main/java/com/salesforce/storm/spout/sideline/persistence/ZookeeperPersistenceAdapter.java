@@ -79,7 +79,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         }
 
         // We append the consumerId onto the zkRootNode
-        final String consumerId = (String) spoutConfig.get(SpoutConfig.CONSUMER_ID_PREFIX);
+        final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Save this concatenated prefix
         this.zkRoot = zkRoot + "/" + consumerId;

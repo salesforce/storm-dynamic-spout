@@ -40,7 +40,6 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -142,8 +141,8 @@ public class DynamicSpout extends BaseRichSpout {
         this.outputCollector = spoutOutputCollector;
 
         // Ensure a consumer id prefix has been correctly set.
-        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SpoutConfig.CONSUMER_ID_PREFIX))) {
-            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.CONSUMER_ID_PREFIX);
+        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX))) {
+            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
         }
 
         // We do not use the getters for things like the metricsRecorder, persistenceAdapter and coordinator here
