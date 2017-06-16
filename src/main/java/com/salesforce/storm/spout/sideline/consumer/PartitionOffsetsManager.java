@@ -67,7 +67,11 @@ public class PartitionOffsetsManager {
      * @param offset The offset to begin tracking.
      */
     public void startOffset(final ConsumerPartition consumerPartition, final long offset) {
-        partitionStateManagers.get(consumerPartition).startOffset(offset);
+        if (!partitionStateManagers.containsKey(consumerPartition)) {
+            replaceEntry(consumerPartition, offset);
+        } else {
+            partitionStateManagers.get(consumerPartition).startOffset(offset);
+        }
     }
 
     /**
