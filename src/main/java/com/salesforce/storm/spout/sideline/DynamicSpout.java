@@ -244,9 +244,7 @@ public class DynamicSpout extends BaseRichSpout {
         } else if (fieldsCfgValue instanceof Fields) {
             fields = (Fields) fieldsCfgValue;
         } else {
-            // Handle errors
-            // TODO clean this up.
-            throw new RuntimeException("Invalid configuration value blahb lah");
+            throw new RuntimeException("Invalid configuration value for spout output fields, perhaps this hasn't been configured yet?");
         }
 
         logger.debug("Declaring stream name {} with fields {}", streamId, fields);
