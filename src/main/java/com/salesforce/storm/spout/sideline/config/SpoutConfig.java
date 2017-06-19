@@ -350,7 +350,6 @@ public class SpoutConfig {
      * Default value: com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler
      */
     @Documentation(
-        category = Documentation.Category.SIDELINE,
         description = "Defines which SpoutHandler implementation to use. "
             + "Should be a fully qualified class path that implements the SpoutHandler interface.",
         type = String.class
@@ -363,7 +362,6 @@ public class SpoutConfig {
      * Default value: com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler
      */
     @Documentation(
-        category = Documentation.Category.SIDELINE,
         description = "Defines which VirtualSpoutHandler implementation to use. "
             + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
         type = String.class

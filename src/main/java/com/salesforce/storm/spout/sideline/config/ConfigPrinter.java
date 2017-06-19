@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.sideline.config;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.annotation.Documentation;
 import com.google.common.base.Preconditions;
+import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -66,11 +67,13 @@ public class ConfigPrinter {
         // delete this section if backup is not desired (that's what we have github for, right?)
         Path readmeBackupPath = Paths.get("README.md.bak");
         final File readmeBackupFile = readmeBackupPath.toFile();
+        /*
         if (readmeBackupFile.exists()) {
             System.out.println("The backup file exists and cannot be overwtitten.");
             System.out.println("Manually delete it first: " + readmeBackupFile.getAbsolutePath());
             return;
         }
+        */
 
         Files.copy(readmePath, readmeBackupPath);
 
@@ -89,7 +92,8 @@ public class ConfigPrinter {
                     configurationSectionFound = true;
                     readmePrintWriter.println(line);
                 } else if (CONFIGURATION_END_DELIMITER.equals(line)) {
-                    mergeConfigSection(readmePrintWriter);
+                    mergeConfigSection(SpoutConfig.class, SpoutConfig.setDefaults(Maps.newHashMap()), readmePrintWriter);
+                    mergeConfigSection(KafkaConsumerConfig.class, Maps.newHashMap(), readmePrintWriter);
                     insideConfigurationSection = false;
                     readmePrintWriter.println(line);
                 } else if (!insideConfigurationSection) {
@@ -110,19 +114,22 @@ public class ConfigPrinter {
      * @throws IllegalAccessException
      * @throws NoSuchFieldException
      */
-    private static void mergeConfigSection(PrintWriter readmePrintWriter) throws IllegalAccessException, NoSuchFieldException {
+    private static void mergeConfigSection(Class configClass, Map<String, Object> defaults, PrintWriter readmePrintWriter) throws IllegalAccessException, NoSuchFieldException {
         readmePrintWriter.println();
-
-        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         Map<Documentation.Category, List<String>> lines = new TreeMap<>();
 
-        Field[] fields = SpoutConfig.class.getDeclaredFields();
+        Field[] fields = configClass.getDeclaredFields();
 
         for (Field field : fields) {
             // Presumably our configuration field...
             if (field.getType() == String.class) {
-                final String configParam = (String) SpoutConfig.class.getField(field.getName()).get(SpoutConfig.class);
+                // Not a documented field, so let's skip over it
+                if (!field.isAnnotationPresent(Documentation.class)) {
+                    return;
+                }
+
+                final String configParam = (String) configClass.getField(field.getName()).get(configClass);
 
                 Documentation documentation = field.getAnnotation(Documentation.class);
 
@@ -135,7 +142,7 @@ public class ConfigPrinter {
                 String description = documentation.description();
                 String type = documentation.type().getSimpleName();
                 boolean required = documentation.required();
-                String defaultValue = String.valueOf(config.getOrDefault(configParam, ""));
+                String defaultValue = String.valueOf(defaults.getOrDefault(configParam, ""));
 
                 builder.append(configParam).append(DELIMITER);
                 builder.append(type).append(DELIMITER);
@@ -144,6 +151,8 @@ public class ConfigPrinter {
                 builder.append(defaultValue);
 
                 lines.get(documentation.category()).add(builder.toString());
+
+                System.out.println("Found lines " + lines);
             }
         }
 
