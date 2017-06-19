@@ -120,6 +120,17 @@ spout.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session tim
 
 
 
+### Kafka
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
+spout.coordinator.virtual_spout_id_prefix | String |  | Defines a consumerId prefix to use for all consumers created by the spout. This must be unique to your spout instance, and must not change between deploys. | 
+spout.kafka.autocommit | Boolean |  | todo. | 
+spout.kafka.autocommit_interval_ms | Long |  | todo. | 
+spout.kafka.brokers | List |  | Holds a list of Kafka Broker hostnames + ports in the following format: ["broker1:9092", "broker2:9092", ...] | 
+spout.kafka.deserializer.class | String |  | Defines which Deserializer (Schema?) implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | 
+spout.kafka.topic | String |  | Defines which Kafka topic we will consume messages from. | 
+
+
 [//]: <> (CONFIGURATION_END_DELIMITER)
 
 ## Components

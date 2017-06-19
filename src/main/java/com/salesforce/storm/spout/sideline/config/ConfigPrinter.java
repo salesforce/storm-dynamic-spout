@@ -67,13 +67,12 @@ public class ConfigPrinter {
         // delete this section if backup is not desired (that's what we have github for, right?)
         Path readmeBackupPath = Paths.get("README.md.bak");
         final File readmeBackupFile = readmeBackupPath.toFile();
-        /*
+
         if (readmeBackupFile.exists()) {
             System.out.println("The backup file exists and cannot be overwtitten.");
             System.out.println("Manually delete it first: " + readmeBackupFile.getAbsolutePath());
             return;
         }
-        */
 
         Files.copy(readmePath, readmeBackupPath);
 
@@ -126,7 +125,7 @@ public class ConfigPrinter {
             if (field.getType() == String.class) {
                 // Not a documented field, so let's skip over it
                 if (!field.isAnnotationPresent(Documentation.class)) {
-                    return;
+                    continue;
                 }
 
                 final String configParam = (String) configClass.getField(field.getName()).get(configClass);
