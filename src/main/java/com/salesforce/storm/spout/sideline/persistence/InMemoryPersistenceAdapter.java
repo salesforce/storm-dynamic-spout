@@ -35,12 +35,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * In memory persistence layer implementation. useful for tests.
  * NOT for production use as all state will be lost between JVM restarts.
  */
 public class InMemoryPersistenceAdapter implements PersistenceAdapter {
+
+    public static PersistConsumerStateCallback<String, Integer, Long> persistConsumerStateCallback = (consumerId, partitionId, offset) -> {};
+
     // "Persists" consumer state in memory.
     private Map<String, Long> storedConsumerState;
 
@@ -74,6 +78,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     @Override
     public void persistConsumerState(String consumerId, int partitionId, long offset) {
         storedConsumerState.put(getConsumerStateKey(consumerId, partitionId), offset);
+        persistConsumerStateCallback.apply(consumerId, partitionId, offset);
     }
 
     /**
@@ -177,5 +182,16 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
             result = 31 * result + partitionId;
             return result;
         }
+    }
+
+    /**
+     * Callback definition that can be used to hook into (and track) changes to state when testing.
+     * @param <String> consumerId
+     * @param <Integer> partitionId
+     * @param <Long> offset
+     */
+    @FunctionalInterface
+    public interface PersistConsumerStateCallback<String, Integer, Long> {
+        void apply(String consumerId, Integer partitionId, Long offset);
     }
 }
