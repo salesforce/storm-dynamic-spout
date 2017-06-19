@@ -32,6 +32,7 @@ import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
@@ -142,7 +143,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // Our main firehose spout instance.
         spout.addVirtualSpout(fireHoseSpout);
 
-        final String topic = (String) getSpoutConfig().get(SpoutConfig.KAFKA_TOPIC);
+        final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
 
         final List<SidelineRequestIdentifier> existingRequestIds = spout.getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
@@ -375,7 +376,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         );
 
         // Also prefixed with our configured prefix
-        final String prefix = (String) getSpoutConfig().get(SpoutConfig.CONSUMER_ID_PREFIX);
+        final String prefix = (String) getSpoutConfig().get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // return it
         return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);

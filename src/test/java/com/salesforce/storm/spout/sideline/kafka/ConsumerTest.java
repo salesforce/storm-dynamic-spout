@@ -53,7 +53,6 @@ import com.google.common.base.Charsets;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -184,7 +183,7 @@ public class ConsumerTest {
         assertNotNull("Config is not null", consumer.getConsumerConfig());
 
         // Deeper validation of generated ConsumerConfig
-        final ConsumerConfig foundConsumerConfig = consumer.getConsumerConfig();
+        final KafkaConsumerConfig foundConsumerConfig = consumer.getConsumerConfig();
         assertEquals("ConsumerIdSet as expected", virtualSpoutIdentifier.toString(), foundConsumerConfig.getConsumerId());
         assertEquals("Topic set correctly", topicName, foundConsumerConfig.getTopic());
         assertEquals("KafkaBrokers set correctly", expectedKafkaBrokers, foundConsumerConfig.getKafkaConsumerProperties().getProperty(BOOTSTRAP_SERVERS_CONFIG));
@@ -258,18 +257,15 @@ public class ConsumerTest {
      * This test is disabled because we have no way exposed to set this property anymore.
      */
     @Test
-    @Ignore
     public void testTimedFlushConsumerState() throws InterruptedException {
         final String expectedConsumerId = "MyConsumerId";
 
         // Setup our config
         final Map<String, Object> config = getDefaultConfig();
 
-        // TODO - We used to be able to set this, but its not accessible anymore.
         // Enable auto commit and Set timeout to 1 second.
-        // ConsumerConfig consumerConfig = new ConsumerConfig();
-        //consumerConfig.setConsumerStateAutoCommit(true);
-        //consumerConfig.setConsumerStateAutoCommitIntervalMs(1000);
+        config.put(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT, true);
+        config.put(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS, 1000L);
 
         // Create mock persistence manager so we can determine if it was called
         PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
@@ -1239,7 +1235,7 @@ public class ConsumerTest {
         Map<String, Object> config = getDefaultConfig(topicName);
 
         // Set deserializer instance to our null deserializer
-        config.put(SpoutConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
+        config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
 
         // Create our Persistence Manager
         PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2227,13 +2223,16 @@ public class ConsumerTest {
      */
     private Map<String, Object> getDefaultConfig(final String topicName) {
         final Map<String, Object> defaultConfig = new HashMap<>();
-        defaultConfig.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
-        defaultConfig.put(SpoutConfig.KAFKA_TOPIC, topicName);
-        defaultConfig.put(SpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+        // Kafka Consumer config items
+        defaultConfig.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName() + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort()));
+        defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
+        defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+        defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+
+        // Dynamic Spout config items
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
-        defaultConfig.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);
     }

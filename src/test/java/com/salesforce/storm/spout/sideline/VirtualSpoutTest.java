@@ -25,6 +25,7 @@
 package com.salesforce.storm.spout.sideline;
 
 import com.google.common.collect.Lists;
+import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.Record;
@@ -41,7 +42,6 @@ import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapt
 import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
-import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -1447,13 +1447,17 @@ public class VirtualSpoutTest {
      */
     private Map<String, Object> getDefaultConfig() {
         final Map<String, Object> defaultConfig = new HashMap<>();
-        defaultConfig.put(SpoutConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
-        defaultConfig.put(SpoutConfig.KAFKA_TOPIC, "MyTopic");
-        defaultConfig.put(SpoutConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+
+        // Kafka Consumer Config items
+        defaultConfig.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, "MyTopic");
+        defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");
+        defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
+
+        // DynamicSpout config items
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
-        defaultConfig.put(SpoutConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         defaultConfig.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);
@@ -1471,7 +1475,7 @@ public class VirtualSpoutTest {
             // Default to utf8
             deserializer = new Utf8StringDeserializer();
         }
-        when(factoryManager.createNewDeserializerInstance()).thenReturn(deserializer);
+        when(factoryManager.createNewInstance(eq(deserializer.getClass().getName()))).thenReturn(deserializer);
 
         // If a mocked failed msg retry manager isn't passed in
         if (retryManager == null) {

@@ -103,29 +103,6 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured deserializer.
-     */
-    public synchronized Deserializer createNewDeserializerInstance() {
-        if (deserializerClass == null) {
-            final String classStr = (String) spoutConfig.get(SpoutConfig.DESERIALIZER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.DESERIALIZER_CLASS);
-            }
-
-            try {
-                deserializerClass = (Class<? extends Deserializer>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return deserializerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * @return returns a new instance of the configured RetryManager.
      */
     public synchronized RetryManager createNewFailedMsgRetryManagerInstance() {
@@ -284,6 +261,15 @@ public class FactoryManager implements Serializable {
         try {
             return virtualSpoutHandlerClass.newInstance();
         } catch (IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public <T> T createNewInstance(String classStr) {
+        try {
+            Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);
+            return clazz.newInstance();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
         }
     }

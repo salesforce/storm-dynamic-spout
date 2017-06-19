@@ -52,6 +52,17 @@ public class SpoutConfig {
     )
     public static final String OUTPUT_STREAM_ID = "spout.output_stream_id";
 
+    /**
+     * (String) Defines the fields for the output stream in a comma separated list.
+     */
+    @Documentation(
+        description = "Defines the output fields that the spout will emit in a comma separated list",
+        type = String.class
+    )
+    public static final String OUTPUT_FIELDS = "spout.output_fields";
+
+
+
 ///////////////////////////////////
 // Consumer Config
 ///////////////////////////////////
@@ -66,56 +77,6 @@ public class SpoutConfig {
         type = String.class
     )
     public static final String CONSUMER_CLASS = "spout.consumer.class";
-
-///////////////////////////////////
-// Kafka Consumer Config
-///////////////////////////////////
-
-    /**
-     * (String) Defines which Deserializer (Schema?) implementation to use.
-     * Should be a full classpath to a class that implements the Deserializer interface.
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "Defines which Deserializer (Schema?) implementation to use. "
-            + "Should be a full classpath to a class that implements the Deserializer interface.",
-        type = String.class
-    )
-    public static final String DESERIALIZER_CLASS = "spout.kafka.deserializer.class";
-
-    /**
-     * (String) Defines which Kafka topic we will consume messages from.
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "Defines which Kafka topic we will consume messages from.",
-        type = String.class
-    )
-    public static final String KAFKA_TOPIC = "spout.kafka.topic";
-
-    /**
-     * (List<String>) Holds a list of Kafka Broker hostnames + ports in the following format:
-     * ["broker1:9092", "broker2:9092", ...]
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "Holds a list of Kafka Broker hostnames + ports in the following format: "
-            + "[\"broker1:9092\", \"broker2:9092\", ...]",
-        type = List.class
-    )
-    public static final String KAFKA_BROKERS = "spout.kafka.brokers";
-
-    /**
-     * (String) Defines a consumerId prefix to use for all consumers created by the spout.
-     * This must be unique to your spout instance, and must not change between deploys.
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "Defines a consumerId prefix to use for all consumers created by the spout. "
-            + "This must be unique to your spout instance, and must not change between deploys.",
-        type = String.class
-    )
-    public static final String CONSUMER_ID_PREFIX = "spout.kafka.consumer_id_prefix";
 
 ///////////////////////////////////
 // Persistence Layer Config
@@ -361,6 +322,18 @@ public class SpoutConfig {
     )
     public static final String CONSUMER_STATE_FLUSH_INTERVAL_MS = "spout.coordinator.consumer_state_flush_interval_ms";
 
+    // TODO: Category needs to change?
+    /**
+     * (String) Defines a consumerId prefix to use for all consumers created by the spout.
+     * This must be unique to your spout instance, and must not change between deploys.
+     */
+    @Documentation(
+        description = "Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. "
+            + "This must be unique to your spout instance, and must not change between deploys.",
+        type = String.class
+    )
+    public static final String VIRTUAL_SPOUT_ID_PREFIX = "spout.coordinator.virtual_spout_id_prefix";
+
     /**
      * (int) The size of the thread pool for running virtual spouts.
      * Default Value: 10
@@ -377,7 +350,6 @@ public class SpoutConfig {
      * Default value: com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler
      */
     @Documentation(
-        category = Documentation.Category.SIDELINE,
         description = "Defines which SpoutHandler implementation to use. "
             + "Should be a fully qualified class path that implements the SpoutHandler interface.",
         type = String.class
@@ -390,7 +362,6 @@ public class SpoutConfig {
      * Default value: com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler
      */
     @Documentation(
-        category = Documentation.Category.SIDELINE,
         description = "Defines which VirtualSpoutHandler implementation to use. "
             + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
         type = String.class

@@ -892,7 +892,7 @@ public class ZookeeperPersistenceAdapterTest {
         Map config = Maps.newHashMap();
         config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
-        config.put(SpoutConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
+        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
         return Tools.immutableCopy(SpoutConfig.setDefaults(config));
     }

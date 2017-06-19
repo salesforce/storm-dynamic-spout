@@ -31,7 +31,6 @@ import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.sideline.consumer.PartitionDistributor;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.consumer.PartitionOffsetsManager;
 import com.salesforce.storm.spout.sideline.consumer.Record;
@@ -86,13 +85,13 @@ import java.util.Set;
  *
  * Internally the consumer will recognize that 3 -> 5 are all complete, and now mark offset #5 as the last finished offset.
  */
-// TODO - rename this class
+// TODO - rename this class?
 public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Consumer {
     // For logging.
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
     // Kafka Consumer Instance and its Config.
-    private ConsumerConfig consumerConfig;
+    private KafkaConsumerConfig consumerConfig;
     private KafkaConsumer<byte[], byte[]> kafkaConsumer;
 
     /**
@@ -179,11 +178,11 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
 
         // Build ConsumerConfig from spout Config
         // Construct SidelineConsumerConfig based on topology config.
-        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(SpoutConfig.KAFKA_BROKERS);
-        final String topic = (String) spoutConfig.get(SpoutConfig.KAFKA_TOPIC);
+        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
+        final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
 
         // TODO ConsumerConfig should use a VirtualSpoutIdentifier
-        final ConsumerConfig consumerConfig = new ConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);
+        final KafkaConsumerConfig consumerConfig = new KafkaConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);
 
         // Use ConsumerPeerContext to setup how many instances we have.
         consumerConfig.setNumberOfConsumers(
@@ -193,8 +192,14 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             consumerPeerContext.getInstanceNumber()
         );
 
+        // Optionally set state autocommit properties
+        if (spoutConfig.containsKey(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT)) {
+            consumerConfig.setConsumerStateAutoCommit((Boolean) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT));
+            consumerConfig.setConsumerStateAutoCommitIntervalMs((Long) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS));
+        }
+
         // Create deserializer.
-        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewDeserializerInstance();
+        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewInstance((String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS));
 
         // Save references
         this.consumerConfig = consumerConfig;
@@ -506,7 +511,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     /**
      * @return The defined consumer config.
      */
-    ConsumerConfig getConsumerConfig() {
+    KafkaConsumerConfig getConsumerConfig() {
         return consumerConfig;
     }
 

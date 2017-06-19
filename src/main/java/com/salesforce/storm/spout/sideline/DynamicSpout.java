@@ -35,6 +35,7 @@ import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,8 +141,8 @@ public class DynamicSpout extends BaseRichSpout {
         this.outputCollector = spoutOutputCollector;
 
         // Ensure a consumer id prefix has been correctly set.
-        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SpoutConfig.CONSUMER_ID_PREFIX))) {
-            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.CONSUMER_ID_PREFIX);
+        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX))) {
+            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
         }
 
         // We do not use the getters for things like the metricsRecorder, persistenceAdapter and coordinator here
@@ -232,7 +233,22 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // Handles both explicitly defined and default stream definitions.
-        declarer.declareStream(getOutputStreamId(), factoryManager.createNewDeserializerInstance().getOutputFields());
+        final String streamId = getOutputStreamId();
+
+        // Construct fields from config
+        final Object fieldsCfgValue = getSpoutConfigItem(SpoutConfig.OUTPUT_FIELDS);
+        final Fields fields;
+        if (fieldsCfgValue instanceof String) {
+            // Comma separated
+            fields = new Fields(((String) fieldsCfgValue).split(","));
+        } else if (fieldsCfgValue instanceof Fields) {
+            fields = (Fields) fieldsCfgValue;
+        } else {
+            throw new RuntimeException("Invalid configuration value for spout output fields, perhaps this hasn't been configured yet?");
+        }
+
+        logger.debug("Declaring stream name {} with fields {}", streamId, fields);
+        declarer.declareStream(streamId, fields);
     }
 
     /**
