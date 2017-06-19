@@ -25,6 +25,8 @@
 package com.salesforce.storm.spout.sideline.consumer;
 
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +40,9 @@ import java.util.Set;
  * instance to track its own offset.
  */
 public class PartitionOffsetsManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(PartitionOffsetsManager.class);
+
     /**
      * Since offsets are managed on a per partition basis, each namespace/partition has its own ConsumerPartitionStateManagers
      * instance to track its own offset.  The state of these are what gets persisted via the ConsumerStateManager.
@@ -68,6 +73,7 @@ public class PartitionOffsetsManager {
      */
     public void startOffset(final ConsumerPartition consumerPartition, final long offset) {
         if (!partitionStateManagers.containsKey(consumerPartition)) {
+            logger.info("Attempted to start an offset without a consumer partition in the state mananger {} {}", consumerPartition, offset);
             replaceEntry(consumerPartition, offset);
         } else {
             partitionStateManagers.get(consumerPartition).startOffset(offset);
