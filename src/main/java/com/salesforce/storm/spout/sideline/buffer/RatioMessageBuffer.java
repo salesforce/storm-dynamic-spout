@@ -192,7 +192,15 @@ public class RatioMessageBuffer implements MessageBuffer {
         }
 
         public void addNewVirtualSpout(final VirtualSpoutIdentifier identifier, final boolean isThrottled) {
-            if (allIds.put(identifier, isThrottled)) {
+            if (!allIds.containsKey(identifier)) {
+                allIds.put(identifier, isThrottled);
+                recalculateOrdering();
+            }
+        }
+
+        public void removeVirtualSpout(final VirtualSpoutIdentifier identifier) {
+            if (allIds.containsKey(identifier)) {
+                allIds.remove(identifier);
                 recalculateOrdering();
             }
         }
@@ -201,31 +209,25 @@ public class RatioMessageBuffer implements MessageBuffer {
             // clear ordering
             order.clear();
 
-            // Create new ordering
+            // Create new ordering, probably a better way to do this...
             for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry: allIds.entrySet()) {
                 // If throttled
                 if (entry.getValue()) {
                     order.add(entry.getKey());
                 } else {
-                    // Add entries
+                    // Add entries at ratio
                     for (int x = 0; x < ratio; x++) {
                         order.add(entry.getKey());
                     }
                 }
             }
 
-            // create new iterator
+            // create new iterator that cycles endlessly
             consumerIdIterator = Iterators.cycle(order);
         }
 
         public VirtualSpoutIdentifier nextVirtualSpoutId() {
             return consumerIdIterator.next();
-        }
-
-        public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutId) {
-            if (allIds.remove(virtualSpoutId)) {
-                recalculateOrdering();
-            }
         }
     }
 }
