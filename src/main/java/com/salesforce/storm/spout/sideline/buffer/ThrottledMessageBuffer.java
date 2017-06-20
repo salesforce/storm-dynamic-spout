@@ -1,27 +1,3 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *
- * * Redistributions of source code must retain the above copyright notice, this list of conditions and the following
- *   disclaimer.
- *
- * * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
- *   disclaimer in the documentation and/or other materials provided with the distribution.
- *
- * * Neither the name of Salesforce.com nor the names of its contributors may be used to endorse or promote products
- *   derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 package com.salesforce.storm.spout.sideline.buffer;
 
 import com.google.common.collect.Maps;
@@ -37,64 +13,83 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * A round-robin implementation.  Each virtual spout has its own queue that gets added too.  A very chatty
- * virtual spout will not block/overrun less chatty ones.  {@link #poll()} will RR through all the available
- * queues to get the next msg.
- *
- * Internally we make use of BlockingQueues so that we can put an upper bound on the queue size.
- * Once a queue is full, any producer attempting to put more messages onto the queue will block and wait
- * for available space in the queue.  This acts to throttle producers of messages.
- * Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
- * This means consuming from the queue will always be fast.
- *
- * There may be some concurrency issues here that need to be addressed between add/remove virtualSpoutId, and poll().
+ * Prototype ThrottledMessageBuffer based on configurable BlockingQueue sizes based on VirtualSpoutIds.
  */
-public class RoundRobinBuffer implements MessageBuffer {
-    private static final Logger logger = LoggerFactory.getLogger(RoundRobinBuffer.class);
+public class ThrottledMessageBuffer implements MessageBuffer {
+    private static final Logger logger = LoggerFactory.getLogger(ThrottledMessageBuffer.class);
+
+    /**
+     * Config option for NON-throttled buffer size.
+     */
+    private static final String CONFIG_BUFFER_SIZE = SpoutConfig.TUPLE_BUFFER_MAX_SIZE;
+
+    /**
+     * Config option for throttled buffer size.
+     */
+    private static final String CONFIG_THROTTLE_BUFFER_SIZE = "spout.coordinator.tuple_buffer.throttled_buffer_size";
+
+    /**
+     * Config option to define a regex pattern to match against VirtualSpoutIds.  If a VirtualSpoutId
+     * matches this pattern, it will be throttled.
+     */
+    private static final String CONFIG_THROTTLE_REGEX_PATTERN = "spout.coordinator.tuple_buffer.throttled_spout_id_regex";
 
     /**
      * A Map of VirtualSpoutIds => Its own Blocking Queue.
      */
     private final Map<VirtualSpoutIdentifier, BlockingQueue<Message>> messageBuffer = new ConcurrentHashMap<>();
 
-    /**
-     * Defines the bounded size of our buffer PER VirtualSpout.
-     */
-    private int maxBufferSizePerVirtualSpout = 2000;
+    // Config values around buffer sizes.
+    private int maxBufferSize = 2000;
+    private int throttledBufferSize = 200;
+
+    // Match everything by default
+    private Pattern regexPattern = Pattern.compile(".*");
 
     /**
      * An iterator over the Keys in buffer.  Used to Round Robin through the VirtualSpouts.
      */
     private Iterator<VirtualSpoutIdentifier> consumerIdIterator = null;
 
-    public RoundRobinBuffer() {
+    public ThrottledMessageBuffer() {
     }
 
     /**
      * Helper method for creating a default instance.
      */
-    public static RoundRobinBuffer createDefaultInstance() {
+    public static ThrottledMessageBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
         map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        map.put(CONFIG_THROTTLE_BUFFER_SIZE, 10);
 
-        RoundRobinBuffer buffer = new RoundRobinBuffer();
+        ThrottledMessageBuffer buffer = new ThrottledMessageBuffer();
         buffer.open(map);
 
         return buffer;
     }
 
     @Override
-    public void open(Map spoutConfig) {
-        Object maxBufferSizeObj = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
-        if (maxBufferSizeObj == null) {
-            // Not configured, use default value.
-            return;
+    public void open(final Map spoutConfig) {
+        // Setup non-throttled buffer size
+        Object bufferSize = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        if (bufferSize != null && bufferSize instanceof Number) {
+            maxBufferSize = ((Number) bufferSize).intValue();
         }
 
-        if (maxBufferSizeObj instanceof Number) {
-            maxBufferSizePerVirtualSpout = ((Number) maxBufferSizeObj).intValue();
+        // Setup throttled buffer size
+        bufferSize = spoutConfig.get(CONFIG_THROTTLE_BUFFER_SIZE);
+        if (bufferSize != null && bufferSize instanceof Number) {
+            throttledBufferSize = ((Number) bufferSize).intValue();
+        }
+
+        // setup regex
+        String regexPatternStr = (String) spoutConfig.get(CONFIG_THROTTLE_REGEX_PATTERN);
+        if (regexPatternStr != null && !regexPatternStr.isEmpty()) {
+            regexPattern = Pattern.compile(regexPatternStr);
         }
     }
 
@@ -105,7 +100,7 @@ public class RoundRobinBuffer implements MessageBuffer {
     @Override
     public void addVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
         synchronized (messageBuffer) {
-            messageBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
+            messageBuffer.putIfAbsent(virtualSpoutId, createBuffer(virtualSpoutId));
         }
     }
 
@@ -114,7 +109,7 @@ public class RoundRobinBuffer implements MessageBuffer {
      * @param virtualSpoutId - Identifier of Virtual Spout to be cleaned up.
      */
     @Override
-    public void removeVirtualSpoutId(VirtualSpoutIdentifier virtualSpoutId) {
+    public void removeVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
         synchronized (messageBuffer) {
             messageBuffer.remove(virtualSpoutId);
         }
@@ -136,7 +131,7 @@ public class RoundRobinBuffer implements MessageBuffer {
         // If our queue doesn't exist
         if (virtualSpoutQueue == null) {
             // Attempt to put it
-            messageBuffer.putIfAbsent(virtualSpoutId, createNewEmptyQueue());
+            messageBuffer.putIfAbsent(virtualSpoutId, createBuffer(virtualSpoutId));
 
             // Grab a reference.
             virtualSpoutQueue = messageBuffer.get(virtualSpoutId);
@@ -188,14 +183,35 @@ public class RoundRobinBuffer implements MessageBuffer {
     /**
      * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
-    private BlockingQueue<Message> createNewEmptyQueue() {
-        return new LinkedBlockingQueue<>(getMaxBufferSizePerVirtualSpout());
+    private BlockingQueue<Message> createNewThrottledQueue() {
+        return new LinkedBlockingQueue<>(getThrottledBufferSize());
     }
 
     /**
-     * @return - returns the configured max buffer size.
+     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
-    int getMaxBufferSizePerVirtualSpout() {
-        return maxBufferSizePerVirtualSpout;
+    private BlockingQueue<Message> createNewNonThrottledQueue() {
+        return new LinkedBlockingQueue<>(getMaxBufferSize());
+    }
+
+    public int getThrottledBufferSize() {
+        return throttledBufferSize;
+    }
+
+    public int getMaxBufferSize() {
+        return maxBufferSize;
+    }
+
+    BlockingQueue<Message> createBuffer(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        // Match VirtualSpoutId against our regex pattern
+        final Matcher matches = regexPattern.matcher(virtualSpoutIdentifier.toString());
+
+        // If we match it
+        if (matches.find()) {
+            // Create a throttled queue.
+            return createNewThrottledQueue();
+        }
+        // Otherwise non-throttled.
+        return createNewNonThrottledQueue();
     }
 }
