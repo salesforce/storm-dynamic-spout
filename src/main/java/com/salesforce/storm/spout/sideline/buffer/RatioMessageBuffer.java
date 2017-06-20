@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
+ * Prototype example of a MessageBuffer that throttles based on a ratio.
  */
 public class RatioMessageBuffer implements MessageBuffer {
     private static final Logger logger = LoggerFactory.getLogger(RatioMessageBuffer.class);
