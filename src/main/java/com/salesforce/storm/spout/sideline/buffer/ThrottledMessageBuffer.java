@@ -25,18 +25,18 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     /**
      * Config option for NON-throttled buffer size.
      */
-    private static final String CONFIG_BUFFER_SIZE = SpoutConfig.TUPLE_BUFFER_MAX_SIZE;
+    public static final String CONFIG_BUFFER_SIZE = SpoutConfig.TUPLE_BUFFER_MAX_SIZE;
 
     /**
      * Config option for throttled buffer size.
      */
-    private static final String CONFIG_THROTTLE_BUFFER_SIZE = "spout.coordinator.tuple_buffer.throttled_buffer_size";
+    public static final String CONFIG_THROTTLE_BUFFER_SIZE = "spout.coordinator.tuple_buffer.throttled_buffer_size";
 
     /**
      * Config option to define a regex pattern to match against VirtualSpoutIds.  If a VirtualSpoutId
      * matches this pattern, it will be throttled.
      */
-    private static final String CONFIG_THROTTLE_REGEX_PATTERN = "spout.coordinator.tuple_buffer.throttled_spout_id_regex";
+    public static final String CONFIG_THROTTLE_REGEX_PATTERN = "spout.coordinator.tuple_buffer.throttled_spout_id_regex";
 
     /**
      * A Map of VirtualSpoutIds => Its own Blocking Queue.
@@ -200,6 +200,10 @@ public class ThrottledMessageBuffer implements MessageBuffer {
 
     public int getMaxBufferSize() {
         return maxBufferSize;
+    }
+
+    Pattern getRegexPattern() {
+        return regexPattern;
     }
 
     BlockingQueue<Message> createBuffer(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
