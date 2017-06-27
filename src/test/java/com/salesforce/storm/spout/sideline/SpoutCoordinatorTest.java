@@ -180,6 +180,7 @@ public class SpoutCoordinatorTest {
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
 
         expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage("before it has been opened");
 
         coordinator.addVirtualSpout(new MockDelegateSpout());
     }
@@ -202,8 +203,6 @@ public class SpoutCoordinatorTest {
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
         coordinator.open(config);
 
-        expectedException.expect(IllegalStateException.class);
-
         DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
 
         DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
@@ -212,6 +211,7 @@ public class SpoutCoordinatorTest {
         coordinator.addVirtualSpout(spout1);
 
         expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage(virtualSpoutIdentifier.toString() + " already exists in");
 
         coordinator.addVirtualSpout(spout2);
     }
