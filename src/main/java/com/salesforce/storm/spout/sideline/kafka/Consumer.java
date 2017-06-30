@@ -231,6 +231,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 offset = startingOffset;
             }
 
+            // If we have a non-null offset
             if (offset != null) {
                 // We have a stored offset, so pick up on the partition where we left off
                 logger.info("Resuming namespace {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
@@ -453,8 +454,17 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             // The short of this means, we're going to replay a message from each partition we seek back to, but
             // thats better than missing offsets entirely.
             final long offset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
-            logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
-            getKafkaConsumer().seek(assignedTopicPartition, offset);
+
+            // If offset is -1
+            if (offset == -1) {
+                // That means we haven't started tracking any offsets yet, we should seek to earliest on this partition
+                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, offset);
+                resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
+
+            } else {
+                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
+                getKafkaConsumer().seek(assignedTopicPartition, offset);
+            }
         }
 
         // All of the error'd partitions we need to seek to earliest available position.
