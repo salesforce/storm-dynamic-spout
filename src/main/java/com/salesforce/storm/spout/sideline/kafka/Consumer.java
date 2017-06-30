@@ -460,7 +460,6 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 // That means we haven't started tracking any offsets yet, we should seek to earliest on this partition
                 logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, offset);
                 resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
-
             } else {
                 logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
                 getKafkaConsumer().seek(assignedTopicPartition, offset);
