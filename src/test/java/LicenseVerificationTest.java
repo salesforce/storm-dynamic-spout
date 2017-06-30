@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
  * Limited validation that all .java files contain license header.
  */
 public class LicenseVerificationTest {
-    private static final Logger logger = LoggerFactory.getLogger(BadLoggersTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(LicenseVerificationTest.class);
 
     // Weak attempt
     private static final Pattern regexPattern = Pattern.compile("Copyright \\(c\\) 2017, Salesforce\\.com\\, Inc\\.");
