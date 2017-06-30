@@ -48,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Persistence layer implemented using Zookeeper.
@@ -95,8 +96,14 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
 
         try {
+            // Create new curator framework
             curator = newCurator(spoutConfig);
+
+            // Call start
             curator.start();
+
+            // Block until connected
+            curator.blockUntilConnected(((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -334,15 +341,19 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
      * Internal method to create a new Curator connection.
      */
     private CuratorFramework newCurator(final Map spoutConfig) {
-        return CuratorFrameworkFactory.newClient(
-            zkConnectionString,
-            ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue(),
-            ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
-            new RetryNTimes(
-                ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue(),
-                ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue()
-            )
-        );
+        final int connectionTimeoutMs = ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue();
+        final int sessionTimeoutMs = ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_SESSION_TIMEOUT)).intValue();
+        final int retryAttempts = ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_RETRY_ATTEMPTS)).intValue();
+        final int retryIntervalMs = ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_RETRY_INTERVAL)).intValue();
+
+        // Use builder to create new curator
+        return CuratorFrameworkFactory
+            .builder()
+            .connectString(zkConnectionString)
+            .connectionTimeoutMs(connectionTimeoutMs)
+            .sessionTimeoutMs(sessionTimeoutMs)
+            .retryPolicy(new RetryNTimes(retryAttempts, retryIntervalMs))
+            .build();
     }
 
     /**
