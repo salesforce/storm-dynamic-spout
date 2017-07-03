@@ -30,6 +30,7 @@ import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import org.apache.storm.tuple.Values;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -81,29 +82,65 @@ public class ThrottledMessageBufferTest {
         buffer.addVirtualSpoutId(vSpoutId2);
         buffer.addVirtualSpoutId(vSpoutId3);
 
-        // Add messages to non-throttled
-        buffer.put(createMessage(vSpoutId1));
-        buffer.put(createMessage(vSpoutId1));
-        buffer.put(createMessage(vSpoutId1));
-        buffer.put(createMessage(vSpoutId1));
+        Message message1 = createMessage(vSpoutId1, new Values("A", "B"));
+        Message message2 = createMessage(vSpoutId1, new Values("C", "D"));
+        Message message3 = createMessage(vSpoutId1, new Values("E", "F"));
+        Message message4 = createMessage(vSpoutId1, new Values("G", "H"));
+        // We will not be able to add this message to the buffer because we will have reached out max size
+        Message message5 = createMessage(vSpoutId1, new Values("I", "J"));
 
-        await()
-            .atMost(5, TimeUnit.SECONDS)
-            .until(new Runnable() {
-                @Override
-                public void run() {
+        // Add messages, these will not be throttled because the buffer has room
+        buffer.put(message1);
+        buffer.put(message2);
+        buffer.put(message3);
+        buffer.put(message4);
+
+        assertEquals(4, buffer.size());
+
+        // Track whether or not we hit the timeout
+        boolean timedOut = false;
+
+        // We are going to attempt an await call, but we are actually expecting it to timeout because put() on the
+        // buffer is going to block until the buffer has room.
+        try {
+            await()
+                // The timeout here is arbitrary, we just need to prove that putting onto the buffer does not work
+                .atMost(2, TimeUnit.SECONDS)
+                .until(() -> {
                     try {
-                        buffer.put(createMessage(vSpoutId1));
+                        buffer.put(message5);
                     } catch (InterruptedException e) {
+                        // The interruption will occur when the timeout is reached, we are just throwing an unchecked
+                        // exception here to end the until.
                         throw new RuntimeException(e);
                     }
-                }
-            });
+                });
+        } catch (ConditionTimeoutException ex) {
+            timedOut = true;
+        }
 
+        assertTrue("Timed out trying to put onto the buffer.", timedOut);
+
+        Message resultMessage1 = buffer.poll();
+
+        assertEquals(3, buffer.size());
+
+        assertNotNull("First message we put is not null", message1);
+        assertEquals("First message we put matches the first resulting message", message1, resultMessage1);
+
+        // We should be able to put the message that timed out back onto the buffer now
+        buffer.put(message5);
+
+        assertEquals(4, buffer.size());
+
+        assertEquals("Second message we put matches the first resulting message", message2, buffer.poll());
+        assertEquals("Third message we put matches the first resulting message", message3, buffer.poll());
+        assertEquals("Fourth message we put matches the first resulting message", message4, buffer.poll());
+        assertEquals("Fifth message (the one that was blocked) we put matches the first resulting message", message5, buffer.poll());
     }
 
-    private Message createMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
-        return new Message(new MessageId("namespace", 1, 1, virtualSpoutIdentifier), new Values("A", "B"));
+    private Message createMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier, Values values) {
+        return new Message(new MessageId("namespace", 1, 1, virtualSpoutIdentifier), values);
     }
 
     private ThrottledMessageBuffer createDefaultBuffer(final int bufferSize, final int throttledBufferSize, final String regexPattern) {
