@@ -51,9 +51,6 @@ import static org.junit.Assert.assertTrue;
 public class SpoutCoordinatorTest {
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void testCoordinator() throws Exception {
         // How often we want the monitor thread to run
@@ -162,6 +159,9 @@ public class SpoutCoordinatorTest {
         assertTrue("Executor is terminated", coordinator.getExecutor().isTerminated());
     }
 
+    @Rule
+    public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
+
     /**
      * Test that if we try to add a spout before the coordinator is open it'll blow up.
      * @throws Exception Can't do that!
@@ -179,11 +179,14 @@ public class SpoutCoordinatorTest {
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("before it has been opened");
+        expectedExceptionAddingSpoutBeforeOpen.expect(IllegalStateException.class);
+        expectedExceptionAddingSpoutBeforeOpen.expectMessage("before it has been opened");
 
         coordinator.addVirtualSpout(new MockDelegateSpout());
     }
+
+    @Rule
+    public ExpectedException expectedExceptionAddDuplicateSpout = ExpectedException.none();
 
     /**
      * Test that adding a spout with the same id will throw an exception
@@ -210,8 +213,8 @@ public class SpoutCoordinatorTest {
 
         coordinator.addVirtualSpout(spout1);
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(virtualSpoutIdentifier.toString() + " already exists in");
+        expectedExceptionAddDuplicateSpout.expect(IllegalStateException.class);
+        expectedExceptionAddDuplicateSpout.expectMessage(virtualSpoutIdentifier.toString() + " already exists in");
 
         coordinator.addVirtualSpout(spout2);
     }
