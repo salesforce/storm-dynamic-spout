@@ -2177,6 +2177,199 @@ public class ConsumerTest {
     }
 
     /**
+     * TLDR; Tests what happens if offsets are invalid, and topic has partitions which are empty.
+     *
+     * 1 - Create a topic with 2 partitions
+     *     Partition 0: has no data / empty
+     *     Partition 1: has data
+     *
+     * 2 - Set state for all 3 partitions
+     *     Partition 0: have no stored offset
+     *     Partition 1: set offset = 1000 (higher than how much data we have)
+     *
+     * 3 - Start consumer, see what happens.
+     *     Partition 0: should start from head
+     *     Partition 1: Should detect invalid offset, reset back to 0 and re-consume.
+     */
+    @Test
+    public void testResetOffsetsWhenHasEmptyPartition() {
+        // Kafka namespace setup
+        this.topicName = "testResetOffsetsWhenHasEmptyPartition" + System.currentTimeMillis();
+        final int numberOfPartitions = 2;
+        final int numberOfMsgsOnPartition0 = 0;
+        final int numberOfMsgsOnPartition1 = 4;
+
+        // How many msgs we should expect, 0 for partition 0, 4 from partition1
+        final int numberOfExpectedMessages = numberOfMsgsOnPartition0 + numberOfMsgsOnPartition1;
+
+        // Define our namespace/partitions
+        final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
+        final ConsumerPartition partition1 = new ConsumerPartition(topicName, 1);
+
+        // Define starting offsets for partitions
+        final long partition0StartingOffset = 0L;
+        final long partition1StartingOffset = 100L;
+
+        // Create our multi-partition namespace.
+        kafkaTestServer.createTopic(topicName, numberOfPartitions);
+
+        // Produce messages into partition1
+        produceRecords(numberOfMsgsOnPartition1, partition1.partition());
+
+        // Setup our config set to reset to none
+        // We should handle this internally now.
+        Map<String, Object> config = getDefaultConfig(topicName);
+
+        // Create our Persistence Manager
+        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create & persist the starting state for our test
+        // Partition 0 has NO starting state
+
+        // Partition 1 has starting offset = 100L, which is invalid
+        persistenceAdapter.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
+
+        // Create our consumer
+        final Consumer consumer = new Consumer();
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        // Attempt to retrieve records
+        final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
+
+        // Validate we got 4 records, no need to do deeper inspection for this test
+        assertEquals("We should have 4 records", 4, records.size());
+
+        // Now validate the state
+        ConsumerState consumerState = consumer.flushConsumerState();
+
+        // High level validation
+        assertNotNull(consumerState);
+        assertFalse(consumerState.isEmpty());
+
+        // Before acking anything
+        assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
+        assertEquals("Has partition 1 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+
+        // Ack all of our messages in consumer
+        for (Record record: records) {
+            consumer.commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
+        }
+
+        // Commit state
+        consumerState = consumer.flushConsumerState();
+
+        // High level validation
+        assertNotNull(consumerState);
+        assertFalse(consumerState.isEmpty());
+
+        // After acking messages
+        assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
+        assertEquals("Has partition 1 offset at 3", Long.valueOf(3L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+
+        // Clean up
+        consumer.close();
+    }
+
+    /**
+     * TLDR; Tests what happens if offsets are invalid, and topic has partitions which are empty.
+     * Essentially the same test as above, except we store a starting offset of -1 for partition 0
+     *
+     * 1 - Create a topic with 2 partitions
+     *     Partition 0: has no data / empty
+     *     Partition 1: has data
+     *
+     * 2 - Set state for all 3 partitions
+     *     Partition 0: have stored offset of -1
+     *     Partition 1: set offset = 1000 (higher than how much data we have)
+     *
+     * 3 - Start consumer, see what happens.
+     *     Partition 0: should start from head
+     *     Partition 1: Should detect invalid offset, reset back to 0 and re-consume.
+     */
+    @Test
+    public void testResetOffsetsWhenHasEmptyPartitionAndStoredOffsetOfNegative1() {
+        // Kafka namespace setup
+        this.topicName = "testResetOffsetsWhenHasEmptyPartition" + System.currentTimeMillis();
+        final int numberOfPartitions = 2;
+        final int numberOfMsgsOnPartition0 = 2;
+        final int numberOfMsgsOnPartition1 = 4;
+
+        // How many msgs we should expect, 2 for partition 0, 4 from partition1
+        final int numberOfExpectedMessages = numberOfMsgsOnPartition0 + numberOfMsgsOnPartition1;
+
+        // Define our namespace/partitions
+        final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
+        final ConsumerPartition partition1 = new ConsumerPartition(topicName, 1);
+
+        // Define starting offsets for partitions
+        final long partition0StartingOffset = -1L;
+        final long partition1StartingOffset = 100L;
+
+        // Create our multi-partition namespace.
+        kafkaTestServer.createTopic(topicName, numberOfPartitions);
+
+        // Produce messages into partition0 and partition1
+        produceRecords(numberOfMsgsOnPartition0, 0);
+        produceRecords(numberOfMsgsOnPartition1, 1);
+
+        // Setup our config set to reset to none
+        // We should handle this internally now.
+        Map<String, Object> config = getDefaultConfig(topicName);
+
+        // Create our Persistence Manager
+        PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create & persist the starting state for our test
+        // Partition 0 has starting state of -1
+        persistenceAdapter.persistConsumerState("MyConsumerId", 0, partition0StartingOffset);
+
+        // Partition 1 has starting offset = 100L, which is invalid
+        persistenceAdapter.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
+
+        // Create our consumer
+        final Consumer consumer = new Consumer();
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        // Attempt to retrieve records
+        final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
+
+        // Validate we got 6 records, no need to do deeper inspection for this test
+        assertEquals("We should have 6 records", numberOfExpectedMessages, records.size());
+
+        // Now validate the state
+        ConsumerState consumerState = consumer.flushConsumerState();
+
+        // High level validation
+        assertNotNull(consumerState);
+        assertFalse(consumerState.isEmpty());
+
+        // Before acking anything
+        assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
+        assertEquals("Has partition 1 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+
+        // Ack all of our messages in consumer
+        for (Record record: records) {
+            consumer.commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
+        }
+
+        // Commit state
+        consumerState = consumer.flushConsumerState();
+
+        // High level validation
+        assertNotNull(consumerState);
+        assertFalse(consumerState.isEmpty());
+
+        // After acking messages
+        assertEquals("Has partition 0 offset at 1", Long.valueOf(1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
+        assertEquals("Has partition 1 offset at 3", Long.valueOf(3L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+
+        // Clean up
+        consumer.close();
+    }
+
+    /**
      * Helper method
      * @param consumerState - the consumer state we want to validate
      * @param topicPartition - the namespace/partition we want to validate
