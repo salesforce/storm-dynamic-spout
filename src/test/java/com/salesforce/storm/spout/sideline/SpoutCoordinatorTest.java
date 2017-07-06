@@ -77,7 +77,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Configure our internal operations to run frequently for our test case.
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
@@ -159,13 +159,12 @@ public class SpoutCoordinatorTest {
         assertTrue("Executor is terminated", coordinator.getExecutor().isTerminated());
     }
 
-    @Rule
-    public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
-
     /**
      * Test that if we try to add a spout before the coordinator is open it'll blow up.
      * @throws Exception Can't do that!
      */
+    @Rule
+    public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
     @Test
     public void testAddingSpoutBeforeOpen() throws Exception {
         final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
@@ -174,7 +173,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
@@ -185,13 +184,12 @@ public class SpoutCoordinatorTest {
         coordinator.addVirtualSpout(new MockDelegateSpout());
     }
 
-    @Rule
-    public ExpectedException expectedExceptionAddDuplicateSpout = ExpectedException.none();
-
     /**
      * Test that adding a spout with the same id will throw an exception
      * @throws Exception
      */
+    @Rule
+    public ExpectedException expectedExceptionAddDuplicateSpout = ExpectedException.none();
     @Test
     public void testAddDuplicateSpout() throws Exception {
         final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
@@ -200,16 +198,16 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
         final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
         coordinator.open(config);
 
-        DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
+        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
 
-        DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
-        DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);
+        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+        final DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);
 
         coordinator.addVirtualSpout(spout1);
 

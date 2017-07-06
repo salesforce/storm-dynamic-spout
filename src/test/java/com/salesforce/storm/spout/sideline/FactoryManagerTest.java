@@ -57,22 +57,18 @@ import static org.junit.Assert.assertTrue;
 public class FactoryManagerTest {
 
     /**
-     * By default, no exceptions should be thrown.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    /**
      * Tests that if you fail to pass a deserializer config it throws an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCreateNewFailedMsgRetryManagerInstance_missingConfig = ExpectedException.none();
     @Test
     public void testCreateNewFailedMsgRetryManagerInstance_missingConfig() {
         // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
+        final Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionCreateNewFailedMsgRetryManagerInstance_missingConfig.expect(IllegalStateException.class);
         factoryManager.createNewFailedMsgRetryManagerInstance();
     }
 
@@ -94,14 +90,14 @@ public class FactoryManagerTest {
     @UseDataProvider("provideFailedMsgRetryManagerClasses")
     public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
+        final Map config = Maps.newHashMap();
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        List<RetryManager> instances = Lists.newArrayList();
+        final List<RetryManager> instances = Lists.newArrayList();
         for (int x=0; x<5; x++) {
-            RetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
+            final RetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
 
             // Validate it
             assertNotNull(retryManager);
@@ -118,14 +114,16 @@ public class FactoryManagerTest {
     /**
      * Tests that if you fail to pass a config it throws an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCreateNewPersistenceAdapterInstance_missingConfig = ExpectedException.none();
     @Test
     public void testCreateNewPersistenceAdapterInstance_missingConfig() {
         // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
+        final Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionCreateNewPersistenceAdapterInstance_missingConfig.expect(IllegalStateException.class);
         factoryManager.createNewPersistenceAdapterInstance();
     }
 
@@ -135,14 +133,14 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewPersistenceAdapter_usingDefaultImpl() {
         // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
+        final Map config = Maps.newHashMap();
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        List<PersistenceAdapter> instances = Lists.newArrayList();
+        final List<PersistenceAdapter> instances = Lists.newArrayList();
         for (int x=0; x<5; x++) {
-            PersistenceAdapter instance = factoryManager.createNewPersistenceAdapterInstance();
+            final PersistenceAdapter instance = factoryManager.createNewPersistenceAdapterInstance();
 
             // Validate it
             assertNotNull(instance);
@@ -159,14 +157,16 @@ public class FactoryManagerTest {
     /**
      * Tests that if you fail to pass a deserializer config it throws an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCreateNewMessageBufferInstance_missingConfig = ExpectedException.none();
     @Test
     public void testCreateNewMessageBufferInstance_missingConfig() {
         // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
+        final Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionCreateNewMessageBufferInstance_missingConfig.expect(IllegalStateException.class);
         factoryManager.createNewMessageBufferInstance();
     }
 
@@ -188,14 +188,14 @@ public class FactoryManagerTest {
     @UseDataProvider("provideMessageBufferClasses")
     public void testCreateNewMessageBuffer(final Class clazz) {
         // Try with UTF8 String deserializer
-        Map config = Maps.newHashMap();
+        final Map config = Maps.newHashMap();
         config.put(SpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        List<MessageBuffer> instances = Lists.newArrayList();
+        final List<MessageBuffer> instances = Lists.newArrayList();
         for (int x=0; x<5; x++) {
-            MessageBuffer messageBuffer = factoryManager.createNewMessageBufferInstance();
+            final MessageBuffer messageBuffer = factoryManager.createNewMessageBufferInstance();
 
             // Validate it
             assertNotNull(messageBuffer);

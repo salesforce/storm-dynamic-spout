@@ -97,12 +97,6 @@ public class SidelineSpoutTest {
     private String topicName;
 
     /**
-     * By default, no exceptions should be thrown.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    /**
      * Here we stand up an internal test kafka and zookeeper service.
      * Once for all methods in this class.
      */
@@ -147,6 +141,8 @@ public class SidelineSpoutTest {
      * Validates that we require the ConsumerIdPrefix configuration value,
      * and if its missing we toss an IllegalStateException.
      */
+    @Rule
+    public ExpectedException expectedExceptionMissingRequiredConfigurationConsumerIdPrefix = ExpectedException.none();
     @Test
     public void testMissingRequiredConfigurationConsumerIdPrefix() {
         // Create our config missing the consumerIdPrefix
@@ -161,8 +157,8 @@ public class SidelineSpoutTest {
         final SidelineSpout spout = new SidelineSpout(config);
 
         // When we call open, we expect illegal state exception about our missing configuration item
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        expectedExceptionMissingRequiredConfigurationConsumerIdPrefix.expect(IllegalStateException.class);
+        expectedExceptionMissingRequiredConfigurationConsumerIdPrefix.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);

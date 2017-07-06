@@ -39,12 +39,6 @@ import static org.junit.Assert.assertArrayEquals;
 public class PartitionDistributorTest {
 
     /**
-     * By default, no exceptions should be thrown.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    /**
      * Test that given a number of consumer instances the current instance gets distributed the correct set of partition ids
      * @param totalConsumers Total number of consumers
      * @param consumerIndex Current consumer instance index
@@ -89,12 +83,14 @@ public class PartitionDistributorTest {
     /**
      * Test that when we have more consumer instances than partition ids that an exception is thrown.
      */
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithMorePartitionsThanInstances() {
 
         // We expect exceptions on this one.
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("partitions");
+        expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances.expect(IllegalArgumentException.class);
+        expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances.expectMessage("partitions");
 
         PartitionDistributor.calculatePartitionAssignment(
             // Number of consumer instances
@@ -109,12 +105,14 @@ public class PartitionDistributorTest {
     /**
      * Test that when we have an invalid consumerIndex, we toss an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers() {
 
         // We expect exceptions on this one.
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("consumerIndex");
+        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers.expect(IllegalArgumentException.class);
+        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers.expectMessage("consumerIndex");
 
         PartitionDistributor.calculatePartitionAssignment(
                 // Number of consumer instances
@@ -129,12 +127,14 @@ public class PartitionDistributorTest {
     /**
      * Test that when we have a negative consumerIndex value we toss an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexBelowZero() {
 
         // We expect exceptions on this one.
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("consumerIndex");
+        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero.expect(IllegalArgumentException.class);
+        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero.expectMessage("consumerIndex");
 
         PartitionDistributor.calculatePartitionAssignment(
                 // Number of consumer instances
@@ -149,12 +149,14 @@ public class PartitionDistributorTest {
     /**
      * Test that when we have a zero total consumers value that we toss an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithTotalConsumersZero() {
 
         // We expect exceptions on this one.
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("totalConsumers");
+        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero.expect(IllegalArgumentException.class);
+        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero.expectMessage("totalConsumers");
 
         PartitionDistributor.calculatePartitionAssignment(
                 // Number of consumer instances
@@ -169,12 +171,14 @@ public class PartitionDistributorTest {
     /**
      * Test that when we have a negative total consumers value that we toss an exception.
      */
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithTotalConsumersNegative() {
 
         // We expect exceptions on this one.
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("totalConsumers");
+        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative.expect(IllegalArgumentException.class);
+        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative.expectMessage("totalConsumers");
 
         PartitionDistributor.calculatePartitionAssignment(
                 // Number of consumer instances

@@ -70,11 +70,6 @@ import static org.junit.Assert.assertTrue;
  * Tests our Zookeeper Persistence layer.
  */
 public class ZookeeperPersistenceAdapterTest {
-    /**
-     * By default, no exceptions should be thrown.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     // For logging within test.
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceAdapterTest.class);
@@ -105,6 +100,8 @@ public class ZookeeperPersistenceAdapterTest {
      * Tests that if you're missing the configuration item for ZkRootNode it will throw
      * an IllegalStateException.
      */
+    @Rule
+    public ExpectedException expectedExceptionOpenMissingConfigForZkRootNode = ExpectedException.none();
     @Test
     public void testOpenMissingConfigForZkRootNode() {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
@@ -115,7 +112,7 @@ public class ZookeeperPersistenceAdapterTest {
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionOpenMissingConfigForZkRootNode.expect(IllegalStateException.class);
         persistenceAdapter.open(topologyConfig);
     }
 
@@ -730,6 +727,8 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
+    @Rule
+    public ExpectedException expectedExceptionPersistConsumerStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testPersistConsumerStateBeforeBeingOpened() {
         final int partitionId = 1;
@@ -738,13 +737,15 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionPersistConsumerStateBeforeBeingOpened.expect(IllegalStateException.class);
         persistenceAdapter.persistConsumerState("MyConsumerId", partitionId, 100L);
     }
 
     /**
      * Verify we get an exception if you try to retrieve before calling open().
      */
+    @Rule
+    public ExpectedException expectedExceptionRetrieveConsumerStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testRetrieveConsumerStateBeforeBeingOpened() {
         final int partitionId = 1;
@@ -753,13 +754,15 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionRetrieveConsumerStateBeforeBeingOpened.expect(IllegalStateException.class);
         persistenceAdapter.retrieveConsumerState("MyConsumerId", partitionId);
     }
 
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
+    @Rule
+    public ExpectedException expectedExceptionClearConsumerStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testClearConsumerStateBeforeBeingOpened() {
         final int partitionId = 1;
@@ -768,13 +771,15 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionClearConsumerStateBeforeBeingOpened.expect(IllegalStateException.class);
         persistenceAdapter.clearConsumerState("MyConsumerId", partitionId);
     }
 
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
+    @Rule
+    public ExpectedException expectedExceptionPersistSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testPersistSidelineRequestStateBeforeBeingOpened() {
         // Create our instance
@@ -783,33 +788,37 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(null);
 
         // Call method and watch for exception
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionPersistSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, 0, 1L, 2L);
     }
 
     /**
      * Verify we get an exception if you try to retrieve before calling open().
      */
+    @Rule
+    public ExpectedException expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testRetrieveSidelineRequestStateBeforeBeingOpened() {
         // Create our instance
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
         persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier(), 0);
     }
 
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
+    @Rule
+    public ExpectedException expectedExceptionClearSidelineRequestBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testClearSidelineRequestBeforeBeingOpened() {
         // Create our instance
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedException.expect(IllegalStateException.class);
+        expectedExceptionClearSidelineRequestBeforeBeingOpened.expect(IllegalStateException.class);
         persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier(), 0);
     }
 

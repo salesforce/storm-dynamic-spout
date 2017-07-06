@@ -63,9 +63,6 @@ import static org.junit.Assert.*;
 
 public class SidelineSpoutHandlerTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     /**
      * Test the open method properly stores the spout's config
      */
@@ -147,8 +144,8 @@ public class SidelineSpoutHandlerTest {
 
         // We use this to replace DynamicSpout.addVirtualSpout() so that we can hijack the list of vspouts and validate
         // the sidelines.
-        Answer<Void> addVirtualSpoutAnswer = invocation -> {
-            VirtualSpout virtualSpout = invocation.getArgumentAt(0, VirtualSpout.class);
+        final Answer<Void> addVirtualSpoutAnswer = invocation -> {
+            final VirtualSpout virtualSpout = invocation.getArgumentAt(0, VirtualSpout.class);
             sidelineSpouts.add(virtualSpout);
             return null;
         };
@@ -244,7 +241,7 @@ public class SidelineSpoutHandlerTest {
             sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().get(startRequestId)
         );
 
-        SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 0);
+        final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 0);
 
         assertEquals(SidelineType.START, partition0.type);
         assertEquals(startRequestId, partition0.id);
@@ -252,7 +249,7 @@ public class SidelineSpoutHandlerTest {
         assertEquals(Long.valueOf(1L), partition0.startingOffset);
         assertNull(partition0.endingOffset);
 
-        SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 5);
+        final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 5);
 
         assertEquals(SidelineType.START, partition5.type);
         assertEquals(startRequestId, partition5.id);
@@ -326,7 +323,7 @@ public class SidelineSpoutHandlerTest {
             sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
         );
 
-        SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, 0);
+        final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, 0);
 
         assertEquals(SidelineType.STOP, partition0.type);
         assertEquals(stopRequestId, partition0.id);
@@ -334,7 +331,7 @@ public class SidelineSpoutHandlerTest {
         assertEquals(Long.valueOf(1L), partition0.startingOffset);
         assertEquals(Long.valueOf(1L), partition0.endingOffset);
 
-        SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, 5);
+        final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, 5);
 
         assertEquals(SidelineType.STOP, partition5.type);
         assertEquals(stopRequestId, partition5.id);
@@ -386,7 +383,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
-        StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
+        final StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
 
         assertTrue(startingTrigger instanceof NoopStartingStoppingTrigger);
     }
@@ -401,7 +398,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
-        StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
+        final StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
 
         assertNull(startingTrigger);
     }
@@ -409,6 +406,8 @@ public class SidelineSpoutHandlerTest {
     /**
      * Test that we get a runtime exception when we configure a class that doesn't utilize our interfaces
      */
+    @Rule
+    public ExpectedException expectedExceptionMisconfiguredCreateStartingTrigger = ExpectedException.none();
     @Test
     public void testMisconfiguredCreateStartingTrigger() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
@@ -418,7 +417,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
-        expectedException.expect(RuntimeException.class);
+        expectedExceptionMisconfiguredCreateStartingTrigger.expect(RuntimeException.class);
 
         sidelineSpoutHandler.createStartingTrigger();
     }
@@ -434,7 +433,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
-        StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
+        final StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
 
         assertTrue(stoppingTrigger instanceof NoopStartingStoppingTrigger);
     }
@@ -449,7 +448,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
-        StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
+        final StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
 
         assertNull(stoppingTrigger);
     }
@@ -457,6 +456,8 @@ public class SidelineSpoutHandlerTest {
     /**
      * Test that we get a runtime exception when we configure a class that doesn't utilize our interfaces
      */
+    @Rule
+    public ExpectedException expectedExceptionMisconfiguredCreateStoppingTrigger = ExpectedException.none();
     @Test
     public void testMisconfiguredCreateStoppingTrigger() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
@@ -466,7 +467,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
-        expectedException.expect(RuntimeException.class);
+        expectedExceptionMisconfiguredCreateStoppingTrigger.expect(RuntimeException.class);
 
         sidelineSpoutHandler.createStoppingTrigger();
     }
@@ -498,11 +499,11 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.open(config);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
-        VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateVirtualSpoutId(expectedSidelineRequestIdentifier);
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateVirtualSpoutId(expectedSidelineRequestIdentifier);
 
         assertTrue(virtualSpoutIdentifier instanceof SidelineVirtualSpoutIdentifier);
 
-        SidelineVirtualSpoutIdentifier sidelineVirtualSpoutIdentifier = (SidelineVirtualSpoutIdentifier) virtualSpoutIdentifier;
+        final SidelineVirtualSpoutIdentifier sidelineVirtualSpoutIdentifier = (SidelineVirtualSpoutIdentifier) virtualSpoutIdentifier;
 
         assertEquals(expectedPrefix, sidelineVirtualSpoutIdentifier.getPrefix());
         assertEquals(expectedSidelineRequestIdentifier, sidelineVirtualSpoutIdentifier.getSidelineRequestIdentifier());
