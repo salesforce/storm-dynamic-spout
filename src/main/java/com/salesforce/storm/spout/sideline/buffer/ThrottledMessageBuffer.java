@@ -31,9 +31,11 @@ import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -41,7 +43,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Prototype ThrottledMessageBuffer based on configurable BlockingQueue sizes based on VirtualSpoutIds.
+ * Prototype ThrottledMessageBuffer based on blocking the producer/poll() method.
+ *
+ * This implementation should be considered "experimental" at this point as no real world testing has been done
+ * on it yet.
+ *
+ * The way this works is you define a REGEX pattern to check against VirtualSpoutIdentifiers.
+ * If a VirtualSpoutIdentifier MATCHES this REGEX, then we will enforce a lower buffer size for that Spout.
+ *
+ * Example:
+ * With the following configuration
+ *   - Regex pattern: /^throttle/
+ *   - MaxBufferSize: 100
+ *   - ThrottledBufferSize: 10
+ *
+ * VirtualSpoutId: NormalVirtualSpoutId
+ * Effective BufferSize: 100
+ * Result: Because the VirtualSpoutId does NOT match the REGEX pattern, we will enforce a buffer size limit of 100
+ *         on this Spout.  This spout will be able to add up to 100 entries into the buffer, after that following
+ *         put() calls will block until items are removed from the buffer.
+ *
+ * VirtualSpoutId: ThrottledVirtualSpoutId
+ * Effective BufferSize: 10
+ * Result: Because the VirtualSpoutId DOES match the REGEX pattern, we will enforce a buffer size limit of 10 on this
+ *         spout.  This spout will be able to add up to 10 entries into the buffer, after that following put() calls
+ *         will block until items are removed from the buffer.
  */
 public class ThrottledMessageBuffer implements MessageBuffer {
     private static final Logger logger = LoggerFactory.getLogger(ThrottledMessageBuffer.class);
@@ -174,7 +200,7 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - returns the next Message to be processed out of the queue.
+     * @return returns the next Message to be processed out of the queue.
      */
     @Override
     public Message poll() {
@@ -195,7 +221,7 @@ public class ThrottledMessageBuffer implements MessageBuffer {
 
             // We missed?
             if (queue == null) {
-                logger.info("Non-existent queue found, resetting iterator.");
+                logger.debug("Non-existent queue found, resetting iterator.");
                 consumerIdIterator = messageBuffer.keySet().iterator();
                 continue;
             }
@@ -205,40 +231,87 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
     private BlockingQueue<Message> createNewThrottledQueue() {
         return new LinkedBlockingQueue<>(getThrottledBufferSize());
     }
 
     /**
-     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
     private BlockingQueue<Message> createNewNonThrottledQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSize());
     }
 
-    public int getThrottledBufferSize() {
-        return throttledBufferSize;
-    }
-
+    /**
+     * @return The configured buffer size for non-throttled VirtualSpouts.
+     */
     public int getMaxBufferSize() {
         return maxBufferSize;
     }
 
-    Pattern getRegexPattern() {
+    /**
+     * @return The configured buffer size for throttled VirtualSpouts.
+     */
+    public int getThrottledBufferSize() {
+        return throttledBufferSize;
+    }
+
+    /**
+     * @return The configured Regex pattern to match throttled VirtualSpoutIds against.
+     */
+    public Pattern getRegexPattern() {
         return regexPattern;
     }
 
-    BlockingQueue<Message> createBuffer(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    /**
+     * Internal method used *ONLY* within tests.  Hacky implementation -- could have race-conditions in other use-cases.
+     * @return Set of all VirtualSpoutIds that ARE throttled.
+     */
+    Set<VirtualSpoutIdentifier> getThrottledVirtualSpoutIdentifiers() {
+        Set<VirtualSpoutIdentifier> throttledVirtualSpoutIds = new HashSet<>();
+
+        for (Map.Entry<VirtualSpoutIdentifier, BlockingQueue<Message>> entry: messageBuffer.entrySet()) {
+            BlockingQueue<Message> queue = entry.getValue();
+            if (queue.remainingCapacity() + queue.size() == getThrottledBufferSize()) {
+                throttledVirtualSpoutIds.add(entry.getKey());
+            }
+        }
+        return throttledVirtualSpoutIds;
+    }
+
+    /**
+     * Internal method used *ONLY* within tests.  Hacky implementation -- could have race-conditions in other use-cases.
+     * @return Set of all VirtualSpoutIds that are NOT throttled.
+     */
+    Set<VirtualSpoutIdentifier> getNonThrottledVirtualSpoutIdentifiers() {
+        Set<VirtualSpoutIdentifier> nonThrottledVirtualSpoutIds = new HashSet<>();
+
+        for (Map.Entry<VirtualSpoutIdentifier, BlockingQueue<Message>> entry: messageBuffer.entrySet()) {
+            BlockingQueue<Message> queue = entry.getValue();
+            if (queue.remainingCapacity() + queue.size() > getThrottledBufferSize()) {
+                nonThrottledVirtualSpoutIds.add(entry.getKey());
+            }
+        }
+        return nonThrottledVirtualSpoutIds;
+    }
+
+    private BlockingQueue<Message> createBuffer(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         // Match VirtualSpoutId against our regex pattern
         final Matcher matches = regexPattern.matcher(virtualSpoutIdentifier.toString());
 
         // If we match it
         if (matches.find()) {
-            // Create a throttled queue.
+            // Debug logging
+            logger.debug("Added new VirtualSpoutId [{}] Throttled? {}", virtualSpoutIdentifier, true);
+
+            // Create and return throttled queue.
             return createNewThrottledQueue();
         }
+        // Debug logging
+        logger.debug("Added new VirtualSpoutId [{}] Throttled? {}", virtualSpoutIdentifier, false);
+
         // Otherwise non-throttled.
         return createNewNonThrottledQueue();
     }

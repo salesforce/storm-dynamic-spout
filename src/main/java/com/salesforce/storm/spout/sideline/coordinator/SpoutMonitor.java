@@ -174,12 +174,15 @@ public class SpoutMonitor implements Runnable {
      * @return Whether or not a spout with that identifier exists.
      */
     public boolean hasSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
-        for (DelegateSpout spout : newSpoutQueue) {
-            if (spout.getVirtualSpoutId().equals(virtualSpoutIdentifier)) {
-                return true;
+        // Synchronized on new spout queue
+        synchronized (newSpoutQueue) {
+            for (DelegateSpout spout : newSpoutQueue) {
+                if (spout.getVirtualSpoutId().equals(virtualSpoutIdentifier)) {
+                    return true;
+                }
             }
+            return spoutRunners.containsKey(virtualSpoutIdentifier);
         }
-        return spoutRunners.containsKey(virtualSpoutIdentifier);
     }
 
     @Override
@@ -218,11 +221,13 @@ public class SpoutMonitor implements Runnable {
      * Submit any new spout tasks as they show up.
      */
     private void startNewSpoutTasks() {
-        // Look for new spouts to start.
-        for (DelegateSpout spout; (spout = getNewSpoutQueue().poll()) != null;) {
-            logger.info("Preparing thread for spout {}", spout.getVirtualSpoutId());
+        // Synchronized access to this queue.
+        synchronized (newSpoutQueue) {
+            // Look for new spouts to start.
+            for (DelegateSpout spout; (spout = getNewSpoutQueue().poll()) != null; ) {
+                logger.info("Preparing thread for spout {}", spout.getVirtualSpoutId());
 
-            final SpoutRunner spoutRunner = new SpoutRunner(
+                final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
                     tupleOutputQueue,
                     ackedTuplesQueue,
@@ -230,13 +235,14 @@ public class SpoutMonitor implements Runnable {
                     latch,
                     getClock(),
                     getTopologyConfig()
-            );
+                );
 
-            spoutRunners.put(spout.getVirtualSpoutId(), spoutRunner);
+                spoutRunners.put(spout.getVirtualSpoutId(), spoutRunner);
 
-            // Run as a CompletableFuture
-            final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
-            spoutThreads.put(spout.getVirtualSpoutId(), completableFuture);
+                // Run as a CompletableFuture
+                final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
+                spoutThreads.put(spout.getVirtualSpoutId(), completableFuture);
+            }
         }
     }
 
