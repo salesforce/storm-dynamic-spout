@@ -50,7 +50,7 @@ import static org.junit.Assert.assertNull;
  * Kind of silly.  Basically just testing a FIFO buffer.
  */
 @RunWith(DataProviderRunner.class)
-public class FIFOBufferTest {
+public class FifoBufferTest {
     /**
      * Basically just tests that this does FIFO.
      * Kind of silly.
@@ -68,7 +68,7 @@ public class FIFOBufferTest {
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer & open
-        MessageBuffer messageBuffer = new FIFOBuffer();
+        MessageBuffer messageBuffer = new FifoBuffer();
         messageBuffer.open(config);
 
         // Keep track of our order
@@ -132,7 +132,7 @@ public class FIFOBufferTest {
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
-        FIFOBuffer messageBuffer = new FIFOBuffer();
+        FifoBuffer messageBuffer = new FifoBuffer();
         messageBuffer.open(config);
 
         // Validate

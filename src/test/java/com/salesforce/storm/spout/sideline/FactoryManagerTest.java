@@ -27,14 +27,12 @@ package com.salesforce.storm.spout.sideline;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter;
-import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FifoBuffer;
 import com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -176,7 +174,7 @@ public class FactoryManagerTest {
     @DataProvider
     public static Object[][] provideMessageBufferClasses() {
         return new Object[][]{
-                { FIFOBuffer.class },
+                { FifoBuffer.class },
                 { RoundRobinBuffer.class }
         };
     }

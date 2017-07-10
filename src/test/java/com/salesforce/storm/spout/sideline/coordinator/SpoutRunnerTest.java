@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
-import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FifoBuffer;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -101,7 +101,7 @@ public class SpoutRunnerTest {
     @Test
     public void testConstructor() {
         // Define inputs
-        final MessageBuffer messageBuffer = new FIFOBuffer();
+        final MessageBuffer messageBuffer = new FifoBuffer();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -271,7 +271,7 @@ public class SpoutRunnerTest {
         final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final MessageBuffer messageBuffer = FifoBuffer.createDefaultInstance();
 
         // Setup mock ack queue
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = mock(Map.class);
@@ -362,7 +362,7 @@ public class SpoutRunnerTest {
         final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final MessageBuffer messageBuffer = FifoBuffer.createDefaultInstance();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
@@ -477,7 +477,7 @@ public class SpoutRunnerTest {
         final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final MessageBuffer messageBuffer = FifoBuffer.createDefaultInstance();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 
@@ -592,7 +592,7 @@ public class SpoutRunnerTest {
         final MockDelegateSpout mockSpout = new MockDelegateSpout(virtualSpoutId);
 
         // Create our queues
-        final MessageBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+        final MessageBuffer messageBuffer = FifoBuffer.createDefaultInstance();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
 

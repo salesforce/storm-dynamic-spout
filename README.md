@@ -188,7 +188,7 @@ for available space in the queue.  This acts to throttle producers of messages.
 Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
 This means consuming from the queue will always be fast.
  
-[FIFOBuffer](src/main/java/com/salesforce/storm/spout/sideline/buffer/FIFOBuffer.java) - This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
+[FifoBuffer](src/main/java/com/salesforce/storm/spout/sideline/buffer/FifoBuffer.java) - This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
 
 ### MetricsRecorder Implementations
 The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/sideline/metrics/MetricsRecorder.java) defines how to handle metrics that are gathered by the spout.  Implementations of this interface
