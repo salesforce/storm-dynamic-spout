@@ -200,7 +200,7 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - returns the next Message to be processed out of the queue.
+     * @return returns the next Message to be processed out of the queue.
      */
     @Override
     public Message poll() {
@@ -221,7 +221,7 @@ public class ThrottledMessageBuffer implements MessageBuffer {
 
             // We missed?
             if (queue == null) {
-                logger.info("Non-existent queue found, resetting iterator.");
+                logger.debug("Non-existent queue found, resetting iterator.");
                 consumerIdIterator = messageBuffer.keySet().iterator();
                 continue;
             }
@@ -231,14 +231,14 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
     private BlockingQueue<Message> createNewThrottledQueue() {
         return new LinkedBlockingQueue<>(getThrottledBufferSize());
     }
 
     /**
-     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
     private BlockingQueue<Message> createNewNonThrottledQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSize());
@@ -297,15 +297,21 @@ public class ThrottledMessageBuffer implements MessageBuffer {
         return nonThrottledVirtualSpoutIds;
     }
 
-    BlockingQueue<Message> createBuffer(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    private BlockingQueue<Message> createBuffer(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         // Match VirtualSpoutId against our regex pattern
         final Matcher matches = regexPattern.matcher(virtualSpoutIdentifier.toString());
 
         // If we match it
         if (matches.find()) {
-            // Create a throttled queue.
+            // Debug logging
+            logger.debug("Added new VirtualSpoutId [{}] Throttled? {}", virtualSpoutIdentifier, true);
+
+            // Create and return throttled queue.
             return createNewThrottledQueue();
         }
+        // Debug logging
+        logger.debug("Added new VirtualSpoutId [{}] Throttled? {}", virtualSpoutIdentifier, false);
+
         // Otherwise non-throttled.
         return createNewNonThrottledQueue();
     }

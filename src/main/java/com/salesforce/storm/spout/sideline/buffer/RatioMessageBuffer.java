@@ -214,21 +214,16 @@ public class RatioMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - returns the next Message to be processed out of the queue.
+     * @return returns the next Message to be processed out of the queue.
      */
     @Override
     public Message poll() {
         final VirtualSpoutIdentifier nextIndentifier = nextVirtualSpoutIdGenerator.nextVirtualSpoutId();
-        final Message nextMessage = messageBuffer.get(nextIndentifier).poll();
-
-        // For debugging
-        logger.info("Next Message: {} => {}", nextIndentifier, nextMessage);
-
-        return nextMessage;
+        return messageBuffer.get(nextIndentifier).poll();
     }
 
     /**
-     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
      */
     private BlockingQueue<Message> createNewQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSize());
