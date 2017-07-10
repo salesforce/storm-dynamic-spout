@@ -61,7 +61,7 @@ public class ThrottledMessageBufferTest {
     }
 
     /**
-     * Test that we read the config properties properly.
+     * Tests that we throttle/block put() calls on "Throttled" spout identifiers.
      */
     @Test
     public void testThrottling() throws InterruptedException {

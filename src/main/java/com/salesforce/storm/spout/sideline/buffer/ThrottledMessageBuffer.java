@@ -42,6 +42,30 @@ import java.util.regex.Pattern;
 
 /**
  * Prototype ThrottledMessageBuffer based on configurable BlockingQueue sizes based on VirtualSpoutIds.
+ * This implementation should be considered "experimental" at this point as no real world testing has been done
+ * on it yet.
+ *
+ * The way this works is you define a REGEX pattern to check against VirtualSpoutIdentifiers.
+ * If a VirtualSpoutIdentifier MATCHES this REGEX, then we will enforce a lower buffer size for that Spout.
+ *
+ * Example:
+ * With the following configuration
+ *   - Regex pattern: /^throttle/
+ *   - MaxBufferSize: 100
+ *   - ThrottledBufferSize: 10
+ *
+ * VirtualSpoutId: NormalVirtualSpoutId
+ * Effective BufferSize: 100
+ * Result: Because the VirtualSpoutId does NOT match the REGEX pattern, we will enforce a buffer size limit of 100
+ *         on this Spout.  This spout will be able to add up to 100 entries into the buffer, after that following
+ *         put() calls will block until items are removed from the buffer.
+ *
+ * VirtualSpoutId: ThrottledVirtualSpoutId
+ * Effective BufferSize: 10
+ * Result: Because the VirtualSpoutId DOES match the REGEX pattern, we will enforce a buffer size limit of 10 on this
+ *         spout.  This spout will be able to add up to 10 entries into the buffer, after that following put() calls
+ *         will block until items are removed from the buffer.
+ *
  */
 public class ThrottledMessageBuffer implements MessageBuffer {
     private static final Logger logger = LoggerFactory.getLogger(ThrottledMessageBuffer.class);
