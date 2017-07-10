@@ -161,12 +161,11 @@ public class SpoutCoordinatorTest {
 
     /**
      * Test that if we try to add a spout before the coordinator is open it'll blow up.
-     * @throws Exception Can't do that!
      */
     @Rule
     public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
     @Test
-    public void testAddingSpoutBeforeOpen() throws Exception {
+    public void testAddingSpoutBeforeOpen() {
         final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -186,12 +185,11 @@ public class SpoutCoordinatorTest {
 
     /**
      * Test that adding a spout with the same id will throw an exception
-     * @throws Exception
      */
     @Rule
     public ExpectedException expectedExceptionAddDuplicateSpout = ExpectedException.none();
     @Test
-    public void testAddDuplicateSpout() throws Exception {
+    public void testAddDuplicateSpout() {
         final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
 
         final MetricsRecorder metricsRecorder = new LogRecorder();

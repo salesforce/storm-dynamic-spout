@@ -37,6 +37,11 @@ public class Serializer {
 
     private static final Logger logger = LoggerFactory.getLogger(Serializer.class);
 
+    /**
+     * Deserialize a serialized string value representing a FilterChainStep.
+     * @param value String representing a serialized FilterChainStep.
+     * @return Hydrated/Deserialized FilterChainStep.
+     */
     public static FilterChainStep deserialize(final String value) {
         try {
             final byte[] data = Base64.getDecoder().decode(value);
@@ -53,6 +58,11 @@ public class Serializer {
         }
     }
 
+    /**
+     * Serialize a FilterChainStep to a String representation.
+     * @param step FilterChainStep to serialize.
+     * @return Serialized string representation of FilterChainStep.
+     */
     public static String serialize(FilterChainStep step) {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

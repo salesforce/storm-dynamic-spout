@@ -83,7 +83,8 @@ import java.util.Set;
  * Now imagine the following acks come in:
  *   Ack Offsets: 4,5,3
  *
- * Internally the consumer will recognize that 3 -> 5 are all complete, and now mark offset #5 as the last finished offset.
+ * Internally the consumer will recognize that offsets 3 through 5 are all complete, and now mark offset #5 as the last
+ * finished offset.
  */
 // TODO - rename this class?
 public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Consumer {

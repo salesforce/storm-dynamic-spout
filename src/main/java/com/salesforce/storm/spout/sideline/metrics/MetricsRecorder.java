@@ -63,6 +63,9 @@ public interface MetricsRecorder {
      */
     void averageValue(Class sourceClass, String metricName, Object value);
 
+    /**
+     * Assign a value to metric.
+     */
     void assignValue(Class sourceClass, String metricName, Object value);
 
     /**
@@ -77,11 +80,7 @@ public interface MetricsRecorder {
     <T> T timer(Class sourceClass, final String metricName, Callable<T> callable) throws Exception;
 
     /**
-     * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
-     *
-     * A scope is a secondary key space, so Foo.Bar as a metric name.
-     *
-     * @throws Exception Hopefully whatever went wrong in your callable
+     * Record the execution time, given a name and scope.
      */
     void timer(Class sourceClass, String metricName, long timeInMs);
 
@@ -91,7 +90,7 @@ public interface MetricsRecorder {
     void startTimer(Class sourceClass, String metricName);
 
     /**
-     * Stops & records a timer for the given sourceClass and metricName.
+     * Stops and records a timer for the given sourceClass and metricName.
      */
     void stopTimer(Class sourceClass, String metricName);
 }

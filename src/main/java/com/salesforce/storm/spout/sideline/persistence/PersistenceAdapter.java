@@ -73,8 +73,8 @@ public interface PersistenceAdapter {
     void clearConsumerState(final String consumerId, final int partitionId);
 
     /**
-     * @param type - Sideline Type (Start/Stop)
-     * @param id - unique identifier for the sideline request.
+     * @param type Sideline Type (Start/Stop)
+     * @param id unique identifier for the sideline request.
      * @param partitionId Partition id
      * @param startingOffset Ending offset
      * @param endingOffset Starting offset
@@ -90,14 +90,14 @@ public interface PersistenceAdapter {
 
     /**
      * Retrieves a sideline request state for the given SidelineRequestIdentifier.
-     * @param id - SidelineRequestIdentifier you want to retrieve the state for.
-     * @param partitionId
+     * @param id SidelineRequestIdentifier you want to retrieve the state for.
+     * @param partitionId PartitionId to persist.
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
     SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id, int partitionId);
 
     /**
-     * List the partitions for the given sideline request
+     * List the partitions for the given sideline request.
      * @param id Identifier for the sideline request that you want the partitions for
      * @return A list of the partitions for the sideline request
      */

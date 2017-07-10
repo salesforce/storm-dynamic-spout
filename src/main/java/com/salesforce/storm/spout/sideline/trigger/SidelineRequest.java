@@ -42,11 +42,15 @@ public class SidelineRequest {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
 
-        SidelineRequest that = (SidelineRequest) o;
+        SidelineRequest that = (SidelineRequest) other;
 
         return step != null ? step.equals(that.step) : that.step == null;
     }
