@@ -691,7 +691,7 @@ public class ConsumerTest {
      * We verify that our internal kafka client then knows to start reading from the previously saved consumer state
      * offsets
      *
-     * We setup this test with 4 partitions in our namespace, 0 -> 3
+     * We setup this test with 4 partitions in our namespace, 0 through 3
      *
      * We setup Partitions 0 and 2 to have previously saved state -- We should resume from this previous state
      * We setup Partitions 1 and 3 to have no previously saved state -- We should resume from the earliest offset in the partition.
@@ -1908,8 +1908,8 @@ public class ConsumerTest {
      * resetting the offset on partition 2 to the earliest available (which happens to be 0).
      *
      * We then consume and expect to receive messages:
-     *   partition 0 -> messages 2,3      (because we started at offset 2)
-     *   partition 1 -> messages 0,1,2,3  (because we got reset to earliest)
+     *   partition 0: messages 2,3      (because we started at offset 2)
+     *   partition 1: messages 0,1,2,3  (because we got reset to earliest)
      *
      * This test also validates that for non-reset partitions, that it does not lose
      * any messages.
@@ -2022,8 +2022,8 @@ public class ConsumerTest {
      *   offset 0 for partition 1. (recorded completed offset = -1)
      *
      * We then consume and expect to receive messages:
-     *   partition 0 -> messages 0,1,2,3  (because we started at offset 0)
-     *   partition 1 -> messages 0,1,2,3  (because we started at offset 0)
+     *   partition 0: messages 0,1,2,3  (because we started at offset 0)
+     *   partition 1: messages 0,1,2,3  (because we started at offset 0)
      *
      * Then we should produce 4 more messages into each topic.
      * Before we consume, we should set partition 1's position to offset 21, which is invalid.

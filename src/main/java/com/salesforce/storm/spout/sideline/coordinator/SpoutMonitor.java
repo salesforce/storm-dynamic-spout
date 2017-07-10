@@ -129,6 +129,17 @@ public class SpoutMonitor implements Runnable {
      */
     private long lastStatusReport = 0;
 
+    /**
+     * Constructor.
+     * @param newSpoutQueue Queue monitored for new Spouts that should be started.
+     * @param tupleOutputQueue Queue for pushing out Tuples to the topology.
+     * @param ackedTuplesQueue Queue for incoming Tuples that need to be acked.
+     * @param failedTuplesQueue Queue for incoming Tuples that need to be failed.
+     * @param latch Latch to allow startup synchronization.
+     * @param clock Which clock instance to use, allows injecting a mock clock.
+     * @param topologyConfig Storm topology config.
+     * @param metricsRecorder MetricRecorder implementation for recording metrics.
+     */
     public SpoutMonitor(
         final Queue<DelegateSpout> newSpoutQueue,
         final MessageBuffer tupleOutputQueue,
@@ -148,7 +159,7 @@ public class SpoutMonitor implements Runnable {
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
         this.metricsRecorder = metricsRecorder;
 
-        /**
+        /*
          * Create our executor service with a fixed thread size.
          * Its configured to:
          *   - Time out idle threads after 1 minute

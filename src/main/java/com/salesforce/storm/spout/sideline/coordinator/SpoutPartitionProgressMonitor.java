@@ -47,6 +47,10 @@ public class SpoutPartitionProgressMonitor {
     final PersistenceAdapter persistenceAdapter;
     final Map<ConsumerPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
 
+    /**
+     * Constructor.
+     * @param persistenceAdapter Persistence adapter in which state is stored.
+     */
     public SpoutPartitionProgressMonitor(PersistenceAdapter persistenceAdapter) {
         this.persistenceAdapter = persistenceAdapter;
     }
@@ -59,6 +63,11 @@ public class SpoutPartitionProgressMonitor {
         persistenceAdapter.close();
     }
 
+    /**
+     * Return the status of the spout.
+     * @param spout Which spout to calculate the progress for.
+     * @return Map of ConsumerPartition to the Progress of that ConsumerPartition.
+     */
     public Map<ConsumerPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
         final SidelineRequestIdentifier sidelineIdentifier = getSidelineRequestIdentifier(spout);
 
@@ -192,6 +201,12 @@ public class SpoutPartitionProgressMonitor {
         private final float percentageComplete;
 
 
+        /**
+         * Constructor.
+         * @param startingOffset Offset that the consumer started at.
+         * @param currentOffset Offset that the consumer is currently at.
+         * @param endingOffset Offset that the consumer will stop at.
+         */
         public PartitionProgress(long startingOffset, long currentOffset, long endingOffset) {
             // Calculate total number of messages between starting and ending
             totalMessages = (endingOffset - startingOffset);

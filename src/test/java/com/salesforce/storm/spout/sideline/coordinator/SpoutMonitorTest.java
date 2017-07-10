@@ -36,7 +36,7 @@ import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FifoBuffer;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 import org.junit.After;
 import org.junit.Test;
@@ -97,7 +97,7 @@ public class SpoutMonitorTest {
     public void testConstructor() {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final MessageBuffer messageBuffer = new FIFOBuffer();
+        final MessageBuffer messageBuffer = new FifoBuffer();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(0);
@@ -607,7 +607,7 @@ public class SpoutMonitorTest {
     private SpoutMonitor getDefaultMonitorInstance() {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final MessageBuffer messageBuffer = new FIFOBuffer();
+        final MessageBuffer messageBuffer = new FifoBuffer();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
         final CountDownLatch latch = new CountDownLatch(0);

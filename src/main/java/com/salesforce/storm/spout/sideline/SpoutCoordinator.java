@@ -173,9 +173,9 @@ public class SpoutCoordinator {
     }
 
     private void startSpoutMonitor() {
-        CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((t) -> {
+        CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((exception) -> {
             // On errors, we need to restart it.  We throttle restarts @ 10 seconds to prevent thrashing.
-            logger.error("Spout monitor died unnaturally.  Will restart after 10 seconds. {}", t.getMessage(), t);
+            logger.error("Spout monitor died unnaturally.  Will restart after 10 seconds. {}", exception.getMessage(), exception);
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {

@@ -37,7 +37,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * FIFO implementation.  Has absolutely no "fairness" between VirtualSpouts or any kind of
  * "scheduling."
  */
-public class FIFOBuffer implements MessageBuffer {
+public class FifoBuffer implements MessageBuffer {
     private static final int DEFAULT_MAX_SIZE = 10_000;
 
     /**
@@ -45,17 +45,17 @@ public class FIFOBuffer implements MessageBuffer {
      */
     private BlockingQueue<Message> messageBuffer;
 
-    public FIFOBuffer() {
+    public FifoBuffer() {
     }
 
     /**
      * Helper method for creating a default instance.
      */
-    public static FIFOBuffer createDefaultInstance() {
+    public static FifoBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
         map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
 
-        FIFOBuffer buffer = new FIFOBuffer();
+        FifoBuffer buffer = new FifoBuffer();
         buffer.open(map);
 
         return buffer;

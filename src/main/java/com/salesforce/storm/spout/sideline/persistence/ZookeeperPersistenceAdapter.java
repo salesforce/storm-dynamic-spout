@@ -246,8 +246,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
     /**
      * Removes a sideline request from the persistence layer.
-     * @param id - SidelineRequestIdentifier you want to clear.
-     * @param partitionId
+     * @param id SidelineRequestIdentifier you want to clear.
+     * @param partitionId PartitionId to clear.
      */
     @Override
     public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
@@ -296,7 +296,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     }
 
     /**
-     * List the partitions for the given sideline request
+     * List the partitions for the given sideline request.
      * @param id Identifier for the sideline request that you want the partitions for
      * @return A list of the partitions for the sideline request
      */
