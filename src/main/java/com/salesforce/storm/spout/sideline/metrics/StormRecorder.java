@@ -46,10 +46,10 @@ import java.util.concurrent.Callable;
  *
  * This will report metrics in the following format:
  *
- * Averaged Values: AVERAGES.<className>.<metricName>
- * Gauge Values: GAUGES.<className>.<metricName>
- * Timed Values: TIMERS.<className>.<metricName>
- * Counter Values: COUNTERS.<className>.<metricName>
+ * Averaged Values: AVERAGES.[className].[metricName]
+ * Gauge Values: GAUGES.[className].[metricName]
+ * Timed Values: TIMERS.[className].[metricName]
+ * Counter Values: COUNTERS.[className].[metricName]
  *
  */
 public class StormRecorder implements MetricsRecorder {

@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.trigger;
 import java.util.UUID;
 
 /**
- * Identifies a sideline request, this should be unique to the request
+ * Identifies a sideline request, this should be unique to the request.
  */
 public class SidelineRequestIdentifier {
 
@@ -43,7 +43,7 @@ public class SidelineRequestIdentifier {
     }
 
     /**
-     * Will generate a UUID, this is no longer recommended
+     * Will generate a UUID, this is no longer recommended.
      */
     @Deprecated
     public SidelineRequestIdentifier() {
@@ -59,11 +59,15 @@ public class SidelineRequestIdentifier {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
 
-        SidelineRequestIdentifier that = (SidelineRequestIdentifier) o;
+        SidelineRequestIdentifier that = (SidelineRequestIdentifier) other;
 
         return id != null ? id.equals(that.id) : that.id == null;
     }

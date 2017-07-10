@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNull;
 public class AbstractSchemeTest {
 
     /**
-     * Silly test to go from String -> byte[] -> ByteBuffer -> String.
+     * Silly test to go from String to byte[] to ByteBuffer to String.
      * Heh.
      */
     @Test
@@ -65,7 +65,7 @@ public class AbstractSchemeTest {
     }
 
     /**
-     * Silly test to go from [] -> [] -> [] -> "".
+     * Silly test to go from [] to [] to [] to "".
      * Heh.
      */
     @Test

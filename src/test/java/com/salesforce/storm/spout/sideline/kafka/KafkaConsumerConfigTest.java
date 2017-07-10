@@ -32,9 +32,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-/**
- *
- */
 public class KafkaConsumerConfigTest {
 
     /**
@@ -63,8 +60,5 @@ public class KafkaConsumerConfigTest {
         assertEquals("auto.offset.reset set to none", "none", config.getKafkaConsumerProperty("auto.offset.reset"));
         assertEquals("Key Deserializer set to bytes deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer", config.getKafkaConsumerProperty("key.deserializer"));
         assertEquals("Value Deserializer set to bytes deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer", config.getKafkaConsumerProperty("value.deserializer"));
-
-
-
     }
 }

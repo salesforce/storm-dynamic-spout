@@ -78,10 +78,10 @@ public @interface Documentation {
     /**
      * @return Type of the value for the configuration setting.
      */
-    Class type() default DEFAULT.class;
+    Class type() default Default.class;
 
     /**
      * Default class type for use on the type field.
      */
-    final class DEFAULT {}
+    final class Default {}
 }

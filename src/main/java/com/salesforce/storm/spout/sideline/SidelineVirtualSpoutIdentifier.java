@@ -36,7 +36,7 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
     /**
      * Delimiter for when we create a string for this identifier.
      */
-    private final static String DELIMITER = ":";
+    private static final String DELIMITER = ":";
 
     /**
      * Prefix of the spout, usually something corresponding to the consumer.
@@ -50,8 +50,8 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
 
     /**
      * New instance of a SidelineVirtualSpoutIdentifier using a prefix and a SidelineRequestIdentifier.
-     * @param prefix
-     * @param sidelineRequestIdentifier
+     * @param prefix Prefix to append to the Identifier
+     * @param sidelineRequestIdentifier SidelineRequestIdentifier to associate with the VirtualSpoutId.
      */
     public SidelineVirtualSpoutIdentifier(final String prefix, final SidelineRequestIdentifier sidelineRequestIdentifier) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(prefix), "Prefix is required!");
@@ -88,17 +88,23 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
 
     /**
      * Evaluates the equality of two sideline virtual spout identifiers.
-     * @param o Identifier to be compared against.
+     * @param other Identifier to be compared against.
      * @return Are they equal?
      */
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
 
-        SidelineVirtualSpoutIdentifier that = (SidelineVirtualSpoutIdentifier) o;
+        SidelineVirtualSpoutIdentifier that = (SidelineVirtualSpoutIdentifier) other;
 
-        if (prefix != null ? !prefix.equals(that.prefix) : that.prefix != null) return false;
+        if (prefix != null ? !prefix.equals(that.prefix) : that.prefix != null) {
+            return false;
+        }
         return sidelineRequestIdentifier != null ? sidelineRequestIdentifier.equals(that.sidelineRequestIdentifier) : that.sidelineRequestIdentifier == null;
     }
 

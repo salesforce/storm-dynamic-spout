@@ -43,7 +43,12 @@ import java.util.function.Consumer;
  */
 public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
-    public static PersistConsumerStateCallback<String, Integer, Long> persistConsumerStateCallback = (consumerId, partitionId, offset) -> {};
+    /**
+     * Used within tests to more easily validate assertions.
+     */
+    public static PersistConsumerStateCallback<String, Integer, Long> persistConsumerStateCallback = (consumerId, partitionId, offset) -> {
+        // No-op by default.
+    };
 
     // "Persists" consumer state in memory.
     private Map<String, Long> storedConsumerState;
@@ -96,11 +101,11 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     }
 
     /**
-     * @param type - SidelineType (Start or Stop)
-     * @param id - unique identifier for the sideline request.
-     * @param partitionId
-     * @param startingOffset
-     * @param endingOffset
+     * @param type SidelineType (Start or Stop)
+     * @param id unique identifier for the sideline request.
+     * @param partitionId which partition we want to persist.
+     * @param startingOffset The starting offset to persist.
+     * @param endingOffset The ending offset to persist.
      */
     @Override
     public void persistSidelineRequestState(SidelineType type, SidelineRequestIdentifier id, SidelineRequest request, int partitionId, Long startingOffset, Long endingOffset) {
@@ -109,8 +114,8 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
     /**
      * Retrieves a sideline request state for the given SidelineRequestIdentifier.
-     * @param id - SidelineRequestIdentifier you want to retrieve the state for.
-     * @param partitionId
+     * @param id SidelineRequestIdentifier you want to retrieve the state for.
+     * @param partitionId which partition
      * @return The ConsumerState that was persisted via persistSidelineRequestState().
      */
     @Override
@@ -166,13 +171,19 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
 
-            SidelineRequestStateKey that = (SidelineRequestStateKey) o;
+            SidelineRequestStateKey that = (SidelineRequestStateKey) other;
 
-            if (partitionId != that.partitionId) return false;
+            if (partitionId != that.partitionId) {
+                return false;
+            }
             return id != null ? id.equals(that.id) : that.id == null;
         }
 
