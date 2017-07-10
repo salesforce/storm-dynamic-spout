@@ -64,7 +64,7 @@ public class MessageBufferTest {
     @DataProvider
     public static Object[][] provideMessageBuffers() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
-                { createInstance(FIFOBuffer.class, 10000) },
+                { createInstance(FifoBuffer.class, 10000) },
                 { createInstance(RoundRobinBuffer.class, 1000 ) },
         };
     }
