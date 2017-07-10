@@ -24,6 +24,7 @@
  */
 package com.salesforce.storm.spout.sideline.buffer;
 
+import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.MessageId;
@@ -35,6 +36,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -58,6 +60,41 @@ public class ThrottledMessageBufferTest {
         assertEquals("Buffer size configured", bufferSize, buffer.getMaxBufferSize());
         assertEquals("Throttled Buffer size configured", throttledBufferSize, buffer.getThrottledBufferSize());
         assertEquals("Regex Pattern set correctly", regexPattern, buffer.getRegexPattern().pattern());
+    }
+
+    /**
+     * Validates that VirtualSpoutIds that SHOULD be marked as throttled, DO.
+     * And those that SHOULD NOT, DON'T
+     */
+    @Test
+    public void testVirtualSpoutsGetMarkedAsThrottled() {
+        final String regexPattern = "^Throttled.*";
+
+        // Create instance & open
+        ThrottledMessageBuffer buffer = createDefaultBuffer(10, 3, regexPattern);
+
+        final VirtualSpoutIdentifier id1 = new DefaultVirtualSpoutIdentifier("Throttled 1");
+        final VirtualSpoutIdentifier id2 = new DefaultVirtualSpoutIdentifier("Not Throttled 2");
+        final VirtualSpoutIdentifier id3 = new DefaultVirtualSpoutIdentifier("Throttled 3");
+        final VirtualSpoutIdentifier id4 = new DefaultVirtualSpoutIdentifier("Not Throttled 4");
+
+        final Set<VirtualSpoutIdentifier> throttledIds = Sets.newHashSet(
+            id1, id3
+        );
+
+        final Set<VirtualSpoutIdentifier> nonThrottledIds = Sets.newHashSet(
+            id2, id4
+        );
+
+        // Add them
+        buffer.addVirtualSpoutId(id1);
+        buffer.addVirtualSpoutId(id2);
+        buffer.addVirtualSpoutId(id3);
+        buffer.addVirtualSpoutId(id4);
+
+        // Validate
+        assertEquals("All non throttled Ids match expected", nonThrottledIds, buffer.getNonThrottledVirtualSpoutIdentifiers());
+        assertEquals("All throttled Ids match expected", throttledIds, buffer.getThrottledVirtualSpoutIdentifiers());
     }
 
     /**

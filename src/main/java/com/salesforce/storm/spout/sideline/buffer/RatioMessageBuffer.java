@@ -47,21 +47,50 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Prototype example of a MessageBuffer that throttles based on a ratio.
+ * Prototype example of a MessageBuffer that attempts to throttle via a configurable ratio on the consuming side/poll()
+ * method that determines which Spout to consume the next message from.
+ *
+ * This implementation should be considered "experimental" at this point as no real world testing has been done
+ * on it yet.
+ *
+ * The way this works is you define a REGEX pattern to check against VirtualSpoutIdentifiers.
+ * If a VirtualSpoutIdentifier MATCHES this REGEX, then we will adjust the frequency in which messages will be returned
+ * by the poll() from the throttled VirtualSpoutIds.
+ *
+ * Example:
+ * With the following configuration
+ *   - Regex pattern: /^throttle/
+ *   - ThrottleRatio: 10
+ *
+ * VirtualSpoutId: NormalVirtualSpoutId
+ * Effective ThrottleRatio: ~(1/N) where N = Number of VirtualSpouts
+ * Result: Because the VirtualSpoutId does NOT match the REGEX pattern, this implementation will fall back to
+ *         essentially round robbin returning entries from the poll() method for all non-throttled VirtualSpouts
+ *         with equal preference.
+ *
+ * VirtualSpoutId: ThrottledVirtualSpoutId
+ * Effective ThrottleRatio: 1/(10+N), where N = Number of VirtualSpouts.
+ * Result: Because the VirtualSpoutId DOES match the REGEX pattern, this implementation will attempt to emit entries
+ *         from the poll() method at a rate that is 1/10th as often as the non-throttled VirtualSpouts.
  */
 public class RatioMessageBuffer implements MessageBuffer {
     private static final Logger logger = LoggerFactory.getLogger(RatioMessageBuffer.class);
 
     /**
+     * Config option for max buffer size.
+     */
+    public static final String CONFIG_BUFFER_SIZE = SpoutConfig.TUPLE_BUFFER_MAX_SIZE;
+
+    /**
      * Config option for NON-throttled buffer size.
      */
-    private static final String CONFIG_THROTTLE_RATIO = "spout.coordinator.tuple_buffer.throttle_ratio";
+    public static final String CONFIG_THROTTLE_RATIO = "spout.coordinator.tuple_buffer.throttle_ratio";
 
     /**
      * Config option to define a regex pattern to match against VirtualSpoutIds.  If a VirtualSpoutId
      * matches this pattern, it will be throttled.
      */
-    private static final String CONFIG_THROTTLE_REGEX_PATTERN = "spout.coordinator.tuple_buffer.throttled_spout_id_regex";
+    public static final String CONFIG_THROTTLE_REGEX_PATTERN = "spout.coordinator.tuple_buffer.throttled_spout_id_regex";
 
     /**
      * A Map of VirtualSpoutIds => Its own Blocking Queue.
@@ -132,6 +161,9 @@ public class RatioMessageBuffer implements MessageBuffer {
 
             boolean isThrottled = regexPattern.matcher(virtualSpoutId.toString()).find();
             nextVirtualSpoutIdGenerator.addNewVirtualSpout(virtualSpoutId, isThrottled);
+
+            // Debug logging
+            logger.debug("Added new VirtualSpoutId [{}] Throttled? {}", virtualSpoutId, isThrottled);
         }
     }
 
@@ -186,7 +218,13 @@ public class RatioMessageBuffer implements MessageBuffer {
      */
     @Override
     public Message poll() {
-        return messageBuffer.get(nextVirtualSpoutIdGenerator.nextVirtualSpoutId()).poll();
+        final VirtualSpoutIdentifier nextIndentifier = nextVirtualSpoutIdGenerator.nextVirtualSpoutId();
+        final Message nextMessage = messageBuffer.get(nextIndentifier).poll();
+
+        // For debugging
+        logger.info("Next Message: {} => {}", nextIndentifier, nextMessage);
+
+        return nextMessage;
     }
 
     /**
@@ -196,9 +234,39 @@ public class RatioMessageBuffer implements MessageBuffer {
         return new LinkedBlockingQueue<>(getMaxBufferSize());
     }
 
-
+    /**
+     * @return The configured maximum buffer size.
+     */
     public int getMaxBufferSize() {
         return maxBufferSize;
+    }
+
+    /**
+     * @return The configured Regex pattern to match throttled VirtualSpoutIds against.
+     */
+    public Pattern getRegexPattern() {
+        return regexPattern;
+    }
+
+    /**
+     * @return The configured throttle ratio.
+     */
+    public int getThrottleRatio() {
+        return throttleRatio;
+    }
+
+    /**
+     * @return Set of all VirtualSpoutIds that ARE throttled.
+     */
+    public Set<VirtualSpoutIdentifier> getThrottledVirtualSpoutIdentifiers() {
+        return nextVirtualSpoutIdGenerator.getAllThrottledVirtualSpoutIds();
+    }
+
+    /**
+     * @return Set of all VirtualSpoutIds that are NOT throttled.
+     */
+    public Set<VirtualSpoutIdentifier> getNonThrottledVirtualSpoutIdentifiers() {
+        return nextVirtualSpoutIdGenerator.getAllNonThrottledVirtualSpoutIds();
     }
 
     private static class NextVirtualSpoutIdGenerator {
@@ -252,6 +320,39 @@ public class RatioMessageBuffer implements MessageBuffer {
 
         public VirtualSpoutIdentifier nextVirtualSpoutId() {
             return consumerIdIterator.next();
+        }
+
+        /**
+         * @return All tracked VirtualSpoutIdentifiers.
+         */
+        public Set<VirtualSpoutIdentifier> getAllVirtualSpoutIds() {
+            return allIds.keySet();
+        }
+
+        /**
+         * @return All tracked VirtualSpoutIdentifiers that ARE throttled.
+         */
+        public Set<VirtualSpoutIdentifier> getAllThrottledVirtualSpoutIds() {
+            Set<VirtualSpoutIdentifier> throttledVirtualSpoutIds = new HashSet<>();
+            for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry : allIds.entrySet()) {
+                if (entry.getValue()) {
+                    throttledVirtualSpoutIds.add(entry.getKey());
+                }
+            }
+            return throttledVirtualSpoutIds;
+        }
+
+        /**
+         * @return All tracked VirtualSpoutIdentifiers that are NOT throttled.
+         */
+        public Set<VirtualSpoutIdentifier> getAllNonThrottledVirtualSpoutIds() {
+            Set<VirtualSpoutIdentifier> notThrottledVirtualSpoutIds = new HashSet<>();
+            for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry : allIds.entrySet()) {
+                if (!entry.getValue()) {
+                    notThrottledVirtualSpoutIds.add(entry.getKey());
+                }
+            }
+            return notThrottledVirtualSpoutIds;
         }
     }
 }
