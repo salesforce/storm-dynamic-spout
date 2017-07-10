@@ -101,7 +101,7 @@ public class SpoutConfig {
 ///////////////////////////////////
 
     /**
-     * (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format:
+     * (List[String) Holds a list of Zookeeper server Hostnames + Ports in the following format:
      * ["zkhost1:2181", "zkhost2:2181", ...]
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.

@@ -265,6 +265,12 @@ public class FactoryManager implements Serializable {
         }
     }
 
+    /**
+     * Utility method for instantiating new instance from a package/class name.
+     * @param classStr Fully qualified classname.
+     * @param <T> Instance you are creating.
+     * @return Newly created instance.
+     */
     public <T> T createNewInstance(String classStr) {
         try {
             Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);

@@ -47,10 +47,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.TreeMap;
 
 /**
- * 
  * When executed, this class will update the Configuration section of README.md file.
  * The old file will be saved as README.md.bak.
- *
  */
 public class ConfigPrinter {
 
@@ -58,6 +56,11 @@ public class ConfigPrinter {
     private static final String CONFIGURATION_BEGIN_DELIMITER = "[//]: <> (CONFIGURATION_BEGIN_DELIMITER)";
     private static final String CONFIGURATION_END_DELIMITER = "[//]: <> (CONFIGURATION_END_DELIMITER)";
 
+    /**
+     * Main method for generating the README.
+     * @param args Not used.
+     * @throws Exception on error.
+     */
     public static void main(String[] args) throws Exception {
         // Assume folders and files are relative to the project root
         Path readmePath = Paths.get("README.md");
@@ -109,9 +112,8 @@ public class ConfigPrinter {
 
     /**
      * Injects configuration table into README.
-     * 
-     * @throws IllegalAccessException
-     * @throws NoSuchFieldException
+     * @throws IllegalAccessException on error
+     * @throws NoSuchFieldException on error
      */
     private static void mergeConfigSection(Class configClass, Map<String, Object> defaults, PrintWriter readmePrintWriter) throws IllegalAccessException, NoSuchFieldException {
         readmePrintWriter.println();
@@ -138,10 +140,10 @@ public class ConfigPrinter {
                     lines.put(documentation.category(), new ArrayList<>());
                 }
 
-                String description = documentation.description();
-                String type = documentation.type().getSimpleName();
-                boolean required = documentation.required();
-                String defaultValue = String.valueOf(defaults.getOrDefault(configParam, ""));
+                final String description = documentation.description();
+                final String type = documentation.type().getSimpleName();
+                final boolean required = documentation.required();
+                final String defaultValue = String.valueOf(defaults.getOrDefault(configParam, ""));
 
                 builder.append(configParam).append(DELIMITER);
                 builder.append(type).append(DELIMITER);

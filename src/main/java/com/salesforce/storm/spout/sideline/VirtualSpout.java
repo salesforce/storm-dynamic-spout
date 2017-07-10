@@ -271,7 +271,7 @@ public class VirtualSpout implements DelegateSpout {
      */
     @Override
     public Message nextTuple() {
-        long totalTime = System.currentTimeMillis();
+        final long totalTime = System.currentTimeMillis();
 
         // Talk to a "failed tuple manager interface" object to see if any tuples
         // that failed previously are ready to be replayed.  This is an interface
@@ -352,10 +352,10 @@ public class VirtualSpout implements DelegateSpout {
 
         // TEMP Every so often display stats
         if (nextTupleTimeBuckets.get("totalCalls") % 10_000_000 == 0) {
-            totalTime = nextTupleTimeBuckets.get("totalTime");
+            final long bucketTime = nextTupleTimeBuckets.get("totalTime");
             logger.info("==== nextTuple() Totals after {} calls ====", nextTupleTimeBuckets.get("totalCalls"));
             for (Map.Entry<String, Long> entry : nextTupleTimeBuckets.entrySet()) {
-                logger.info("nextTuple() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / totalTime) * 100);
+                logger.info("nextTuple() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / bucketTime) * 100);
             }
         }
 
@@ -390,7 +390,7 @@ public class VirtualSpout implements DelegateSpout {
 
     @Override
     public void ack(Object msgId) {
-        long totalTime = System.currentTimeMillis();
+        final long totalTime = System.currentTimeMillis();
 
         if (msgId == null) {
             logger.warn("Null msg id passed, ignoring");
@@ -428,10 +428,10 @@ public class VirtualSpout implements DelegateSpout {
 
         // TEMP Every so often display stats
         if (ackTimeBuckets.get("TotalCalls") % 10_000_000 == 0) {
-            totalTime = ackTimeBuckets.get("TotalTime");
+            final long bucketTime = ackTimeBuckets.get("TotalTime");
             logger.info("==== ack() Totals after {} calls ====", ackTimeBuckets.get("TotalCalls"));
             for (Map.Entry<String, Long> entry : ackTimeBuckets.entrySet()) {
-                logger.info("ack() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / totalTime) * 100);
+                logger.info("ack() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / bucketTime) * 100);
             }
         }
     }

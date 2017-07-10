@@ -31,7 +31,7 @@ import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.sideline.buffer.FIFOBuffer;
+import com.salesforce.storm.spout.sideline.buffer.FifoBuffer;
 import org.apache.storm.tuple.Values;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public class SpoutCoordinatorTest {
         final Message message2 = new Message(new MessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
         final Message message3 = new Message(new MessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
 
-        final FIFOBuffer actual = FIFOBuffer.createDefaultInstance();
+        final FifoBuffer actual = FifoBuffer.createDefaultInstance();
 
         // Create noop metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -161,13 +161,12 @@ public class SpoutCoordinatorTest {
 
     /**
      * Test that if we try to add a spout before the coordinator is open it'll blow up.
-     * @throws Exception Can't do that!
      */
     @Rule
     public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
     @Test
-    public void testAddingSpoutBeforeOpen() throws Exception {
-        final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+    public void testAddingSpoutBeforeOpen() {
+        final FifoBuffer messageBuffer = FifoBuffer.createDefaultInstance();
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
@@ -186,13 +185,12 @@ public class SpoutCoordinatorTest {
 
     /**
      * Test that adding a spout with the same id will throw an exception
-     * @throws Exception
      */
     @Rule
     public ExpectedException expectedExceptionAddDuplicateSpout = ExpectedException.none();
     @Test
-    public void testAddDuplicateSpout() throws Exception {
-        final FIFOBuffer messageBuffer = FIFOBuffer.createDefaultInstance();
+    public void testAddDuplicateSpout() {
+        final FifoBuffer messageBuffer = FifoBuffer.createDefaultInstance();
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());

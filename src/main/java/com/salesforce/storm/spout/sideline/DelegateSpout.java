@@ -104,14 +104,14 @@ public interface DelegateSpout {
     /**
      * Used by SpoutPartitionProgressMonitor to find the max lag of any partitions in the consumer for the current
      * virtual spout.
-     * @todo This should be revisited, this feels out of place in the interface.
+     * TODO This should be revisited, this feels out of place in the interface.
      * @return Max lag.
      */
     double getMaxLag();
 
     /**
      * Get the number of filters applied to spout's filter chain. Used for metrics in the spout monitor.
-     * @todo Should we drop this metric? This feels out of place in the interface.
+     * TODO Should we drop this metric? This feels out of place in the interface.
      * @return Number of filters applied.
      */
     int getNumberOfFiltersApplied();

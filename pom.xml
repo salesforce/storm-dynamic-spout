@@ -44,10 +44,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- test toggling -->
-        <skipTests>false</skipTests>
-        <skipCodeCoverage>true</skipCodeCoverage>
-
         <!-- output jar location -->
         <jarOutputDir></jarOutputDir>
 
@@ -60,7 +56,12 @@
         <!-- Define which Curator version -->
         <curatorVersion>2.12.0</curatorVersion>
 
-        <artifactoryHost>artifactory.dev.pardot.com</artifactoryHost>
+
+
+        <!-- test toggling -->
+        <skipTests>false</skipTests>
+        <skipCodeCoverage>true</skipCodeCoverage>
+        <skipCheckStyle>true</skipCheckStyle>
     </properties>
 
     <dependencies>
@@ -362,18 +363,77 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Enforce Checkstyles Validation -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <executions>
+                    <execution>
+                        <id>checkstyle-validate</id>
+                        <phase>validate</phase><!-- when we need to run checkstyle::check -->
+                        <configuration>
+                            <configLocation>script/checkstyle-ruleset.xml</configLocation>
+                            <encoding>utf-8</encoding>
+                            <consoleOutput>true</consoleOutput>
+                            <violationSeverity>warning</violationSeverity>
+                            <failsOnError>true</failsOnError>
+                            <enableRSS>false</enableRSS>
+
+                            <!-- By default skip checkstyle validation-->
+                            <skip>${skipCheckStyle}</skip>
+                        </configuration>
+                        <goals>
+                            <!-- Generate site/html report -->
+                            <goal>checkstyle</goal>
+
+                            <!-- Enforce failing build on checkstyle failure -->
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <!-- Use a current version of checkstyle -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>2.17</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>8.0</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
-    <!-- Generates Public API Docs -->
     <reporting>
         <plugins>
+            <!-- Generates Public API Docs -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.10.4</version>
                 <configuration>
                     <show>public</show>
+                </configuration>
+            </plugin>
+
+            <!-- Code Style Results -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <configLocation>script/checkstyle-ruleset.xml</configLocation>
                 </configuration>
             </plugin>
         </plugins>

@@ -63,7 +63,7 @@ public class KafkaConsumerConfig {
     public static final String KAFKA_TOPIC = "spout.kafka.topic";
 
     /**
-     * (List<String>) Holds a list of Kafka Broker hostnames + ports in the following format:
+     * (List[String]) Holds a list of Kafka Broker hostnames + ports in the following format:
      * ["broker1:9092", "broker2:9092", ...]
      */
     @Documentation(
@@ -88,7 +88,7 @@ public class KafkaConsumerConfig {
     public static final String CONSUMER_ID_PREFIX = SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
 
     /**
-     * (Boolean) TODO
+     * (Boolean) TODO.
      */
     @Documentation(
         category = Documentation.Category.KAFKA,
@@ -98,7 +98,7 @@ public class KafkaConsumerConfig {
     public static final String CONSUMER_STATE_AUTOCOMMIT = "spout.kafka.autocommit";
 
     /**
-     * (Boolean) TODO
+     * (Boolean) TODO.
      */
     @Documentation(
         category = Documentation.Category.KAFKA,
