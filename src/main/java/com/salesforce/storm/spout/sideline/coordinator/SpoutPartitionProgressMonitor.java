@@ -66,7 +66,7 @@ class SpoutPartitionProgressMonitor {
         final ConsumerState endingState = spout.getEndingState();
 
         if (currentState == null) {
-            logger.error("No current state for {}, something must be wrong!", virtualSpoutId);
+            logger.warn("No current state for {}, if the spout didn't just open there's probably a bug in your consumer!", virtualSpoutId);
             return;
         }
 
