@@ -533,6 +533,10 @@ public class VirtualSpout implements DelegateSpout {
         return filterChain;
     }
 
+    /**
+     * Get the spout's current consumer state.
+     * @return current consumer state
+     */
     public ConsumerState getCurrentState() {
         // This could happen is someone tries calling this method before the vspout is opened
         if (consumer == null) {
