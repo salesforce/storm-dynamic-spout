@@ -187,12 +187,8 @@ public class VirtualSpout implements DelegateSpout {
         if (isOpened) {
             throw new IllegalStateException("Cannot call open more than once!");
         }
-        // Set state to true.
-        isOpened = true;
 
-        // For debugging purposes
-        logger.info("Open has starting state: {}", startingState);
-        logger.info("Open has ending state: {}", endingState);
+        logger.info("Open has starting state {} and ending state {}", startingState, endingState);
 
         // Create our failed msg retry manager & open
         retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
@@ -223,6 +219,9 @@ public class VirtualSpout implements DelegateSpout {
             logger.debug("I do not have a starting state, so I am setting it to the consumer's current state instead.");
             startingState = consumer.getCurrentState();
         }
+
+        // Set state to true, once we've successfully opened everything up.  We do NOT block for the spout handlers.
+        isOpened = true;
 
         virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
         virtualSpoutHandler.open(spoutConfig);
@@ -535,6 +534,10 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     public ConsumerState getCurrentState() {
+        // This could happen is someone tries calling this method before the vspout is opened
+        if (consumer == null) {
+            return null;
+        }
         return consumer.getCurrentState();
     }
 
