@@ -1422,7 +1422,8 @@ public class VirtualSpoutTest {
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
-            null,
+            // We provide a dud of a starting state so that getConsumerState() is not called twice
+            ConsumerState.builder().build(),
             null
         );
         virtualSpout.open();
