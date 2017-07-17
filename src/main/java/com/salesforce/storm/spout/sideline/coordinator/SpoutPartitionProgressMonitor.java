@@ -119,7 +119,8 @@ class SpoutPartitionProgressMonitor {
             }
 
             Long percentComplete = null;
-            if (totalProcessed != null && totalMessages != null) {
+            // Need both stats, and to make sure we don't divide by 0!
+            if (totalProcessed != null && totalMessages != null && totalMessages > 0) {
                 percentComplete = (totalProcessed / totalMessages) * 100;
             }
 
