@@ -218,6 +218,12 @@ public class VirtualSpout implements DelegateSpout {
         // Open consumer
         consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
 
+        // This is an approximation, after the consumer has been opened since we were not provided with a starting state
+        if (startingState == null) {
+            logger.debug("I do not have a starting state, so I am setting it to the consumer's current state instead.");
+            startingState = consumer.getCurrentState();
+        }
+
         virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
         virtualSpoutHandler.open(spoutConfig);
         virtualSpoutHandler.onVirtualSpoutOpen(this);
