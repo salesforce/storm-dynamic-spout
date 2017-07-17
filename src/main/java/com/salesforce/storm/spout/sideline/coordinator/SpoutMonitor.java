@@ -24,7 +24,6 @@
  */
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
@@ -114,7 +113,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * Calculates progress of VirtualSideline spout instances.
      */
-    private SpoutPartitionProgressMonitor consumerMonitor;
+    private SpoutPartitionProgressMonitor spoutPartitionProgressMonitor;
 
     private final Map<VirtualSpoutIdentifier, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
     private final Map<VirtualSpoutIdentifier, CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
@@ -200,7 +199,7 @@ public class SpoutMonitor implements Runnable {
     public void run() {
         try {
             // Rename our thread.
-            Thread.currentThread().setName("VirtualSpoutMonitor");
+            Thread.currentThread().setName("SpoutMonitor");
 
             // Start monitoring loop.
             while (keepRunning()) {
@@ -265,7 +264,6 @@ public class SpoutMonitor implements Runnable {
         for (Map.Entry<VirtualSpoutIdentifier, CompletableFuture> entry: spoutThreads.entrySet()) {
             final VirtualSpoutIdentifier virtualSpoutId = entry.getKey();
             final CompletableFuture future = entry.getValue();
-            final SpoutRunner spoutRunner = spoutRunners.get(virtualSpoutId);
 
             if (future.isDone()) {
                 if (future.isCompletedExceptionally()) {
@@ -325,58 +323,21 @@ public class SpoutMonitor implements Runnable {
 
         // Loop through spouts instances
         try {
-            if (consumerMonitor == null) {
-                // Create consumer monitor instance
-                consumerMonitor = new SpoutPartitionProgressMonitor(new FactoryManager(getTopologyConfig()).createNewPersistenceAdapterInstance());
-                consumerMonitor.open(getTopologyConfig());
-            }
-
             // Loop thru all of them to get virtualSpout Ids.
             for (final SpoutRunner spoutRunner : spoutRunners.values()) {
                 final DelegateSpout spout = spoutRunner.getSpout();
-                Map<ConsumerPartition, SpoutPartitionProgressMonitor.PartitionProgress> progressMap = consumerMonitor.getStatus(spout);
 
-                if (progressMap == null) {
-                    continue;
-                }
+                // Report the spout's consumer's progress on it's partitions
+                getSpoutPartitionProgressMonitor().reportStatus(
+                    spout
+                );
 
-                logger.info("== VirtualSpoutId {} ({} filters applied) Status ==", spout.getVirtualSpoutId(), spout.getNumberOfFiltersApplied());
-
-                // Calculate the progress
-                for (Map.Entry<ConsumerPartition, SpoutPartitionProgressMonitor.PartitionProgress> entry : progressMap.entrySet()) {
-                    final ConsumerPartition topicPartition = entry.getKey();
-                    final SpoutPartitionProgressMonitor.PartitionProgress partitionProgress = entry.getValue();
-
-                    // Log progress
-                    logger.info("Partition: {} => {}% complete [{} of {} processed, {} remaining]",
-                        topicPartition,
-                        partitionProgress.getPercentageComplete(),
-                        partitionProgress.getTotalProcessed(),
-                        partitionProgress.getTotalMessages(),
-                        partitionProgress.getTotalUnprocessed()
-                    );
-
-                    // Report to metric reporter
-                    final String virtualSpoutMetricKey = spout.getVirtualSpoutId() + ".partition" + topicPartition.partition();
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalProcessed", partitionProgress.getTotalProcessed());
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalUnprocessed", partitionProgress.getTotalUnprocessed());
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".totalMessages", partitionProgress.getTotalMessages());
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".percentComplete", partitionProgress.getPercentageComplete());
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".startingOffset", partitionProgress.getStartingOffset());
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".currentOffset", partitionProgress.getCurrentOffset());
-                    getMetricsRecorder().assignValue(VirtualSpout.class, virtualSpoutMetricKey + ".endingOffset", partitionProgress.getEndingOffset());
-                }
                 // Report how many filters are applied on this virtual spout.
                 getMetricsRecorder().assignValue(VirtualSpout.class, spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied());
             }
         } catch (Throwable t) {
             logger.error("Caught exception during status checks {}", t.getMessage(), t);
-
-            // Do basic cleanup.
-            if (consumerMonitor != null) {
-                consumerMonitor.close();
-            }
-            consumerMonitor = null;
+            spoutPartitionProgressMonitor = null;
         }
     }
 
@@ -395,10 +356,9 @@ public class SpoutMonitor implements Runnable {
         // during the shutdown process.
         executor.getQueue().clear();
 
-        // Stop consumerMonitor
-        if (consumerMonitor != null) {
-            consumerMonitor.close();
-            consumerMonitor = null;
+        // Stop spoutPartitionProgressMonitor
+        if (spoutPartitionProgressMonitor != null) {
+            spoutPartitionProgressMonitor = null;
         }
 
         // Loop through our runners and request stop on each
@@ -467,6 +427,18 @@ public class SpoutMonitor implements Runnable {
      */
     int getMaxConcurrentVirtualSpouts() {
         return ((Number) getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
+    }
+
+    /**
+     * Get the spout partition progress monitor so we can track and report spout progress.
+     * @return the spout partition progress monitor.
+     */
+    private SpoutPartitionProgressMonitor getSpoutPartitionProgressMonitor() {
+        if (spoutPartitionProgressMonitor == null) {
+            // Create consumer monitor instance
+            spoutPartitionProgressMonitor = new SpoutPartitionProgressMonitor(getMetricsRecorder());
+        }
+        return spoutPartitionProgressMonitor;
     }
 
     /**

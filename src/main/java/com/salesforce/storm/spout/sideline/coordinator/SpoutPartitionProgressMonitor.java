@@ -24,248 +24,170 @@
  */
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.VirtualSpout;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.DelegateSpout;
-import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Map;
-
 /**
- * Attempts to monitor VirtualSpout progress.
+ * Reports the progress of the spout's consumer, partition by partition.
  */
-public class SpoutPartitionProgressMonitor {
+class SpoutPartitionProgressMonitor {
+
     private static final Logger logger = LoggerFactory.getLogger(SpoutPartitionProgressMonitor.class);
 
-    final PersistenceAdapter persistenceAdapter;
-    final Map<ConsumerPartition, PartitionProgress> mainProgressMap = Maps.newHashMap();
+    /**
+     * Metrics recorder for various partition specific stats.
+     */
+    private final MetricsRecorder metricsRecorder;
 
     /**
      * Constructor.
-     * @param persistenceAdapter Persistence adapter in which state is stored.
      */
-    public SpoutPartitionProgressMonitor(PersistenceAdapter persistenceAdapter) {
-        this.persistenceAdapter = persistenceAdapter;
-    }
-
-    public void open(Map spoutConfig) {
-        persistenceAdapter.open(spoutConfig);
-    }
-
-    public void close() {
-        persistenceAdapter.close();
+    SpoutPartitionProgressMonitor(final MetricsRecorder metricsRecorder) {
+        this.metricsRecorder = metricsRecorder;
     }
 
     /**
-     * Return the status of the spout.
-     * @param spout Which spout to calculate the progress for.
-     * @return Map of ConsumerPartition to the Progress of that ConsumerPartition.
+     * Reports the progress of the spout's consumer, partition by partition.
+     * @param spout spout to calculate the progress for.
      */
-    public Map<ConsumerPartition, PartitionProgress> getStatus(final DelegateSpout spout) {
-        final SidelineRequestIdentifier sidelineIdentifier = getSidelineRequestIdentifier(spout);
-
-        if (sidelineIdentifier == null) {
-            // This is the main
-            return handleMainVirtualSpout(spout);
-        } else {
-            // This is a sideline request virtual spout
-            return handleSidelineVirtualSpout(spout);
-        }
-    }
-
-    private SidelineRequestIdentifier getSidelineRequestIdentifier(final DelegateSpout spout) {
+    void reportStatus(final DelegateSpout spout) {
         final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
 
-        // TODO: Revisit this after more work has been done to the vspoutid object
-        // Parse out the SidelineRequestId, this is not ideal.
-        final String[] bits = virtualSpoutId.toString().split(":");
-        if (bits.length != 2) {
-            logger.error("Unable to parse virtualSpoutId: {}", virtualSpoutId);
-            return null;
-        }
+        logger.debug("Reporting status for {}", virtualSpoutId);
 
-        // Grab 2nd bit.
-        final String sidelineRequestIdString = bits[1];
-
-        if (sidelineRequestIdString.equals("main")) {
-            return null;
-        } else {
-            return new SidelineRequestIdentifier(sidelineRequestIdString);
-        }
-
-    }
-
-    private Map<ConsumerPartition, PartitionProgress> handleMainVirtualSpout(final DelegateSpout spout) {
         final ConsumerState currentState = spout.getCurrentState();
+        final ConsumerState startingState = spout.getStartingState();
+        final ConsumerState endingState = spout.getEndingState();
 
-        // Max lag is the MAX lag across all partitions
-        // This is not ideal...since its not tied to any specific partition.
-        // At best you'll get the MAX lag for all of the partitions your instance is consuming from :/
-        final Double maxLag = spout.getMaxLag();
-
-        for (final ConsumerPartition consumerPartition : currentState.getConsumerPartitions()) {
-            final PartitionProgress previousProgress = mainProgressMap.get(consumerPartition);
-            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
-
-            // "Calculate" ending offset by adding currentOffset + maxLag
-            final long endingOffset = currentOffset + maxLag.longValue();
-
-            if (previousProgress == null) {
-                mainProgressMap.put(consumerPartition, new PartitionProgress(currentOffset, currentOffset, endingOffset));
-                continue;
-            }
-
-            // Build new progress
-            mainProgressMap.put(consumerPartition, new PartitionProgress(previousProgress.getStartingOffset(), currentOffset, endingOffset));
+        if (currentState == null) {
+            logger.error("No current state for {}, something must be wrong!", virtualSpoutId);
+            return;
         }
 
-        return Collections.unmodifiableMap(mainProgressMap);
-    }
+        // This value is not partition specific and represents the maximum possible lag from the consumer for ANY partition
+        double maxLag = spout.getMaxLag();
 
-    private Map<ConsumerPartition, PartitionProgress> handleSidelineVirtualSpout(final DelegateSpout spout) {
-        // Create return map
-        Map<ConsumerPartition, PartitionProgress> progressMap = Maps.newHashMap();
-
-        final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
-        final SidelineRequestIdentifier sidelineRequestIdentifier = getSidelineRequestIdentifier(spout);
-        final ConsumerState currentState = spout.getCurrentState();
-
+        // We can only track progress for partitions the consumer is currently subscribed to, so let's loop
+        // over those.  It's possible there were more partitions in startingState, but we can't deal with
+        // those if we are not currently getting state reported for them.
         for (final ConsumerPartition consumerPartition : currentState.getConsumerPartitions()) {
-            // Retrieve status
-            final SidelinePayload payload = getPersistenceAdapter().retrieveSidelineRequest(
-                sidelineRequestIdentifier,
-                consumerPartition.partition()
-            );
-
-            if (payload == null) {
-                // Nothing to do?
-                logger.error("Could not find SidelineRequest for Id {}", sidelineRequestIdentifier);
-                return null;
-            }
-
-            // Get the state
-            Long currentOffset = getPersistenceAdapter().retrieveConsumerState(virtualSpoutId.toString(), consumerPartition.partition());
+            // Find the current state for the partition we're looking at
+            Long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
             if (currentOffset == null) {
-                logger.info("Could not find Current State for Id {}, assuming consumer has no previous state", virtualSpoutId);
+                // This most likely happens when the partition has been completed, else it could be an error
+                logger.error("Could not find CURRENT offset for {} on virtual spout {}", consumerPartition, virtualSpoutId);
                 continue;
             }
 
-            // Make sure no nulls
-            boolean hasError = false;
-            if (payload.startingOffset == null) {
-                logger.warn("No starting state found for {}", consumerPartition);
-                hasError = true;
-            }
-            if (payload.endingOffset == null) {
-                logger.warn("No end state found for {}", consumerPartition);
-                hasError = true;
-            }
-            // Skip errors
-            if (hasError) {
-                continue;
-            }
-
-            final PartitionProgress partitionProgress = new PartitionProgress(
-                payload.startingOffset,
-                currentOffset,
-                payload.endingOffset
-            );
-
-            progressMap.put(consumerPartition, partitionProgress);
-        }
-
-        return Collections.unmodifiableMap(progressMap);
-    }
-
-    /**
-     * @return - Return the persistence adapter.
-     */
-    private PersistenceAdapter getPersistenceAdapter() {
-        return persistenceAdapter;
-    }
-
-    public static class PartitionProgress {
-        private final long startingOffset;
-        private final long endingOffset;
-        private final long currentOffset;
-        private final long totalMessages;
-        private final long totalUnprocessed;
-        private final long totalProcessed;
-        private final float percentageComplete;
-
-
-        /**
-         * Constructor.
-         * @param startingOffset Offset that the consumer started at.
-         * @param currentOffset Offset that the consumer is currently at.
-         * @param endingOffset Offset that the consumer will stop at.
-         */
-        public PartitionProgress(long startingOffset, long currentOffset, long endingOffset) {
-            // Calculate total number of messages between starting and ending
-            totalMessages = (endingOffset - startingOffset);
-
-            // Calculate total un-processed
-            totalUnprocessed = (endingOffset - currentOffset);
-
-            // Calculate total processed
-            totalProcessed = (currentOffset - startingOffset);
-
-            // Calculate percentage we've worked through
-            if (totalMessages == 0) {
-                percentageComplete = 0;
+            Long startingOffset = null;
+            if (startingState != null) {
+                startingOffset = startingState.getOffsetForNamespaceAndPartition(consumerPartition);
             } else {
-                percentageComplete = ((float) totalProcessed / totalMessages) * 100;
+                logger.warn("Could not find the STARTING offset, we likely didn't start with one {} {}", consumerPartition, virtualSpoutId);
             }
 
-            this.startingOffset = startingOffset;
-            this.currentOffset = currentOffset;
-            this.endingOffset = endingOffset;
-        }
+            Long endingOffset = null;
+            if (endingState != null) {
+                endingOffset = endingState.getOffsetForNamespaceAndPartition(consumerPartition);
+            } else {
+                logger.debug("Could not find the ENDING offset, we likely didn't start with one {} {}", consumerPartition, virtualSpoutId);
+            }
 
-        public long getTotalMessages() {
-            return totalMessages;
-        }
+            // Use our spout id + the partition for our key
+            final String metricKey = spout.getVirtualSpoutId() + ".partition" + consumerPartition.partition();
 
-        public long getTotalUnprocessed() {
-            return totalUnprocessed;
-        }
+            Long totalProcessed = null;
+            if (startingOffset != null) {
+                totalProcessed = currentOffset - startingOffset;
+            }
 
-        public long getTotalProcessed() {
-            return totalProcessed;
-        }
+            Long totalUnprocessed = null;
+            if (endingOffset != null) {
+                totalUnprocessed = endingOffset - currentOffset;
+            }
 
-        public float getPercentageComplete() {
-            return percentageComplete;
-        }
+            Long totalMessages = null;
+            if (startingOffset != null && endingOffset != null) {
+                // Note that this value should not change during reports
+                totalMessages = endingOffset - startingOffset;
+            }
 
-        public long getStartingOffset() {
-            return startingOffset;
-        }
+            Long percentComplete = null;
+            if (totalProcessed != null && totalMessages != null) {
+                percentComplete = (totalProcessed / totalMessages) * 100;
+            }
 
-        public long getCurrentOffset() {
-            return currentOffset;
-        }
+            // Capture our metrics...
 
-        public long getEndingOffset() {
-            return endingOffset;
-        }
+            metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".currentOffset", currentOffset);
 
-        @Override
-        public String toString() {
-            return "PartitionProgress{"
-                + "startingOffset=" + startingOffset
-                + ", totalMessages=" + totalMessages
-                + ", totalUnprocessed=" + totalUnprocessed
-                + ", totalProcessed=" + totalProcessed
-                + ", percentageComplete=" + percentageComplete
-                + '}';
+            if (totalProcessed != null) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".totalProcessed", totalProcessed);
+            }
+
+            if (totalUnprocessed != null) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".totalUnprocessed", totalUnprocessed);
+            }
+
+            if (totalMessages != null) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".totalMessages", totalMessages);
+            }
+
+            if (percentComplete != null) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".percentComplete", percentComplete);
+            }
+
+            if (maxLag > 0L) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".maxLag", maxLag);
+            }
+
+            if (startingOffset != null) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".startingOffset", startingOffset);
+            }
+
+            if (endingOffset != null) {
+                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".endingOffset", endingOffset);
+            }
+
+            // Log our metrics...
+
+            if (endingOffset != null) {
+                // This is when our consumer was given a specific stopping point
+                logger.info(
+                    "Progress for {} on partition {}: {} processed, {} remaining ({}% complete)",
+                    spout.getVirtualSpoutId(),
+                    consumerPartition,
+                    totalProcessed,
+                    totalUnprocessed,
+                    percentComplete
+                );
+            } else {
+                // TODO: If we have no endingOffset and our totalProcessed = 0, should we even bother writing this log
+
+                // Only log lag when we actually have it, we occasionally get -1 numbers when there is no lag
+                if (maxLag > 0) {
+                    logger.info(
+                        "Progress for {} on partition {}: {} processed (max lag of {})",
+                        spout.getVirtualSpoutId(),
+                        consumerPartition,
+                        totalProcessed,
+                        maxLag
+                    );
+                } else {
+                    logger.info(
+                        "Progress for {} on partition {}: {} processed",
+                        spout.getVirtualSpoutId(),
+                        consumerPartition,
+                        totalProcessed
+                    );
+                }
+            }
         }
     }
 }
