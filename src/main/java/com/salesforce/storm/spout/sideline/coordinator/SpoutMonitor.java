@@ -327,6 +327,11 @@ public class SpoutMonitor implements Runnable {
             for (final SpoutRunner spoutRunner : spoutRunners.values()) {
                 final DelegateSpout spout = spoutRunner.getSpout();
 
+                // Spout runner is new and the spout hasn't fully started up
+                if (spout == null) {
+                    continue;
+                }
+
                 // Report the spout's consumer's progress on it's partitions
                 getSpoutPartitionProgressMonitor().reportStatus(
                     spout
