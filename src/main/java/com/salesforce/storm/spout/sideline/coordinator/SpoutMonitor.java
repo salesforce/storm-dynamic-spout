@@ -24,7 +24,6 @@
  */
 package com.salesforce.storm.spout.sideline.coordinator;
 
-import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.Tools;
 import com.salesforce.storm.spout.sideline.MessageId;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
