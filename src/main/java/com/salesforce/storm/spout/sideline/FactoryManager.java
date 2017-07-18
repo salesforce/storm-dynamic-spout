@@ -29,7 +29,6 @@ import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -41,6 +40,7 @@ import java.util.Map;
 /**
  * Handles creating instances of specific interface implementations, based off of
  * our configuration.
+ *
  * Methods are marked Synchronized because the FactoryManager instance is shared between threads, but
  * its methods are rarely invoked after the spout is initial started up, so it shouldn't present much of
  * a problem w/ contention.
@@ -51,47 +51,6 @@ public class FactoryManager implements Serializable {
      * Holds our configuration so we know what classes to create instances of.
      */
     private final Map spoutConfig;
-
-    /**
-     * Class instance of our Deserializer.
-     */
-    private transient Class<? extends Deserializer> deserializerClass;
-
-    /**
-     * Class instance of our RetryManager.
-     */
-    private transient Class<? extends RetryManager> failedMsgRetryManagerClass;
-
-    /**
-     * Class instance of our PersistenceAdapter.
-     */
-    private transient Class<? extends PersistenceAdapter> persistenceAdapterClass;
-
-    /**
-     * Class instance of our Metrics Recorder.
-     */
-    private transient Class<? extends MetricsRecorder> metricsRecorderClass;
-
-    /**
-     * Class instance of our Tuple Buffer.
-     */
-    private transient Class<? extends MessageBuffer> messageBufferClass;
-
-    /**
-     * Class instance of our Consumer.
-     */
-    private transient Class<? extends Consumer> consumerClass;
-
-    /**
-     * Class instance of our SpoutHandler.
-     */
-    private transient Class<? extends SpoutHandler> spoutHandlerClass;
-
-    /**
-     * Class instance of our VirtualSpoutHandler.
-     */
-    private transient Class<? extends VirtualSpoutHandler> virtualSpoutHandlerClass;
-
 
     /**
      * Constructor.
@@ -105,140 +64,56 @@ public class FactoryManager implements Serializable {
     /**
      * @return returns a new instance of the configured RetryManager.
      */
-    public synchronized RetryManager createNewFailedMsgRetryManagerInstance() {
-        if (failedMsgRetryManagerClass == null) {
-            String classStr = (String) spoutConfig.get(SpoutConfig.RETRY_MANAGER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.TUPLE_BUFFER_CLASS);
-            }
-
-            try {
-                failedMsgRetryManagerClass = (Class<? extends RetryManager>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return failedMsgRetryManagerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+    public RetryManager createNewFailedMsgRetryManagerInstance() {
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.RETRY_MANAGER_CLASS)
+        );
     }
 
     /**
      * @return returns a new instance of the configured persistence manager.
      */
-    public synchronized PersistenceAdapter createNewPersistenceAdapterInstance() {
-        if (persistenceAdapterClass == null) {
-            final String classStr = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ADAPTER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.PERSISTENCE_ADAPTER_CLASS);
-            }
-
-            try {
-                persistenceAdapterClass = (Class<? extends PersistenceAdapter>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return persistenceAdapterClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+    public PersistenceAdapter createNewPersistenceAdapterInstance() {
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ADAPTER_CLASS)
+        );
     }
 
     /**
      * @return returns a new instance of the configured Metrics Recorder manager.
      */
-    public synchronized MetricsRecorder createNewMetricsRecorder() {
-        if (metricsRecorderClass == null) {
-            String classStr = (String) spoutConfig.get(SpoutConfig.METRICS_RECORDER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.METRICS_RECORDER_CLASS);
-            }
-
-            try {
-                metricsRecorderClass = (Class<? extends MetricsRecorder>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return metricsRecorderClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+    public MetricsRecorder createNewMetricsRecorder() {
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.METRICS_RECORDER_CLASS)
+        );
     }
 
     /**
      * @return returns a new instance of the configured MessageBuffer interface.
      */
-    public synchronized MessageBuffer createNewMessageBufferInstance() {
-        if (messageBufferClass == null) {
-            String classStr = (String) spoutConfig.get(SpoutConfig.TUPLE_BUFFER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.TUPLE_BUFFER_CLASS);
-            }
-
-            try {
-                messageBufferClass = (Class<? extends MessageBuffer>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return messageBufferClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+    public MessageBuffer createNewMessageBufferInstance() {
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.TUPLE_BUFFER_CLASS)
+        );
     }
 
     /**
      * @return returns a new instance of the configured Consumer interface.
      */
-    public synchronized Consumer createNewConsumerInstance() {
-        if (consumerClass == null) {
-            String classStr = (String) spoutConfig.get(SpoutConfig.CONSUMER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.CONSUMER_CLASS);
-            }
-
-            try {
-                consumerClass = (Class<? extends Consumer>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return consumerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+    public Consumer createNewConsumerInstance() {
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.CONSUMER_CLASS)
+        );
     }
 
     /**
      * Create an instance of the configured SpoutHandler.
      * @return Instance of a SpoutHandler
      */
-    public synchronized SpoutHandler createSpoutHandler() {
-        if (spoutHandlerClass == null) {
-            String classStr = (String) spoutConfig.get(SpoutConfig.SPOUT_HANDLER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.SPOUT_HANDLER_CLASS);
-            }
-
-            try {
-                spoutHandlerClass = (Class<? extends SpoutHandler>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return spoutHandlerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+    public SpoutHandler createSpoutHandler() {
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.SPOUT_HANDLER_CLASS)
+        );
     }
 
     /**
@@ -246,23 +121,9 @@ public class FactoryManager implements Serializable {
      * @return Instance of a VirtualSpoutHandler
      */
     public synchronized VirtualSpoutHandler createVirtualSpoutHandler() {
-        if (virtualSpoutHandlerClass == null) {
-            String classStr = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
-            if (Strings.isNullOrEmpty(classStr)) {
-                throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS);
-            }
-
-            try {
-                virtualSpoutHandlerClass = (Class<? extends VirtualSpoutHandler>) Class.forName(classStr);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        try {
-            return virtualSpoutHandlerClass.newInstance();
-        } catch (IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
+        return createNewInstance(
+            (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS)
+        );
     }
 
     /**
@@ -271,7 +132,11 @@ public class FactoryManager implements Serializable {
      * @param <T> Instance you are creating.
      * @return Newly created instance.
      */
-    public <T> T createNewInstance(String classStr) {
+    public static synchronized <T> T createNewInstance(String classStr) {
+        if (Strings.isNullOrEmpty(classStr)) {
+            throw new IllegalStateException("Missing class name!");
+        }
+
         try {
             Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);
             return clazz.newInstance();
