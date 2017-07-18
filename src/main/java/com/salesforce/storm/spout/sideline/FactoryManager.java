@@ -271,7 +271,7 @@ public class FactoryManager implements Serializable {
      * @param <T> Instance you are creating.
      * @return Newly created instance.
      */
-    public <T> T createNewInstance(String classStr) {
+    public static <T> T createNewInstance(String classStr) {
         try {
             Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);
             return clazz.newInstance();

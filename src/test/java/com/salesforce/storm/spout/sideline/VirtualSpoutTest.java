@@ -1475,13 +1475,6 @@ public class VirtualSpoutTest {
         // Create our mock
         final FactoryManager factoryManager = mock(FactoryManager.class);
 
-        // If a mocked deserializer not passed in
-        if (deserializer == null) {
-            // Default to utf8
-            deserializer = new Utf8StringDeserializer();
-        }
-        when(factoryManager.createNewInstance(eq(deserializer.getClass().getName()))).thenReturn(deserializer);
-
         // If a mocked failed msg retry manager isn't passed in
         if (retryManager == null) {
             retryManager = new NeverRetryManager();

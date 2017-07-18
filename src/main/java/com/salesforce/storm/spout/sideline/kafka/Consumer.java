@@ -200,7 +200,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
         }
 
         // Create deserializer.
-        final Deserializer deserializer = new FactoryManager(spoutConfig).createNewInstance((String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS));
+        final Deserializer deserializer = FactoryManager.createNewInstance((String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS));
 
         // Save references
         this.consumerConfig = consumerConfig;
