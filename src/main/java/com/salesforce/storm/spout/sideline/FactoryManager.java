@@ -55,12 +55,6 @@ public class FactoryManager implements Serializable {
     private final Map spoutConfig;
 
     /**
-     * Cache of String -> Class lookups so repeated lookups don't occur.
-     */
-    private static Map<String, Class> classCache = new HashMap<>();
-
-
-    /**
      * Constructor.
      * @param spoutConfig Spout config.
      */
@@ -146,12 +140,7 @@ public class FactoryManager implements Serializable {
         }
 
         try {
-            // If we've already done this lookup, return the previous one
-            if (classCache.containsKey(classStr)) {
-                return ((Class<? extends T>) classCache.get(classStr)).newInstance();
-            }
             Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);
-            classCache.put(classStr, clazz);
             return clazz.newInstance();
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
