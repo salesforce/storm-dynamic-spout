@@ -250,6 +250,15 @@ public class SpoutMonitor implements Runnable {
 
                 // Run as a CompletableFuture
                 final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
+                // If the spout runner throws an exception log some info about it so we can dig into handling it more appropriately
+                completableFuture.exceptionally((ex) -> {
+                    logger.error(
+                        "An exception has occurred in the SpoutRunner for {} {}",
+                        spout.getVirtualSpoutId(),
+                        ex
+                    );
+                    return null;
+                });
                 spoutThreads.put(spout.getVirtualSpoutId(), completableFuture);
             }
         }
