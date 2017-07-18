@@ -29,14 +29,12 @@ import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.VirtualSpoutHandler;
-import com.salesforce.storm.spout.sideline.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.sideline.retry.RetryManager;
 import com.salesforce.storm.spout.sideline.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.buffer.MessageBuffer;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
