@@ -236,6 +236,8 @@ public class SpoutMonitor implements Runnable {
             for (DelegateSpout spout; (spout = getNewSpoutQueue().poll()) != null; ) {
                 logger.info("Preparing thread for spout {}", spout.getVirtualSpoutId());
 
+                final VirtualSpoutIdentifier virtualSpoutIdentifier = spout.getVirtualSpoutId();
+
                 final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
                     tupleOutputQueue,
@@ -254,7 +256,7 @@ public class SpoutMonitor implements Runnable {
                 completableFuture.exceptionally((ex) -> {
                     logger.error(
                         "An exception has occurred in the SpoutRunner for {} {}",
-                        spout.getVirtualSpoutId(),
+                        virtualSpoutIdentifier,
                         ex
                     );
                     return null;
