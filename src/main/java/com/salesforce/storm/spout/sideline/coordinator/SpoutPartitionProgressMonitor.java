@@ -71,7 +71,7 @@ class SpoutPartitionProgressMonitor {
         }
 
         // This value is not partition specific and represents the maximum possible lag from the consumer for ANY partition
-        double maxLag = spout.getMaxLag();
+        final double maxLag = spout.getMaxLag();
 
         // We can only track progress for partitions the consumer is currently subscribed to, so let's loop
         // over those.  It's possible there were more partitions in startingState, but we can't deal with
