@@ -2,6 +2,12 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.6.x
+- MetricsRecorder is now a required dependency for VirtualSpout instances
+
+## 0.5.x
+- Restructured config
+
 ## 0.4.x
 The goal of this release was to split off the sideline specific code from the dynamic spout framework such that it can be reused in other projects. 
 - DynamicSpout is no longer an abstract class, now it can be attached directly to Storm as is.

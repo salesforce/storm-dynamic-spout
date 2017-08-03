@@ -143,6 +143,7 @@ public class VirtualSpout implements DelegateSpout {
      * @param spoutConfig Our topology config
      * @param topologyContext Our topology context
      * @param factoryManager FactoryManager instance.
+     * @param metricsRecorder MetricsRecorder instance.
      * @param startingState Where the underlying consumer should start from, Null if start from head.
      * @param endingState Where the underlying consumer should stop processing.  Null if process forever.
      */
@@ -151,6 +152,7 @@ public class VirtualSpout implements DelegateSpout {
         final Map<String, Object> spoutConfig,
         final TopologyContext topologyContext,
         final FactoryManager factoryManager,
+        final MetricsRecorder metricsRecorder,
         final ConsumerState startingState,
         final ConsumerState endingState
     ) {
@@ -171,7 +173,7 @@ public class VirtualSpout implements DelegateSpout {
         this.factoryManager = factoryManager;
 
         // Save metric recorder instance.
-        this.metricsRecorder = factoryManager.createNewMetricsRecorder();
+        this.metricsRecorder = metricsRecorder;
 
         // Save state
         this.startingState = startingState;
