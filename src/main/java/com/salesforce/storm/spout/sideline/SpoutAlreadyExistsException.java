@@ -26,7 +26,7 @@ package com.salesforce.storm.spout.sideline;
 
 public class SpoutAlreadyExistsException extends RuntimeException {
 
-    final private DelegateSpout spout;
+    private final DelegateSpout spout;
 
     public SpoutAlreadyExistsException(String message, DelegateSpout spout) {
         super(message);
