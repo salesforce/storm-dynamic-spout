@@ -124,7 +124,10 @@ public class SpoutCoordinator {
             throw new IllegalStateException("You cannot add a spout to the coordinator before it has been opened!");
         }
         if (spoutMonitor.hasSpout(spout.getVirtualSpoutId())) {
-            throw new IllegalStateException("A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!");
+            throw new SpoutAlreadyExistsException(
+                "A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!",
+                spout
+            );
         }
         getNewSpoutQueue().add(spout);
     }
