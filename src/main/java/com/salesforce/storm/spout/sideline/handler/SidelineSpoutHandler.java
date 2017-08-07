@@ -136,6 +136,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
+            spout.getMetricsRecorder(),
             null,
             null
         );
@@ -352,6 +353,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
+            spout.getMetricsRecorder(),
             startingState,
             endingState
         );

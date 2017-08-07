@@ -39,6 +39,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -409,14 +410,17 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         try {
             if (curator.checkExists().forPath(path) == null) {
                 curator.create()
-                        .creatingParentsIfNeeded()
-                        .withMode(CreateMode.PERSISTENT)
-                        .forPath(path, bytes);
+                    .creatingParentsIfNeeded()
+                    .withMode(CreateMode.PERSISTENT)
+                    .forPath(path, bytes);
             } else {
                 curator.setData().forPath(path, bytes);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (KeeperException.NodeExistsException ex) {
+            logger.warn("Tried creating node {} that already exists, cowardly refusing to overwrite it.", path);
+        } catch (Exception ex) {
+            logger.error("Unable to write bytes to Zookeeper {} {}", ex, ex.getStackTrace());
+            throw new RuntimeException(ex);
         }
     }
 

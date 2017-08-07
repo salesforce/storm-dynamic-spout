@@ -209,8 +209,7 @@ public class SpoutCoordinatorTest {
 
         coordinator.addVirtualSpout(spout1);
 
-        expectedExceptionAddDuplicateSpout.expect(IllegalStateException.class);
-        expectedExceptionAddDuplicateSpout.expectMessage(virtualSpoutIdentifier.toString() + " already exists in");
+        expectedExceptionAddDuplicateSpout.expect(SpoutAlreadyExistsException.class);
 
         coordinator.addVirtualSpout(spout2);
     }
