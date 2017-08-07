@@ -24,15 +24,32 @@
  */
 package com.salesforce.storm.spout.sideline;
 
+/**
+ * Thrown when attempting to add a spout to the coordinator and that spout already exists. This doesn't necessarily
+ * mean that the instance is the same, but that the identifier on the instance matches one that the coordinator was
+ * already running.
+ */
 public class SpoutAlreadyExistsException extends RuntimeException {
 
+    /**
+     * The spout with an identifier that already exists in the coordinator.
+     */
     private final DelegateSpout spout;
 
+    /**
+     * Thrown when attempting to add a spout to the coordinator and that spout already exists.
+     * @param message specific message about the already existing spout.
+     * @param spout specific spout that appears to already exist in the coordinator.
+     */
     public SpoutAlreadyExistsException(String message, DelegateSpout spout) {
         super(message);
         this.spout = spout;
     }
 
+    /**
+     * Spout that caused this exception to be thrown.
+     * @return spout that caused this exception to be thrown.
+     */
     public DelegateSpout getSpout() {
         return spout;
     }
