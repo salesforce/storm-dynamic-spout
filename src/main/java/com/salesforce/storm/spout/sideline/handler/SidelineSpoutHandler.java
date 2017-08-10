@@ -367,7 +367,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
                 // Log the error, but we're going to take another attempt at this before we give up
                 logger.error("Trying to get the current state from the firehose and I got interrupted {}", ex);
             }
-        } while (currentState == null);
+        }
+        while (currentState == null);
 
         throw new IllegalStateException("Unable to pull current state from the fire hose after a few attempts!");
     }

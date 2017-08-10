@@ -52,16 +52,27 @@ public class SidelinePayload {
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object) {
+            return true;
+        }
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
 
         SidelinePayload that = (SidelinePayload) object;
 
-        if (type != that.type) return false;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (request != null ? !request.equals(that.request) : that.request != null) return false;
-        if (startingOffset != null ? !startingOffset.equals(that.startingOffset) : that.startingOffset != null)
+        if (type != that.type) {
             return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (request != null ? !request.equals(that.request) : that.request != null) {
+            return false;
+        }
+        if (startingOffset != null ? !startingOffset.equals(that.startingOffset) : that.startingOffset != null) {
+            return false;
+        }
         return endingOffset != null ? endingOffset.equals(that.endingOffset) : that.endingOffset == null;
     }
 
