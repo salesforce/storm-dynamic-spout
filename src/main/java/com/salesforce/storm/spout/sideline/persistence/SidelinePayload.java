@@ -49,4 +49,40 @@ public class SidelinePayload {
         this.startingOffset = startingOffset;
         this.endingOffset = endingOffset;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SidelinePayload that = (SidelinePayload) o;
+
+        if (type != that.type) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (request != null ? !request.equals(that.request) : that.request != null) return false;
+        if (startingOffset != null ? !startingOffset.equals(that.startingOffset) : that.startingOffset != null)
+            return false;
+        return endingOffset != null ? endingOffset.equals(that.endingOffset) : that.endingOffset == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type != null ? type.hashCode() : 0;
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        result = 31 * result + (request != null ? request.hashCode() : 0);
+        result = 31 * result + (startingOffset != null ? startingOffset.hashCode() : 0);
+        result = 31 * result + (endingOffset != null ? endingOffset.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "SidelinePayload{" +
+            "type=" + type +
+            ", id=" + id +
+            ", request=" + request +
+            ", startingOffset=" + startingOffset +
+            ", endingOffset=" + endingOffset +
+            '}';
+    }
 }
