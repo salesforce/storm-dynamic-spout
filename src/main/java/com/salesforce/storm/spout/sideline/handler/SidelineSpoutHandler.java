@@ -352,7 +352,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
                 if (currentState != null) {
                     logger.info("Received current state from the fire hose! {}", currentState);
-                    break;
+                    return currentState;
                 }
 
                 Thread.sleep(500L);
@@ -362,7 +362,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
             }
         } while (currentState == null);
 
-        return currentState;
+        throw new IllegalStateException("Unable to pull current state from the fire hose after a few attempts!");
     }
 
     /**
