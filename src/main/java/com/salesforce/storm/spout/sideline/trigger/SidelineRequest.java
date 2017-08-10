@@ -62,9 +62,11 @@ public class SidelineRequest {
 
     @Override
     public String toString() {
-        return "SidelineRequest{" +
-            "id=" + id +
-            ", step=" + step +
-            '}';
+        return "SidelineRequest{"
+            + "id="
+            + id
+            + ", step="
+            + step
+            + '}';
     }
 }

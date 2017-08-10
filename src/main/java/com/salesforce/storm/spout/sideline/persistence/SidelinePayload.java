@@ -51,11 +51,11 @@ public class SidelinePayload {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
 
-        SidelinePayload that = (SidelinePayload) o;
+        SidelinePayload that = (SidelinePayload) object;
 
         if (type != that.type) return false;
         if (id != null ? !id.equals(that.id) : that.id != null) return false;
@@ -77,12 +77,17 @@ public class SidelinePayload {
 
     @Override
     public String toString() {
-        return "SidelinePayload{" +
-            "type=" + type +
-            ", id=" + id +
-            ", request=" + request +
-            ", startingOffset=" + startingOffset +
-            ", endingOffset=" + endingOffset +
-            '}';
+        return "SidelinePayload{"
+            + "type="
+            + type
+            + ", id="
+            + id
+            + ", request="
+            + request
+            + ", startingOffset="
+            + startingOffset
+            + ", endingOffset="
+            + endingOffset
+            + '}';
     }
 }
