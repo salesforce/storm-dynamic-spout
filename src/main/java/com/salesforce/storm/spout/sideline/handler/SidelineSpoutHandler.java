@@ -330,10 +330,12 @@ public class SidelineSpoutHandler implements SpoutHandler {
     }
 
     /**
-     * Retrieve the current state from the fire hose, try a few times if the firehose consumer hasn't finished doing its thing.
+     * Retrieve the current state from the fire hose, try a few times if the fire hose consumer hasn't finished doing
+     * its thing.  This method is intended to block until the virtual spout gives back state or we've waited too long.
      * @return current consumer state for the fire hose, or null if something is messed up.
      */
     private ConsumerState getFireHoseCurrenState() {
+        // Track how many times we've attempted to get the fire hoses current state
         int trips = 0;
         ConsumerState currentState = null;
 
@@ -343,19 +345,23 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
                 logger.info("Attempting to pull current state from the fire hose.");
 
+                // This could come back null is the consumer is null, which happens when we try calling getCurrentState()
+                // before the consumer and the virtual spout has opened
                 currentState = fireHoseSpout.getCurrentState();
 
+                // We've tried to many times, so break the loop and let the exception get thrown
                 if (trips >= 10) {
-                    // We've tried to many times, so break the loop and let the exception get thrown
                     logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
                     break;
                 }
 
+                // We got current state back, so we can return it now
                 if (currentState != null) {
                     logger.info("Received current state from the fire hose! {}", currentState);
                     return currentState;
                 }
 
+                // Wait half a second before we try this again
                 Thread.sleep(500L);
             } catch (InterruptedException ex) {
                 // Log the error, but we're going to take another attempt at this before we give up
