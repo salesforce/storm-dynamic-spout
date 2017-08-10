@@ -349,15 +349,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
                 // before the consumer and the virtual spout has opened
                 currentState = fireHoseSpout.getCurrentState();
 
-                // We've tried to many times, so break the loop and let the exception get thrown
-                if (trips >= 10) {
-                    logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
-                    break;
-                }
-
                 // We got current state back, so we can return it now
                 if (currentState != null) {
-                    logger.info("Received current state from the fire hose! {}", currentState);
+                    logger.info("Received current state from the fire hose on trip {}! {}", trips, currentState);
                     return currentState;
                 }
 
@@ -368,7 +362,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
                 logger.error("Trying to get the current state from the firehose and I got interrupted {}", ex);
             }
         }
-        while (currentState == null);
+        while (currentState == null && trips < 10);
+
+        logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
 
         throw new IllegalStateException("Unable to pull current state from the fire hose after a few attempts!");
     }
