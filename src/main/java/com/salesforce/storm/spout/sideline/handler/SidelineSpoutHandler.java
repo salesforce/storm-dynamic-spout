@@ -351,7 +351,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
                 // We got current state back, so we can return it now
                 if (currentState != null) {
-                    logger.info("Received current state from the fire hose! {}", currentState);
+                    logger.info("Received current state from the fire hose on trip {}! {}", trips, currentState);
                     return currentState;
                 }
 
