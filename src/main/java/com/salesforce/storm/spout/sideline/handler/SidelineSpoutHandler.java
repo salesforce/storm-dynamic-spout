@@ -329,6 +329,10 @@ public class SidelineSpoutHandler implements SpoutHandler {
         spout.getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
     }
 
+    /**
+     * Retrieve the current state from the fire hose, try a few times if the firehose consumer hasn't finished doing its thing.
+     * @return current consumer state for the fire hose, or null if something is messed up.
+     */
     private ConsumerState getFireHoseCurrenState() {
         int trips = 0;
         ConsumerState currentState = null;
