@@ -346,8 +346,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
                 currentState = fireHoseSpout.getCurrentState();
 
                 if (trips >= 10) {
+                    // We've tried to many times, so break the loop and let the exception get thrown
                     logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
-                    return null;
+                    break;
                 }
 
                 if (currentState != null) {
@@ -357,8 +358,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
                 Thread.sleep(500L);
             } catch (InterruptedException ex) {
+                // Log the error, but we're going to take another attempt at this before we give up
                 logger.error("Trying to get the current state from the firehose and I got interrupted {}", ex);
-                return null;
             }
         } while (currentState == null);
 
