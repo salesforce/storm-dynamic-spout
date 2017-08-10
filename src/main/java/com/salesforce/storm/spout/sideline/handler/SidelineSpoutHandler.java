@@ -240,7 +240,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
-        final ConsumerState startingState = getFireHoseCurrenState();
+        final ConsumerState startingState = getFireHoseCurrentState();
 
         for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
             // Store in request manager
@@ -288,7 +288,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
 
         // This is the state that the VirtualSidelineSpout should end with
-        final ConsumerState endingState = getFireHoseCurrenState();
+        final ConsumerState endingState = getFireHoseCurrentState();
 
         // We'll construct a consumer state from the various partition data stored for this sideline request
         final ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
@@ -334,7 +334,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * its thing.  This method is intended to block until the virtual spout gives back state or we've waited too long.
      * @return current consumer state for the fire hose, or null if something is messed up.
      */
-    private ConsumerState getFireHoseCurrenState() {
+    private ConsumerState getFireHoseCurrentState() {
         // Track how many times we've attempted to get the fire hoses current state
         int trips = 0;
         ConsumerState currentState = null;
