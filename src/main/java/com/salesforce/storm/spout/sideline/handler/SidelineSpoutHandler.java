@@ -240,7 +240,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
-        final ConsumerState startingState = fireHoseSpout.getCurrentState();
+        final ConsumerState startingState = getFireHoseCurrenState();
 
         for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
             // Store in request manager
@@ -288,7 +288,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
 
         // This is the state that the VirtualSidelineSpout should end with
-        final ConsumerState endingState = fireHoseSpout.getCurrentState();
+        final ConsumerState endingState = getFireHoseCurrenState();
 
         // We'll construct a consumer state from the various partition data stored for this sideline request
         final ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
@@ -298,6 +298,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
         for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
             // This is the state that the VirtualSidelineSpout should start with
             final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition.partition());
+
+            logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
 
             // Add this partition to the starting consumer state
             startingStateBuilder.withPartition(consumerPartition, sidelinePayload.startingOffset);
@@ -327,6 +329,37 @@ public class SidelineSpoutHandler implements SpoutHandler {
         spout.getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
     }
 
+    private ConsumerState getFireHoseCurrenState() {
+        int trips = 0;
+        ConsumerState currentState = null;
+
+        do {
+            try {
+                trips++;
+
+                logger.info("Attempting to pull current state from the fire hose.");
+
+                currentState = fireHoseSpout.getCurrentState();
+
+                if (trips >= 10) {
+                    logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
+                    return null;
+                }
+
+                if (currentState != null) {
+                    logger.info("Received current state from the fire hose! {}", currentState);
+                    break;
+                }
+
+                Thread.sleep(500L);
+            } catch (InterruptedException ex) {
+                logger.error("Trying to get the current state from the firehose and I got interrupted {}", ex);
+                return null;
+            }
+        } while (currentState == null);
+
+        return currentState;
+    }
 
     /**
      * Open a virtual spout (like when a sideline stop request is made).
