@@ -240,7 +240,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
-        final ConsumerState startingState = fireHoseSpout.getCurrentState();
+        final ConsumerState startingState = getFireHoseCurrentState();
 
         for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
             // Store in request manager
@@ -288,7 +288,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
 
         // This is the state that the VirtualSidelineSpout should end with
-        final ConsumerState endingState = fireHoseSpout.getCurrentState();
+        final ConsumerState endingState = getFireHoseCurrentState();
 
         // We'll construct a consumer state from the various partition data stored for this sideline request
         final ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
@@ -298,6 +298,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
         for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
             // This is the state that the VirtualSidelineSpout should start with
             final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition.partition());
+
+            logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
 
             // Add this partition to the starting consumer state
             startingStateBuilder.withPartition(consumerPartition, sidelinePayload.startingOffset);
@@ -327,6 +329,49 @@ public class SidelineSpoutHandler implements SpoutHandler {
         spout.getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
     }
 
+    /**
+     * Retrieve the current state from the fire hose, try a few times if the fire hose consumer hasn't finished doing
+     * its thing.  This method is intended to block until the virtual spout gives back state or we've waited too long.
+     * @return current consumer state for the fire hose, or null if something is messed up.
+     */
+    private ConsumerState getFireHoseCurrentState() {
+        // Track how many times we've attempted to get the fire hoses current state
+        int trips = 0;
+        ConsumerState currentState = null;
+
+        do {
+            try {
+                trips++;
+
+                logger.info("Attempting to pull current state from the fire hose.");
+
+                // This could come back null is the consumer is null, which happens when we try calling getCurrentState()
+                // before the consumer and the virtual spout has opened
+                currentState = fireHoseSpout.getCurrentState();
+
+                // We've tried to many times, so break the loop and let the exception get thrown
+                if (trips >= 10) {
+                    logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
+                    break;
+                }
+
+                // We got current state back, so we can return it now
+                if (currentState != null) {
+                    logger.info("Received current state from the fire hose! {}", currentState);
+                    return currentState;
+                }
+
+                // Wait half a second before we try this again
+                Thread.sleep(500L);
+            } catch (InterruptedException ex) {
+                // Log the error, but we're going to take another attempt at this before we give up
+                logger.error("Trying to get the current state from the firehose and I got interrupted {}", ex);
+            }
+        }
+        while (currentState == null);
+
+        throw new IllegalStateException("Unable to pull current state from the fire hose after a few attempts!");
+    }
 
     /**
      * Open a virtual spout (like when a sideline stop request is made).

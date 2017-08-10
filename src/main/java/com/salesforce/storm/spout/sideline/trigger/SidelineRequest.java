@@ -59,4 +59,14 @@ public class SidelineRequest {
     public int hashCode() {
         return step != null ? step.hashCode() : 0;
     }
+
+    @Override
+    public String toString() {
+        return "SidelineRequest{"
+            + "id="
+            + id
+            + ", step="
+            + step
+            + '}';
+    }
 }
