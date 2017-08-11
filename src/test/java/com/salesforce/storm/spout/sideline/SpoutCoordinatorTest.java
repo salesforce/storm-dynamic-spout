@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SpoutCoordinatorTest {
@@ -238,5 +239,9 @@ public class SpoutCoordinatorTest {
         coordinator.addVirtualSpout(spout1);
 
         assertTrue("Spout is not in the coordinator", coordinator.hasVirtualSpout(virtualSpoutIdentifier));
+
+        assertFalse("Spout should not be in the coordinator", coordinator.hasVirtualSpout(
+            new DefaultVirtualSpoutIdentifier("made up spout that should not exist")
+        ));
     }
 }
