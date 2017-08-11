@@ -213,4 +213,30 @@ public class SpoutCoordinatorTest {
 
         coordinator.addVirtualSpout(spout2);
     }
+
+    /**
+     * Test that we can check for the existence of a spout inside of the coordinator.
+     */
+    @Test
+    public void testHasVirtualSpout() {
+        final FifoBuffer messageBuffer = FifoBuffer.createDefaultInstance();
+
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+
+        // Define our configuration
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+
+        // Create coordinator
+        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        coordinator.open(config);
+
+        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
+
+        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+
+        coordinator.addVirtualSpout(spout1);
+
+        assertTrue("Spout is not in the coordinator", coordinator.hasVirtualSpout(virtualSpoutIdentifier));
+    }
 }
