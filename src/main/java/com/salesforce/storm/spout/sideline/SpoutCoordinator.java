@@ -120,16 +120,25 @@ public class SpoutCoordinator {
      * @param spout New delegate spout
      */
     public void addVirtualSpout(final DelegateSpout spout) {
-        if (!isOpen) {
-            throw new IllegalStateException("You cannot add a spout to the coordinator before it has been opened!");
-        }
-        if (spoutMonitor.hasSpout(spout.getVirtualSpoutId())) {
+        if (hasVirtualSpout(spout.getVirtualSpoutId())) {
             throw new SpoutAlreadyExistsException(
                 "A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!",
                 spout
             );
         }
         getNewSpoutQueue().add(spout);
+    }
+
+    /**
+     * Check if a given spout already exists in the spout coordinator.
+     * @param spoutIdentifier spout identifier to check the coordinator for.
+     * @return true when the spout exists, false when it does not.
+     */
+    public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
+        if (!isOpen) {
+            throw new IllegalStateException("You cannot check for a spout in the coordinator before it has been opened!");
+        }
+        return spoutMonitor.hasSpout(spoutIdentifier);
     }
 
     /**

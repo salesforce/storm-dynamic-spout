@@ -370,9 +370,18 @@ public class DynamicSpout extends BaseRichSpout {
      * Add a delegate spout to the coordinator.
      * @param spout Delegate spout to add
      */
-    public void addVirtualSpout(DelegateSpout spout) {
+    public void addVirtualSpout(final DelegateSpout spout) {
         checkSpoutOpened();
         getCoordinator().addVirtualSpout(spout);
+    }
+
+    /**
+     * Check if a given spout already exists in the spout coordinator.
+     * @param spoutIdentifier spout identifier to check the coordinator for.
+     * @return true when the spout exists, false when it does not.
+     */
+    public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
+        return getCoordinator().hasVirtualSpout(spoutIdentifier);
     }
 
     /**
