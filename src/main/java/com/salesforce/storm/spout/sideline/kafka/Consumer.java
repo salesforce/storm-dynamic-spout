@@ -435,8 +435,25 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
             if (outOfRangePartitions.contains(assignedTopicPartition)) {
-                final long offset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
-                logger.error("DATA LOSS ERROR - offset {} for partition {} was out of range", offset, assignedConsumerPartition);
+                // The last offset we have in our persistence layer
+                final long lastPersistedOffset = persistenceAdapter.retrieveConsumerState(
+                    getConsumerId(),
+                    assignedTopicPartition.partition()
+                );
+                // What Kafka is claiming as the last actual offset
+                final long actualEndOffset = getKafkaConsumer().endOffsets(Collections.singletonList(assignedTopicPartition)).get(assignedTopicPartition);
+                // The offset that was in the error
+                final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
+
+                logger.error(
+                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last persisted = {}, actual = {}, offsetManager = {}, original message = {}",
+                    exceptionOffset,
+                    assignedConsumerPartition,
+                    lastPersistedOffset,
+                    actualEndOffset,
+                    partitionOffsetsManager.getCurrentState(),
+                    outOfRangeException
+                );
                 continue;
             }
 

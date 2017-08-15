@@ -1743,6 +1743,8 @@ public class ConsumerTest {
      * 5. Unsubscribe from that partition.
      * 6. Attempt to consume more msgs, verify none are found.
      */
+    @Rule
+    public ExpectedException expectedTestConsumeFromTopicAfterUnsubscribingFromSinglePartition = ExpectedException.none();
     @Test
     public void testConsumeFromTopicAfterUnsubscribingFromSinglePartition() {
         // Define our expected namespace/partition
@@ -1784,14 +1786,10 @@ public class ConsumerTest {
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should be true", result);
 
-        // Attempt to consume, but nothing should be returned, because we unsubscribed.
-        for (int x=0; x<expectedNumberOfMsgs; x++) {
-            foundRecord = consumer.nextRecord();
-            assertNull(foundRecord);
-        }
+        // When we go to consume we're going to get an exception because we are not subscribed to any partitions at this point
+        expectedTestConsumeFromTopicAfterUnsubscribingFromSinglePartition.expect(IllegalStateException.class);
 
-        // Close out consumer
-        consumer.close();
+        consumer.nextRecord();
     }
 
     /**
