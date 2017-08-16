@@ -423,6 +423,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
         // Grab the partitions that had errors
         final Set<TopicPartition> outOfRangePartitions = outOfRangeException.partitions();
+        final Set<TopicPartition> resetPartitions = Sets.newHashSet();
 
         // Grab all partitions our consumer is subscribed too.
         Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
@@ -431,6 +432,9 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
         for (ConsumerPartition assignedConsumerPartition : allAssignedPartitions) {
             // Convert to TopicPartition
             final TopicPartition assignedTopicPartition = new TopicPartition(assignedConsumerPartition.namespace(), assignedConsumerPartition.partition());
+
+            // The last offset we went to start
+            final long lastStartedOffset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
 
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
@@ -444,13 +448,34 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
 
                 logger.error(
-                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last persisted = {}, offsetManager = {}, original exception = {}",
+                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last persisted = {}, last started = {}, offsetManager = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
                     lastPersistedOffset,
+                    lastStartedOffset,
                     partitionOffsetsManager.getCurrentState(),
                     outOfRangeException
                 );
+
+                // We have a hypothesis that the consumer can actually seek past the last message of the topic,
+                // this yields this error and we want to catch it and try to back it up just a bit to a place that
+                // we can work from.
+                if (exceptionOffset - 1 == lastStartedOffset || exceptionOffset - 1 == lastPersistedOffset) {
+                    final long resetOffset = lastStartedOffset > lastPersistedOffset ? lastPersistedOffset : lastStartedOffset;
+
+                    logger.warn(
+                        "DATA LOSS ERROR - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {})",
+                        assignedTopicPartition,
+                        resetOffset,
+                        lastPersistedOffset,
+                        lastStartedOffset
+                    );
+
+                    getKafkaConsumer().seek(assignedTopicPartition, resetOffset);
+                } else {
+                    resetPartitions.add(assignedTopicPartition);
+                }
+
                 continue;
             }
 
@@ -468,21 +493,20 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
 
             // The short of this means, we're going to replay a message from each partition we seek back to, but
             // thats better than missing offsets entirely.
-            final long offset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
 
             // If offset is -1
-            if (offset == -1) {
+            if (lastStartedOffset == -1) {
                 // That means we haven't started tracking any offsets yet, we should seek to earliest on this partition
-                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, offset);
+                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, lastStartedOffset);
                 resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
             } else {
-                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
-                getKafkaConsumer().seek(assignedTopicPartition, offset);
+                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, lastStartedOffset);
+                getKafkaConsumer().seek(assignedTopicPartition, lastStartedOffset);
             }
         }
 
         // All of the error'd partitions we need to seek to earliest available position.
-        resetPartitionsToEarliest(outOfRangePartitions);
+        resetPartitionsToEarliest(resetPartitions);
     }
 
     /**
