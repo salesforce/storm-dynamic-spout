@@ -440,17 +440,14 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                     getConsumerId(),
                     assignedTopicPartition.partition()
                 );
-                // What Kafka is claiming as the last actual offset
-                final long actualEndOffset = getKafkaConsumer().endOffsets(Collections.singletonList(assignedTopicPartition)).get(assignedTopicPartition);
                 // The offset that was in the error
                 final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
 
                 logger.error(
-                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last persisted = {}, actual = {}, offsetManager = {}, original message = {}",
+                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last persisted = {}, offsetManager = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
                     lastPersistedOffset,
-                    actualEndOffset,
                     partitionOffsetsManager.getCurrentState(),
                     outOfRangeException
                 );
