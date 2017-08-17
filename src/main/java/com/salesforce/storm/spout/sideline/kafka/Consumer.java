@@ -518,8 +518,14 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * @param topicPartitions The collection of offsets to reset offsets for to the earliest position.
      */
     private void resetPartitionsToEarliest(Collection<TopicPartition> topicPartitions) {
+        if (topicPartitions.isEmpty()) {
+            logger.info("Reset partitions requested with no partitions supplied.");
+            return;
+        }
         // Seek to earliest for each
         logger.info("Seeking to earliest offset on partitions {}", topicPartitions);
+        // If you call this with an empty set it resets everything that the consumer is assigned, which is probably
+        // not what you want...
         getKafkaConsumer().seekToBeginning(topicPartitions);
 
         // Now for each partition
