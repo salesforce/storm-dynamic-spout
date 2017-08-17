@@ -432,6 +432,8 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             // Convert to TopicPartition
             final TopicPartition assignedTopicPartition = new TopicPartition(assignedConsumerPartition.namespace(), assignedConsumerPartition.partition());
 
+            final long lastStartedOffset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
+
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
             if (outOfRangePartitions.contains(assignedTopicPartition)) {
@@ -444,11 +446,11 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
 
                 logger.error(
-                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last persisted = {}, offsetManager = {}, original exception = {}",
+                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
+                    lastStartedOffset,
                     lastPersistedOffset,
-                    partitionOffsetsManager.getCurrentState(),
                     outOfRangeException
                 );
                 continue;
@@ -468,16 +470,15 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
 
             // The short of this means, we're going to replay a message from each partition we seek back to, but
             // thats better than missing offsets entirely.
-            final long offset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
 
             // If offset is -1
-            if (offset == -1) {
+            if (lastStartedOffset == -1) {
                 // That means we haven't started tracking any offsets yet, we should seek to earliest on this partition
-                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, offset);
+                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, lastStartedOffset);
                 resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
             } else {
-                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, offset);
-                getKafkaConsumer().seek(assignedTopicPartition, offset);
+                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, lastStartedOffset);
+                getKafkaConsumer().seek(assignedTopicPartition, lastStartedOffset);
             }
         }
 
