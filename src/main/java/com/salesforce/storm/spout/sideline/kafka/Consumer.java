@@ -464,12 +464,17 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 if (exceptionOffset - 1 == lastStartedOffset || exceptionOffset - 1 == lastPersistedOffset) {
                     final long resetOffset = lastStartedOffset > lastPersistedOffset ? lastStartedOffset : lastPersistedOffset;
 
+                    getKafkaConsumer().seekToEnd(Collections.singletonList(assignedTopicPartition));
+
+                    final long endOffset = getKafkaConsumer().position(assignedTopicPartition);
+
                     logger.warn(
-                        "KAFKA SEEK - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {})",
+                        "KAFKA SEEK - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {}, endOffset = {})",
                         assignedTopicPartition,
                         resetOffset,
                         lastPersistedOffset,
-                        lastStartedOffset
+                        lastStartedOffset,
+                        endOffset
                     );
 
                     getKafkaConsumer().seek(assignedTopicPartition, resetOffset);
