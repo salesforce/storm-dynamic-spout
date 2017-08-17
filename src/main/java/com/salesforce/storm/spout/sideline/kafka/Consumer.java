@@ -460,10 +460,10 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 // this yields this error and we want to catch it and try to back it up just a bit to a place that
                 // we can work from.
                 if (exceptionOffset - 1 == lastStartedOffset || exceptionOffset - 1 == lastPersistedOffset) {
-                    final long resetOffset = lastStartedOffset > lastPersistedOffset ? lastPersistedOffset : lastStartedOffset;
+                    final long resetOffset = lastStartedOffset > lastPersistedOffset ? lastStartedOffset : lastPersistedOffset;
 
                     logger.warn(
-                        "DATA LOSS ERROR - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {})",
+                        "KAFKA SEEK - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {})",
                         assignedTopicPartition,
                         resetOffset,
                         lastPersistedOffset,
