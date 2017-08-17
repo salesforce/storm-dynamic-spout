@@ -435,6 +435,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
 
             // The last offset we went to start
             final long lastStartedOffset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
+            final long lastFinishedOffset = partitionOffsetsManager.getLastFinishedOffset(assignedConsumerPartition);
 
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
@@ -448,11 +449,12 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                 final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
 
                 logger.error(
-                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {}, original exception = {}",
+                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {}, lastFinished = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
                     lastStartedOffset,
                     lastPersistedOffset,
+                    lastFinishedOffset,
                     outOfRangeException
                 );
 
