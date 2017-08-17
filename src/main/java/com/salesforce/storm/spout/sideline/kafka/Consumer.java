@@ -423,6 +423,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
         // Grab the partitions that had errors
         final Set<TopicPartition> outOfRangePartitions = outOfRangeException.partitions();
+        final Set<TopicPartition> resetPartitions = Sets.newHashSet();
 
         // Grab all partitions our consumer is subscribed too.
         Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
@@ -432,6 +433,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
             // Convert to TopicPartition
             final TopicPartition assignedTopicPartition = new TopicPartition(assignedConsumerPartition.namespace(), assignedConsumerPartition.partition());
 
+            // The last offset we went to start
             final long lastStartedOffset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
 
             // If this partition was out of range
@@ -453,6 +455,26 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
                     lastPersistedOffset,
                     outOfRangeException
                 );
+
+                // We have a hypothesis that the consumer can actually seek past the last message of the topic,
+                // this yields this error and we want to catch it and try to back it up just a bit to a place that
+                // we can work from.
+                if (exceptionOffset - 1 == lastStartedOffset || exceptionOffset - 1 == lastPersistedOffset) {
+                    final long resetOffset = lastStartedOffset > lastPersistedOffset ? lastStartedOffset : lastPersistedOffset;
+
+                    logger.warn(
+                        "KAFKA SEEK - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {})",
+                        assignedTopicPartition,
+                        resetOffset,
+                        lastPersistedOffset,
+                        lastStartedOffset
+                    );
+
+                    getKafkaConsumer().seek(assignedTopicPartition, resetOffset);
+                } else {
+                    resetPartitions.add(assignedTopicPartition);
+                }
+
                 continue;
             }
 
@@ -483,7 +505,7 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
         }
 
         // All of the error'd partitions we need to seek to earliest available position.
-        resetPartitionsToEarliest(outOfRangePartitions);
+        resetPartitionsToEarliest(resetPartitions);
     }
 
     /**
@@ -496,8 +518,14 @@ public class Consumer implements com.salesforce.storm.spout.sideline.consumer.Co
      * @param topicPartitions The collection of offsets to reset offsets for to the earliest position.
      */
     private void resetPartitionsToEarliest(Collection<TopicPartition> topicPartitions) {
+        if (topicPartitions.isEmpty()) {
+            logger.info("Reset partitions requested with no partitions supplied.");
+            return;
+        }
         // Seek to earliest for each
         logger.info("Seeking to earliest offset on partitions {}", topicPartitions);
+        // If you call this with an empty set it resets everything that the consumer is assigned, which is probably
+        // not what you want...
         getKafkaConsumer().seekToBeginning(topicPartitions);
 
         // Now for each partition

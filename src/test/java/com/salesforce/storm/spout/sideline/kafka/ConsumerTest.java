@@ -2366,6 +2366,90 @@ public class ConsumerTest {
     }
 
     /**
+     * This is a test for a weird edge case we hit in production where the consumer seeks past where we are supposed to
+     * be, and so we move the pointer back to where we think is valid, rather than resetting to the head of the log.
+     */
+    @Test
+    public void testResetOffsetsWhenOffByOne() {
+        // Kafka namespace setup
+        this.topicName = "testResetOffsetsWhenOffByOne" + System.currentTimeMillis();
+
+        final int numberOfPartitions = 2;
+        final int numberOfMsgsOnPartition0 = 0;
+        final int numberOfMsgsOnPartition1 = 4;
+
+        // Define our namespace/partitions
+        final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
+        final TopicPartition topicPartition0 = new TopicPartition(partition0.namespace(), partition0.partition());
+        final ConsumerPartition partition1 = new ConsumerPartition(topicName, 1);
+        final TopicPartition topicPartition1 = new TopicPartition(partition1.namespace(), partition1.partition());
+
+        // Create our multi-partition namespace.
+        kafkaTestServer.createTopic(topicName, numberOfPartitions);
+
+        // Produce messages into partition1
+        produceRecords(numberOfMsgsOnPartition1, partition1.partition());
+
+        // Setup our config set to reset to none
+        // We should handle this internally now.
+        final Map<String, Object> config = getDefaultConfig(topicName);
+
+        // Create our Persistence Manager
+        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Move our persisted state to the end of the log, this is where the consumer will begin consuming from
+        persistenceAdapter.persistConsumerState("MyConsumerId", 1, numberOfMsgsOnPartition1);
+
+        // Create our consumer
+        final Consumer consumer = new Consumer();
+        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        // We are at the end of the log, so this should yield NULL every time, there's nothing after our offset
+        final Record record1 = consumer.nextRecord();
+
+        assertNull("Consumer should not find a record", record1);
+
+        assertEquals(
+            "Kafka's position should not match the total number of messages on the partition since we are at the end of it",
+            numberOfMsgsOnPartition1,
+            consumer.getKafkaConsumer().position(
+                topicPartition1
+            )
+        );
+
+        // Seek the consumer past the end of the log, this should create an OutOfRangeException
+        consumer.getKafkaConsumer().seek(
+            topicPartition1,
+            numberOfMsgsOnPartition1 + 1
+        );
+
+        assertEquals(
+            "Seek call on Kafka should be past the end of our messages",
+            numberOfMsgsOnPartition1 + 1,
+            consumer.getKafkaConsumer().position(
+                topicPartition1
+            )
+        );
+
+        // Now attempt to consume a message, the pointer for kafka is past the end of the log so this is going to
+        // generate an exception which we will catch, and if everything is working correctly we will reset it to the last
+        // valid offset that we processed
+        consumer.nextRecord();
+
+        assertEquals(
+            "Seek call on Kafka should have been reset to our last message",
+            numberOfMsgsOnPartition1,
+            consumer.getKafkaConsumer().position(
+                topicPartition1
+            )
+        );
+
+        // Clean up
+        consumer.close();
+    }
+
+    /**
      * Helper method
      * @param consumerState - the consumer state we want to validate
      * @param topicPartition - the namespace/partition we want to validate
