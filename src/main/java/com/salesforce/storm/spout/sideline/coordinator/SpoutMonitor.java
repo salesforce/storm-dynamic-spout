@@ -326,6 +326,7 @@ public class SpoutMonitor implements Runnable {
         logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
 
         // Report to metrics record
+        getMetricsRecorder().assignValue(getClass(), "bufferSize", tupleOutputQueue.size());
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
         getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
         getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
