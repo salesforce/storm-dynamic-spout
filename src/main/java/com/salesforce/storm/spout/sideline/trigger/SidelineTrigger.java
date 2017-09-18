@@ -26,14 +26,29 @@ package com.salesforce.storm.spout.sideline.trigger;
 
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 
+import java.util.Map;
+
 /**
- * An interface for a trigger that can stop sidelining.
+ * A trigger is a class that can start and stop a sideline by constructing sideline requests.
  */
-public interface StoppingTrigger extends Trigger {
+public interface SidelineTrigger {
 
     /**
      * Set the sideline spout trigger's proxy on the trigger.
      * @param spout Sideline spout trigger's proxy
      */
     void setSidelineSpout(SpoutTriggerProxy spout);
+
+    /**
+     * Open the trigger.
+     * @param spoutConfig Spout configuration.
+     */
+    default void open(Map spoutConfig) {
+    }
+
+    /**
+     * Close the trigger.
+     */
+    default void close() {
+    }
 }

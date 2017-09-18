@@ -369,28 +369,16 @@ public class SpoutConfig {
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
 
     /**
-     * (String) Defines with StartingTrigger (if any) implementation to use.
-     * Should be a fully qualified class path that implements thee StartingTrigger interface
+     * (List|String) Defines one or more sideline trigger(s) (if any) to use.
+     * Should be a fully qualified class path that implements thee SidelineTrigger interface.
      */
     @Documentation(
         category = Documentation.Category.SIDELINE,
-        description = "Defines with StartingTrigger (if any) implementation to use. "
-            + "Should be a fully qualified class path that implements thee StartingTrigger interface",
+        description = "Defines one or more sideline trigger(s) (if any) to use. "
+            + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
         type = String.class
     )
-    public static final String STARTING_TRIGGER_CLASS = "sideline.starting_trigger_class";
-
-    /**
-     * (String) Defines with StoppingTrigger (if any) implementation to use.
-     * Should be a fully qualified class path that implements thee StoppingTrigger interface
-     */
-    @Documentation(
-        category = Documentation.Category.SIDELINE,
-        description = "Defines with StoppingTrigger (if any) implementation to use. "
-            + "Should be a fully qualified class path that implements thee StoppingTrigger interface",
-        type = String.class
-    )
-    public static final String STOPPING_TRIGGER_CLASS = "sideline.stopping_trigger_class";
+    public static final String TRIGGER_CLASS = "sideline.trigger_class";
 
 ///////////////////////////////////
 // Utility Methods.

@@ -39,12 +39,10 @@ import com.salesforce.storm.spout.sideline.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
-import com.salesforce.storm.spout.sideline.trigger.NoopStartingStoppingTrigger;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
-import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
-import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
+import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -347,8 +345,7 @@ public class SidelineSpoutHandlerTest {
     public void testOnSpoutClose() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
-        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
+        config.put(SpoutConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
@@ -361,46 +358,13 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.open(config);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
-        assertNotNull(sidelineSpoutHandler.getStartingTrigger());
-        assertTrue(sidelineSpoutHandler.getStartingTrigger() instanceof NoopStartingStoppingTrigger);
-        assertNotNull(sidelineSpoutHandler.getStoppingTrigger());
-        assertTrue(sidelineSpoutHandler.getStoppingTrigger() instanceof NoopStartingStoppingTrigger);
+        assertNotNull(sidelineSpoutHandler.getSidelineTriggers());
+        assertEquals(1, sidelineSpoutHandler.getSidelineTriggers().size());
+        assertTrue(sidelineSpoutHandler.getSidelineTriggers().get(0) instanceof StaticTrigger);
 
         sidelineSpoutHandler.onSpoutClose(spout);
 
-        assertNull(sidelineSpoutHandler.getStartingTrigger());
-        assertNull(sidelineSpoutHandler.getStoppingTrigger());
-    }
-
-    /**
-     * Test that we get the configured starting trigger
-     */
-    @Test
-    public void testCreateStartingTrigger() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
-
-        final StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
-
-        assertTrue(startingTrigger instanceof NoopStartingStoppingTrigger);
-    }
-
-    /**
-     * Test that we get null back when no triggers are configured
-     */
-    @Test
-    public void testNullCreateStartingTrigger() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
-
-        final StartingTrigger startingTrigger = sidelineSpoutHandler.createStartingTrigger();
-
-        assertNull(startingTrigger);
+        assertEquals(0, sidelineSpoutHandler.getSidelineTriggers().size());
     }
 
     /**
@@ -409,67 +373,17 @@ public class SidelineSpoutHandlerTest {
     @Rule
     public ExpectedException expectedExceptionMisconfiguredCreateStartingTrigger = ExpectedException.none();
     @Test
-    public void testMisconfiguredCreateStartingTrigger() {
+    public void testMisconfiguredCreateSidelineTriggers() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        // This is not a valid trigger!
-        config.put(SpoutConfig.STARTING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
+        // This class better not exist!
+        config.put(SpoutConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
 
         expectedExceptionMisconfiguredCreateStartingTrigger.expect(RuntimeException.class);
 
-        sidelineSpoutHandler.createStartingTrigger();
-    }
-
-    /**
-     * Test that we get the configured stopping trigger.
-     */
-    @Test
-    public void testCreateStoppingTrigger() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, NoopStartingStoppingTrigger.class.getName());
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
-
-        final StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
-
-        assertTrue(stoppingTrigger instanceof NoopStartingStoppingTrigger);
-    }
-
-    /**
-     * Test that we get null back when no triggers are configured
-     */
-    @Test
-    public void testNullCreateStoppingTrigger() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
-
-        final StoppingTrigger stoppingTrigger = sidelineSpoutHandler.createStoppingTrigger();
-
-        assertNull(stoppingTrigger);
-    }
-
-    /**
-     * Test that we get a runtime exception when we configure a class that doesn't utilize our interfaces
-     */
-    @Rule
-    public ExpectedException expectedExceptionMisconfiguredCreateStoppingTrigger = ExpectedException.none();
-    @Test
-    public void testMisconfiguredCreateStoppingTrigger() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        // This is not a valid trigger!
-        config.put(SpoutConfig.STOPPING_TRIGGER_CLASS, SidelineSpoutHandlerTest.class.getName());
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
-
-        expectedExceptionMisconfiguredCreateStoppingTrigger.expect(RuntimeException.class);
-
-        sidelineSpoutHandler.createStoppingTrigger();
+        sidelineSpoutHandler.createSidelineTriggers();
     }
 
     /**
