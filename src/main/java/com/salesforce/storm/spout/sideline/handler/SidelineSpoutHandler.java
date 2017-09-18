@@ -28,6 +28,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.DynamicSpout;
+import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 import com.salesforce.storm.spout.sideline.VirtualSpout;
@@ -40,14 +41,16 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
-import com.salesforce.storm.spout.sideline.trigger.StartingTrigger;
-import com.salesforce.storm.spout.sideline.trigger.StoppingTrigger;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,18 +78,9 @@ public class SidelineSpoutHandler implements SpoutHandler {
     private TopologyContext topologyContext;
 
     /**
-     * Starting Trigger.
-     *
-     * This is an instance that is responsible for telling the sideline spout when to begin sidelining.
+     * Collection of sideline triggers to manage.
      */
-    private StartingTrigger startingTrigger;
-
-    /**
-     * Stopping Trigger.
-     *
-     * This is an instance is responsible for telling the sideline spout when to stop sidelining
-     */
-    private StoppingTrigger stoppingTrigger;
+    private final List<SidelineTrigger> sidelineTriggers = new ArrayList<>();
 
     private DynamicSpout spout;
 
@@ -115,20 +109,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         this.spout = spout;
         this.topologyContext = topologyContext;
-        this.startingTrigger = createStartingTrigger();
-        this.stoppingTrigger = createStoppingTrigger();
 
-        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this
-        // spout), set the spout proxy on it
-        if (startingTrigger != null) {
-            startingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
-        }
-
-        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this
-        // spout), set the spout proxy on it
-        if (stoppingTrigger != null) {
-            stoppingTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
-        }
+        createSidelineTriggers();
 
         // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
@@ -197,18 +179,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
             }
         }
 
-        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), open it
-        if (startingTrigger != null) {
-            startingTrigger.open(getSpoutConfig());
-        } else {
-            logger.warn("Sideline spout is configured without a starting trigger");
-        }
-
-        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), open it
-        if (stoppingTrigger != null) {
-            stoppingTrigger.open(getSpoutConfig());
-        } else {
-            logger.warn("Sideline spout is configured without a stopping trigger");
+        for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
+            sidelineTrigger.open(getSpoutConfig());
         }
     }
 
@@ -216,19 +188,17 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * Handler called when the dynamic spout closes, this method is responsible for tearing down triggers  sidelining.
      */
     @Override
-    public void onSpoutClose(DynamicSpout spout) {
-        // If we have a starting trigger (technically they're optional but if you don't have one why are you using this spout), close it
-        if (startingTrigger != null) {
-            startingTrigger.close();
-        }
+    public void onSpoutClose(final DynamicSpout spout) {
+        final ListIterator<SidelineTrigger> iter = sidelineTriggers.listIterator();
 
-        // If we have a stopping trigger (technically they're optional but if you don't have one why are you using this spout), close it
-        if (stoppingTrigger != null) {
-            stoppingTrigger.close();
+        while (iter.hasNext()) {
+            // Get the trigger
+            final SidelineTrigger sidelineTrigger = iter.next();
+            // Close the trigger
+            sidelineTrigger.close();
+            // Remove it from our list of triggers
+            iter.remove();
         }
-
-        startingTrigger = null;
-        stoppingTrigger = null;
     }
 
     /**
@@ -431,36 +401,27 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * @return Instance of a StartingTrigger
      */
     @SuppressWarnings("unchecked")
-    public synchronized StartingTrigger createStartingTrigger() {
-        String classStr = (String) getSpoutConfig().get(SpoutConfig.STARTING_TRIGGER_CLASS);
-        // Empty class is allowed, this is not required to be configured
-        if (Strings.isNullOrEmpty(classStr)) {
-            return null;
+    synchronized void createSidelineTriggers() {
+        final Object triggerClass = getSpoutConfig().get(SpoutConfig.TRIGGER_CLASS);
+
+        // No triggers configured, nothing to setup!
+        if (triggerClass == null) {
+            return;
         }
 
-        try {
-            return ((Class<? extends StartingTrigger>) Class.forName(classStr)).newInstance();
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
-    }
+        final List<String> sidelineTriggersClasses = (triggerClass instanceof String)
+            ? Collections.singletonList((String) triggerClass)
+            : (List<String>) triggerClass;
 
-    /**
-     * Create an instance of the configured StoppingTrigger.
-     * @return Instance of a StoppingTrigger
-     */
-    @SuppressWarnings("unchecked")
-    public synchronized StoppingTrigger createStoppingTrigger() {
-        String classStr = (String) getSpoutConfig().get(SpoutConfig.STOPPING_TRIGGER_CLASS);
-        // Empty class is allowed, this is not required to be configured
-        if (Strings.isNullOrEmpty(classStr)) {
-            return null;
-        }
+        for (final String sidelineTriggerClass : sidelineTriggersClasses) {
+            // Will throw a RuntimeException if this is not configured correctly
+            final SidelineTrigger sidelineTrigger = FactoryManager.createNewInstance(sidelineTriggerClass);
 
-        try {
-            return ((Class<? extends StoppingTrigger>) Class.forName(classStr)).newInstance();
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
+            // Revisit the purpose of this proxy
+            sidelineTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
+
+            // Add it to our collection so we can iterate it later.
+            sidelineTriggers.add(sidelineTrigger);
         }
     }
 
@@ -481,18 +442,10 @@ public class SidelineSpoutHandler implements SpoutHandler {
     }
 
     /**
-     * Get the stopping trigger.
-     * @return Stopping trigger.
+     * Get the sideline triggers created for use by the spout handler.
+     * @return list of sideline triggers.
      */
-    StartingTrigger getStartingTrigger() {
-        return startingTrigger;
-    }
-
-    /**
-     * Get the starting trigger.
-     * @return Starting trigger.
-     */
-    StoppingTrigger getStoppingTrigger() {
-        return stoppingTrigger;
+    List<SidelineTrigger> getSidelineTriggers() {
+        return sidelineTriggers;
     }
 }

@@ -54,7 +54,7 @@ The `DynamicSpout` is really a container of many `VirtualSpout` instances, which
 
 This spout implementation exposes two interfaces for controlling **WHEN** and **WHAT** messages from Kafka get skipped and marked for processing at a later point in time.
 
-The **Trigger Interface** allows you to define **WHEN** the spout will start marking messages for delayed processing, and **WHEN** the spout will start processing messages that it previously skipped.
+The **Trigger Interface** allows you to hook into the spout so that you start and stop **WHEN** messages are delayed from processing, and **WHEN** the spout will resume processing messages that it previously delayed.
 
 The **Filter Interface** allows you to define **WHAT** messages the spout will mark for delayed processing.
 
@@ -100,8 +100,7 @@ spout.virtual_spout_handler_class | String |  | Defines which VirtualSpoutHandle
 ### Sideline
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
-sideline.starting_trigger_class | String |  | Defines with StartingTrigger (if any) implementation to use. Should be a fully qualified class path that implements thee StartingTrigger interface | 
-sideline.stopping_trigger_class | String |  | Defines with StoppingTrigger (if any) implementation to use. Should be a fully qualified class path that implements thee StoppingTrigger interface | 
+sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
 
 ### Persistence
 Config Key | Type | Required | Description | Default Value |
@@ -309,15 +308,15 @@ criteria changes!
 
 
 ## Getting Started
-In order to begin using sidelining you will need to create a `FilterChainStep`, a `StartingTrigger` and `StoppingTrigger`, implementing classes are all required for this spout to function properly.
+In order to begin using sidelining you will need to create a `FilterChainStep` and a `SidelineTrigger`, implementing classes are all required for this spout to function properly.
 
 ## Starting Sideline Request
-Your implemented [`StartingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java) will notify the `SpoutMonitor` that a new sideline request has been started.  The `SpoutMonitor`
+Your implemented [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that a new sideline request has been started.  The `SidelineSpout`
 will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
 your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/sideline/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
 
 ## Stoping Sideline Request
-Your implemented[`StoppingTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) will notify the `SpoutMonitor` that it would like to stop a sideline request.  The `SpoutMonitor` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
+Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that it would like to stop a sideline request.  The `SidelineSpout` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/sideline/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
 
 
 ## Dependencies
@@ -326,10 +325,7 @@ Your implemented[`StoppingTrigger`](src/main/java/com/salesforce/storm/spout/sid
 
 
 ## Components
-[StartingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StartingTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SpoutTriggerProxy` via `setSidelineSpout()`.  This implementation can call `startSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a new sideline should be spun up.
-
-[StoppingTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/StoppingTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SpoutTriggerProxy` via `setSidelineSpout()`.  This implementation can call `stopSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a sideline should be stopped, meaning that the firehose will no longer filter out events and new `VirtualSpout` will be created for the previously sidelined messages.
-
+[SidelineTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SpoutTriggerProxy` via `setSidelineSpout()`.  This implementation can call `startSidelining()` and `stopSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a new sideline should be spun up.
 
 [Deserializer](src/main/java/com/salesforce/storm/spout/sideline/kafka/deserializer/Deserializer.java) - The `Deserializer` interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple. It also  controls the naming of your output field(s).  An example `Utf8StringDeserializer` is provided implementing this interface.
 
@@ -361,10 +357,10 @@ public static class NumberFilter implements FilterChainStep {
 }
 ```
 
-`PollingSidelineTrigger` runs every 30 seconds and simply swaps out number filters, slowly incrementing over time.  It uses the `NumberFilter` by including it in a `SidelineRequest`.  `PollingSidelineTrigger` implements both `StartingTrigger` and `StoppingTrigger`, but this is not required.  You can create separate implementations for your project.
+`PollingSidelineTrigger` runs every 30 seconds and simply swaps out number filters, slowly incrementing over time.  It uses the `NumberFilter` by including it in a `SidelineRequest`.  `PollingSidelineTrigger` implements `SidelineTrigger`.
 
 ```java
-public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger {
+public class PollingSidelineTrigger implements SidelineTrigger {
 
     private boolean isOpen = false;
 
@@ -382,7 +378,7 @@ public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger 
 
         executor = Executors.newScheduledThreadPool(1);
 
-        Poll poll = new Poll(sidelineSpout);
+        final Poll poll = new Poll(sidelineSpout);
 
         executor.scheduleAtFixedRate(poll, 0, 30, TimeUnit.SECONDS);
     }
@@ -411,13 +407,13 @@ public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger 
         @Override
         public void run() {
             // Start a sideline request for the next number
-            SidelineRequest startRequest = new SidelineRequest(
+            final SidelineRequest startRequest = new SidelineRequest(
                 new NumberFilter(number++)
             );
             spout.startSidelining(startRequest);
 
             // Stop a sideline request for the last number
-            SidelineRequest stopRequest = new SidelineRequest(
+            final SidelineRequest stopRequest = new SidelineRequest(
                 new NumberFilter(number - 1)
             );
             spout.stopSidelining(stopRequest);
@@ -427,4 +423,4 @@ public class PollingSidelineTrigger implements StartingTrigger, StoppingTrigger 
 ```
 
 ## Stopping & Redeploying the topology?
-The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata aboutsideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.
+The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata about sideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.

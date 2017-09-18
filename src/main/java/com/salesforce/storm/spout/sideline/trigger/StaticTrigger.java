@@ -28,42 +28,66 @@ import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 
 import java.util.Map;
 
-public class StaticTrigger implements StartingTrigger, StoppingTrigger {
+/**
+ * Static trigger, you should only ever use this for testing.
+ */
+public class StaticTrigger implements SidelineTrigger {
 
-    private SpoutTriggerProxy sidelineSpout;
-    private SidelineRequestIdentifier currentSidelineRequestIdentifier;
+    /**
+     * Sideline proxy instance that created the trigger.
+     */
+    private static SpoutTriggerProxy sidelineSpout;
 
+    /**
+     * Current sideline request, which is captured after a sideline request identifier is started.
+     */
+    private static SidelineRequestIdentifier currentSidelineRequestIdentifier;
+
+    /**
+     * Open the trigger.
+     * @param config spout configuration.
+     */
     @Override
-    public void open(Map config) {
-
+    public void open(final Map config) {
     }
 
+    /**
+     * Close the trigger.
+     */
     @Override
     public void close() {
-
     }
 
-    public void start(SidelineRequestIdentifier sidelineRequestIdentifier) {
-        this.currentSidelineRequestIdentifier = sidelineRequestIdentifier;
+    /**
+     * Set the sideline proxy instance.
+     * @param sidelineSpoutProxy sideline proxy instance.
+     */
+    @Override
+    public void setSidelineSpout(final SpoutTriggerProxy sidelineSpoutProxy) {
+        sidelineSpout = sidelineSpoutProxy;
     }
 
-    public void stop() {
-
+    /**
+     * Start a sideline request.
+     * @param request sideline request.
+     */
+    public static void sendStartRequest(final SidelineRequest request) {
+        currentSidelineRequestIdentifier = sidelineSpout.startSidelining(request);
     }
 
-    public void sendStartRequest(SidelineRequest request) {
-        this.currentSidelineRequestIdentifier = this.sidelineSpout.startSidelining(request);
+    /**
+     * Stop a sideline request.
+     * @param request sideline request.
+     */
+    public static void sendStopRequest(final SidelineRequest request) {
+        sidelineSpout.stopSidelining(request);
     }
 
-    public void sendStopRequest(SidelineRequest request) {
-        this.sidelineSpout.stopSidelining(request);
-    }
-
-    public void setSidelineSpout(SpoutTriggerProxy sidelineSpout) {
-        this.sidelineSpout = sidelineSpout;
-    }
-
-    public SidelineRequestIdentifier getCurrentSidelineRequestIdentifier() {
-        return this.currentSidelineRequestIdentifier;
+    /**
+     * Get current the sideline request identifier.
+     * @return current sideline request identifier.
+     */
+    public static SidelineRequestIdentifier getCurrentSidelineRequestIdentifier() {
+        return currentSidelineRequestIdentifier;
     }
 }
