@@ -35,7 +35,7 @@ import java.util.Map;
  * Simple implementation of a MultiAssignableMetric.
  */
 public class MultiAssignableMetric implements IMetric {
-    private final Map<String, AssignableMetric> values = Maps.newHashMap();
+    private final Map<String, AssignableMetric> values = Maps.newConcurrentMap();
 
     public MultiAssignableMetric() {
     }
