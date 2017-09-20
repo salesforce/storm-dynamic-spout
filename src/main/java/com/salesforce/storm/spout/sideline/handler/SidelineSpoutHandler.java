@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.sideline.handler;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.sideline.ConsumerPartition;
+import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.DynamicSpout;
 import com.salesforce.storm.spout.sideline.FactoryManager;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
@@ -114,7 +115,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         // Create the main spout for the namespace, we'll dub it the 'firehose'
         fireHoseSpout = new VirtualSpout(
-            generateVirtualSpoutId(new SidelineRequestIdentifier(MAIN_ID)),
+            // We use a normal virtual spout identifier here rather than the sideline one because this is NOT a sideline, it's our firehose.
+            new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID),
             getSpoutConfig(),
             topologyContext,
             spout.getFactoryManager(),
@@ -340,7 +342,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
     }
 
     /**
-     * Open a virtual spout (like when a sideline stop request is made).
+     * Open a virtual spout for a sideline (do not use this for the firehose).
      * @param id Id of the sideline request
      * @param step Filter chain step (it will be negate)
      * @param startingState Starting consumer state
@@ -353,7 +355,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         final ConsumerState endingState
     ) {
         // Generate our virtualSpoutId using the payload id.
-        final VirtualSpoutIdentifier virtualSpoutId = generateVirtualSpoutId(id);
+        final VirtualSpoutIdentifier virtualSpoutId = generateSidelineVirtualSpoutId(id);
 
         // This info is repeated in VirtualSidelineSpout.open(), not needed here.
         logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
@@ -377,24 +379,28 @@ public class SidelineSpoutHandler implements SpoutHandler {
     }
 
     /**
+     * Get the virtual spout id prefix from the config.
+     * @return virtual spout id prefix.
+     */
+    String getVirtualSpoutIdPrefix() {
+        return (String) getSpoutConfig().get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+    }
+
+    /**
      * Generates a VirtualSpoutId from a sideline request id.
      *
      * @param sidelineRequestIdentifier Sideline request to use for constructing the id
      * @return Generated VirtualSpoutId.
      */
-    VirtualSpoutIdentifier generateVirtualSpoutId(final SidelineRequestIdentifier sidelineRequestIdentifier) {
+    VirtualSpoutIdentifier generateSidelineVirtualSpoutId(final SidelineRequestIdentifier sidelineRequestIdentifier) {
         Preconditions.checkArgument(
             !Strings.isNullOrEmpty(sidelineRequestIdentifier.toString()),
             "SidelineRequestIdentifier cannot be null or empty!"
         );
 
-        // Also prefixed with our configured prefix
-        final String prefix = (String) getSpoutConfig().get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
-
-        // return it
-        return new SidelineVirtualSpoutIdentifier(prefix, sidelineRequestIdentifier);
+        // Prefix with our configured virtual spout id, usually the consumer, then use the sideline identifier
+        return new SidelineVirtualSpoutIdentifier(getVirtualSpoutIdPrefix(), sidelineRequestIdentifier);
     }
-
 
     /**
      * Create an instance of the configured StartingTrigger.

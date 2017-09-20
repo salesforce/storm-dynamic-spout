@@ -39,9 +39,14 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
     private static final String DELIMITER = ":";
 
     /**
-     * Prefix of the spout, usually something corresponding to the consumer.
+     * Prefix that sits between the consumer id and the sideline request id.
      */
-    private final String prefix;
+    private static final String PREFIX = "sideline";
+
+    /**
+     * Consumer id of the spout.
+     */
+    private final String consumerId;
 
     /**
      * Identifier for the sideline request the virtual spout was created for.
@@ -49,24 +54,24 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
     private final SidelineRequestIdentifier sidelineRequestIdentifier;
 
     /**
-     * New instance of a SidelineVirtualSpoutIdentifier using a prefix and a SidelineRequestIdentifier.
-     * @param prefix Prefix to append to the Identifier
+     * New instance of a SidelineVirtualSpoutIdentifier using a consumerId and a SidelineRequestIdentifier.
+     * @param consumerId Prefix to append to the Identifier
      * @param sidelineRequestIdentifier SidelineRequestIdentifier to associate with the VirtualSpoutId.
      */
-    public SidelineVirtualSpoutIdentifier(final String prefix, final SidelineRequestIdentifier sidelineRequestIdentifier) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(prefix), "Prefix is required!");
+    public SidelineVirtualSpoutIdentifier(final String consumerId, final SidelineRequestIdentifier sidelineRequestIdentifier) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(consumerId), "Consumer id is required!");
         Preconditions.checkArgument(sidelineRequestIdentifier != null, "SidelineRequest identifier is required!");
 
-        this.prefix = prefix;
+        this.consumerId = consumerId;
         this.sidelineRequestIdentifier = sidelineRequestIdentifier;
     }
 
     /**
-     * Get the prefix of the identifier, this is usually related to the consumer.
+     * Get the consumerId of the identifier, this is usually related to the consumer.
      * @return Prefix of the identifier.
      */
-    public String getPrefix() {
-        return prefix;
+    public String getConsumerId() {
+        return consumerId;
     }
 
     /**
@@ -83,7 +88,7 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
      */
     @Override
     public String toString() {
-        return prefix + DELIMITER + sidelineRequestIdentifier.toString();
+        return consumerId + DELIMITER + PREFIX + DELIMITER + sidelineRequestIdentifier.toString();
     }
 
     /**
@@ -102,7 +107,7 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
 
         SidelineVirtualSpoutIdentifier that = (SidelineVirtualSpoutIdentifier) other;
 
-        if (prefix != null ? !prefix.equals(that.prefix) : that.prefix != null) {
+        if (consumerId != null ? !consumerId.equals(that.consumerId) : that.consumerId != null) {
             return false;
         }
         return sidelineRequestIdentifier != null ? sidelineRequestIdentifier.equals(that.sidelineRequestIdentifier) : that.sidelineRequestIdentifier == null;
@@ -114,7 +119,7 @@ public class SidelineVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
      */
     @Override
     public int hashCode() {
-        int result = prefix != null ? prefix.hashCode() : 0;
+        int result = consumerId != null ? consumerId.hashCode() : 0;
         result = 31 * result + (sidelineRequestIdentifier != null ? sidelineRequestIdentifier.hashCode() : 0);
         return result;
     }
