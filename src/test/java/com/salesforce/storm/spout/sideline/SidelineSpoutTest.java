@@ -408,7 +408,7 @@ public class SidelineSpoutTest {
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // We should validate these emissions
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":" + StaticTrigger.getCurrentSidelineRequestIdentifier());
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":sideline:" + StaticTrigger.getCurrentSidelineRequestIdentifier());
 
         // Call next tuple a few more times to be safe nothing else comes in.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
@@ -660,9 +660,9 @@ public class SidelineSpoutTest {
         List<SpoutEmission> sidelinedEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 3);
 
         // Verify we get offsets [4,5,6] by validating the tuples
-        validateEmission(producedRecords.get(4), sidelinedEmissions.get(0), consumerIdPrefix + ":" + sidelineRequestIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(5), sidelinedEmissions.get(1), consumerIdPrefix + ":" + sidelineRequestIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(6), sidelinedEmissions.get(2), consumerIdPrefix + ":" + sidelineRequestIdentifier, expectedStreamId);
+        validateEmission(producedRecords.get(4), sidelinedEmissions.get(0), consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier, expectedStreamId);
+        validateEmission(producedRecords.get(5), sidelinedEmissions.get(1), consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier, expectedStreamId);
+        validateEmission(producedRecords.get(6), sidelinedEmissions.get(2), consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier, expectedStreamId);
 
         // Ack offsets [4,5,6] => committed offset should be 6 now on sideline consumer.
         ackTuples(spout, sidelinedEmissions);
@@ -696,7 +696,7 @@ public class SidelineSpoutTest {
         sidelineKafkaRecords.addAll(additionalProducedRecords);
 
         // Validate em.
-        validateTuplesFromSourceMessages(sidelineKafkaRecords, sidelinedEmissions, expectedStreamId, consumerIdPrefix + ":" + sidelineRequestIdentifier);
+        validateTuplesFromSourceMessages(sidelineKafkaRecords, sidelinedEmissions, expectedStreamId, consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier);
 
         // call nextTuple() several times, get nothing back
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);

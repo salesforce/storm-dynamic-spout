@@ -176,7 +176,7 @@ public class SidelineSpoutHandlerTest {
         // Find our sideline spout
         Optional<VirtualSpout> sidelineSpout = sidelineSpouts.stream().reduce(
             (VirtualSpout virtualSpout, VirtualSpout virtualSpout2) ->
-                    ((SidelineVirtualSpoutIdentifier) virtualSpout.getVirtualSpoutId()).getSidelineRequestIdentifier().toString().equals("mail")
+                    !virtualSpout.getVirtualSpoutId().toString().contains("main")
                         ? virtualSpout : virtualSpout2
         );
 
@@ -413,13 +413,13 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.open(config);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
-        final VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateVirtualSpoutId(expectedSidelineRequestIdentifier);
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateSidelineVirtualSpoutId(expectedSidelineRequestIdentifier);
 
         assertTrue(virtualSpoutIdentifier instanceof SidelineVirtualSpoutIdentifier);
 
         final SidelineVirtualSpoutIdentifier sidelineVirtualSpoutIdentifier = (SidelineVirtualSpoutIdentifier) virtualSpoutIdentifier;
 
-        assertEquals(expectedPrefix, sidelineVirtualSpoutIdentifier.getPrefix());
+        assertEquals(expectedPrefix, sidelineVirtualSpoutIdentifier.getConsumerId());
         assertEquals(expectedSidelineRequestIdentifier, sidelineVirtualSpoutIdentifier.getSidelineRequestIdentifier());
     }
 }

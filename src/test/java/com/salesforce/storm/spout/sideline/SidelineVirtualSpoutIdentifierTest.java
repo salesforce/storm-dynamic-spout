@@ -39,17 +39,19 @@ public class SidelineVirtualSpoutIdentifierTest {
     public void test_toString() throws Exception {
         VirtualSpoutIdentifier virtualSpoutIdentifier1 = new SidelineVirtualSpoutIdentifier(
             "foo",
-            new SidelineRequestIdentifier("main")
-        );
-
-        assertEquals("foo:main", virtualSpoutIdentifier1.toString());
-
-        VirtualSpoutIdentifier virtualSpoutIdentifier2 = new SidelineVirtualSpoutIdentifier(
-            "foo",
             new SidelineRequestIdentifier("bar")
         );
 
-        assertEquals("foo:bar", virtualSpoutIdentifier2.toString());
+        // Note that the identifier inserts 'sideline' in the middle of the consumer id and the request identifier
+        assertEquals("foo:sideline:bar", virtualSpoutIdentifier1.toString());
+
+        VirtualSpoutIdentifier virtualSpoutIdentifier2 = new SidelineVirtualSpoutIdentifier(
+            "foo",
+            new SidelineRequestIdentifier("baz")
+        );
+
+        // Note that the identifier inserts 'sideline' in the middle of the consumer id and the request identifier
+        assertEquals("foo:sideline:baz", virtualSpoutIdentifier2.toString());
     }
 
     /**
