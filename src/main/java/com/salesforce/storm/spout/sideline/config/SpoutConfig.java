@@ -263,6 +263,26 @@ public class SpoutConfig {
     )
     public static final String METRICS_RECORDER_CLASS = "spout.metrics.class";
 
+    /**
+     * (boolean) Defines the time bucket to group metrics together under.
+     * Default Value: 60
+     */
+    @Documentation(
+        description = "Defines the time bucket to group metrics together under.",
+        type = Integer.class
+    )
+    public static final String METRICS_RECORDER_TIME_BUCKET = "spout.metrics.time_bucket";
+
+    /**
+     * (boolean) Defines if MetricsRecord instance should include the taskId in the metric key.
+     * Default Value: false
+     */
+    @Documentation(
+        description = "Defines if MetricsRecorder instance should include the taskId in the metric key.",
+        type = Boolean.class
+    )
+    public static final String METRICS_RECORDER_ENABLE_TASK_ID_PREFIX = "spout.metrics.enable_task_id_prefix";
+
 ///////////////////////////////////
 // Internal Coordinator Config
 ///////////////////////////////////

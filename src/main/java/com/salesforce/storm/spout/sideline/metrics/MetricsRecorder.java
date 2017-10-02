@@ -40,7 +40,7 @@ public interface MetricsRecorder {
      * the implementation.  By contract, this will be called once prior to calling
      * collecting any metrics.
      */
-    void open(final Map spoutConfig, final TopologyContext topologyContext);
+    void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext);
 
     /**
      * Perform any cleanup.
@@ -50,23 +50,23 @@ public interface MetricsRecorder {
     /**
      * Count a metric, given a name, increments it by 1.
      */
-    void count(Class sourceClass, String metricName);
+    void count(final Class sourceClass, final String metricName);
 
     /**
      * Count a metric, given a name, increments it by value.
      */
-    void count(Class sourceClass, String metricName, long incrementBy);
+    void count(final Class sourceClass, final String metricName, final long incrementBy);
 
 
     /**
      * Gauge a metric, given a name, by a specify value.
      */
-    void averageValue(Class sourceClass, String metricName, Object value);
+    void averageValue(final Class sourceClass, final String metricName, final Object value);
 
     /**
      * Assign a value to metric.
      */
-    void assignValue(Class sourceClass, String metricName, Object value);
+    void assignValue(final Class sourceClass, final String metricName, final Object value);
 
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
@@ -77,20 +77,20 @@ public interface MetricsRecorder {
      * @return The result of the Callable, whatever they might be
      * @throws Exception Hopefully whatever went wrong in your callable
      */
-    <T> T timer(Class sourceClass, final String metricName, Callable<T> callable) throws Exception;
+    <T> T timer(final Class sourceClass, final String metricName, final Callable<T> callable) throws Exception;
 
     /**
      * Record the execution time, given a name and scope.
      */
-    void timer(Class sourceClass, String metricName, long timeInMs);
+    void timer(final Class sourceClass, final String metricName, final long timeInMs);
 
     /**
      * Starts a timer for the given sourceClass and metricName.
      */
-    void startTimer(Class sourceClass, String metricName);
+    void startTimer(final Class sourceClass, final String metricName);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
      */
-    void stopTimer(Class sourceClass, String metricName);
+    void stopTimer(final Class sourceClass, final String metricName);
 }

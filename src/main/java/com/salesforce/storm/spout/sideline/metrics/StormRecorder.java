@@ -25,6 +25,7 @@
 package com.salesforce.storm.spout.sideline.metrics;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.config.SpoutConfig;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -46,34 +47,75 @@ import java.util.concurrent.Callable;
  *
  * This will report metrics in the following format:
  *
- * Averaged Values: AVERAGES.[className].[metricName]
- * Gauge Values: GAUGES.[className].[metricName]
- * Timed Values: TIMERS.[className].[metricName]
- * Counter Values: COUNTERS.[className].[metricName]
- *
+ * Averaged Values: AVERAGES.[className].[metricPrefix].[metricName]
+ * Gauge Values: GAUGES.[className].[metricPrefix].[metricName]
+ * Timed Values: TIMERS.[className].[metricPrefix].[metricName]
+ * Counter Values: COUNTERS.[className].[metricPrefix].[metricName]
  */
 public class StormRecorder implements MetricsRecorder {
-
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
 
+    /**
+     * Contains a map of Reduced Metrics, which are used to calculate averages over time.
+     */
     private MultiReducedMetric averagedValues;
+
+    /**
+     * Contains a map of Assigned Metrics, which are used to set a metric to a specific value.
+     */
     private MultiAssignableMetric assignedValues;
+
+    /**
+     * Contains a map of Reduced Metrics, which are used to calculate timings of something over time.
+     */
     private MultiReducedMetric timers;
+
+    /**
+     * Contains a map of Counter metrics, which are used to count how often something happens,
+     * always increasing.
+     */
     private MultiCountMetric counters;
 
-    // For storing timer start values
+    /**
+     * For storing timer start values.
+     */
     private final Map<String, Long> timerStartValues = Maps.newConcurrentMap();
 
+    /**
+     * Allow configuring a prefix for metric keys.
+     */
+    private String metricPrefix = "";
+
     @Override
-    public void open(final Map spoutConfig, final TopologyContext topologyContext) {
-        // Configuration items, hardcoded for now.
-        final int timeBucket = 60;
+    public void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext) {
+        // Load configuration items.
+
+        // Determine our time bucket window, in seconds, defaulted to 60.
+        int timeBucketSeconds = 60;
+        if (spoutConfig.containsKey(SpoutConfig.METRICS_RECORDER_TIME_BUCKET)) {
+            final Object timeBucketCfgValue = spoutConfig.get(SpoutConfig.METRICS_RECORDER_TIME_BUCKET);
+            if (timeBucketCfgValue instanceof Number) {
+                timeBucketSeconds = ((Number) timeBucketCfgValue).intValue();
+            }
+        }
+
+        // Conditionally enable prefixing with taskId
+        if (spoutConfig.containsKey(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX)) {
+            final Object taskIdCfgValue = spoutConfig.get(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX);
+            if (taskIdCfgValue instanceof Boolean && (Boolean) taskIdCfgValue) {
+                this.metricPrefix = "task-" + topologyContext.getThisTaskIndex();
+            }
+        }
+
+        // Log how we got configured.
+        logger.info("Configured with time window of {} seconds and using taskId prefixes?: {}",
+            timeBucketSeconds, Boolean.toString(metricPrefix.isEmpty()));
 
         // Register the top level metrics.
-        averagedValues = topologyContext.registerMetric("AVERAGES", new MultiReducedMetric(new MeanReducer()), timeBucket);
-        assignedValues = topologyContext.registerMetric("GAUGES", new MultiAssignableMetric(), timeBucket);
-        timers = topologyContext.registerMetric("TIMERS", new MultiReducedMetric(new MeanReducer()), timeBucket);
-        counters = topologyContext.registerMetric("COUNTERS", new MultiCountMetric(), timeBucket);
+        averagedValues = topologyContext.registerMetric("AVERAGES", new MultiReducedMetric(new MeanReducer()), timeBucketSeconds);
+        assignedValues = topologyContext.registerMetric("GAUGES", new MultiAssignableMetric(), timeBucketSeconds);
+        timers = topologyContext.registerMetric("TIMERS", new MultiReducedMetric(new MeanReducer()), timeBucketSeconds);
+        counters = topologyContext.registerMetric("COUNTERS", new MultiCountMetric(), timeBucketSeconds);
     }
 
     @Override
@@ -82,12 +124,12 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void count(Class sourceClass, String metricName) {
+    public void count(final Class sourceClass, final String metricName) {
         count(sourceClass, metricName, 1);
     }
 
     @Override
-    public void count(Class sourceClass, String metricName, long incrementBy) {
+    public void count(final Class sourceClass, final String metricName, final long incrementBy) {
         // Generate key
         final String key = generateKey(sourceClass, metricName);
 
@@ -95,14 +137,14 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void averageValue(Class sourceClass, String metricName, Object value) {
+    public void averageValue(final Class sourceClass, final String metricName, final Object value) {
         final String key = generateKey(sourceClass, metricName);
 
         averagedValues.scope(key).update(value);
     }
 
     @Override
-    public void assignValue(Class sourceClass, String metricName, Object value) {
+    public void assignValue(final Class sourceClass, final String metricName, final Object value) {
         final String key = generateKey(sourceClass, metricName);
         assignedValues.scope(key).setValue(value);
     }
@@ -110,7 +152,7 @@ public class StormRecorder implements MetricsRecorder {
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!).
      */
-    public <T> T timer(Class sourceClass, final String metricName, Callable<T> callable) throws Exception {
+    public <T> T timer(final Class sourceClass, final String metricName, final Callable<T> callable) throws Exception {
         // Wrap in timing
         final long start = Clock.systemUTC().millis();
         T result = callable.call();
@@ -123,19 +165,26 @@ public class StormRecorder implements MetricsRecorder {
         return result;
     }
 
-    public void timer(Class sourceClass, String metricName, long timeInMs) {
+    /**
+     * Record how long something took to process.
+     *
+     * @param sourceClass The class that the timing occurred in.
+     * @param metricName The name of the metric.
+     * @param timeInMs How long it took, in milliseconds.
+     */
+    public void timer(final Class sourceClass, final String metricName, final long timeInMs) {
         final String key = generateKey(sourceClass, metricName);
         timers.scope(key).update(timeInMs);
     }
 
     @Override
-    public void startTimer(Class sourceClass, String metricName) {
+    public void startTimer(final Class sourceClass, final String metricName) {
         final String key = generateKey(sourceClass, metricName);
         timerStartValues.put(key, Clock.systemUTC().millis());
     }
 
     @Override
-    public void stopTimer(Class sourceClass, String metricName) {
+    public void stopTimer(final Class sourceClass, final String metricName) {
         final long stopTime = Clock.systemUTC().millis();
 
         final String key = generateKey(sourceClass, metricName);
@@ -147,8 +196,31 @@ public class StormRecorder implements MetricsRecorder {
         }
         timer(sourceClass, metricName, stopTime - startTime);
     }
-    
-    private String generateKey(Class sourceClass, String metricName) {
-        return sourceClass.getSimpleName() + "." + metricName;
+
+    /**
+     * Internal utility class to help generate metric keys.
+     *
+     * @return in format of: "className.metricPrefix.metricName"
+     */
+    private String generateKey(final Class sourceClass, final String metricName) {
+        final StringBuilder keyBuilder = new StringBuilder(sourceClass.getSimpleName())
+            .append(".");
+
+        // Conditionally add key prefix.
+        if (getMetricPrefix() != null && !getMetricPrefix().isEmpty()) {
+            keyBuilder
+                .append(getMetricPrefix())
+                .append(".");
+        }
+        keyBuilder.append(metricName);
+        return keyBuilder.toString();
+    }
+
+    /**
+     * Package protected getter.
+     * @return Configured metric prefix.
+     */
+    String getMetricPrefix() {
+        return metricPrefix;
     }
 }
