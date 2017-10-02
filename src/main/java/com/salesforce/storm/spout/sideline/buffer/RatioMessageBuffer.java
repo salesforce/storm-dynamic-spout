@@ -24,11 +24,11 @@
  */
 package com.salesforce.storm.spout.sideline.buffer;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.Message;
 import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.config.SpoutConfig;
-import org.apache.storm.shade.com.google.common.collect.Iterators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
