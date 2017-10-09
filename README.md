@@ -34,6 +34,9 @@
   - [Components](#components-1)
   - [Example Trigger Implementation](#example-trigger-implementation)
   - [Stopping & Redeploying the topology?](#stopping--redeploying-the-topology)
+- [Contributing](#contributing)
+  - [Submitting a Contribution](#submitting-a-contribution)
+  - [Acceptance Criteria](#acceptance-criteria)
 - [Other Notes](#other-notes)
   - [Configuration & README](#configuration--readme)
   - [Checkstyle](#checkstyle)
@@ -431,6 +434,32 @@ public class PollingSidelineTrigger implements SidelineTrigger {
 
 ## Stopping & Redeploying the topology?
 The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata about sideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.
+
+# Contributing
+
+Found a bug? Think you've got an awesome feature you want to add? We welcome contributions!
+
+
+## Submitting a Contribution
+
+1. Search for an existing issue. If none exists, create a new issue so that other contributors can keep track of what you are trying to add/fix and offer suggestions (or let you know if there is already an effort in progress).  Be sure to clearly state the problem you are trying to solve and an explanation of why you want to use the strategy you're proposing to solve it.
+1. Fork this repository on GitHub and create a branch for your feature.
+1. Clone your fork and branch to your local machine.
+1. Commit changes to your branch.
+1. Push your work up to GitHub.
+1. Submit a pull request so that we can review your changes.
+
+*Make sure that you rebase your branch off of master before opening a new pull request. We might also ask you to rebase it if master changes after you open your pull request.*
+
+## Acceptance Criteria
+
+We love contributions, but it's important that your pull request adhere to some of the standards we maintain in this repository. 
+
+- All tests must be passing!
+- All code changes require tests!
+- All code changes must be consistent with our checkstyle rules.
+- New configuration options should have proper annotations and README updates generated.
+- Great inline comments.
 
 # Other Notes
 
