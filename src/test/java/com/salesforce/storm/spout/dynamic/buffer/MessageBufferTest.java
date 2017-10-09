@@ -126,10 +126,10 @@ public class MessageBufferTest {
                     );
                     final int partition = random.nextInt(10);
 
-
                     Message message = new Message(
-                            new MessageId("my namespace", partition, x, sourceSpoutId),
-                            new Values("myValue" + x));
+                        new MessageId("my namespace", partition, x, sourceSpoutId),
+                        new Values("myValue" + x)
+                    );
 
                     try {
                         final long startPutTime = System.currentTimeMillis();
@@ -171,17 +171,17 @@ public class MessageBufferTest {
 
         // Wait for futures to be complete, at this point they should already be done tho.
         await()
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> {
-                    // Validate the futures are completed
-                    for (Future future: futures) {
-                        if (!future.isDone()) {
-                            return false;
-                        }
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> {
+                // Validate the futures are completed
+                for (Future future: futures) {
+                    if (!future.isDone()) {
+                        return false;
                     }
-                    // All futures have completed.
-                    return true;
-                }, equalTo(true));
+                }
+                // All futures have completed.
+                return true;
+            }, equalTo(true));
 
 
         // Poll a bunch, validating nothing else returned

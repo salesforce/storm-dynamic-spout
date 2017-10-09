@@ -48,7 +48,7 @@ public class KafkaConsumerConfig {
     @Documentation(
         category = Documentation.Category.KAFKA,
         description = "Defines which Deserializer (Schema?) implementation to use. "
-            + "Should be a full classpath to a class that implements the Deserializer interface.",
+        + "Should be a full classpath to a class that implements the Deserializer interface.",
         type = String.class
     )
     public static final String DESERIALIZER_CLASS = "spout.kafka.deserializer.class";
@@ -70,7 +70,7 @@ public class KafkaConsumerConfig {
     @Documentation(
         category = Documentation.Category.KAFKA,
         description = "Holds a list of Kafka Broker hostnames + ports in the following format: "
-            + "[\"broker1:9092\", \"broker2:9092\", ...]",
+        + "[\"broker1:9092\", \"broker2:9092\", ...]",
         type = List.class
     )
     public static final String KAFKA_BROKERS = "spout.kafka.brokers";
@@ -83,7 +83,7 @@ public class KafkaConsumerConfig {
     @Documentation(
         category = Documentation.Category.KAFKA,
         description = "Defines a consumerId prefix to use for all consumers created by the spout. "
-            + "This must be unique to your spout instance, and must not change between deploys.",
+        + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
     )
     public static final String CONSUMER_ID_PREFIX = SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
@@ -107,10 +107,6 @@ public class KafkaConsumerConfig {
         type = Long.class
     )
     public static final String CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS = "spout.kafka.autocommit_interval_ms";
-
-///////////////////////////////////
-// Kafka Consumer Config Class
-///////////////////////////////////
 
     private final Properties kafkaConsumerProperties = new Properties();
     private final String topic;

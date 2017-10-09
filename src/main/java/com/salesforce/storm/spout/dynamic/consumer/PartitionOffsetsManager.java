@@ -59,11 +59,7 @@ public class PartitionOffsetsManager {
         // Add new entry
         partitionStateManagers.put(
             consumerPartition,
-            new PartitionOffsetManager(
-                consumerPartition.namespace(),
-                consumerPartition.partition(),
-                offset
-            )
+            new PartitionOffsetManager(consumerPartition.namespace(), consumerPartition.partition(), offset)
         );
     }
 

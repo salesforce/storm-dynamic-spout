@@ -1298,7 +1298,7 @@ public class DynamicSpoutTest {
         // Sanity check, make sure we have the same number of each.
         assertEquals(
             "Should have same number of tuples as original messages, Produced Count: " + producedRecords.size()
-                + " Emissions Count: " + spoutEmissions.size(),
+            + " Emissions Count: " + spoutEmissions.size(),
             producedRecords.size(),
             spoutEmissions.size()
         );
@@ -1324,10 +1324,7 @@ public class DynamicSpoutTest {
     private void waitForVirtualSpouts(DynamicSpout spout, int howManyVirtualSpoutsWeWantLeft) {
         await()
             .atMost(5, TimeUnit.SECONDS)
-            .until(
-                () -> spout.getCoordinator().getTotalSpouts(),
-                equalTo(howManyVirtualSpoutsWeWantLeft)
-            );
+            .until(() -> spout.getCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
         assertEquals(
             "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
             howManyVirtualSpoutsWeWantLeft,

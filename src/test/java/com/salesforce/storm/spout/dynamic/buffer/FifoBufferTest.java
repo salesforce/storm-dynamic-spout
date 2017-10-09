@@ -89,8 +89,9 @@ public class FifoBufferTest {
 
 
             Message message = new Message(
-                    new MessageId("my namespace", partition, x, sourceSpoutId),
-                    new Values("value" + x));
+                new MessageId("my namespace", partition, x, sourceSpoutId),
+                new Values("value" + x)
+            );
 
             // Keep track of order
             submittedOrder.add(message);

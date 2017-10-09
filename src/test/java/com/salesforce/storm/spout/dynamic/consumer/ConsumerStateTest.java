@@ -62,8 +62,8 @@ public class ConsumerStateTest {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         final ConsumerState consumerState = builder
-                .withPartition(expectedTopicPartition, expectedOffset)
-                .build();
+            .withPartition(expectedTopicPartition, expectedOffset)
+            .build();
 
         // Sanity check
         assertEquals("Has expected offset", expectedOffset, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
@@ -92,7 +92,7 @@ public class ConsumerStateTest {
         assertEquals(
             "Has expected offset",
             expectedOffset, (long)
-                consumerState2.getOffsetForNamespaceAndPartition(expectedTopicPartition)
+            consumerState2.getOffsetForNamespaceAndPartition(expectedTopicPartition)
         );
         assertEquals("Has expected offset", 23L, (long) consumerState2.getOffsetForNamespaceAndPartition(topicPartition2));
         assertEquals("Has expected offset", 4423L, (long) consumerState2.getOffsetForNamespaceAndPartition(topicPartition3));
@@ -110,8 +110,8 @@ public class ConsumerStateTest {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         final ConsumerState consumerState = builder
-                .withPartition(expectedTopicPartition, expectedOffset)
-                .build();
+            .withPartition(expectedTopicPartition, expectedOffset)
+            .build();
 
         // Sanity check
         assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
@@ -198,8 +198,8 @@ public class ConsumerStateTest {
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
-                .withPartition(topicPartition, offset)
-                .build();
+            .withPartition(topicPartition, offset)
+            .build();
 
         // EntrySet
         assertNotNull("Should not be null", consumerState.entrySet());
@@ -224,8 +224,8 @@ public class ConsumerStateTest {
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
-                .withPartition(topicPartition, offset)
-                .build();
+            .withPartition(topicPartition, offset)
+            .build();
 
         expectedException.expect(UnsupportedOperationException.class);
         consumerState.clear();
@@ -241,8 +241,8 @@ public class ConsumerStateTest {
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
-                .withPartition(topicPartition, offset)
-                .build();
+            .withPartition(topicPartition, offset)
+            .build();
 
         expectedException.expect(UnsupportedOperationException.class);
         consumerState.put(new ConsumerPartition("MyTopic", 3), 2L);
@@ -258,8 +258,8 @@ public class ConsumerStateTest {
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
-                .withPartition(topicPartition, offset)
-                .build();
+            .withPartition(topicPartition, offset)
+            .build();
 
         Map<ConsumerPartition, Long> newMap = Maps.newHashMap();
         newMap.put(new ConsumerPartition("MyTopic", 3), 2L);
@@ -278,8 +278,8 @@ public class ConsumerStateTest {
         final long offset = 23L;
 
         final ConsumerState consumerState = ConsumerState.builder()
-                .withPartition(topicPartition, offset)
-                .build();
+            .withPartition(topicPartition, offset)
+            .build();
 
         expectedException.expect(UnsupportedOperationException.class);
         consumerState.remove(topicPartition);
@@ -296,8 +296,8 @@ public class ConsumerStateTest {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         final ConsumerState consumerState = builder
-                .withPartition(expectedTopicPartition, expectedOffset)
-                .build();
+            .withPartition(expectedTopicPartition, expectedOffset)
+            .build();
 
         // Sanity check
         assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));
@@ -319,8 +319,8 @@ public class ConsumerStateTest {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         final ConsumerState consumerState = builder
-                .withPartition(expectedTopicPartition, expectedOffset)
-                .build();
+            .withPartition(expectedTopicPartition, expectedOffset)
+            .build();
 
         // Sanity check
         assertEquals("Has expected offset", 3444L, (long) consumerState.getOffsetForNamespaceAndPartition(expectedTopicPartition));

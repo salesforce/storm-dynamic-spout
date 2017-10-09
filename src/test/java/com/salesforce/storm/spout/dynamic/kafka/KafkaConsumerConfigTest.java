@@ -45,7 +45,7 @@ public class KafkaConsumerConfigTest {
     @Test
     public void testForSaneDefaultKafkaConsumerSettings() {
         final List<String> brokerHosts = Lists.newArrayList(
-                "broker1:9092", "broker2:9093"
+            "broker1:9092", "broker2:9093"
         );
         final String consumerId = "myConsumerId";
         final String topic = "myTopic";

@@ -74,7 +74,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines which Consumer implementation to use. "
-            + "Should be a full classpath to a class that implements the Consumer interface.",
+        + "Should be a full classpath to a class that implements the Consumer interface.",
         type = String.class
     )
     public static final String CONSUMER_CLASS = "spout.consumer.class";
@@ -91,7 +91,7 @@ public class SpoutConfig {
     @Documentation(
         category = Documentation.Category.PERSISTENCE,
         description = "Defines which PersistenceAdapter implementation to use. "
-            + "Should be a full classpath to a class that implements the PersistenceAdapter interface.",
+        + "Should be a full classpath to a class that implements the PersistenceAdapter interface.",
         type = String.class,
         required = true
     )
@@ -110,7 +110,7 @@ public class SpoutConfig {
     @Documentation(
         category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
-            + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
+        + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
         type = List.class
     )
     public static final String PERSISTENCE_ZK_SERVERS = "spout.persistence.zookeeper.servers";
@@ -179,7 +179,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines which RetryManager implementation to use. "
-            + "Should be a full classpath to a class that implements the RetryManager interface.",
+        + "Should be a full classpath to a class that implements the RetryManager interface.",
         type = String.class,
         required = true
     )
@@ -196,8 +196,8 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines how many times a failed message will be replayed before just being acked. "
-            + "A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. "
-            + "A positive value means tuples will be retried up to this limit, then dropped.",
+        + "A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. "
+        + "A positive value means tuples will be retried up to this limit, then dropped.",
         type = Integer.class
     )
     public static final String RETRY_MANAGER_RETRY_LIMIT = "spout.retry_manager.retry_limit";
@@ -214,9 +214,9 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. "
-            + "Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). "
-            + "Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least "
-            + "(5 * 1000) milliseconds before the next retry attempt.",
+        + "Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). "
+        + "Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least "
+        + "(5 * 1000) milliseconds before the next retry attempt.",
         type = Long.class
     )
     public static final String RETRY_MANAGER_INITIAL_DELAY_MS = "spout.retry_manager.initial_delay_ms";
@@ -231,7 +231,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines how quickly the delay increases after each failed tuple. "
-            + "Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.",
+        + "Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.",
         type = Double.class
     )
     public static final String RETRY_MANAGER_DELAY_MULTIPLIER = "spout.retry_manager.delay_multiplier";
@@ -259,7 +259,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines which MetricsRecorder implementation to use. "
-            + "Should be a full classpath to a class that implements the MetricsRecorder interface.",
+        + "Should be a full classpath to a class that implements the MetricsRecorder interface.",
         type = String.class
     )
     public static final String METRICS_RECORDER_CLASS = "spout.metrics.class";
@@ -295,7 +295,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines which MessageBuffer implementation to use. "
-            + "Should be a full classpath to a class that implements the MessageBuffer interface.",
+        + "Should be a full classpath to a class that implements the MessageBuffer interface.",
         type = String.class
     )
     public static final String TUPLE_BUFFER_CLASS = "spout.coordinator.tuple_buffer.class";
@@ -307,7 +307,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal "
-            + "kafka consumers will be blocked from consuming.",
+        + "kafka consumers will be blocked from consuming.",
         type = Integer.class
     )
     public static final String TUPLE_BUFFER_MAX_SIZE = "spout.coordinator.tuple_buffer.max_size";
@@ -350,7 +350,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. "
-            + "This must be unique to your spout instance, and must not change between deploys.",
+        + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
     )
     public static final String VIRTUAL_SPOUT_ID_PREFIX = "spout.coordinator.virtual_spout_id_prefix";
@@ -372,7 +372,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines which SpoutHandler implementation to use. "
-            + "Should be a fully qualified class path that implements the SpoutHandler interface.",
+        + "Should be a fully qualified class path that implements the SpoutHandler interface.",
         type = String.class
     )
     public static final String SPOUT_HANDLER_CLASS = "spout.spout_handler_class";
@@ -384,7 +384,7 @@ public class SpoutConfig {
      */
     @Documentation(
         description = "Defines which VirtualSpoutHandler implementation to use. "
-            + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
+        + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
         type = String.class
     )
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
@@ -396,7 +396,7 @@ public class SpoutConfig {
     @Documentation(
         category = Documentation.Category.SIDELINE,
         description = "Defines one or more sideline trigger(s) (if any) to use. "
-            + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
+        + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
         type = String.class
     )
     public static final String TRIGGER_CLASS = "sideline.trigger_class";

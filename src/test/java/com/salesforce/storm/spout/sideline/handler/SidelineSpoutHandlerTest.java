@@ -182,9 +182,9 @@ public class SidelineSpoutHandlerTest {
 
         // Find our sideline spout
         Optional<VirtualSpout> sidelineSpout = sidelineSpouts.stream().reduce(
-            (VirtualSpout virtualSpout, VirtualSpout virtualSpout2) ->
-                    !virtualSpout.getVirtualSpoutId().toString().contains("main")
-                        ? virtualSpout : virtualSpout2
+            (VirtualSpout virtualSpout, VirtualSpout virtualSpout2) -> {
+                return !virtualSpout.getVirtualSpoutId().toString().contains("main") ? virtualSpout : virtualSpout2;
+            }
         );
 
         // Make sure that we got it, it was an optional after all

@@ -65,7 +65,7 @@ public class PartitionDistributor {
 
         // Determine our ending point in the list of instances
         final int endingPartition = startingPartition + partitionsPerInstance > allPartitionIds.length
-                ? allPartitionIds.length : startingPartition + partitionsPerInstance;
+            ? allPartitionIds.length : startingPartition + partitionsPerInstance;
 
         // Make a new array of integers for the partition ids
         List<Integer> partitionIds = Lists.newArrayList();

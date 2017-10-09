@@ -124,12 +124,12 @@ public class PartitionDistributorTest {
         expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers.expectMessage("consumerIndex");
 
         PartitionDistributor.calculatePartitionAssignment(
-                // Number of consumer instances
-                4,
-                // Current instance index
-                5,
-                // Partition ids to distribute
-                new int[] { 0, 1, 2, 3 }
+            // Number of consumer instances
+            4,
+            // Current instance index
+            5,
+            // Partition ids to distribute
+            new int[] { 0, 1, 2, 3 }
         );
     }
 
@@ -147,12 +147,12 @@ public class PartitionDistributorTest {
         expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero.expectMessage("consumerIndex");
 
         PartitionDistributor.calculatePartitionAssignment(
-                // Number of consumer instances
-                4,
-                // Current instance index
-                -2,
-                // Partition ids to distribute
-                new int[] { 0, 1, 2, 3 }
+            // Number of consumer instances
+            4,
+            // Current instance index
+            -2,
+            // Partition ids to distribute
+            new int[] { 0, 1, 2, 3 }
         );
     }
 
@@ -170,12 +170,12 @@ public class PartitionDistributorTest {
         expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero.expectMessage("totalConsumers");
 
         PartitionDistributor.calculatePartitionAssignment(
-                // Number of consumer instances
-                0,
-                // Current instance index
-                2,
-                // Partition ids to distribute
-                new int[] { 0, 1, 2, 3 }
+            // Number of consumer instances
+            0,
+            // Current instance index
+            2,
+            // Partition ids to distribute
+            new int[] { 0, 1, 2, 3 }
         );
     }
 
@@ -193,12 +193,12 @@ public class PartitionDistributorTest {
         expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative.expectMessage("totalConsumers");
 
         PartitionDistributor.calculatePartitionAssignment(
-                // Number of consumer instances
-                -2,
-                // Current instance index
-                2,
-                // Partition ids to distribute
-                new int[] { 0, 1, 2, 3 }
+            // Number of consumer instances
+            -2,
+            // Current instance index
+            2,
+            // Partition ids to distribute
+            new int[] { 0, 1, 2, 3 }
         );
     }
 }

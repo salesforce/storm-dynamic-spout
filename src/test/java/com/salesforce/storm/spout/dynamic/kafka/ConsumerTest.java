@@ -527,9 +527,9 @@ public class ConsumerTest {
 
         // When we call partitionsFor(), We return partitions 0,1, and 2.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
-                new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 1, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 2, new Node(0, "localhost", 9092), new Node[0], new Node[0])
+            new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 1, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 2, new Node(0, "localhost", 9092), new Node[0], new Node[0])
         );
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
@@ -551,9 +551,10 @@ public class ConsumerTest {
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
-                new TopicPartition(topicName, 0),
-                new TopicPartition(topicName, 1),
-                new TopicPartition(topicName, 2))));
+            new TopicPartition(topicName, 0),
+            new TopicPartition(topicName, 1),
+            new TopicPartition(topicName, 2)
+        )));
 
         // Since ConsumerStateManager has no state for partition 0, we should call seekToBeginning on that partition
         verify(mockKafkaConsumer, times(1)).seekToBeginning(eq(Lists.newArrayList(
@@ -689,9 +690,9 @@ public class ConsumerTest {
 
         // When we call partitionsFor(), We return partitions 0,1, and 2.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
-                new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 1, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 2, new Node(0, "localhost", 9092), new Node[0], new Node[0])
+            new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 1, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 2, new Node(0, "localhost", 9092), new Node[0], new Node[0])
         );
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
@@ -715,9 +716,10 @@ public class ConsumerTest {
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
         verify(mockKafkaConsumer, times(1)).assign(eq(Lists.newArrayList(
-                partition0,
-                partition1,
-                partition2)));
+            partition0,
+            partition1,
+            partition2
+        )));
 
         // Since ConsumerStateManager has state for all partitions, we should never call seekToBeginning on any partitions
         verify(mockKafkaConsumer, never()).seekToBeginning(anyList());
@@ -784,10 +786,10 @@ public class ConsumerTest {
 
         // When we call partitionsFor(), We return partitions 0,1,2,3
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
-                new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 1, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 2, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
-                new PartitionInfo(topicName, 3, new Node(0, "localhost", 9092), new Node[0], new Node[0])
+            new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 1, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 2, new Node(0, "localhost", 9092), new Node[0], new Node[0]),
+            new PartitionInfo(topicName, 3, new Node(0, "localhost", 9092), new Node[0], new Node[0])
         );
         when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
 
@@ -2552,9 +2554,7 @@ public class ConsumerTest {
         assertEquals(
             "Kafka's position should not match the total number of messages on the partition since we are at the end of it",
             numberOfMsgsOnPartition1,
-            consumer.getKafkaConsumer().position(
-                topicPartition1
-            )
+            consumer.getKafkaConsumer().position(topicPartition1)
         );
 
         // Seek the consumer past the end of the log, this should create an OutOfRangeException
@@ -2566,9 +2566,7 @@ public class ConsumerTest {
         assertEquals(
             "Seek call on Kafka should be past the end of our messages",
             numberOfMsgsOnPartition1 + 1,
-            consumer.getKafkaConsumer().position(
-                topicPartition1
-            )
+            consumer.getKafkaConsumer().position(topicPartition1)
         );
 
         // Now attempt to consume a message, the pointer for kafka is past the end of the log so this is going to
@@ -2579,9 +2577,7 @@ public class ConsumerTest {
         assertEquals(
             "Seek call on Kafka should have been reset to our last message",
             numberOfMsgsOnPartition1,
-            consumer.getKafkaConsumer().position(
-                topicPartition1
-            )
+            consumer.getKafkaConsumer().position(topicPartition1)
         );
 
         // Clean up
@@ -2643,7 +2639,7 @@ public class ConsumerTest {
         defaultConfig.put(
             KafkaConsumerConfig.KAFKA_BROKERS,
             Lists.newArrayList(kafkaTestServer.getKafkaServer().serverConfig().advertisedHostName()
-                + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort())
+            + ":" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort())
         );
         defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");

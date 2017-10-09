@@ -104,8 +104,9 @@ public class RoundRobinBufferTest {
 
 
             Message message = new Message(
-                    new MessageId("my namespace", partition, x, sourceSpoutId),
-                    new Values("myValue" + x));
+                new MessageId("my namespace", partition, x, sourceSpoutId),
+                new Values("myValue" + x)
+            );
 
             // Keep track of order
             if (!submittedOrder.containsKey(sourceSpoutId)) {
@@ -252,12 +253,11 @@ public class RoundRobinBufferTest {
 
         // Make sure we get it.
         await()
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> {
-                    // Ask for next tuple
-                    return future.getNow("NotYet");
-                }, equalTo("Key5"));
-
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> {
+                // Ask for next tuple
+                return future.getNow("NotYet");
+            }, equalTo("Key5"));
     }
 
     /**
@@ -304,12 +304,11 @@ public class RoundRobinBufferTest {
 
         // Make sure we get it.
         await()
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> {
-                    // Ask for next tuple
-                    return future.getNow(false);
-                }, equalTo(true));
-
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> {
+                // Ask for next tuple
+                return future.getNow(false);
+            }, equalTo(true));
     }
 
     /**

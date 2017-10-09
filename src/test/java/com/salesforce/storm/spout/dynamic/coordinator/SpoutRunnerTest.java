@@ -578,8 +578,8 @@ public class SpoutRunnerTest {
 
         // Wait for thread to stop.
         await()
-                .atMost(maxWaitTime * 2, TimeUnit.SECONDS)
-                .until(future::isDone);
+            .atMost(maxWaitTime * 2, TimeUnit.SECONDS)
+            .until(future::isDone);
 
         // Make sure it actually stopped
         assertEquals("Should have no running threads", 0, executorService.getActiveCount());
@@ -654,8 +654,8 @@ public class SpoutRunnerTest {
 
         // Wait for thread to stop.
         await()
-                .atMost(maxWaitTime * 2, TimeUnit.SECONDS)
-                .until(future::isDone);
+            .atMost(maxWaitTime * 2, TimeUnit.SECONDS)
+            .until(future::isDone);
 
         // Make sure it actually stopped
         assertEquals("Should have no running threads", 0, executorService.getActiveCount());
@@ -683,10 +683,10 @@ public class SpoutRunnerTest {
 
         // Wait until it actually starts.
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(() -> {
-                    return executorService.getActiveCount() == 1;
-                }, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(() -> {
+                return executorService.getActiveCount() == 1;
+            }, equalTo(true));
 
         // return the future
         return future;

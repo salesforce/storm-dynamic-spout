@@ -731,10 +731,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
         for (final int partitonId : partitionsIds) {
             topicPartitions.add(
-                new TopicPartition(
-                    consumerConfig.getTopic(),
-                    partitonId
-                )
+                new TopicPartition(consumerConfig.getTopic(), partitonId)
             );
         }
 
