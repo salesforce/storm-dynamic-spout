@@ -1546,7 +1546,7 @@ public class VirtualSpoutTest {
         // DynamicSpout config items
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
         defaultConfig.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);

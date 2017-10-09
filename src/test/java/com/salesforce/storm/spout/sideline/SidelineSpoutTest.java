@@ -34,6 +34,7 @@ import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.kafka.Consumer;
 import com.salesforce.storm.spout.sideline.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
+import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.retry.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.sideline.retry.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.metrics.LogRecorder;
@@ -463,7 +464,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -564,7 +565,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -813,7 +814,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -919,7 +920,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();

@@ -132,7 +132,7 @@ public class FactoryManagerTest {
     public void testCreateNewPersistenceAdapter_usingDefaultImpl() {
         // Try with UTF8 String deserializer
         final Map config = Maps.newHashMap();
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances

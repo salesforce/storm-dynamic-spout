@@ -40,6 +40,7 @@ import com.salesforce.storm.spout.sideline.kafka.deserializer.NullDeserializer;
 import com.salesforce.storm.spout.sideline.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.utils.KafkaTestUtils;
 import com.salesforce.storm.spout.sideline.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -2505,7 +2506,7 @@ public class ConsumerTest {
         // Dynamic Spout config items
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, "com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);
     }
