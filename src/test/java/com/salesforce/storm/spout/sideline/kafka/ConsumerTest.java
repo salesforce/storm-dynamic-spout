@@ -1951,7 +1951,7 @@ public class ConsumerTest {
         // Partition 0 has starting offset = 1
         persistenceAdapter.persistConsumerState("MyConsumerId", 0, partition0StartingOffset);
 
-        // Partition 1 has starting offset = 21, which is invalid.  If our sideline consumer is configured properly,
+        // Partition 1 has starting offset = 21, which is invalid.  If our consumer is configured properly,
         // it should reset to earliest, meaning offset 0 in this case.
         persistenceAdapter.persistConsumerState("MyConsumerId", 1, partition1StartingOffset);
 

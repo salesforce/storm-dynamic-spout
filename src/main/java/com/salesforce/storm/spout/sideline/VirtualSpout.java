@@ -627,7 +627,7 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Internal method that determines if this sideline consumer is finished.
+     * Internal method that determines if this consumer is finished.
      */
     private void attemptToComplete() {
         // If we don't have a defined ending state

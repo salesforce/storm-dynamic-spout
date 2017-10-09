@@ -358,7 +358,7 @@ public class VirtualSpoutTest {
         // Verify its null
         assertNull("Should be null",  result);
 
-        // Verify ack is never called on underlying mock sideline consumer
+        // Verify ack is never called on underlying mock consumer
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
     }
 
@@ -642,13 +642,13 @@ public class VirtualSpoutTest {
      *
      * 1. Call nextTuple() -
      *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
-     *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
+     *  b. consumer should return a consumer record, and it should be returned by nextTuple()
      * 2. Call fail() with the message previously returned from nextTuple().
      * 2. Call nextTuple()
      *  a. This time RetryManager should return the failed tuple
      * 3. Call nextTuple()
      *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
-     *  b. sideline consumer should return a new consumer record.
+     *  b. consumer should return a new consumer record.
      */
     @Test
     public void testCallingFailOnTupleWhenItShouldBeRetriedItGetsRetried() {
@@ -756,7 +756,7 @@ public class VirtualSpoutTest {
         assertEquals("Got expected Message", expectedMessage, result);
 
         // And call nextTuple() one more time, this time failed manager should return null
-        // and sideline consumer returns our unexpected result
+        // and consumer returns our unexpected result
         // Call nextTuple, we should get our failed tuple back.
         result = virtualSpout.nextTuple();
 
@@ -890,7 +890,7 @@ public class VirtualSpoutTest {
         // Call ack with null, nothing should explode.
         virtualSpout.ack(null);
 
-        // No interactions w/ our mock sideline consumer for committing offsets
+        // No interactions w/ our mock consumer for committing offsets
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
     }
@@ -1418,13 +1418,13 @@ public class VirtualSpoutTest {
      *
      * 1. Call nextTuple() -
      *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
-     *  b. sideline consumer should return a consumer record, and it should be returned by nextTuple()
+     *  b. consumer should return a consumer record, and it should be returned by nextTuple()
      * 2. Call fail() with the message previously returned from nextTuple().
      * 2. Call nextTuple()
      *  a. This time RetryManager should return the failed tuple
      * 3. Call nextTuple()
      *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
-     *  b. sideline consumer should return a new consumer record.
+     *  b. consumer should return a new consumer record.
      */
     @Test
     public void testCallingFailCallsAckOnWhenItShouldNotBeRetried() {

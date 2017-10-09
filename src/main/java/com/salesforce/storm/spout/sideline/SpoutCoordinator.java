@@ -95,7 +95,7 @@ public class SpoutCoordinator {
     private ExecutorService executor;
 
     /**
-     * The spout monitor runnable, which handles spinning up threads for sideline spouts.
+     * The spout monitor runnable, which handles spinning up threads for virtual spouts.
      */
     private SpoutMonitor spoutMonitor;
 
