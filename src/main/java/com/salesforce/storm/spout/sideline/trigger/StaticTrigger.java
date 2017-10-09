@@ -22,9 +22,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
+import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
 
 import java.util.Map;
 

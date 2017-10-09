@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.sideline.filter;
 
 import org.slf4j.Logger;
@@ -33,6 +34,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Base64;
 
+/**
+ * Serializer for converting {@link FilterChainStep} to and from a string (which is how they are persisted.)
+ */
 public class Serializer {
 
     private static final Logger logger = LoggerFactory.getLogger(Serializer.class);

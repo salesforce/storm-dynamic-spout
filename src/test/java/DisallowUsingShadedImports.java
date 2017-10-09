@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertTrue;
+
 
 /**
  * Using imports from shaded libraries is a bad practice and makes upgrading difficult.
@@ -57,10 +59,12 @@ public class DisallowUsingShadedImports {
         walk(projectRootPath);
     }
 
-    public void walk(File root) throws FileNotFoundException {
+    private void walk(File root) throws FileNotFoundException {
         File[] list = root.listFiles();
 
-        if (list == null) return;
+        if (list == null) {
+            return;
+        }
 
         for (File f : list) {
             if (f.isDirectory()) {
@@ -80,7 +84,7 @@ public class DisallowUsingShadedImports {
         assertTrue("Should have not found any files", failedFiles.isEmpty());
     }
 
-    public void testFile(File myFile) throws FileNotFoundException {
+    private void testFile(File myFile) throws FileNotFoundException {
         String fileData = new Scanner(myFile).useDelimiter("\\Z").next();
 
         // Look for our pattern

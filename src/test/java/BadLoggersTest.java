@@ -22,7 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import junit.framework.Assert;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +32,8 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.junit.Assert.fail;
 
 /**
  * Look for LoggerFactory.getLogger(classname) where classname doesn't match the class its part of.
@@ -54,10 +56,12 @@ public class BadLoggersTest {
         walk(projectRootPath);
     }
 
-    public void walk(File root) throws FileNotFoundException {
+    private void walk(File root) throws FileNotFoundException {
         File[] list = root.listFiles();
 
-        if (list == null) return;
+        if (list == null) {
+            return;
+        }
 
         for (File f : list) {
             if (f.isDirectory()) {
@@ -72,7 +76,7 @@ public class BadLoggersTest {
         }
     }
 
-    public void testFile(File myFile) throws FileNotFoundException {
+    private void testFile(File myFile) throws FileNotFoundException {
         String fileData = new Scanner(myFile).useDelimiter("\\Z").next();
 
         // Look for our pattern
@@ -94,7 +98,7 @@ public class BadLoggersTest {
         // if you run into that, just exclude it? or figure out a better solution to this :p
         String className = myFile.getName().replace(".java", "");
         if (!className.equals(loggerClassName)) {
-            Assert.fail("Found instance of logger using wrong class? " + myFile.getPath() + " Using " + loggerClassName);
+            fail("Found instance of logger using wrong class? " + myFile.getPath() + " Using " + loggerClassName);
         }
     }
 }

@@ -22,24 +22,26 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.salesforce.storm.spout.sideline.ConsumerPartition;
-import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.DynamicSpout;
-import com.salesforce.storm.spout.sideline.FactoryManager;
+import com.salesforce.storm.spout.dynamic.ConsumerPartition;
+import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.DynamicSpout;
+import com.salesforce.storm.spout.dynamic.FactoryManager;
+import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
-import com.salesforce.storm.spout.sideline.VirtualSpout;
-import com.salesforce.storm.spout.sideline.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.kafka.KafkaConsumerConfig;
-import com.salesforce.storm.spout.sideline.config.SpoutConfig;
-import com.salesforce.storm.spout.sideline.consumer.ConsumerState;
+import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
+import com.salesforce.storm.spout.dynamic.VirtualSpout;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
-import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
+import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;
@@ -259,7 +261,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // Create a negated version of the step we just pulled from the firehose
         final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
 
-        // This is the state that the VirtualSidelineSpout should end with
+        // This is the state that the VirtualSpout should end with
         final ConsumerState endingState = getFireHoseCurrentState();
 
         // We'll construct a consumer state from the various partition data stored for this sideline request
@@ -268,8 +270,11 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
         // assigned to this particular sideline spout instance
         for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
-            // This is the state that the VirtualSidelineSpout should start with
-            final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition.partition());
+            // This is the state that the VirtualSpout should start with
+            final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(
+                id,
+                consumerPartition.partition()
+            );
 
             logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
 
@@ -357,8 +362,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // Generate our virtualSpoutId using the payload id.
         final VirtualSpoutIdentifier virtualSpoutId = generateSidelineVirtualSpoutId(id);
 
-        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
-        logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
+        // This info is repeated in VirtualSpout.open(), not needed here.
+        logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
         final VirtualSpout virtualSpout = new VirtualSpout(

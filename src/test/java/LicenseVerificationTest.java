@@ -23,7 +23,6 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import junit.framework.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +32,8 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.junit.Assert.fail;
 
 /**
  * Limited validation that all .java files contain license header.
@@ -54,10 +55,12 @@ public class LicenseVerificationTest {
         walk(projectRootPath);
     }
 
-    public void walk(File root) throws FileNotFoundException {
+    private void walk(File root) throws FileNotFoundException {
         File[] list = root.listFiles();
 
-        if (list == null) return;
+        if (list == null) {
+            return;
+        }
 
         for (File f : list) {
             if (f.isDirectory()) {
@@ -72,7 +75,7 @@ public class LicenseVerificationTest {
         }
     }
 
-    public void testFile(File myFile) throws FileNotFoundException {
+    private void testFile(File myFile) throws FileNotFoundException {
         String fileData = new Scanner(myFile).useDelimiter("\\Z").next();
 
         // Look for our pattern
@@ -86,6 +89,6 @@ public class LicenseVerificationTest {
 
         // Get class name from the file name
         String className = myFile.getName().replace(".java", "");
-        Assert.fail("Found instance of missing license?? " + myFile.getPath());
+        fail("Found instance of missing license?? " + myFile.getPath());
     }
 }

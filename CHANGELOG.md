@@ -2,6 +2,11 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.8.x
+- Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.
+  - Anyone implementing a `DynamicSpout` will need to update package names.
+- Checkstyle is enforced everywhere now.
+
 ## 0.7.x
 - Simplified triggers, new singular and cleaner interface for implementing.
 
