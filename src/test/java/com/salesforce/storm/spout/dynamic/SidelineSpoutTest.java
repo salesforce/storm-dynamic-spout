@@ -414,14 +414,14 @@ public class SidelineSpoutTest {
         // Call next tuple a few more times to be safe nothing else comes in.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
-        // Validate that virtualsideline spouts are NOT closed out, but still waiting for unacked tuples.
+        // Validate that VirtualSpouts are NOT closed out, but still waiting for unacked tuples.
         // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
         assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
 
         // Lets ack our messages.
         ackTuples(spout, spoutEmissions);
 
-        // Validate that virtualsideline spout instance closes out once finished acking all processed tuples.
+        // Validate that VirtualSpouts instance closes out once finished acking all processed tuples.
         // We need to wait for the monitor thread to run to clean it up.
         waitForVirtualSpouts(spout, 1);
 

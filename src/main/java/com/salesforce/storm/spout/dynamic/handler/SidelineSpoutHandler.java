@@ -259,7 +259,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // Create a negated version of the step we just pulled from the firehose
         final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
 
-        // This is the state that the VirtualSidelineSpout should end with
+        // This is the state that the VirtualSpout should end with
         final ConsumerState endingState = getFireHoseCurrentState();
 
         // We'll construct a consumer state from the various partition data stored for this sideline request
@@ -268,7 +268,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
         // assigned to this particular sideline spout instance
         for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
-            // This is the state that the VirtualSidelineSpout should start with
+            // This is the state that the VirtualSpout should start with
             final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition.partition());
 
             logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
@@ -357,8 +357,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // Generate our virtualSpoutId using the payload id.
         final VirtualSpoutIdentifier virtualSpoutId = generateSidelineVirtualSpoutId(id);
 
-        // This info is repeated in VirtualSidelineSpout.open(), not needed here.
-        logger.debug("Starting VirtualSidelineSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
+        // This info is repeated in VirtualSpout.open(), not needed here.
+        logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
         final VirtualSpout virtualSpout = new VirtualSpout(

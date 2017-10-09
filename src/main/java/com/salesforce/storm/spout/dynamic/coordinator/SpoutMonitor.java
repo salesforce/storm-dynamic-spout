@@ -58,39 +58,39 @@ public class SpoutMonitor implements Runnable {
     private static final long REPORT_STATUS_INTERVAL_MS = 60_000;
 
     /**
-     * The executor service that we submit VirtualSidelineSpouts to run within.
+     * The executor service that we submit VirtualSpouts to run within.
      */
     private final ThreadPoolExecutor executor;
 
     /**
-     * This Queue contains requests to our thread to fire up new VirtualSidelineSpouts.
+     * This Queue contains requests to our thread to fire up new VirtualSpouts.
      * Instances are taken off of this queue and put into the ExecutorService's task queue.
      */
     private final Queue<DelegateSpout> newSpoutQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be sent out to the topology.
-     * It is filled by VirtualSidelineSpout instances, and drained by SidelineSpout.
+     * It is filled by VirtualSpout instances, and drained by SidelineSpout.
      */
     private final MessageBuffer tupleOutputQueue;
 
     /**
-     * This buffer/queue holds tuples that are ready to be acked by VirtualSidelineSpouts.
-     * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be acked.
-     * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
+     * This buffer/queue holds tuples that are ready to be acked by VirtualSpouts.
+     * Its segmented by VirtualSpout ids => Queue of tuples to be acked.
+     * It is filled by SidelineSpout, and drained by VirtualSpout instances.
      */
     private final Map<VirtualSpoutIdentifier,Queue<MessageId>> ackedTuplesQueue;
 
     /**
-     * This buffer/queue holds tuples that are ready to be failed by VirtualSidelineSpouts.
-     * Its segmented by VirtualSidelineSpout ids => Queue of tuples to be failed.
-     * It is filled by SidelineSpout, and drained by VirtualSidelineSpout instances.
+     * This buffer/queue holds tuples that are ready to be failed by VirtualSpouts.
+     * Its segmented by VirtualSpout ids => Queue of tuples to be failed.
+     * It is filled by SidelineSpout, and drained by VirtualSpout instances.
      */
     private final Map<VirtualSpoutIdentifier,Queue<MessageId>> failedTuplesQueue;
 
     /**
      * This latch allows the SpoutCoordinator to block on start up until its initial
-     * set of VirtualSidelineSpout instances have started.
+     * set of VirtualSpout instances have started.
      */
     private final CountDownLatch latch;
 
@@ -110,7 +110,7 @@ public class SpoutMonitor implements Runnable {
     private final MetricsRecorder metricsRecorder;
     
     /**
-     * Calculates progress of VirtualSideline spout instances.
+     * Calculates progress of {@link VirtualSpout} instances.
      */
     private SpoutPartitionProgressMonitor spoutPartitionProgressMonitor;
 
@@ -360,7 +360,7 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * Call this method to indicate that we want to stop all running VirtualSideline Spout instances as well
+     * Call this method to indicate that we want to stop all running {@link VirtualSpout} instances as well
      * as finish running our monitor thread.
      */
     public void close() {

@@ -50,7 +50,7 @@ public class SpoutRunner implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
     /**
-     * This is the VirtualSideline Spout instance we are going to be managing.
+     * This is the {@link com.salesforce.storm.spout.dynamic.VirtualSpout} instance we are going to be managing.
      */
     private final DelegateSpout spout;
 

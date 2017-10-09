@@ -43,16 +43,16 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * VirtualSidelineSpout is essentially a Spout instance within a Spout. It doesn't fully implement the
+ * VirtualSpout is a Spout that exists within another Spout instance. It doesn't fully implement the
  * Storm IRichSpout interface because its not a 'real' spout, but it follows it fairly closely.
- * These instances are designed to live within a {@link com.salesforce.storm.spout.dynamic.SidelineSpout}
- * instance.  During the lifetime of a SidelineSpout, many VirtualSidelineSpouts can get created and destroyed.
+ * These instances are designed to live within a {@link DynamicSpout} instance. instance.  During the
+ * lifetime of a {@link DynamicSpout}, many VirtualSpout instances can get created and destroyed.
  *
- * The VirtualSidelineSpout will consume from a configured namespace and return {@link Message} from its
- * {@link #nextTuple()} method.  These will eventually get converted to the appropriate Tuples and emitted
- * out by the SidelineSpout.
+ * The VirtualSpout will use the configured {@link Consumer} to consume from a source and return
+ * {@link Message} from its {@link #nextTuple()} method.  These will eventually get converted to the
+ * appropriate Tuples and emitted out by the {@link DynamicSpout}.
  *
- * As acks/fails come into SidelineSpout, they will be routed to the appropriate VirtualSidelineSpout instance
+ * As acks/fails come into {@link DynamicSpout}, they will be routed to the appropriate VirtualSpout instance
  * and handled by the {@link #ack(Object)} and {@link #fail(Object)} methods.
  */
 public class VirtualSpout implements DelegateSpout {
@@ -483,7 +483,7 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Call this method to request this VirtualSidelineSpout instance
+     * Call this method to request this {@link VirtualSpout} instance
      * to cleanly stop.
      *
      * Synchronized because this can be called from multiple threads.
@@ -622,7 +622,7 @@ public class VirtualSpout implements DelegateSpout {
         // Flush consumer state to our persistence layer.
         consumer.flushConsumerState();
 
-        // See if we can finish and close out this VirtualSidelineConsumer.
+        // See if we can finish and close out this consumer.
         attemptToComplete();
     }
 

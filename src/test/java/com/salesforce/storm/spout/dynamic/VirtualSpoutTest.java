@@ -522,7 +522,7 @@ public class VirtualSpoutTest {
 
     /**
      * 1. publish a bunch of messages to a topic with a single partition.
-     * 2. create a VirtualSideLineSpout where we explicitly define an ending offset less than the total msgs published
+     * 2. create a VirtualSpout where we explicitly define an ending offset less than the total msgs published
      * 3. Consume from the Spout (call nextTuple())
      * 4. Ensure that we stop getting tuples back after we exceed the ending state offset.
      */
