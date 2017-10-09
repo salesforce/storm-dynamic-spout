@@ -1,3 +1,5 @@
+*This project is under active development.*
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
@@ -11,9 +13,9 @@
   - [When the Topology Starts](#when-the-topology-starts)
   - [Configuration](#configuration)
     - [Sideline](#sideline)
-    - [Kafka](#kafka)
     - [Persistence](#persistence)
     - [Zookeeper Persistence](#zookeeper-persistence)
+    - [Kafka](#kafka)
   - [Components](#components)
   - [Provided Implementations](#provided-implementations)
     - [PersistenceAdapter Implementations](#persistenceadapter-implementations)
@@ -32,6 +34,9 @@
   - [Components](#components-1)
   - [Example Trigger Implementation](#example-trigger-implementation)
   - [Stopping & Redeploying the topology?](#stopping--redeploying-the-topology)
+- [Other Notes](#other-notes)
+  - [Configuration & README](#configuration--readme)
+  - [Checkstyle](#checkstyle)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -78,24 +83,26 @@ All of these options can be found inside of [SidelineSpoutConfig](src/main/java/
 
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
-spout.consumer.class | String |  | Defines which Consumer implementation to use. Should be a full classpath to a class that implements the Consumer interface. | com.salesforce.storm.spout.sideline.kafka.Consumer
+spout.consumer.class | String |  | Defines which Consumer implementation to use. Should be a full classpath to a class that implements the Consumer interface. | com.salesforce.storm.spout.dynamic.kafka.Consumer
 spout.coordinator.consumer_state_flush_interval_ms | Long |  | How often we'll make sure each VirtualSpout persists its state, in Milliseconds. | 30000
 spout.coordinator.max_concurrent_virtual_spouts | Integer |  | The size of the thread pool for running virtual spouts. | 10
 spout.coordinator.max_spout_shutdown_time_ms | Long |  | How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop them with force, in Milliseconds. | 10000
 spout.coordinator.monitor_thread_interval_ms | Long |  | How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds. | 2000
-spout.coordinator.tuple_buffer.class | String |  | Defines which MessageBuffer implementation to use. Should be a full classpath to a class that implements the MessageBuffer interface. | com.salesforce.storm.spout.sideline.buffer.RoundRobinBuffer
+spout.coordinator.tuple_buffer.class | String |  | Defines which MessageBuffer implementation to use. Should be a full classpath to a class that implements the MessageBuffer interface. | com.salesforce.storm.spout.dynamic.buffer.RoundRobinBuffer
 spout.coordinator.tuple_buffer.max_size | Integer |  | Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal kafka consumers will be blocked from consuming. | 2000
 spout.coordinator.virtual_spout_id_prefix | String |  | Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. This must be unique to your spout instance, and must not change between deploys. | 
-spout.metrics.class | String |  | Defines which MetricsRecorder implementation to use. Should be a full classpath to a class that implements the MetricsRecorder interface. | com.salesforce.storm.spout.sideline.metrics.LogRecorder
+spout.metrics.class | String |  | Defines which MetricsRecorder implementation to use. Should be a full classpath to a class that implements the MetricsRecorder interface. | com.salesforce.storm.spout.dynamic.metrics.LogRecorder
+spout.metrics.enable_task_id_prefix | Boolean |  | Defines if MetricsRecorder instance should include the taskId in the metric key. | 
+spout.metrics.time_bucket | Integer |  | Defines the time bucket to group metrics together under. | 
 spout.output_fields | String |  | Defines the output fields that the spout will emit in a comma separated list | 
 spout.output_stream_id | String |  | Defines the name of the output stream tuples will be emitted out of. | default
-spout.retry_manager.class | String | Required | Defines which RetryManager implementation to use. Should be a full classpath to a class that implements the RetryManager interface. | com.salesforce.storm.spout.sideline.retry.DefaultRetryManager
+spout.retry_manager.class | String | Required | Defines which RetryManager implementation to use. Should be a full classpath to a class that implements the RetryManager interface. | com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager
 spout.retry_manager.delay_multiplier | Double |  | Defines how quickly the delay increases after each failed tuple. Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc. | 
 spout.retry_manager.initial_delay_ms | Long |  | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
 spout.retry_manager.retry_delay_max_ms | Long |  | Defines an upper bound of the max delay time between retried a failed tuple. | 
 spout.retry_manager.retry_limit | Integer |  | Defines how many times a failed message will be replayed before just being acked. A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. A positive value means tuples will be retried up to this limit, then dropped. | 25
-spout.spout_handler_class | String |  | Defines which SpoutHandler implementation to use. Should be a fully qualified class path that implements the SpoutHandler interface. | com.salesforce.storm.spout.sideline.handler.NoopSpoutHandler
-spout.virtual_spout_handler_class | String |  | Defines which VirtualSpoutHandler implementation to use. Should be a fully qualified class path that implements the VirtualSpoutHandler interface. | com.salesforce.storm.spout.sideline.handler.NoopVirtualSpoutHandler
+spout.spout_handler_class | String |  | Defines which SpoutHandler implementation to use. Should be a fully qualified class path that implements the SpoutHandler interface. | com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler
+spout.virtual_spout_handler_class | String |  | Defines which VirtualSpoutHandler implementation to use. Should be a fully qualified class path that implements the VirtualSpoutHandler interface. | com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler
 
 ### Sideline
 Config Key | Type | Required | Description | Default Value |
@@ -424,3 +431,14 @@ public class PollingSidelineTrigger implements SidelineTrigger {
 
 ## Stopping & Redeploying the topology?
 The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata about sideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.
+
+# Other Notes
+
+## Configuration & README
+
+The configuration section in this document is generated using `com.salesforce.storm.spout.dynamic.config.ConfigPrinter`, it automatically generates the appropriate tables using the `@Documentation` annotation and the defaults from the supported config instances.  Do **not** update those tables manually as they will get overwritten.
+
+## Checkstyle
+
+We use checkstyle aggressively on source and tests, our config is located under the 'script' folder and can be imported into your IDE of choice.
+ 
