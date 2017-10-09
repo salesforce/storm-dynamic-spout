@@ -24,15 +24,16 @@
  */
 package com.salesforce.storm.spout.dynamic.handler;
 
-import com.salesforce.storm.spout.dynamic.SidelineVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
-import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineType;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import org.junit.Test;
 
 import java.util.Arrays;

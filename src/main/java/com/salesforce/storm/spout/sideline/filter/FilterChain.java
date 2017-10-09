@@ -23,11 +23,11 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.filter;
+package com.salesforce.storm.spout.sideline.filter;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 import java.util.Map;
 

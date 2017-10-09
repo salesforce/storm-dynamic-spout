@@ -25,9 +25,9 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.salesforce.storm.spout.dynamic.handler.SidelineSpoutHandler;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
  * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where

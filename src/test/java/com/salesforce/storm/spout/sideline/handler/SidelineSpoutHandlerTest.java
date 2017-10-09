@@ -22,27 +22,28 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.storm.spout.dynamic.handler;
+package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
-import com.salesforce.storm.spout.dynamic.SidelineVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
-import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
-import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
+import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineType;
-import com.salesforce.storm.spout.dynamic.trigger.StaticTrigger;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
+import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

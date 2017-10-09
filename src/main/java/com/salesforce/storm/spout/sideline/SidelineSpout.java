@@ -23,58 +23,44 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.trigger;
+package com.salesforce.storm.spout.sideline;
 
-import java.util.UUID;
+import com.salesforce.storm.spout.dynamic.DynamicSpout;
+import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
+
+import java.util.Map;
 
 /**
- * Identifies a sideline request, this should be unique to the request.
+ * Spout that supports sidelining messages by filters.
  */
-public class SidelineRequestIdentifier {
+public class SidelineSpout extends DynamicSpout {
 
-    private String id;
-
-    public SidelineRequestIdentifier(final String id) {
-        this.id = id;
-    }
-
-    @Deprecated
-    public SidelineRequestIdentifier(final UUID id) {
-        this(id.toString());
+    /**
+     * Used to overload and modify settings before passing them to the constructor.
+     * @param spoutConfig Supplied configuration.
+     * @return Resulting configuration.
+     */
+    private static Map<String, Object> modifyConfig(Map<String, Object> spoutConfig) {
+        Map<String, Object> config = Maps.newHashMap();
+        // Start by making a copy of our existing configuration map
+        config.putAll(spoutConfig);
+        // Add our opinionated configuration items
+        config.put(SpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
+        config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        // Return a copy of the config that cannot be modified.
+        return Tools.immutableCopy(config);
     }
 
     /**
-     * Will generate a UUID, this is no longer recommended.
+     * Spout that supports sidelining messages by filters.
+     * @param config Spout configuration.
      */
-    @Deprecated
-    public SidelineRequestIdentifier() {
-        this(UUID.randomUUID());
-    }
-
-    /**
-     * Override toString to return the id.
-     */
-    @Override
-    public String toString() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        SidelineRequestIdentifier that = (SidelineRequestIdentifier) other;
-
-        return id != null ? id.equals(that.id) : that.id == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
+    @SuppressWarnings("unchecked")
+    public SidelineSpout(Map config) {
+        super(modifyConfig(config));
     }
 }

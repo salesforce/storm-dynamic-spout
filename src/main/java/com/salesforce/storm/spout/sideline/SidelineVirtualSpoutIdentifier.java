@@ -23,11 +23,12 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
+package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
  * Identifier for sideline virtual spouts.

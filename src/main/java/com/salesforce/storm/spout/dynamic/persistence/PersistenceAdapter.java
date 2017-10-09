@@ -25,9 +25,9 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineType;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.util.List;
 import java.util.Map;
@@ -36,6 +36,7 @@ import java.util.Set;
 /**
  * Interface that controls persistence of state.
  */
+// TODO: Split sideline storage out of this class into it's own persistence adapter
 public interface PersistenceAdapter {
     /**
      * Performs any required initialization/connection/setup required for

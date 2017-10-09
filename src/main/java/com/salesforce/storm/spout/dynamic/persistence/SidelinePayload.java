@@ -25,13 +25,14 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineType;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 /**
  * Payload for a sideline, includes the type, request, id and positions for the sideline.
  */
+// TODO: Move this into the sideline package after sidelining is split out from {@link PersistenceAdapter}
 public class SidelinePayload {
 
     /**

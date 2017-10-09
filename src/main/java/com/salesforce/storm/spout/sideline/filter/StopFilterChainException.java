@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.filter;
+package com.salesforce.storm.spout.sideline.filter;
 
 /**
  * An exception that can be thrown to abort the processing of steps in a chain.

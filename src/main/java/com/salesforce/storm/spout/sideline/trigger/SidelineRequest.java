@@ -23,42 +23,69 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
+package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.handler.SidelineSpoutHandler;
-import com.salesforce.storm.spout.dynamic.handler.SidelineVirtualSpoutHandler;
-
-import java.util.Map;
+import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 
 /**
- * Spout that supports sidelining messages by filters.
+ * A request to sideline.
  */
-public class SidelineSpout extends DynamicSpout {
+public class SidelineRequest {
 
     /**
-     * Used to overload and modify settings before passing them to the constructor.
-     * @param spoutConfig Supplied configuration.
-     * @return Resulting configuration.
+     * Id of the sideline request.
      */
-    private static Map<String, Object> modifyConfig(Map<String, Object> spoutConfig) {
-        Map<String, Object> config = Maps.newHashMap();
-        // Start by making a copy of our existing configuration map
-        config.putAll(spoutConfig);
-        // Add our opinionated configuration items
-        config.put(SpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
-        config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
-        // Return a copy of the config that cannot be modified.
-        return Tools.immutableCopy(config);
+    public final SidelineRequestIdentifier id;
+    /**
+     * Filter chain step for this sideline.
+     */
+    public final FilterChainStep step;
+
+    /**
+     * A request to sideline.
+     * @param id id of the sideline request.
+     * @param step filter chain step for this sideline.
+     */
+    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
+        this.id = id;
+        this.step = step;
     }
 
     /**
-     * Spout that supports sidelining messages by filters.
-     * @param config Spout configuration.
+     * A request to sideline.
+     * @param step filter chain step for this sideline.
      */
-    @SuppressWarnings("unchecked")
-    public SidelineSpout(Map config) {
-        super(modifyConfig(config));
+    @Deprecated
+    public SidelineRequest(final FilterChainStep step) {
+        this(new SidelineRequestIdentifier(), step);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+
+        SidelineRequest that = (SidelineRequest) other;
+
+        return step != null ? step.equals(that.step) : that.step == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return step != null ? step.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "SidelineRequest{"
+            + "id="
+            + id
+            + ", step="
+            + step
+            + '}';
     }
 }

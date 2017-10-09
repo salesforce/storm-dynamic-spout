@@ -31,7 +31,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
-import com.salesforce.storm.spout.dynamic.filter.FilterChain;
+import com.salesforce.storm.spout.sideline.filter.FilterChain;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;

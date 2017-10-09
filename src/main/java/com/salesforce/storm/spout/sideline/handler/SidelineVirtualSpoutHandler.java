@@ -23,14 +23,15 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.handler;
+package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.SidelineVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
+import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

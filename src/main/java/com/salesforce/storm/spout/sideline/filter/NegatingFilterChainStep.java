@@ -23,13 +23,41 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.trigger;
+package com.salesforce.storm.spout.sideline.filter;
+
+import com.salesforce.storm.spout.dynamic.Message;
 
 /**
- * Type of sideline request, either a start of stop operation.
+ * Negates a {@link FilterChainStep} basically doing the opposite of the intended filtering.
  */
-public enum SidelineType {
+public class NegatingFilterChainStep implements FilterChainStep {
 
-    START,
-    STOP,
+    private final FilterChainStep step;
+
+    public NegatingFilterChainStep(FilterChainStep step) {
+        this.step = step;
+    }
+
+    public boolean filter(Message message) {
+        return !this.step.filter(message);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+
+        NegatingFilterChainStep that = (NegatingFilterChainStep) other;
+
+        return step != null ? step.equals(that.step) : that.step == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return step != null ? step.hashCode() : 0;
+    }
 }

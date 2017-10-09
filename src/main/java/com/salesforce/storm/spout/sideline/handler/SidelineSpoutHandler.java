@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.handler;
+package com.salesforce.storm.spout.sideline.handler;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -31,20 +31,21 @@ import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
-import com.salesforce.storm.spout.dynamic.SidelineVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
+import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
-import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
+import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
+import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineTrigger;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineType;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

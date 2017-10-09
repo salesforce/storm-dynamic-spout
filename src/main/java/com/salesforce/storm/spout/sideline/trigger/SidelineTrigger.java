@@ -23,69 +23,33 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.trigger;
+package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
+
+import java.util.Map;
 
 /**
- * A request to sideline.
+ * A trigger is a class that can start and stop a sideline by constructing sideline requests.
  */
-public class SidelineRequest {
+public interface SidelineTrigger {
 
     /**
-     * Id of the sideline request.
+     * Set the sideline spout trigger's proxy on the trigger.
+     * @param spout Sideline spout trigger's proxy
      */
-    public final SidelineRequestIdentifier id;
-    /**
-     * Filter chain step for this sideline.
-     */
-    public final FilterChainStep step;
+    void setSidelineSpout(SpoutTriggerProxy spout);
 
     /**
-     * A request to sideline.
-     * @param id id of the sideline request.
-     * @param step filter chain step for this sideline.
+     * Open the trigger.
+     * @param spoutConfig Spout configuration.
      */
-    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
-        this.id = id;
-        this.step = step;
+    default void open(Map spoutConfig) {
     }
 
     /**
-     * A request to sideline.
-     * @param step filter chain step for this sideline.
+     * Close the trigger.
      */
-    @Deprecated
-    public SidelineRequest(final FilterChainStep step) {
-        this(new SidelineRequestIdentifier(), step);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        SidelineRequest that = (SidelineRequest) other;
-
-        return step != null ? step.equals(that.step) : that.step == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return step != null ? step.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "SidelineRequest{"
-            + "id="
-            + id
-            + ", step="
-            + step
-            + '}';
+    default void close() {
     }
 }

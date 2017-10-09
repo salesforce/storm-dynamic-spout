@@ -28,9 +28,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
-import com.salesforce.storm.spout.dynamic.handler.SidelineSpoutHandler;
-import com.salesforce.storm.spout.dynamic.handler.SidelineVirtualSpoutHandler;
+import com.salesforce.storm.spout.sideline.SidelineSpout;
+import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaTestServer;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
@@ -42,9 +43,9 @@ import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.dynamic.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
-import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.dynamic.trigger.StaticTrigger;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import com.salesforce.storm.spout.dynamic.utils.KafkaTestUtils;
 import com.salesforce.storm.spout.dynamic.utils.ProducedKafkaRecord;
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -85,10 +86,11 @@ import static org.junit.Assert.assertTrue;
 /**
  * End to End integration testing of Sideline Spout under various scenarios.
  */
+// TODO: Remove sideline specific stuff from this test and create a separate test for those use cases.
 @RunWith(DataProviderRunner.class)
-public class SidelineSpoutTest {
+public class DynamicSpoutTest {
     // For logging within the test.
-    private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(DynamicSpoutTest.class);
 
     // Our internal Kafka and Zookeeper Server, used to test against.
     private static KafkaTestServer kafkaTestServer;
@@ -114,7 +116,7 @@ public class SidelineSpoutTest {
     @Before
     public void beforeTest() throws InterruptedException {
         // Generate namespace name
-        topicName = SidelineSpoutTest.class.getSimpleName() + Clock.systemUTC().millis();
+        topicName = DynamicSpoutTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create namespace
         kafkaTestServer.createTopic(topicName);
@@ -199,7 +201,7 @@ public class SidelineSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final SidelineSpout spout = new SidelineSpout(config);
+        final DynamicSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -260,7 +262,7 @@ public class SidelineSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final SidelineSpout spout = new SidelineSpout(config);
+        final DynamicSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -357,7 +359,7 @@ public class SidelineSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        final SidelineSpout spout = new SidelineSpout(config);
+        final DynamicSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -471,7 +473,7 @@ public class SidelineSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        SidelineSpout spout = new SidelineSpout(config);
+        DynamicSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -575,7 +577,7 @@ public class SidelineSpoutTest {
         sidelineSpoutHandler.open(config);
 
         // Create our spout, add references to our static trigger, and call open().
-        SidelineSpout spout = new SidelineSpout(config);
+        DynamicSpout spout = new SidelineSpout(config);
 
         spout.open(config, topologyContext, spoutOutputCollector);
 
@@ -827,7 +829,7 @@ public class SidelineSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        SidelineSpout spout = new SidelineSpout(config);
+        DynamicSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -933,7 +935,7 @@ public class SidelineSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        SidelineSpout spout = new SidelineSpout(config);
+        DynamicSpout spout = new SidelineSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -1031,7 +1033,7 @@ public class SidelineSpoutTest {
      * @param spout - the Spout instance to ack tuples on.
      * @param spoutEmissions - The SpoutEmissions we want to ack.
      */
-    private void ackTuples(final SidelineSpout spout, List<SpoutEmission> spoutEmissions) {
+    private void ackTuples(final DynamicSpout spout, List<SpoutEmission> spoutEmissions) {
         if (spoutEmissions.isEmpty()) {
             throw new RuntimeException("You cannot ack an empty list!  You probably have a bug in your test.");
         }
@@ -1066,7 +1068,7 @@ public class SidelineSpoutTest {
      * @param spout - the Spout instance to ack tuples on.
      * @param spoutEmissions - The SpoutEmissions we want to ack.
      */
-    private void failTuples(final SidelineSpout spout, List<SpoutEmission> spoutEmissions) {
+    private void failTuples(final DynamicSpout spout, List<SpoutEmission> spoutEmissions) {
         if (spoutEmissions.isEmpty()) {
             throw new RuntimeException("You cannot fail an empty list!  You probably have a bug in your test.");
         }
@@ -1184,7 +1186,7 @@ public class SidelineSpoutTest {
      * @param collector - The spout's output collector that would receive the tuples if any were emitted.
      * @param numberOfAttempts - How many times to call nextTuple()
      */
-    private void validateNextTupleEmitsNothing(SidelineSpout spout, MockSpoutOutputCollector collector, int numberOfAttempts, long delayInMs) {
+    private void validateNextTupleEmitsNothing(DynamicSpout spout, MockSpoutOutputCollector collector, int numberOfAttempts, long delayInMs) {
         try {
             Thread.sleep(delayInMs);
         } catch (InterruptedException e) {
@@ -1205,7 +1207,7 @@ public class SidelineSpoutTest {
      * @param collector - The spout's output collector that would receive the tuples if any were emitted.
      * @param numberOfTuples - How many new tuples we expect to get out of the spout instance.
      */
-    private List<SpoutEmission> consumeTuplesFromSpout(SidelineSpout spout, MockSpoutOutputCollector collector, int numberOfTuples) {
+    private List<SpoutEmission> consumeTuplesFromSpout(DynamicSpout spout, MockSpoutOutputCollector collector, int numberOfTuples) {
         logger.info("[TEST] Attempting to consume {} tuples from spout", numberOfTuples);
 
         // Create a new list for the emissions we expect to get back
@@ -1270,7 +1272,7 @@ public class SidelineSpoutTest {
      * @param spout - The spout instance
      * @param howManyVirtualSpoutsWeWantLeft - Wait until this many virtual spouts are left running.
      */
-    private void waitForVirtualSpouts(SidelineSpout spout, int howManyVirtualSpoutsWeWantLeft) {
+    private void waitForVirtualSpouts(DynamicSpout spout, int howManyVirtualSpoutsWeWantLeft) {
         await()
                 .atMost(5, TimeUnit.SECONDS)
                 .until(

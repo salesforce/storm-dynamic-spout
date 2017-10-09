@@ -23,33 +23,13 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.trigger;
-
-import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
-
-import java.util.Map;
+package com.salesforce.storm.spout.sideline.trigger;
 
 /**
- * A trigger is a class that can start and stop a sideline by constructing sideline requests.
+ * Type of sideline request, either a start of stop operation.
  */
-public interface SidelineTrigger {
+public enum SidelineType {
 
-    /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
-     */
-    void setSidelineSpout(SpoutTriggerProxy spout);
-
-    /**
-     * Open the trigger.
-     * @param spoutConfig Spout configuration.
-     */
-    default void open(Map spoutConfig) {
-    }
-
-    /**
-     * Close the trigger.
-     */
-    default void close() {
-    }
+    START,
+    STOP,
 }

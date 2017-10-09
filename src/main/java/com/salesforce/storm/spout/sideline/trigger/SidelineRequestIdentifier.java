@@ -23,30 +23,40 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.filter;
-
-import com.salesforce.storm.spout.dynamic.Message;
+package com.salesforce.storm.spout.sideline.trigger;
 
 import java.util.UUID;
 
 /**
- * We use this filter in tests because it allows us an easy way to define
- * how a filter behaves.
+ * Identifies a sideline request, this should be unique to the request.
  */
-public class StaticMessageFilter implements FilterChainStep {
+public class SidelineRequestIdentifier {
 
-    /**
-     * We need a way to make this instance unique from others, so we use a UUID.
-     */
-    private final UUID uniqueId;
+    private String id;
 
-    public StaticMessageFilter() {
-        this.uniqueId = UUID.randomUUID();
+    public SidelineRequestIdentifier(final String id) {
+        this.id = id;
     }
 
+    @Deprecated
+    public SidelineRequestIdentifier(final UUID id) {
+        this(id.toString());
+    }
+
+    /**
+     * Will generate a UUID, this is no longer recommended.
+     */
+    @Deprecated
+    public SidelineRequestIdentifier() {
+        this(UUID.randomUUID());
+    }
+
+    /**
+     * Override toString to return the id.
+     */
     @Override
-    public boolean filter(Message message) {
-        return true;
+    public String toString() {
+        return id;
     }
 
     @Override
@@ -58,20 +68,13 @@ public class StaticMessageFilter implements FilterChainStep {
             return false;
         }
 
-        StaticMessageFilter that = (StaticMessageFilter) other;
+        SidelineRequestIdentifier that = (SidelineRequestIdentifier) other;
 
-        return uniqueId.equals(that.uniqueId);
+        return id != null ? id.equals(that.id) : that.id == null;
     }
 
     @Override
     public int hashCode() {
-        return uniqueId.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "StaticMessageFilter{"
-            + "uniqueId=" + uniqueId
-            + '}';
+        return id != null ? id.hashCode() : 0;
     }
 }
