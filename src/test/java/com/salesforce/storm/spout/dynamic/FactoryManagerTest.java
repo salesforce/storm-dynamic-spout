@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
@@ -51,22 +52,26 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test that {@link FactoryManager} creates instances correctly.
+ */
 @RunWith(DataProviderRunner.class)
 public class FactoryManagerTest {
+
+    @Rule
+    public ExpectedException expectedExceptionCreateNewFailedMsgRetryManagerInstanceMissingConfig = ExpectedException.none();
 
     /**
      * Tests that if you fail to pass a deserializer config it throws an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCreateNewFailedMsgRetryManagerInstance_missingConfig = ExpectedException.none();
     @Test
-    public void testCreateNewFailedMsgRetryManagerInstance_missingConfig() {
+    public void testCreateNewFailedMsgRetryManagerInstanceMissingConfig() {
         // Try with UTF8 String deserializer
         final Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
-        expectedExceptionCreateNewFailedMsgRetryManagerInstance_missingConfig.expect(IllegalStateException.class);
+        expectedExceptionCreateNewFailedMsgRetryManagerInstanceMissingConfig.expect(IllegalStateException.class);
         factoryManager.createNewFailedMsgRetryManagerInstance();
     }
 
@@ -94,7 +99,7 @@ public class FactoryManagerTest {
 
         // Create a few instances
         final List<RetryManager> instances = Lists.newArrayList();
-        for (int x=0; x<5; x++) {
+        for (int x = 0; x < 5; x++) {
             final RetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
 
             // Validate it
@@ -109,19 +114,20 @@ public class FactoryManagerTest {
         }
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCreateNewPersistenceAdapterInstanceMissingConfig = ExpectedException.none();
+
     /**
      * Tests that if you fail to pass a config it throws an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCreateNewPersistenceAdapterInstance_missingConfig = ExpectedException.none();
     @Test
-    public void testCreateNewPersistenceAdapterInstance_missingConfig() {
+    public void testCreateNewPersistenceAdapterInstanceMissingConfig() {
         // Try with UTF8 String deserializer
         final Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
-        expectedExceptionCreateNewPersistenceAdapterInstance_missingConfig.expect(IllegalStateException.class);
+        expectedExceptionCreateNewPersistenceAdapterInstanceMissingConfig.expect(IllegalStateException.class);
         factoryManager.createNewPersistenceAdapterInstance();
     }
 
@@ -129,7 +135,7 @@ public class FactoryManagerTest {
      * Tests that create new deserializer instance works as expected.
      */
     @Test
-    public void testCreateNewPersistenceAdapter_usingDefaultImpl() {
+    public void testCreateNewPersistenceAdapterUsingDefaultImpl() {
         // Try with UTF8 String deserializer
         final Map config = Maps.newHashMap();
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
@@ -137,7 +143,7 @@ public class FactoryManagerTest {
 
         // Create a few instances
         final List<PersistenceAdapter> instances = Lists.newArrayList();
-        for (int x=0; x<5; x++) {
+        for (int x = 0; x < 5; x++) {
             final PersistenceAdapter instance = factoryManager.createNewPersistenceAdapterInstance();
 
             // Validate it
@@ -152,19 +158,20 @@ public class FactoryManagerTest {
         }
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCreateNewMessageBufferInstanceMissingConfig = ExpectedException.none();
+
     /**
      * Tests that if you fail to pass a deserializer config it throws an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCreateNewMessageBufferInstance_missingConfig = ExpectedException.none();
     @Test
-    public void testCreateNewMessageBufferInstance_missingConfig() {
+    public void testCreateNewMessageBufferInstanceMissingConfig() {
         // Try with UTF8 String deserializer
         final Map config = Maps.newHashMap();
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // We expect this to throw an exception.
-        expectedExceptionCreateNewMessageBufferInstance_missingConfig.expect(IllegalStateException.class);
+        expectedExceptionCreateNewMessageBufferInstanceMissingConfig.expect(IllegalStateException.class);
         factoryManager.createNewMessageBufferInstance();
     }
 
@@ -192,7 +199,7 @@ public class FactoryManagerTest {
 
         // Create a few instances
         final List<MessageBuffer> instances = Lists.newArrayList();
-        for (int x=0; x<5; x++) {
+        for (int x = 0; x < 5; x++) {
             final MessageBuffer messageBuffer = factoryManager.createNewMessageBufferInstance();
 
             // Validate it

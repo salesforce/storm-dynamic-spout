@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Iterators;
@@ -60,6 +61,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+/**
+ * Test that {@link RoundRobinBufferTest} equally distributes messages from the buffer.
+ */
 @RunWith(DataProviderRunner.class)
 public class RoundRobinBufferTest {
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinBufferTest.class);
@@ -91,9 +95,11 @@ public class RoundRobinBufferTest {
         Random random = new Random();
 
         // Generate messages
-        for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
+        for (int x = 0; x < (numberOfMessagesPer * numberOfVSpoutIds); x++) {
             // Generate source spout id
-            final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
+            final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier(
+                "srcSpoutId" + random.nextInt(numberOfVSpoutIds)
+            );
             final int partition = random.nextInt(10);
 
 
@@ -116,7 +122,7 @@ public class RoundRobinBufferTest {
 
         // Now ask for the messages back, they should get round robin'd
         Iterator<DefaultVirtualSpoutIdentifier> keyIterator = Iterators.cycle(submittedOrder.keySet());
-        for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
+        for (int x = 0; x < (numberOfMessagesPer * numberOfVSpoutIds); x++) {
             DefaultVirtualSpoutIdentifier nextSourceSpout = keyIterator.next();
 
             // Pop a msg
@@ -164,7 +170,7 @@ public class RoundRobinBufferTest {
 
 
         // Validate that the next polls are all null
-        for (int x=0; x<128; x++) {
+        for (int x = 0; x < 128; x++) {
             assertNull("Should be null", messageBuffer.poll());
         }
     }
@@ -340,7 +346,7 @@ public class RoundRobinBufferTest {
         Thread.sleep(200L);
 
         // Add keys
-        for (int x=5; x<100; x++) {
+        for (int x = 5; x < 100; x++) {
             myMap.put("Key" + x, "Value" + x);
         }
 
@@ -356,7 +362,7 @@ public class RoundRobinBufferTest {
         assertEquals("Found all keys", myMap.size(), foundKeys.size());
 
         // Now remove some keys
-        for (int x=5; x<100; x++) {
+        for (int x = 5; x < 100; x++) {
             myMap.remove("Key" + x);
         }
 

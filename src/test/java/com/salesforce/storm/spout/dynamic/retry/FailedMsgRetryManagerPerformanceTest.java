@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.retry;
 
 import com.google.common.collect.Lists;
@@ -40,6 +41,8 @@ public class FailedMsgRetryManagerPerformanceTest {
     private static final Logger logger = LoggerFactory.getLogger(FailedMsgRetryManagerPerformanceTest.class);
 
     /**
+     * Run a bunch of retries.
+     *
      * Disabled for now.
      */
     public void runTest() throws InterruptedException {
@@ -58,7 +61,7 @@ public class FailedMsgRetryManagerPerformanceTest {
         doTest2(retryManager);
     }
 
-    public void doTest2(RetryManager retryManager) throws InterruptedException {
+    private void doTest2(RetryManager retryManager) throws InterruptedException {
         logger.info("Starting to test {}", retryManager.getClass().getSimpleName());
 
         // Define test parameters
@@ -70,12 +73,12 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Add msgs
         logger.info("Starting to add {} failed msgs", numberOfTuples);
         final long startTupleAddTime = System.currentTimeMillis();
-        for (long x=0; x<numberOfTuples; x++) {
+        for (long x = 0; x < numberOfTuples; x++) {
             // Create MessageId
             final MessageId messageId = new MessageId(topicName, partition, x, consumerId);
             retryManager.failed(messageId);
         }
-        for (long x=0; x<numberOfTuples; x++) {
+        for (long x = 0; x < numberOfTuples; x++) {
             // Create MessageId
             final MessageId messageId = new MessageId(topicName, partition, x, consumerId);
             retryManager.failed(messageId);
@@ -95,7 +98,8 @@ public class FailedMsgRetryManagerPerformanceTest {
                 continue;
             }
             returnedTuples.add(messageId);
-        } while (returnedTuples.size() < numberOfTuples);
+        }
+        while (returnedTuples.size() < numberOfTuples);
         logger.info("Finished in {} ms", (System.currentTimeMillis() - startNextFailedTime));
     }
 }

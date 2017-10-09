@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.google.common.collect.Maps;
@@ -71,13 +72,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test that the {@link SpoutRunner} starts spouts when passed in and handles their lifecycle correctly.
+ */
 @RunWith(DataProviderRunner.class)
 public class SpoutRunnerTest {
+
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunnerTest.class);
     private static final int maxWaitTime = 5;
 
     private ThreadPoolExecutor executorService;
 
+    /**
+     * Shutdown the thread executor service when the test is all over.
+     * @throws InterruptedException something went wrong.
+     */
     @After
     public void shutDown() throws InterruptedException {
         // Shut down our executor service if it exists
@@ -130,7 +139,11 @@ public class SpoutRunnerTest {
         // Call getters and validate!
         assertEquals("Clock instance is what we expect", clock, spoutRunner.getClock());
         assertEquals("TopologyConfig looks legit", topologyConfig, spoutRunner.getTopologyConfig());
-        assertEquals("getConsumerStateFlushIntervalMs() returns right value", consumerStateFlushInterval, spoutRunner.getConsumerStateFlushIntervalMs());
+        assertEquals(
+            "getConsumerStateFlushIntervalMs() returns right value",
+            consumerStateFlushInterval,
+            spoutRunner.getConsumerStateFlushIntervalMs()
+        );
         assertEquals("Tuple Buffer got set", messageBuffer, spoutRunner.getTupleQueue());
         assertEquals("Ack Queue got set", ackQueue, spoutRunner.getAckedTupleQueue());
         assertEquals("Fail Queue got set", failQueue, spoutRunner.getFailedTupleQueue());
@@ -190,7 +203,7 @@ public class SpoutRunnerTest {
         assertEquals("Latch has value of 1", 1, latch.getCount());
 
         // Start in a separate thread.
-        CompletableFuture future = startSpoutRunner(spoutRunner);
+        final CompletableFuture future = startSpoutRunner(spoutRunner);
 
         // Wait for latch to count down to 0
         await()
@@ -299,7 +312,7 @@ public class SpoutRunnerTest {
         assertEquals("Latch has value of 1", 1, latch.getCount());
 
         // Start in a separate thread.
-        CompletableFuture future = startSpoutRunner(spoutRunner);
+        final CompletableFuture future = startSpoutRunner(spoutRunner);
 
         // Wait for latch to count down to 0
         await()
@@ -389,7 +402,7 @@ public class SpoutRunnerTest {
         assertEquals("Latch has value of 1", 1, latch.getCount());
 
         // Start in a separate thread.
-        CompletableFuture future = startSpoutRunner(spoutRunner);
+        final CompletableFuture future = startSpoutRunner(spoutRunner);
 
         // Wait for latch to count down to 0
         await()
@@ -504,7 +517,7 @@ public class SpoutRunnerTest {
         assertEquals("Latch has value of 1", 1, latch.getCount());
 
         // Start in a separate thread.
-        CompletableFuture future = startSpoutRunner(spoutRunner);
+        final CompletableFuture future = startSpoutRunner(spoutRunner);
 
         // Wait for latch to count down to 0
         await()
@@ -619,7 +632,7 @@ public class SpoutRunnerTest {
         assertEquals("Latch has value of 1", 1, latch.getCount());
 
         // Start in a separate thread.
-        CompletableFuture future = startSpoutRunner(spoutRunner);
+        final CompletableFuture future = startSpoutRunner(spoutRunner);
 
         // Wait for latch to count down to 0
         await()

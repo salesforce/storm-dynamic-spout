@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import org.apache.storm.tuple.Values;
@@ -169,10 +170,16 @@ public class MessageTest {
         final Values expectedValues = new Values(expectedValue1, expectedValue2, expectedValue3);
 
         // Create Message
-        final Message message1 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), expectedValues);
+        final Message message1 = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            expectedValues
+        );
 
         // Create Message
-        final Message message2 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), expectedValues);
+        final Message message2 = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            expectedValues
+        );
 
         // Validate
         assertTrue("Should be equal", message1.equals(message2));
@@ -196,10 +203,16 @@ public class MessageTest {
         final Long expectedValue3 = 42L;
 
         // Create Message
-        final Message message1 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedValue1, expectedValue2, expectedValue3));
+        final Message message1 = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedValue1, expectedValue2, expectedValue3)
+        );
 
         // Create Message
-        final Message message2 = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedValue1, expectedValue2, expectedValue3));
+        final Message message2 = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedValue1, expectedValue2, expectedValue3)
+        );
 
         // Validate
         assertTrue("Should be equal", message1.equals(message2));

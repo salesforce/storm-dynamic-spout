@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
@@ -76,13 +77,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test that a {@link VirtualSpout} properly acks, fails and emits data from it's consumer.
+ */
 public class VirtualSpoutTest {
+
+    @Rule
+    public ExpectedException expectedExceptionConstructor = ExpectedException.none();
 
     /**
      * Verify that constructor args get set appropriately.
      */
-    @Rule
-    public ExpectedException expectedExceptionConstructor = ExpectedException.none();
     @Test
     public void testConstructor() {
         // Create inputs
@@ -126,7 +131,7 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * Verify that getSpoutConfigItem() works as expected
+     * Verify that getSpoutConfigItem() works as expected.
      */
     @Test
     public void testGetTopologyConfigItem() {
@@ -220,11 +225,12 @@ public class VirtualSpoutTest {
         assertTrue("Should be true", virtualSpout.isStopRequested());
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCallingOpenTwiceThrowsException = ExpectedException.none();
+
     /**
      * Calling open() more than once should throw an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCallingOpenTwiceThrowsException = ExpectedException.none();
     @Test
     public void testCallingOpenTwiceThrowsException() {
         // Create test config
@@ -258,7 +264,12 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerPeerContext.class), any(ZookeeperPersistenceAdapter.class), eq(null));
+        verify(mockConsumer, times(1)).open(
+            anyMap(),
+            eq(virtualSpoutIdentifier),
+            any(ConsumerPeerContext.class),
+            any(ZookeeperPersistenceAdapter.class
+        ), eq(null));
 
         // Set expected exception
         expectedExceptionCallingOpenTwiceThrowsException.expect(IllegalStateException.class);
@@ -313,7 +324,13 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(1)).open(topologyConfig);
 
         // Validate that open() on SidelineConsumer is called once.
-        verify(mockConsumer, times(1)).open(anyMap(), eq(virtualSpoutIdentifier), any(ConsumerPeerContext.class), any(ZookeeperPersistenceAdapter.class), eq(null));
+        verify(mockConsumer, times(1)).open(
+            anyMap(),
+            eq(virtualSpoutIdentifier),
+            any(ConsumerPeerContext.class),
+            any(ZookeeperPersistenceAdapter.class),
+            eq(null)
+        );
     }
 
     /**
@@ -418,7 +435,12 @@ public class VirtualSpoutTest {
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
+        final Record expectedConsumerRecord = new Record(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            new Values(expectedKey, expectedValue)
+        );
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -474,10 +496,18 @@ public class VirtualSpoutTest {
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
+        final Record expectedConsumerRecord = new Record(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            new Values(expectedKey, expectedValue)
+        );
 
         // Define expected result
-        final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+        final Message expectedMessage = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedKey, expectedValue)
+        );
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -551,8 +581,14 @@ public class VirtualSpoutTest {
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
 
         // Define expected results returned
-        final Message expectedMessageBeforeEndingOffset = new Message(new MessageId(topic, partition, beforeOffset, expectedConsumerId), new Values("before-key", "before-value"));
-        final Message expectedMessageEqualEndingOffset = new Message(new MessageId(topic, partition, endingOffset, expectedConsumerId), new Values("equal-key", "equal-value"));
+        final Message expectedMessageBeforeEndingOffset = new Message(
+            new MessageId(topic, partition, beforeOffset, expectedConsumerId),
+            new Values("before-key", "before-value")
+        );
+        final Message expectedMessageEqualEndingOffset = new Message(
+            new MessageId(topic, partition, endingOffset, expectedConsumerId),
+            new Values("equal-key", "equal-value")
+        );
 
         // Defining our Ending State
         final ConsumerState endingState = ConsumerState.builder()
@@ -574,7 +610,12 @@ public class VirtualSpoutTest {
         when(factoryManager.createNewConsumerInstance()).thenReturn(mockConsumer);
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return our values in order.
-        when(mockConsumer.nextRecord()).thenReturn(consumerRecordBeforeEnd, consumerRecordEqualEnd, consumerRecordAfterEnd, consumerRecordAfterEnd2);
+        when(mockConsumer.nextRecord()).thenReturn(
+            consumerRecordBeforeEnd,
+            consumerRecordEqualEnd,
+            consumerRecordAfterEnd,
+            consumerRecordAfterEnd2
+        );
 
         // Create spout & open
         final VirtualSpout virtualSpout = new VirtualSpout(
@@ -660,19 +701,35 @@ public class VirtualSpoutTest {
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
-        final Record expectedConsumerRecord = new Record(expectedTopic, expectedPartition, expectedOffset, new Values(expectedKey, expectedValue));
+        final Record expectedConsumerRecord = new Record(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            new Values(expectedKey, expectedValue)
+        );
 
         // Define expected result
-        final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+        final Message expectedMessage = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedKey, expectedValue)
+        );
 
         // This is a second record coming from the consumer
         final long unexpectedOffset = expectedOffset + 2L;
         final String unexpectedKey = "NotMyKey";
         final String unexpectedValue = "NotMyValue";
-        final Record unexpectedConsumerRecord = new Record(expectedTopic, expectedPartition, unexpectedOffset, new Values(unexpectedKey, unexpectedValue));
+        final Record unexpectedConsumerRecord = new Record(
+            expectedTopic,
+            expectedPartition,
+            unexpectedOffset,
+            new Values(unexpectedKey, unexpectedValue)
+        );
 
         // Define unexpected result
-        final Message unexpectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, unexpectedOffset, expectedConsumerId), new Values(unexpectedKey, unexpectedValue));
+        final Message unexpectedMessage = new Message(
+            new MessageId(expectedTopic, expectedPartition, unexpectedOffset, expectedConsumerId),
+            new Values(unexpectedKey, unexpectedValue)
+        );
 
         final Map topologyConfig = getDefaultConfig();
 
@@ -818,11 +875,12 @@ public class VirtualSpoutTest {
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
     }
 
+    @Rule
+    public ExpectedException expectedExceptionFailWithInvalidMsgIdObject = ExpectedException.none();
+
     /**
      * Call fail() with invalid msg type should throw an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionFailWithInvalidMsgIdObject = ExpectedException.none();
     @Test
     public void testFailWithInvalidMsgIdObject() {
         // Create test config
@@ -896,11 +954,12 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, never()).acked(anyObject());
     }
 
+    @Rule
+    public ExpectedException expectedExceptionAckWithInvalidMsgIdObject = ExpectedException.none();
+
     /**
      * Call ack() with invalid msg type should throw an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionAckWithInvalidMsgIdObject = ExpectedException.none();
     @Test
     public void testAckWithInvalidMsgIdObject() {
         // Create test config
@@ -934,7 +993,7 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * Test calling ack, ensure it passes the commit command to its internal consumer
+     * Test calling ack, ensure it passes the commit command to its internal consumer.
      */
     @Test
     public void testAck() {
@@ -942,7 +1001,12 @@ public class VirtualSpoutTest {
         final String expectedTopicName = "MyTopic";
         final int expectedPartitionId = 33;
         final long expectedOffset = 313376L;
-        final MessageId messageId = new MessageId(expectedTopicName, expectedPartitionId, expectedOffset, new DefaultVirtualSpoutIdentifier("RandomConsumer"));
+        final MessageId messageId = new MessageId(
+            expectedTopicName,
+            expectedPartitionId,
+            expectedOffset,
+            new DefaultVirtualSpoutIdentifier("RandomConsumer")
+        );
 
         // Create inputs
         final Map topologyConfig = getDefaultConfig();
@@ -1156,13 +1220,14 @@ public class VirtualSpoutTest {
         assertFalse("Should be false", result);
     }
 
+    @Rule
+    public ExpectedException expectedExceptionDoesMessageExceedEndingOffsetForAnInvalidPartition = ExpectedException.none();
+
     /**
      * Test calling this method with a defined endingState, and then send in a MessageId
      * associated with a partition that doesn't exist in the ending state.  It should throw
      * an illegal state exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionDoesMessageExceedEndingOffsetForAnInvalidPartition = ExpectedException.none();
     @Test
     public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
         // Create inputs
@@ -1438,7 +1503,10 @@ public class VirtualSpoutTest {
         final String expectedValue = "MyValue";
 
         // Define expected result
-        final Message expectedMessage = new Message(new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId), new Values(expectedKey, expectedValue));
+        final Message expectedMessage = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedKey, expectedValue)
+        );
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -1479,7 +1547,11 @@ public class VirtualSpoutTest {
 
         // Verify since this wasn't retried, it gets acked both by the consumer and the retry manager.
         verify(mockRetryManager, times(1)).acked(failedMessageId);
-        verify(mockConsumer, times(1)).commitOffset(failedMessageId.getNamespace(), failedMessageId.getPartition(), failedMessageId.getOffset());
+        verify(mockConsumer, times(1)).commitOffset(
+            failedMessageId.getNamespace(),
+            failedMessageId.getPartition(),
+            failedMessageId.getOffset()
+        );
     }
 
     /**
@@ -1556,7 +1628,12 @@ public class VirtualSpoutTest {
     /**
      * Utility method for creating a mock factory manager.
      */
-    private FactoryManager createMockFactoryManager(Deserializer deserializer, RetryManager retryManager, PersistenceAdapter persistenceAdapter, VirtualSpoutHandler virtualSpoutHandler) {
+    private FactoryManager createMockFactoryManager(
+        Deserializer deserializer,
+        RetryManager retryManager,
+        PersistenceAdapter persistenceAdapter,
+        VirtualSpoutHandler virtualSpoutHandler
+    ) {
         // Create our mock
         final FactoryManager factoryManager = mock(FactoryManager.class);
 

@@ -22,12 +22,13 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.mocks.output;
 
 import java.util.List;
 
 /**
- *
+ * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}
  */
 public class SpoutEmission {
     private final Object messageId;
@@ -35,10 +36,23 @@ public class SpoutEmission {
     private final List<Object> tuple;
     private final Integer taskId;
 
+    /**
+     * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}
+     * @param messageId message id.
+     * @param streamId stream id.
+     * @param tuple tuple.
+     */
     public SpoutEmission(Object messageId, String streamId, List<Object> tuple) {
         this(messageId, streamId, tuple, null);
     }
 
+    /**
+     * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}
+     * @param messageId message id.
+     * @param streamId stream id.
+     * @param tuple tuple.
+     * @param taskId task id.
+     */
     public SpoutEmission(Object messageId, String streamId, List<Object> tuple, Integer taskId) {
         this.messageId = messageId;
         this.streamId = streamId;
@@ -64,11 +78,11 @@ public class SpoutEmission {
 
     @Override
     public String toString() {
-        return "SpoutEmission{" +
-                "messageId=" + messageId +
-                ", streamId='" + streamId + '\'' +
-                ", tuple=" + tuple +
-                ", taskId=" + taskId +
-                '}';
+        return "SpoutEmission{"
+            + "messageId=" + messageId
+            + ", streamId='" + streamId + '\''
+            + ", tuple=" + tuple
+            + ", taskId=" + taskId
+            + '}';
     }
 }

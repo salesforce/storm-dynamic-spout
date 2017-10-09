@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.google.common.collect.Maps;
@@ -42,6 +43,9 @@ import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests producer and old style consumer.
+ */
 public class KafkaTestServerTest {
     private static final Logger logger = LoggerFactory.getLogger(KafkaTestServerTest.class);
 
@@ -65,7 +69,12 @@ public class KafkaTestServerTest {
         final String expectedValue = "my test message";
 
         // Publish a msg
-        ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(topicName, partitionId, expectedKey, expectedValue.getBytes("utf8"));
+        ProducerRecord<String, byte[]> producerRecord = new ProducerRecord<>(
+            topicName,
+            partitionId,
+            expectedKey,
+            expectedValue.getBytes("utf8")
+        );
         KafkaProducer<String, byte[]> producer = server.getKafkaProducer();
         Future<RecordMetadata> future = producer.send(producerRecord);
         producer.flush();
@@ -86,7 +95,7 @@ public class KafkaTestServerTest {
 
         KafkaStream<byte[], byte[]> stream =  consumerMap.get(topicName).get(0);
         ConsumerIterator<byte[], byte[]> it = stream.iterator();
-        for (int x=0; x<5; x++) {
+        for (int x = 0; x < 5; x++) {
             if (it.hasNext()) {
                 break;
             }

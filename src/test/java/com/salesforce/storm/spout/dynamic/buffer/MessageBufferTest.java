@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Lists;
@@ -53,6 +54,9 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNull;
 
+/**
+ * Generally test the {@link MessageBuffer} interface's surface area.
+ */
 @RunWith(DataProviderRunner.class)
 public class MessageBufferTest {
 
@@ -101,7 +105,7 @@ public class MessageBufferTest {
         // Create some threads
         final List<CompletableFuture> futures = Lists.newArrayList();
         final CountDownLatch countDownLatch = new CountDownLatch(numberOfThreads);
-        for (int threadCount=0; threadCount<numberOfThreads; threadCount++) {
+        for (int threadCount = 0; threadCount < numberOfThreads; threadCount++) {
             futures.add(CompletableFuture.runAsync(() -> {
                 final Random random = new Random();
                 long longestTimeBlocked = 0L;
@@ -115,9 +119,11 @@ public class MessageBufferTest {
                 }
 
                 final long startTime = System.currentTimeMillis();
-                for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
+                for (int x = 0; x < (numberOfMessagesPer * numberOfVSpoutIds); x++) {
                     // Generate source spout id
-                    final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
+                    final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier(
+                        "srcSpoutId" + random.nextInt(numberOfVSpoutIds)
+                    );
                     final int partition = random.nextInt(10);
 
 
@@ -179,7 +185,7 @@ public class MessageBufferTest {
 
 
         // Poll a bunch, validating nothing else returned
-        for (int x=0; x<1024; x++) {
+        for (int x = 0; x < 1024; x++) {
             assertNull("Should be null", messageBuffer.poll());
         }
 

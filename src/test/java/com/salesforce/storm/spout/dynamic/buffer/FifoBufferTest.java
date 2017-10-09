@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Lists;
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertNull;
  */
 @RunWith(DataProviderRunner.class)
 public class FifoBufferTest {
+
     /**
      * Basically just tests that this does FIFO.
      * Kind of silly.
@@ -78,9 +80,11 @@ public class FifoBufferTest {
         Random random = new Random();
 
         // Generate messages
-        for (int x=0; x<(numberOfMessagesPer * numberOfVSpoutIds); x++) {
+        for (int x = 0; x < (numberOfMessagesPer * numberOfVSpoutIds); x++) {
             // Generate source spout id
-            final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier("srcSpoutId" + random.nextInt(numberOfVSpoutIds));
+            final DefaultVirtualSpoutIdentifier sourceSpoutId = new DefaultVirtualSpoutIdentifier(
+                "srcSpoutId" + random.nextInt(numberOfVSpoutIds)
+            );
             final int partition = random.nextInt(10);
 
 
@@ -107,7 +111,10 @@ public class FifoBufferTest {
             assertEquals("Objects should be the same", originalKafkaMsg, bufferedMsg);
 
             // Validate the contents are the same
-            assertEquals("Source Spout Id should be equal", originalKafkaMsg.getMessageId().getSrcVirtualSpoutId(), bufferedMsg.getMessageId().getSrcVirtualSpoutId());
+            assertEquals(
+                "Source Spout Id should be equal",
+                originalKafkaMsg.getMessageId().getSrcVirtualSpoutId(), bufferedMsg.getMessageId().getSrcVirtualSpoutId()
+            );
             assertEquals("partitions should be equal", originalKafkaMsg.getPartition(), bufferedMsg.getPartition());
             assertEquals("offsets should be equal", originalKafkaMsg.getOffset(), bufferedMsg.getOffset());
             assertEquals("namespace should be equal", originalKafkaMsg.getNamespace(), bufferedMsg.getNamespace());
@@ -116,7 +123,7 @@ public class FifoBufferTest {
         }
 
         // Validate that the next polls are all null
-        for (int x=0; x<64; x++) {
+        for (int x = 0; x < 64; x++) {
             assertNull("Should be null", messageBuffer.poll());
         }
     }

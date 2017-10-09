@@ -22,9 +22,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.google.common.collect.Lists;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.junit.Test;
 
 import java.util.List;
@@ -32,6 +34,9 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+/**
+ * Validates that we have some sane default settings.
+ */
 public class KafkaConsumerConfigTest {
 
     /**
@@ -58,7 +63,14 @@ public class KafkaConsumerConfigTest {
         assertEquals("autocommit set to false", "false", config.getKafkaConsumerProperty("enable.auto.commit"));
         assertEquals("group.id set", consumerId, config.getKafkaConsumerProperty("group.id"));
         assertEquals("auto.offset.reset set to none", "none", config.getKafkaConsumerProperty("auto.offset.reset"));
-        assertEquals("Key Deserializer set to bytes deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer", config.getKafkaConsumerProperty("key.deserializer"));
-        assertEquals("Value Deserializer set to bytes deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer", config.getKafkaConsumerProperty("value.deserializer"));
+        assertEquals(
+            "Key Deserializer set to bytes deserializer",
+            ByteArrayDeserializer.class.getName(),
+            config.getKafkaConsumerProperty("key.deserializer"));
+        assertEquals(
+            "Value Deserializer set to bytes deserializer",
+            ByteArrayDeserializer.class.getName(),
+            config.getKafkaConsumerProperty("value.deserializer")
+        );
     }
 }

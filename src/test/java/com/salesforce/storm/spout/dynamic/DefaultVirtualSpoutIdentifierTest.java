@@ -22,16 +22,21 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
+/**
+ * Test that {@link DefaultVirtualSpoutIdentifier}'s can be created correctly.
+ */
 public class DefaultVirtualSpoutIdentifierTest {
 
     /**
-     * Test that two identifiers created with the same string match
+     * Test that two identifiers created with the same string match.
      * @throws Exception Bad identifier
      */
     @Test
@@ -43,7 +48,7 @@ public class DefaultVirtualSpoutIdentifierTest {
     }
 
     /**
-     * Test that two identifiers that are different do not match
+     * Test that two identifiers that are different do not match.
      * @throws Exception Bad identifier
      */
     @Test
@@ -56,7 +61,7 @@ public class DefaultVirtualSpoutIdentifierTest {
     }
 
     /**
-     * Test that supplying null will throw an exception
+     * Test that supplying null will throw an exception.
      */
     @Test(expected = IllegalArgumentException.class)
     public void test_nullIdentifier() {
@@ -64,7 +69,7 @@ public class DefaultVirtualSpoutIdentifierTest {
     }
 
     /**
-     * Test that supplying an empty string will throw an exception
+     * Test that supplying an empty string will throw an exception.
      */
     @Test(expected = IllegalArgumentException.class)
     public void test_emptyIdentifier() {

@@ -22,7 +22,8 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.storm.spout.dynamic.handler;
+
+package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
@@ -33,18 +34,20 @@ import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
-import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
 
+/**
+ * Test that the {@link SidelineVirtualSpoutHandler} completes sidelines correctly.
+ */
 public class SidelineVirtualSpoutHandlerTest {
 
     /**
-     * Test that upon completion of a virtual spout, the sideline state is properly cleaned up
+     * Test that upon completion of a virtual spout, the sideline state is properly cleaned up.
      */
     @Test
     public void testOnVirtualSpoutCompletion() {

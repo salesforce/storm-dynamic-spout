@@ -396,7 +396,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return The factory manager instance.
      */
     public FactoryManager getFactoryManager() {
-        // No need to check if the spout is opened because this is setup inside of the contructor
+        // No need to check if the spout is opened because this is setup inside of the constructor
         return factoryManager;
     }
 

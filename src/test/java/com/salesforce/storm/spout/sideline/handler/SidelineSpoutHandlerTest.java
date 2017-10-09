@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
@@ -43,7 +44,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
-import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,12 +58,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+/**
+ * Test that {@link SidelineSpoutHandler} opens, closes  and resumes sidelines correctly.
+ */
 public class SidelineSpoutHandlerTest {
 
     /**
-     * Test the open method properly stores the spout's config
+     * Test the open method properly stores the spout's config.
      */
     @Test
     public void testOpen() {
@@ -194,7 +200,7 @@ public class SidelineSpoutHandlerTest {
     }
 
     /**
-     * Test that when start sidelining is called the firehose gets a new filter from the sideline request
+     * Test that when start sidelining is called the firehose gets a new filter from the sideline request.
      */
     @Test
     public void testStartSidelining() {
@@ -368,11 +374,12 @@ public class SidelineSpoutHandlerTest {
         assertEquals(0, sidelineSpoutHandler.getSidelineTriggers().size());
     }
 
-    /**
-     * Test that we get a runtime exception when we configure a class that doesn't utilize our interfaces
-     */
     @Rule
     public ExpectedException expectedExceptionMisconfiguredCreateStartingTrigger = ExpectedException.none();
+
+    /**
+     * Test that we get a runtime exception when we configure a class that doesn't utilize our interfaces.
+     */
     @Test
     public void testMisconfiguredCreateSidelineTriggers() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
@@ -414,7 +421,9 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.open(config);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
-        final VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateSidelineVirtualSpoutId(expectedSidelineRequestIdentifier);
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateSidelineVirtualSpoutId(
+            expectedSidelineRequestIdentifier
+        );
 
         assertTrue(virtualSpoutIdentifier instanceof SidelineVirtualSpoutIdentifier);
 

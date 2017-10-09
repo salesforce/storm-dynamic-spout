@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -37,8 +38,12 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Test that {@link PartitionOffsetManager} accurately tracks messages by partition.
+ */
 @RunWith(DataProviderRunner.class)
 public class PartitionOffsetManagerTest {
+
     private static final Logger logger = LoggerFactory.getLogger(PartitionOffsetManagerTest.class);
 
     /**
@@ -52,7 +57,7 @@ public class PartitionOffsetManagerTest {
         final PartitionOffsetManager offsetManager = new PartitionOffsetManager("Test Topic", 1, 0L);
 
         // Loop through some offsets
-        for (int currentOffset=0; currentOffset<maxOffset; currentOffset++) {
+        for (int currentOffset = 0; currentOffset < maxOffset; currentOffset++) {
             // Start the current offset
             offsetManager.startOffset(currentOffset);
 
@@ -220,7 +225,7 @@ public class PartitionOffsetManagerTest {
         // Generate out of order numbers
         Random random = new Random();
         int[] randomNumbers = new int[totalNumbers];
-        for (int x=0; x<totalNumbers; x++) {
+        for (int x = 0; x < totalNumbers; x++) {
             int nextNumber = random.nextInt(spread);
             randomNumbers[x] = x + nextNumber;
         }
@@ -234,14 +239,14 @@ public class PartitionOffsetManagerTest {
 
         // Start tracking from ordered ist
         long start = System.currentTimeMillis();
-        for (int x=0; x<totalNumbers; x++) {
+        for (int x = 0; x < totalNumbers; x++) {
             offsetManager.startOffset(sortedNumbers[x]);
         }
         logger.info("Finished starting {} in {} ms ", totalNumbers, (System.currentTimeMillis() - start));
 
         // Now start acking
         start = System.currentTimeMillis();
-        for (int x=0; x<totalNumbers; x++) {
+        for (int x = 0; x < totalNumbers; x++) {
             offsetManager.finishOffset(randomNumbers[x]);
         }
         logger.info("Finished acking {} in {} ms ", totalNumbers, (System.currentTimeMillis() - start));

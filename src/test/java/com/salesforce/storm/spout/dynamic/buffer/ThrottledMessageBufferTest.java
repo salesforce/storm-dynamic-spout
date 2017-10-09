@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Sets;
@@ -39,8 +40,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
+/**
+ * Test that {@link ThrottledMessageBuffer} throttles messages between virtual spouts.
+ */
 public class ThrottledMessageBufferTest {
 
     /**
@@ -109,21 +115,21 @@ public class ThrottledMessageBufferTest {
         ThrottledMessageBuffer buffer = createDefaultBuffer(bufferSize, throttledBufferSize, regexPattern);
 
         // Create 3 VSpout Ids
-        VirtualSpoutIdentifier vSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
-        VirtualSpoutIdentifier vSpoutId2 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 1");
-        VirtualSpoutIdentifier vSpoutId3 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 2");
+        VirtualSpoutIdentifier virtualSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
+        VirtualSpoutIdentifier virtualSpoutId2 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 1");
+        VirtualSpoutIdentifier virtualSpoutId3 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 2");
 
         // Notify buffer of our Ids
-        buffer.addVirtualSpoutId(vSpoutId1);
-        buffer.addVirtualSpoutId(vSpoutId2);
-        buffer.addVirtualSpoutId(vSpoutId3);
+        buffer.addVirtualSpoutId(virtualSpoutId1);
+        buffer.addVirtualSpoutId(virtualSpoutId2);
+        buffer.addVirtualSpoutId(virtualSpoutId3);
 
-        Message message1 = createMessage(vSpoutId1, new Values("A", "B"));
-        Message message2 = createMessage(vSpoutId1, new Values("C", "D"));
-        Message message3 = createMessage(vSpoutId1, new Values("E", "F"));
-        Message message4 = createMessage(vSpoutId1, new Values("G", "H"));
+        Message message1 = createMessage(virtualSpoutId1, new Values("A", "B"));
+        Message message2 = createMessage(virtualSpoutId1, new Values("C", "D"));
+        Message message3 = createMessage(virtualSpoutId1, new Values("E", "F"));
+        Message message4 = createMessage(virtualSpoutId1, new Values("G", "H"));
         // We will not be able to add this message to the buffer because we will have reached out max size
-        Message message5 = createMessage(vSpoutId1, new Values("I", "J"));
+        Message message5 = createMessage(virtualSpoutId1, new Values("I", "J"));
 
         // Add messages, these will not be throttled because the buffer has room
         buffer.put(message1);

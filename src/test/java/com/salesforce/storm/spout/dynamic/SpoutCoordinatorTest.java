@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
@@ -49,9 +50,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
+ */
 public class SpoutCoordinatorTest {
     private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
 
+    /**
+     * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
+     */
     @Test
     public void testCoordinator() throws Exception {
         // How often we want the monitor thread to run
@@ -160,11 +167,12 @@ public class SpoutCoordinatorTest {
         assertTrue("Executor is terminated", coordinator.getExecutor().isTerminated());
     }
 
+    @Rule
+    public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
+
     /**
      * Test that if we try to add a spout before the coordinator is open it'll blow up.
      */
-    @Rule
-    public ExpectedException expectedExceptionAddingSpoutBeforeOpen = ExpectedException.none();
     @Test
     public void testAddingSpoutBeforeOpen() {
         final FifoBuffer messageBuffer = FifoBuffer.createDefaultInstance();
@@ -184,11 +192,12 @@ public class SpoutCoordinatorTest {
         coordinator.addVirtualSpout(new MockDelegateSpout());
     }
 
-    /**
-     * Test that adding a spout with the same id will throw an exception
-     */
     @Rule
     public ExpectedException expectedExceptionAddDuplicateSpout = ExpectedException.none();
+
+    /**
+     * Test that adding a spout with the same id will throw an exception.
+     */
     @Test
     public void testAddDuplicateSpout() {
         final FifoBuffer messageBuffer = FifoBuffer.createDefaultInstance();

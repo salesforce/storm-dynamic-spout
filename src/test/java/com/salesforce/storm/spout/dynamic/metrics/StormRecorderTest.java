@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -44,6 +45,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test that {@link StormRecorder} captures metrics.
+ */
 public class StormRecorderTest {
     private static final Logger logger = LoggerFactory.getLogger(StormRecorderTest.class);
 
@@ -246,5 +250,4 @@ public class StormRecorderTest {
         assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
         assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
     }
-
 }

@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.utils;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -41,6 +42,14 @@ public class ProducedKafkaRecord<K, V> {
     private final K key;
     private final V value;
 
+    /**
+     * Create a new instance of a produced kafka record.
+     * @param topic topic.
+     * @param partition partition.
+     * @param offset offset.
+     * @param key key.
+     * @param value value.
+     */
     public ProducedKafkaRecord(String topic, int partition, long offset, K key, V value) {
         this.topic = topic;
         this.partition = partition;
@@ -49,6 +58,12 @@ public class ProducedKafkaRecord<K, V> {
         this.value = value;
     }
 
+    /**
+     * Create a new instance of a produced kafka record.
+     * @param recordMetadata record metadata.
+     * @param producerRecord original producer record.
+     * @return producer kafka record instance.
+     */
     public static <K,V> ProducedKafkaRecord<K,V> newInstance(RecordMetadata recordMetadata, ProducerRecord<K,V> producerRecord) {
         return new ProducedKafkaRecord<K,V>(
             recordMetadata.topic(),

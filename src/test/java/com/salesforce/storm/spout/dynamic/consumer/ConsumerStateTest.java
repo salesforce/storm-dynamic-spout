@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.google.common.collect.Maps;
@@ -39,7 +40,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test that {@link ConsumerState} can be constructed, is immutable and reflects the data provided it.
+ */
 public class ConsumerStateTest {
+
     /**
      * By default, no exceptions should be thrown.
      */
@@ -84,7 +89,11 @@ public class ConsumerStateTest {
         assertFalse("Shouldn't be equal", consumerState.equals(consumerState2));
 
         // And just for completeness.
-        assertEquals("Has expected offset", expectedOffset, (long) consumerState2.getOffsetForNamespaceAndPartition(expectedTopicPartition));
+        assertEquals(
+            "Has expected offset",
+            expectedOffset, (long)
+                consumerState2.getOffsetForNamespaceAndPartition(expectedTopicPartition)
+        );
         assertEquals("Has expected offset", 23L, (long) consumerState2.getOffsetForNamespaceAndPartition(topicPartition2));
         assertEquals("Has expected offset", 4423L, (long) consumerState2.getOffsetForNamespaceAndPartition(topicPartition3));
         assertEquals("Size should be 3", 3, consumerState2.size());

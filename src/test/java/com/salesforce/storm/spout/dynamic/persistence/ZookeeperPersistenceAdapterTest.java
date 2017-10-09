@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.persistence;
 
 import com.google.common.base.Charsets;
@@ -96,12 +97,13 @@ public class ZookeeperPersistenceAdapterTest {
         zkServer.close();
     }
 
+    @Rule
+    public ExpectedException expectedExceptionOpenMissingConfigForZkRootNode = ExpectedException.none();
+
     /**
      * Tests that if you're missing the configuration item for ZkRootNode it will throw
      * an IllegalStateException.
      */
-    @Rule
-    public ExpectedException expectedExceptionOpenMissingConfigForZkRootNode = ExpectedException.none();
     @Test
     public void testOpenMissingConfigForZkRootNode() {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
@@ -143,8 +145,14 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals("Unexpected zk root string", expectedZkRoot, persistenceAdapter.getZkRoot());
 
         // Validate that getZkXXXXStatePath returns the expected value
-        assertEquals("Unexpected zkConsumerStatePath returned", expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePath(expectedConsumerId, partitionId));
-        assertEquals("Unexpected zkRequestStatePath returned", expectedZkRequestStatePath, persistenceAdapter.getZkRequestStatePath(expectedConsumerId, partitionId));
+        assertEquals(
+            "Unexpected zkConsumerStatePath returned",
+            expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePath(expectedConsumerId, partitionId)
+        );
+        assertEquals(
+            "Unexpected zkRequestStatePath returned",
+            expectedZkRequestStatePath, persistenceAdapter.getZkRequestStatePath(expectedConsumerId, partitionId)
+        );
 
         // Close everyone out
         persistenceAdapter.close();
@@ -244,7 +252,8 @@ public class ZookeeperPersistenceAdapterTest {
      * 5 - Read the stored value directly out of zookeeper and verify the right thing got written.
      */
     @Test
-    public void testEndToEndConsumerStatePersistenceWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
+    public void testEndToEndConsumerStatePersistenceWithValidationWithIndependentZkClient()
+        throws IOException, KeeperException, InterruptedException {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
@@ -306,7 +315,11 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals("Child Node name not correct", consumerId, childNodeName);
 
         // 5. Grab the value and validate it
-        final byte[] storedDataBytes = zookeeperClient.getData(zkConsumersRootNodePath + "/" + consumerId + "/" + String.valueOf(partitionId), false, null);
+        final byte[] storedDataBytes = zookeeperClient.getData(
+            zkConsumersRootNodePath + "/" + consumerId + "/" + String.valueOf(partitionId),
+            false,
+            null
+        );
         logger.debug("Stored data bytes {}", storedDataBytes);
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
@@ -348,7 +361,8 @@ public class ZookeeperPersistenceAdapterTest {
      * 5 - Read the stored value directly out of zookeeper and verify the right thing got written.
      */
     @Test
-    public void testEndToEndConsumerStatePersistenceMultipleValuesWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
+    public void testEndToEndConsumerStatePersistenceMultipleValuesWithValidationWithIndependentZkClient()
+        throws IOException, KeeperException, InterruptedException {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
@@ -616,7 +630,8 @@ public class ZookeeperPersistenceAdapterTest {
      * 5 - Read the stored value directly out of zookeeper and verify the right thing got written.
      */
     @Test
-    public void testEndToEndRequestStatePersistenceWithValidationWithIndependentZkClient() throws IOException, KeeperException, InterruptedException {
+    public void testEndToEndRequestStatePersistenceWithValidationWithIndependentZkClient()
+        throws IOException, KeeperException, InterruptedException {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
@@ -724,11 +739,12 @@ public class ZookeeperPersistenceAdapterTest {
         zookeeperClient.close();
     }
 
+    @Rule
+    public ExpectedException expectedExceptionPersistConsumerStateBeforeBeingOpened = ExpectedException.none();
+
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
-    @Rule
-    public ExpectedException expectedExceptionPersistConsumerStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testPersistConsumerStateBeforeBeingOpened() {
         final int partitionId = 1;
@@ -741,11 +757,12 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.persistConsumerState("MyConsumerId", partitionId, 100L);
     }
 
+    @Rule
+    public ExpectedException expectedExceptionRetrieveConsumerStateBeforeBeingOpened = ExpectedException.none();
+
     /**
      * Verify we get an exception if you try to retrieve before calling open().
      */
-    @Rule
-    public ExpectedException expectedExceptionRetrieveConsumerStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testRetrieveConsumerStateBeforeBeingOpened() {
         final int partitionId = 1;
@@ -758,11 +775,12 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.retrieveConsumerState("MyConsumerId", partitionId);
     }
 
+    @Rule
+    public ExpectedException expectedExceptionClearConsumerStateBeforeBeingOpened = ExpectedException.none();
+
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
-    @Rule
-    public ExpectedException expectedExceptionClearConsumerStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testClearConsumerStateBeforeBeingOpened() {
         final int partitionId = 1;
@@ -775,11 +793,12 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.clearConsumerState("MyConsumerId", partitionId);
     }
 
+    @Rule
+    public ExpectedException expectedExceptionPersistSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
+
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
-    @Rule
-    public ExpectedException expectedExceptionPersistSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testPersistSidelineRequestStateBeforeBeingOpened() {
         // Create our instance
@@ -792,11 +811,12 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, 0, 1L, 2L);
     }
 
+    @Rule
+    public ExpectedException expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
+
     /**
      * Verify we get an exception if you try to retrieve before calling open().
      */
-    @Rule
-    public ExpectedException expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testRetrieveSidelineRequestStateBeforeBeingOpened() {
         // Create our instance
@@ -807,11 +827,12 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier(), 0);
     }
 
+    @Rule
+    public ExpectedException expectedExceptionClearSidelineRequestBeforeBeingOpened = ExpectedException.none();
+
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
-    @Rule
-    public ExpectedException expectedExceptionClearSidelineRequestBeforeBeingOpened = ExpectedException.none();
     @Test
     public void testClearSidelineRequestBeforeBeingOpened() {
         // Create our instance
@@ -861,7 +882,7 @@ public class ZookeeperPersistenceAdapterTest {
     }
 
     /**
-     * Test that given a sideline request we receive a set of partition ids for it
+     * Test that given a sideline request we receive a set of partition ids for it.
      */
     @Test
     public void testListSidelineRequestPartitions() {

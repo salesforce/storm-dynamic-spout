@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -34,11 +35,14 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertArrayEquals;
 
+/**
+ * Test that {@link PartitionDistributor} properly distributes partitions across a set of instances.
+ */
 @RunWith(DataProviderRunner.class)
 public class PartitionDistributorTest {
 
     /**
-     * Test that given a number of consumer instances the current instance gets distributed the correct set of partition ids
+     * Test that given a number of consumer instances the current instance gets distributed the correct set of partition ids.
      * @param totalConsumers Total number of consumers
      * @param consumerIndex Current consumer instance index
      * @param allPartitionIds All partition ids to be distributed from
@@ -63,6 +67,10 @@ public class PartitionDistributorTest {
         );
     }
 
+    /**
+     * Provide test data.
+     * @return test data.
+     */
     @DataProvider
     public static Object[][] dataProvider() {
         return new Object[][]{
@@ -79,14 +87,14 @@ public class PartitionDistributorTest {
         };
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances = ExpectedException.none();
+
     /**
      * Test that when we have more consumer instances than partition ids that an exception is thrown.
      */
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithMorePartitionsThanInstances() {
-
         // We expect exceptions on this one.
         expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances.expect(IllegalArgumentException.class);
         expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances.expectMessage("partitions");
@@ -101,11 +109,13 @@ public class PartitionDistributorTest {
         );
     }
 
+    @Rule
+    @SuppressWarnings("checkstyle:linelength")
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers = ExpectedException.none();
+
     /**
      * Test that when we have an invalid consumerIndex, we toss an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers() {
 
@@ -123,11 +133,12 @@ public class PartitionDistributorTest {
         );
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero = ExpectedException.none();
+
     /**
      * Test that when we have a negative consumerIndex value we toss an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexBelowZero() {
 
@@ -145,11 +156,12 @@ public class PartitionDistributorTest {
         );
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero = ExpectedException.none();
+
     /**
      * Test that when we have a zero total consumers value that we toss an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithTotalConsumersZero() {
 
@@ -167,11 +179,12 @@ public class PartitionDistributorTest {
         );
     }
 
+    @Rule
+    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative = ExpectedException.none();
+
     /**
      * Test that when we have a negative total consumers value that we toss an exception.
      */
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative = ExpectedException.none();
     @Test
     public void testCalculatePartitionAssignmentWithTotalConsumersNegative() {
 

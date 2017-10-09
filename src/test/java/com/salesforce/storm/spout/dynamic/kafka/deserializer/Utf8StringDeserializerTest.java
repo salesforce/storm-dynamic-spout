@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
 import com.google.common.base.Charsets;
@@ -35,6 +36,7 @@ import static org.junit.Assert.assertEquals;
  * Test over Utf8StringDeserializer.
  */
 public class Utf8StringDeserializerTest {
+
     /**
      * Validates that we can deserialize.
      */
@@ -42,14 +44,22 @@ public class Utf8StringDeserializerTest {
     public void testDeserializeWithConsumerRecord() {
         // Define inputs
         final String expectedKey = "This is My Key";
+        //CHECKSTYLE:OFF: AvoidEscapedUnicodeCharacters - We actually want unicode here...
         final String expectedValue = "This is my message \uD83D\uDCA9";
+        //CHECKSTYLE:ON
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 34;
         final long expectedOffset = 31337L;
 
         // Attempt to deserialize.
         final Deserializer deserializer = new Utf8StringDeserializer();
-        final Values deserializedValues = deserializer.deserialize(expectedTopic, expectedPartition, expectedOffset, expectedKey.getBytes(Charsets.US_ASCII), expectedValue.getBytes(Charsets.UTF_8));
+        final Values deserializedValues = deserializer.deserialize(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            expectedKey.getBytes(Charsets.US_ASCII),
+            expectedValue.getBytes(Charsets.UTF_8)
+        );
 
         assertEquals("Values has 2 entries", 2, deserializedValues.size());
         assertEquals("Got expected key", expectedKey, deserializedValues.get(0));

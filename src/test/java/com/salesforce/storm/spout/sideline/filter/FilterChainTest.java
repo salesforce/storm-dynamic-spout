@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.sideline.filter;
 
 import com.salesforce.storm.spout.dynamic.Message;
@@ -34,10 +35,13 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test that a {@link FilterChain} processes a set of filters correctly.
+ */
 public class FilterChainTest {
 
     /**
-     * Test that each step of a chain is processed using a string
+     * Test that each step of a chain is processed using a string.
      */
     @Test
     public void testChain() {
@@ -83,7 +87,7 @@ public class FilterChainTest {
     }
 
     /**
-     * Test that each step of a chain is processed using a string
+     * Test that each step of a chain is processed using a string.
      */
     @Test
     public void testNegatingChain() {
@@ -108,14 +112,20 @@ public class FilterChainTest {
         assertFalse(filterChain.filter(message2));
     }
 
-    public static class NumberFilter implements FilterChainStep {
+    private static class NumberFilter implements FilterChainStep {
 
-        final private int number;
+        private final int number;
 
-        public NumberFilter(final int number) {
+        NumberFilter(final int number) {
             this.number = number;
         }
 
+        /**
+         * Filter a message.
+         * @param message The filter to be processed by this step of the chain.
+         * @return true if the message should be filtered, false otherwise.
+         */
+        @Override
         public boolean filter(Message message) {
             Integer messageNumber = (Integer) message.getValues().get(0);
             // Filter them if they don't match, in other words "not" equals

@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.retry;
 
 import com.google.common.collect.Maps;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- *
+ * Test that failed tuples are retried as soon as they can be.
  */
 public class FailedTuplesFirstRetryManagerTest {
 
@@ -145,11 +146,15 @@ public class FailedTuplesFirstRetryManagerTest {
 
     /**
      * Helper method.
-     * @param retryManager
-     * @param messageId
-     * @param expectedToBeInFlight
+     * @param retryManager retry manager instance.
+     * @param messageId message id.
+     * @param expectedToBeInFlight  whether or not the message is expected to be in flight.
      */
-    private void validateExpectedFailedMessageId(FailedTuplesFirstRetryManager retryManager, MessageId messageId, boolean expectedToBeInFlight) {
+    private void validateExpectedFailedMessageId(
+        FailedTuplesFirstRetryManager retryManager,
+        MessageId messageId,
+        boolean expectedToBeInFlight
+    ) {
         // Find its queue
         assertTrue("Queue should contain our tuple messageId", retryManager.getFailedMessageIds().contains(messageId));
 

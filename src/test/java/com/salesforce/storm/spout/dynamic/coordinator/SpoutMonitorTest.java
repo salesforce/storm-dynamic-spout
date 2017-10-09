@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.google.common.collect.Lists;
@@ -67,12 +68,20 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ *  Test that the {@link SpoutMonitor} detects new spouts and manages {@link SpoutRunner} instances for them.
+ */
 public class SpoutMonitorTest {
+
     private static final Logger logger = LoggerFactory.getLogger(SpoutMonitorTest.class);
     private static final int maxWaitTime = 5;
 
     private ThreadPoolExecutor executorService;
 
+    /**
+     * Shutdown the thread executor service when the test is all over.
+     * @throws InterruptedException something went wrong.
+     */
     @After
     public void shutDown() throws InterruptedException {
         // Shut down our executor service if it exists
@@ -132,7 +141,10 @@ public class SpoutMonitorTest {
         assertEquals("TopologyConfig looks legit", topologyConfig, spoutMonitor.getTopologyConfig());
         assertEquals("getMonitorThreadIntervalMs() returns right value", monitorInterval, spoutMonitor.getMonitorThreadIntervalMs());
         assertEquals("getMaxTerminationWaitTimeMs() returns right value", maxShutdownTime, spoutMonitor.getMaxTerminationWaitTimeMs());
-        assertEquals("getMaxConcurrentVirtualSpouts() returns right value", maxConcurrentSpouts, spoutMonitor.getMaxConcurrentVirtualSpouts());
+        assertEquals(
+            "getMaxConcurrentVirtualSpouts() returns right value",
+            maxConcurrentSpouts, spoutMonitor.getMaxConcurrentVirtualSpouts()
+        );
         assertTrue("KeepRunning should default to true", spoutMonitor.keepRunning());
         assertEquals("getMetricsRecorder returns right value", metricsRecorder, spoutMonitor.getMetricsRecorder());
 
@@ -161,7 +173,7 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
 
         // call run in async thread.
-        CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -197,10 +209,10 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
 
         // Our new spout queue
-        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        final Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -268,10 +280,10 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         // Our new spout queue
-        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        final Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -346,7 +358,7 @@ public class SpoutMonitorTest {
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
-        for (int x=0; x<maxConccurentInstances + 2; x++) {
+        for (int x = 0; x < maxConccurentInstances + 2; x++) {
             mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
 
@@ -354,7 +366,7 @@ public class SpoutMonitorTest {
         Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -380,13 +392,16 @@ public class SpoutMonitorTest {
         assertEquals("Only configured max running concurrently", maxConccurentInstances, spoutMonitor.getExecutor().getActiveCount());
 
         // The difference should be queued
-        assertEquals("Should have some queued instances", (mockSpouts.size() - maxConccurentInstances), spoutMonitor.getExecutor().getQueue().size());
+        assertEquals(
+            "Should have some queued instances",
+            (mockSpouts.size() - maxConccurentInstances), spoutMonitor.getExecutor().getQueue().size()
+        );
 
         // Add additional sleep time, just so logs show up
         Thread.sleep(testWaitTime);
 
         // On spouts that should have run
-        for (int x=0; x<maxConccurentInstances; x++) {
+        for (int x = 0; x < maxConccurentInstances; x++) {
             final MockDelegateSpout mockSpout = mockSpouts.get(x);
             assertTrue("open() should have been called", mockSpout.wasOpenCalled);
         }
@@ -403,7 +418,7 @@ public class SpoutMonitorTest {
                 .until(future::isDone, equalTo(true));
 
         // Verify close was called on running spouts
-        for (int x=0; x<mockSpouts.size(); x++) {
+        for (int x = 0; x < mockSpouts.size(); x++) {
             final MockDelegateSpout mockSpout = mockSpouts.get(x);
 
             // If it was a running spout instance
@@ -436,7 +451,7 @@ public class SpoutMonitorTest {
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
-        for (int x=0; x<maxConccurentInstances + 1; x++) {
+        for (int x = 0; x < maxConccurentInstances + 1; x++) {
             mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
 
@@ -444,7 +459,7 @@ public class SpoutMonitorTest {
         Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -470,13 +485,16 @@ public class SpoutMonitorTest {
         assertEquals("Only configured max running concurrently", maxConccurentInstances, spoutMonitor.getExecutor().getActiveCount());
 
         // The difference should be queued
-        assertEquals("Should have some queued instances", (mockSpouts.size() - maxConccurentInstances), spoutMonitor.getExecutor().getQueue().size());
+        assertEquals(
+            "Should have some queued instances",
+            (mockSpouts.size() - maxConccurentInstances), spoutMonitor.getExecutor().getQueue().size()
+        );
 
         // Add additional sleep time, just so logs show up
         Thread.sleep(testWaitTime);
 
         // On spouts that should have run
-        for (int x=0; x<maxConccurentInstances; x++) {
+        for (int x = 0; x < maxConccurentInstances; x++) {
             final MockDelegateSpout mockSpout = mockSpouts.get(x);
             assertTrue("open() should have been called", mockSpout.wasOpenCalled);
         }
@@ -498,7 +516,7 @@ public class SpoutMonitorTest {
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(() -> {
-                    return notStartedSpout.wasOpenCalled;
+                return notStartedSpout.wasOpenCalled;
             }, equalTo(true));
 
         // Now call close on spout monitor
@@ -537,10 +555,10 @@ public class SpoutMonitorTest {
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
 
         // Our new spout queue
-        Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
+        final Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
-        CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);

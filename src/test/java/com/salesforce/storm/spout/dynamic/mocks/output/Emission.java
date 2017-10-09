@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.mocks.output;
 
 import org.apache.storm.tuple.Tuple;
@@ -41,6 +42,15 @@ public class Emission {
     private final Collection<Tuple> anchors;
     private final List<Object> tuple;
 
+    /**
+     * This class is used to hold all arguments from a single call to the emit() function (or one of its variants).
+     * It is used by MockOutputCollector which holds an array of this class (called emissions) to store, in order, all
+     * the emit() calls it receives during a test.
+     * @param taskId task id.
+     * @param streamId stream id.
+     * @param anchors anchors.
+     * @param tuple tuple.
+     */
     public Emission(int taskId, String streamId, Collection<Tuple> anchors, List<Object> tuple) {
         this.taskId = taskId;
         this.streamId = streamId;
@@ -48,6 +58,14 @@ public class Emission {
         this.tuple = tuple;
     }
 
+    /**
+     * This class is used to hold all arguments from a single call to the emit() function (or one of its variants).
+     * It is used by MockOutputCollector which holds an array of this class (called emissions) to store, in order, all
+     * the emit() calls it receives during a test.
+     * @param streamId stream id.
+     * @param anchors anchors.
+     * @param tuple tuple.
+     */
     public Emission(String streamId, Collection<Tuple> anchors, List<Object> tuple) {
         this(0, streamId, anchors, tuple);
     }
@@ -78,11 +96,11 @@ public class Emission {
 
     @Override
     public String toString() {
-        return "Emission{" +
-                "taskId=" + taskId +
-                ", streamId='" + streamId + '\'' +
-                ", anchors=" + anchors +
-                ", tuple=" + tuple +
-                '}';
+        return "Emission{"
+            + "taskId=" + taskId
+            + ", streamId='" + streamId + '\''
+            + ", anchors=" + anchors
+            + ", tuple=" + tuple
+            + '}';
     }
 }

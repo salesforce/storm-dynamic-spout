@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka.deserializer.compat;
 
 import com.google.common.collect.Lists;
@@ -49,6 +50,7 @@ public class AbstractSchemeTest {
      */
     @Test
     public void testDeserialize() {
+        @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
         final String value = "This Is My Text\uD83D\uDC7B";
         final byte[] valueBytes = value.getBytes(Charsets.UTF_8);
 
@@ -94,7 +96,13 @@ public class AbstractSchemeTest {
         myScheme.setReturnNull(true);
 
         // Attempt to deserialize
-        final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(Charsets.UTF_8), "value".getBytes(Charsets.UTF_8));
+        final Values myValues = myScheme.deserialize(
+            "TopicName",
+            2,
+            2222L,
+            "Key".getBytes(Charsets.UTF_8),
+            "value".getBytes(Charsets.UTF_8)
+        );
 
         // Validate
         assertNull("Should pass the null through", myValues);

@@ -61,7 +61,7 @@
         <!-- test toggling -->
         <skipTests>false</skipTests>
         <skipCodeCoverage>true</skipCodeCoverage>
-        <skipCheckStyle>true</skipCheckStyle>
+        <skipCheckStyle>false</skipCheckStyle>
     </properties>
 
     <dependencies>
@@ -375,6 +375,7 @@
                         <phase>validate</phase><!-- when we need to run checkstyle::check -->
                         <configuration>
                             <configLocation>script/checkstyle-ruleset.xml</configLocation>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <encoding>utf-8</encoding>
                             <consoleOutput>true</consoleOutput>
                             <violationSeverity>warning</violationSeverity>

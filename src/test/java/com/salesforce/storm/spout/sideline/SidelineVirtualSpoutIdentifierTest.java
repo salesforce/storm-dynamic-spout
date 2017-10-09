@@ -22,15 +22,20 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.sideline;
 
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
+/**
+ * Test {@link SidelineVirtualSpoutIdentifier} work correctly.
+ */
 public class SidelineVirtualSpoutIdentifierTest {
 
     /**

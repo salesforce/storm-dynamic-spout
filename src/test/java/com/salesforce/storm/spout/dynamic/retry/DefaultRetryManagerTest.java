@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.retry;
 
 import com.google.common.collect.Maps;
@@ -43,6 +44,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Test that the {@link DefaultRetryManager} retries tuples.
+ */
 public class DefaultRetryManagerTest {
     /**
      * Used to mock the system clock.
@@ -67,10 +71,10 @@ public class DefaultRetryManagerTest {
         final int expectedMaxRetries = 44;
         final long expectedMinRetryTimeMs = 4455;
         final double expectedDelayMultiplier = 4.56;
-        final long expectedMaxDelayMS = 1000;
+        final long expectedMaxDelayMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, expectedMaxDelayMS);
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, expectedMaxDelayMs);
 
         // Create instance and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
@@ -79,7 +83,7 @@ public class DefaultRetryManagerTest {
         assertEquals("Wrong max retries", expectedMaxRetries, retryManager.getRetryLimit());
         assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getInitialRetryDelayMs());
         assertEquals("Wrong retry time", expectedDelayMultiplier, retryManager.getRetryDelayMultiplier(), 0.001);
-        assertEquals("Wrong retry time", expectedMaxDelayMS, retryManager.getRetryDelayMaxMs());
+        assertEquals("Wrong retry time", expectedMaxDelayMs, retryManager.getRetryDelayMaxMs());
     }
 
     /**
@@ -326,13 +330,13 @@ public class DefaultRetryManagerTest {
         // Define our tuple message id
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
-        for (int x=0; x<100; x++) {
+        for (int x = 0; x < 100; x++) {
             assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(messageId));
         }
     }
 
     /**
-     * Tests retryFurther always returns true if maxRetries is configured to a value less than 0
+     * Tests retryFurther always returns true if maxRetries is configured to a value less than 0.
      */
     @Test
     public void testRetryFurtherWithMaxRetriesSetNegative() {
@@ -353,7 +357,7 @@ public class DefaultRetryManagerTest {
         // Define our tuple message id
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
-        for (int x=0; x<100; x++) {
+        for (int x = 0;  x < 100; x++) {
             // Fail tuple
             retryManager.failed(messageId);
 
@@ -464,8 +468,20 @@ public class DefaultRetryManagerTest {
         retryManager.failed(messageId2);
 
         // Validate it has first two as failed
-        validateExpectedFailedMessageId(retryManager, messageId1, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
-        validateExpectedFailedMessageId(retryManager, messageId2, 1, (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), false);
+        validateExpectedFailedMessageId(
+            retryManager,
+            messageId1,
+            1,
+            (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)),
+            false
+        );
+        validateExpectedFailedMessageId(
+            retryManager,
+            messageId2,
+            1,
+            (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)),
+            false
+        );
 
         // Ask for the next tuple to retry, should be empty
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
@@ -522,7 +538,9 @@ public class DefaultRetryManagerTest {
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
 
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
-        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), ZoneId.of("UTC")));
+        retryManager.setClock(
+            Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), ZoneId.of("UTC"))
+        );
 
         // Now messageId1 should expire next,
         MessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
@@ -565,22 +583,26 @@ public class DefaultRetryManagerTest {
         validateExpectedFailedMessageId(retryManager, messageId2, 3, thirdRetryTime, false);
     }
 
-    /**
-     * Helper method.
-     * @param retryManager
-     * @param messageId
-     * @param expectedFailCount
-     * @param expectedRetryTime
-     * @param expectedToBeInFlight
-     */
-    private void validateExpectedFailedMessageId(DefaultRetryManager retryManager, MessageId messageId, int expectedFailCount, long expectedRetryTime, boolean expectedToBeInFlight) {
+    private void validateExpectedFailedMessageId(
+        DefaultRetryManager retryManager,
+        MessageId messageId,
+        int expectedFailCount,
+        long expectedRetryTime,
+        boolean expectedToBeInFlight
+    ) {
         // Find its queue
         Queue<MessageId> failQueue = retryManager.getFailedMessageIds().get(expectedRetryTime);
-        assertNotNull("Queue should exist for our retry time of " + expectedRetryTime + " has [" + retryManager.getFailedMessageIds().keySet() + "]", failQueue);
+        assertNotNull(
+            "Queue should exist for our retry time of " + expectedRetryTime + " has [" + retryManager.getFailedMessageIds().keySet() + "]",
+            failQueue
+        );
         assertTrue("Queue should contain our tuple messageId", failQueue.contains(messageId));
 
         // This messageId should have the right number of fails associated with it.
-        assertEquals("Should have expected number of fails", (Integer) expectedFailCount, retryManager.getNumberOfTimesFailed().get(messageId));
+        assertEquals(
+            "Should have expected number of fails",
+            (Integer) expectedFailCount, retryManager.getNumberOfTimesFailed().get(messageId)
+        );
 
         // Should this be marked as in flight?
         assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getRetriesInFlight().contains(messageId));
@@ -606,7 +628,7 @@ public class DefaultRetryManagerTest {
     }
 
     // Helper method
-    private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs, Double delayMultiplier, Long expectedMaxDelayMS) {
+    private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs, Double delayMultiplier, Long expectedMaxDelayMs) {
         Map stormConfig = Maps.newHashMap();
         if (maxRetries != null) {
             stormConfig.put(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT, maxRetries);
@@ -617,8 +639,8 @@ public class DefaultRetryManagerTest {
         if (delayMultiplier != null) {
             stormConfig.put(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER, delayMultiplier);
         }
-        if (expectedMaxDelayMS != null) {
-            stormConfig.put(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMS);
+        if (expectedMaxDelayMs != null) {
+            stormConfig.put(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMs);
         }
         return stormConfig;
     }

@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import org.junit.Test;
@@ -152,8 +153,18 @@ public class MessageIdTest {
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 2;
         final long expectedOffset = 31337L;
-        final MessageId messageId1 = new MessageId(expectedTopic, expectedPartition, expectedOffset, new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId"));
-        final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset, new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId+A"));
+        final MessageId messageId1 = new MessageId(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId")
+        );
+        final MessageId messageId2 = new MessageId(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId+A")
+        );
 
         // Validate not equal
         assertFalse("Should not be equal", messageId1.equals(messageId2));

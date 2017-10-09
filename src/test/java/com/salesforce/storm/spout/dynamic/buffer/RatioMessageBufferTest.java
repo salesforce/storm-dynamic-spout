@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Sets;
@@ -40,8 +41,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 
+/**
+ * Test that {@link RatioMessageBuffer} distributes messages from the buffer according to configured ratios.
+ */
 public class RatioMessageBufferTest {
     private static final Logger logger = LoggerFactory.getLogger(RatioMessageBufferTest.class);
 
@@ -112,22 +118,22 @@ public class RatioMessageBufferTest {
         RatioMessageBuffer buffer = createDefaultBuffer(bufferSize, throttleRatio, regexPattern);
 
         // Create 2 VSpout Ids
-        VirtualSpoutIdentifier vSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
-        VirtualSpoutIdentifier vSpoutId2 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 2");
+        VirtualSpoutIdentifier virtualSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
+        VirtualSpoutIdentifier virtualSpoutId2 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 2");
 
         // Notify buffer of our Ids
-        buffer.addVirtualSpoutId(vSpoutId1);
-        buffer.addVirtualSpoutId(vSpoutId2);
+        buffer.addVirtualSpoutId(virtualSpoutId1);
+        buffer.addVirtualSpoutId(virtualSpoutId2);
 
         // Create 10 messages for Spout 1
         final List<Message> spout1Messages = new ArrayList<>();
-        for (int x=0; x<10; x++) {
-            spout1Messages.add(createMessage(vSpoutId1, new Values(vSpoutId1.toString(), x)));
+        for (int x = 0; x < 10; x++) {
+            spout1Messages.add(createMessage(virtualSpoutId1, new Values(virtualSpoutId1.toString(), x)));
         }
         // Create 5 messages for Spout 2
         final List<Message> spout2Messages = new ArrayList<>();
-        for (int x=0; x<5; x++) {
-            spout2Messages.add(createMessage(vSpoutId2, new Values(vSpoutId2.toString(), x + 1000)));
+        for (int x = 0; x < 5; x++) {
+            spout2Messages.add(createMessage(virtualSpoutId2, new Values(virtualSpoutId2.toString(), x + 1000)));
         }
 
         // Because order of adding messages shouldn't make a difference.
@@ -148,46 +154,47 @@ public class RatioMessageBufferTest {
         List<Message> returnedMessages = new ArrayList<>();
         do {
             returnedMessages.add(buffer.poll());
-        } while (buffer.size() > 0);
+        }
+        while (buffer.size() > 0);
 
         // Now validate we have no more messages
         assertEquals("Empty buffer", 0, buffer.size());
 
         // Validate we got the expected results.  This is kind of painful :/
         // First one should be from vspout 2
-        validateExpectedMessage(returnedMessages.get(0), false, vSpoutId2, 1000 + 0);
+        validateExpectedMessage(returnedMessages.get(0), false, virtualSpoutId2, 1000 + 0);
 
         // 3 from vSpout1
-        validateExpectedMessage(returnedMessages.get(1), false, vSpoutId1, 0);
-        validateExpectedMessage(returnedMessages.get(2), false, vSpoutId1, 1);
-        validateExpectedMessage(returnedMessages.get(3), false, vSpoutId1, 2);
+        validateExpectedMessage(returnedMessages.get(1), false, virtualSpoutId1, 0);
+        validateExpectedMessage(returnedMessages.get(2), false, virtualSpoutId1, 1);
+        validateExpectedMessage(returnedMessages.get(3), false, virtualSpoutId1, 2);
 
         // 1 from vSpout2
-        validateExpectedMessage(returnedMessages.get(4), false, vSpoutId2, 1000 + 1);
+        validateExpectedMessage(returnedMessages.get(4), false, virtualSpoutId2, 1000 + 1);
 
         // 3 from vSpout1
-        validateExpectedMessage(returnedMessages.get(5), false, vSpoutId1, 3);
-        validateExpectedMessage(returnedMessages.get(6), false, vSpoutId1, 4);
-        validateExpectedMessage(returnedMessages.get(7), false, vSpoutId1, 5);
+        validateExpectedMessage(returnedMessages.get(5), false, virtualSpoutId1, 3);
+        validateExpectedMessage(returnedMessages.get(6), false, virtualSpoutId1, 4);
+        validateExpectedMessage(returnedMessages.get(7), false, virtualSpoutId1, 5);
 
         // 1 from vSpout2
-        validateExpectedMessage(returnedMessages.get(8), false, vSpoutId2, 1000 + 2);
+        validateExpectedMessage(returnedMessages.get(8), false, virtualSpoutId2, 1000 + 2);
 
         // 3 from vSpout1
-        validateExpectedMessage(returnedMessages.get(9), false, vSpoutId1, 6);
-        validateExpectedMessage(returnedMessages.get(10), false, vSpoutId1, 7);
-        validateExpectedMessage(returnedMessages.get(11), false, vSpoutId1, 8);
+        validateExpectedMessage(returnedMessages.get(9), false, virtualSpoutId1, 6);
+        validateExpectedMessage(returnedMessages.get(10), false, virtualSpoutId1, 7);
+        validateExpectedMessage(returnedMessages.get(11), false, virtualSpoutId1, 8);
 
         // 1 from vSpout2
-        validateExpectedMessage(returnedMessages.get(12), false, vSpoutId2, 1000 + 3);
+        validateExpectedMessage(returnedMessages.get(12), false, virtualSpoutId2, 1000 + 3);
 
         // Last remaining entry from vSpout1, followed by 2 nulls
-        validateExpectedMessage(returnedMessages.get(13), false, vSpoutId1, 9);
+        validateExpectedMessage(returnedMessages.get(13), false, virtualSpoutId1, 9);
         validateExpectedMessage(returnedMessages.get(14), true, null, -1);
         validateExpectedMessage(returnedMessages.get(15), true, null, -1);
 
         // Last remaining entry from vSpout2
-        validateExpectedMessage(returnedMessages.get(16), false, vSpoutId2, 1000 + 4);
+        validateExpectedMessage(returnedMessages.get(16), false, virtualSpoutId2, 1000 + 4);
     }
 
     /**
@@ -204,96 +211,105 @@ public class RatioMessageBufferTest {
         RatioMessageBuffer buffer = createDefaultBuffer(bufferSize, throttleRatio, regexPattern);
 
         // Create 2 VSpout Ids
-        VirtualSpoutIdentifier vSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
-        VirtualSpoutIdentifier vSpoutId2 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 2");
-        VirtualSpoutIdentifier vSpoutId3 = new DefaultVirtualSpoutIdentifier("Identifier 3");
+        VirtualSpoutIdentifier virtualSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
+        VirtualSpoutIdentifier virtualSpoutId2 = new DefaultVirtualSpoutIdentifier("Throttled Identifier 2");
+        VirtualSpoutIdentifier virtualSpoutId3 = new DefaultVirtualSpoutIdentifier("Identifier 3");
 
         // Notify buffer of our Ids
-        buffer.addVirtualSpoutId(vSpoutId1);
-        buffer.addVirtualSpoutId(vSpoutId2);
-        buffer.addVirtualSpoutId(vSpoutId3);
+        buffer.addVirtualSpoutId(virtualSpoutId1);
+        buffer.addVirtualSpoutId(virtualSpoutId2);
+        buffer.addVirtualSpoutId(virtualSpoutId3);
 
         // Create 7 messages for Spout 1 & add to buffer
         final List<Message> spout1Messages = new ArrayList<>();
-        for (int x=0; x<7; x++) {
-            final Message message = createMessage(vSpoutId1, new Values(vSpoutId1.toString(), x));
+        for (int x = 0; x < 7; x++) {
+            final Message message = createMessage(virtualSpoutId1, new Values(virtualSpoutId1.toString(), x));
             spout1Messages.add(message);
             buffer.put(message);
         }
 
         // Create 4 messages for Spout 2 & add to buffer
         final List<Message> spout2Messages = new ArrayList<>();
-        for (int x=0; x<4; x++) {
-            final Message message = createMessage(vSpoutId2, new Values(vSpoutId2.toString(), x + 100));
+        for (int x = 0; x < 4; x++) {
+            final Message message = createMessage(virtualSpoutId2, new Values(virtualSpoutId2.toString(), x + 100));
             spout2Messages.add(message);
             buffer.put(message);
         }
 
         // Create 7 messages for Spout 3 & add to buffer
         final List<Message> spout3Messages = new ArrayList<>();
-        for (int x=0; x<7; x++) {
-            final Message message = createMessage(vSpoutId3, new Values(vSpoutId3.toString(), x + 1000));
+        for (int x = 0; x < 7; x++) {
+            final Message message = createMessage(virtualSpoutId3, new Values(virtualSpoutId3.toString(), x + 1000));
             spout3Messages.add(message);
             buffer.put(message);
         }
 
         // Validate that we have the expected buffer size of 21 now
-        assertEquals("Should have expected number of messages in buffer",(spout1Messages.size() + spout2Messages.size() + spout3Messages.size()), buffer.size());
+        assertEquals(
+            "Should have expected number of messages in buffer",
+            (spout1Messages.size() + spout2Messages.size() + spout3Messages.size()), buffer.size())
+        ;
 
         // Now hit poll() until we're empty
         List<Message> returnedMessages = new ArrayList<>();
         do {
             returnedMessages.add(buffer.poll());
-        } while (buffer.size() > 0);
+        }
+        while (buffer.size() > 0);
 
         // Now validate we have no more messages
         assertEquals("Empty buffer", 0, buffer.size());
 
         // Validate we got the expected results.  This is kind of painful :/
         // First one should be from vspout 2, our throttled spout
-        validateExpectedMessage(returnedMessages.get(0), false, vSpoutId2, 100 + 0);
+        validateExpectedMessage(returnedMessages.get(0), false, virtualSpoutId2, 100 + 0);
 
         // 3 from vSpout3
-        validateExpectedMessage(returnedMessages.get(1), false, vSpoutId3, 1000 + 0);
-        validateExpectedMessage(returnedMessages.get(2), false, vSpoutId3, 1000 + 1);
-        validateExpectedMessage(returnedMessages.get(3), false, vSpoutId3, 1000 + 2);
+        validateExpectedMessage(returnedMessages.get(1), false, virtualSpoutId3, 1000 + 0);
+        validateExpectedMessage(returnedMessages.get(2), false, virtualSpoutId3, 1000 + 1);
+        validateExpectedMessage(returnedMessages.get(3), false, virtualSpoutId3, 1000 + 2);
 
         // 3 from vSpout1
-        validateExpectedMessage(returnedMessages.get(4), false, vSpoutId1, 0);
-        validateExpectedMessage(returnedMessages.get(5), false, vSpoutId1, 1);
-        validateExpectedMessage(returnedMessages.get(6), false, vSpoutId1, 2);
+        validateExpectedMessage(returnedMessages.get(4), false, virtualSpoutId1, 0);
+        validateExpectedMessage(returnedMessages.get(5), false, virtualSpoutId1, 1);
+        validateExpectedMessage(returnedMessages.get(6), false, virtualSpoutId1, 2);
 
         // 1 vspout 2, (throttled)
-        validateExpectedMessage(returnedMessages.get(7), false, vSpoutId2, 100 + 1);
+        validateExpectedMessage(returnedMessages.get(7), false, virtualSpoutId2, 100 + 1);
 
         // 3 from vSpout3
-        validateExpectedMessage(returnedMessages.get(8), false, vSpoutId3, 1000 + 3);
-        validateExpectedMessage(returnedMessages.get(9), false, vSpoutId3, 1000 + 4);
-        validateExpectedMessage(returnedMessages.get(10), false, vSpoutId3, 1000 + 5);
+        validateExpectedMessage(returnedMessages.get(8), false, virtualSpoutId3, 1000 + 3);
+        validateExpectedMessage(returnedMessages.get(9), false, virtualSpoutId3, 1000 + 4);
+        validateExpectedMessage(returnedMessages.get(10), false, virtualSpoutId3, 1000 + 5);
 
         // 3 from vSpout1
-        validateExpectedMessage(returnedMessages.get(11), false, vSpoutId1, 3);
-        validateExpectedMessage(returnedMessages.get(12), false, vSpoutId1, 4);
-        validateExpectedMessage(returnedMessages.get(13), false, vSpoutId1, 5);
+        validateExpectedMessage(returnedMessages.get(11), false, virtualSpoutId1, 3);
+        validateExpectedMessage(returnedMessages.get(12), false, virtualSpoutId1, 4);
+        validateExpectedMessage(returnedMessages.get(13), false, virtualSpoutId1, 5);
 
         // 1 vspout 2, (throttled)
-        validateExpectedMessage(returnedMessages.get(14), false, vSpoutId2, 100 + 2);
+        validateExpectedMessage(returnedMessages.get(14), false, virtualSpoutId2, 100 + 2);
 
         // last remaining entry from vSpout3 (plus 2 nulls)
-        validateExpectedMessage(returnedMessages.get(15), false, vSpoutId3, 1000 + 6);
+        validateExpectedMessage(returnedMessages.get(15), false, virtualSpoutId3, 1000 + 6);
         validateExpectedMessage(returnedMessages.get(16), true, null, -1);
         validateExpectedMessage(returnedMessages.get(17), true, null, -1);
 
         // last remaining entry from vSpout1 (plus 2 nulls)
-        validateExpectedMessage(returnedMessages.get(18), false, vSpoutId1, 6);
+        validateExpectedMessage(returnedMessages.get(18), false, virtualSpoutId1, 6);
         validateExpectedMessage(returnedMessages.get(19), true, null, -1);
         validateExpectedMessage(returnedMessages.get(20), true, null, -1);
 
         // Last remaining entry from VSpout2 (throttled)
-        validateExpectedMessage(returnedMessages.get(21), false, vSpoutId2, 100 + 3);
+        validateExpectedMessage(returnedMessages.get(21), false, virtualSpoutId2, 100 + 3);
     }
 
-    private void validateExpectedMessage(final Message message, final boolean isNull, final VirtualSpoutIdentifier expectedVSpoutId, final int expectedIndex) {
+    private void validateExpectedMessage(
+        final Message message,
+        final boolean isNull,
+        final VirtualSpoutIdentifier expectedVSpoutId,
+        final int expectedIndex
+    ) {
         // If we expected a null value
         if (isNull) {
             // validate & return

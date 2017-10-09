@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.utils;
 
 import com.google.common.collect.Lists;
@@ -30,6 +31,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import com.google.common.base.Charsets;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
- *
+ * Tools for testing with Kafka.
  */
 public class KafkaTestUtils {
     private static final Logger logger = LoggerFactory.getLogger(KafkaTestUtils.class);
@@ -47,6 +49,10 @@ public class KafkaTestUtils {
     // The embedded Kafka server to interact with.
     private final KafkaTestServer kafkaTestServer;
 
+    /**
+     * Create an instance of our test tools for kafka.
+     * @param kafkaTestServer kafka test serve instance to work with.
+     */
     public KafkaTestUtils(KafkaTestServer kafkaTestServer) {
         this.kafkaTestServer = kafkaTestServer;
     }
@@ -59,22 +65,34 @@ public class KafkaTestUtils {
      * @param partitionId - the partition to produce into.
      * @return List of ProducedKafkaRecords.
      */
-    public List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(final int numberOfRecords, final String topicName, final int partitionId) {
+    public List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(
+        final int numberOfRecords,
+        final String topicName,
+        final int partitionId
+    ) {
         // This holds the records we produced
         List<ProducerRecord<byte[], byte[]>> producedRecords = Lists.newArrayList();
 
         // This holds futures returned
         List<Future<RecordMetadata>> producerFutures = Lists.newArrayList();
 
-        KafkaProducer producer = kafkaTestServer.getKafkaProducer("org.apache.kafka.common.serialization.ByteArraySerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-        for (int x=0; x<numberOfRecords; x++) {
+        KafkaProducer producer = kafkaTestServer.getKafkaProducer(
+            ByteArraySerializer.class.getName(),
+            ByteArraySerializer.class.getName()
+        );
+        for (int x = 0; x < numberOfRecords; x++) {
             // Construct key and value
             long timeStamp = Clock.systemUTC().millis();
             String key = "key" + timeStamp;
             String value = "value" + timeStamp;
 
             // Construct filter
-            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(topicName, partitionId, key.getBytes(Charsets.UTF_8), value.getBytes(Charsets.UTF_8));
+            ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(
+                topicName,
+                partitionId,
+                key.getBytes(Charsets.UTF_8),
+                value.getBytes(Charsets.UTF_8)
+            );
             producedRecords.add(record);
 
             // Send it.
@@ -89,7 +107,7 @@ public class KafkaTestUtils {
         // Loop thru the futures, and build KafkaRecord objects
         List<ProducedKafkaRecord<byte[], byte[]>> kafkaRecords = Lists.newArrayList();
         try {
-            for (int x=0; x<numberOfRecords; x++) {
+            for (int x = 0; x < numberOfRecords; x++) {
                 final RecordMetadata metadata = producerFutures.get(x).get();
                 final ProducerRecord producerRecord = producedRecords.get(x);
 

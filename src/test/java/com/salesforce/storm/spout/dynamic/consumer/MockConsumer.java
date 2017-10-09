@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
@@ -33,6 +34,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Mock consumer instance.
+ */
 public class MockConsumer implements Consumer {
 
     public static PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -40,7 +44,13 @@ public class MockConsumer implements Consumer {
     public static List<Integer> partitions = Collections.singletonList(1);
 
     @Override
-    public void open(Map<String, Object> spoutConfig, VirtualSpoutIdentifier virtualSpoutIdentifier, ConsumerPeerContext consumerPeerContext, PersistenceAdapter persistenceAdapter, ConsumerState startingState) {
+    public void open(
+        Map<String, Object> spoutConfig,
+        VirtualSpoutIdentifier virtualSpoutIdentifier,
+        ConsumerPeerContext consumerPeerContext,
+        PersistenceAdapter persistenceAdapter,
+        ConsumerState startingState
+    ) {
 
     }
 
@@ -89,6 +99,11 @@ public class MockConsumer implements Consumer {
         return false;
     }
 
+    /**
+     * Build consumer state for a set of partitions.
+     * @param partitions list of partition ids.
+     * @return consumer state instance for the provided partition ids.
+     */
     public static ConsumerState buildConsumerState(List<Integer> partitions) {
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 

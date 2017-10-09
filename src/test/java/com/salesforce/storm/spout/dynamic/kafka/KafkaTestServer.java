@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.google.common.collect.Maps;
@@ -40,7 +41,9 @@ import org.apache.curator.test.TestingServer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +73,7 @@ public class KafkaTestServer implements AutoCloseable {
 
     /**
      * Creates and starts ZooKeeper and Kafka server instances.
-     * @throws Exception
+     * @throws Exception Something went wrong.
      */
     public void start() throws Exception {
         InstanceSpec zkInstanceSpec = new InstanceSpec(null, 21811, -1, -1, true, -1, -1, 1000);
@@ -81,18 +84,18 @@ public class KafkaTestServer implements AutoCloseable {
         logDir.deleteOnExit();
         String kafkaPort = String.valueOf(InstanceSpec.getRandomPort());
 
-        Properties p = new Properties();
-        p.setProperty("zookeeper.connect", connectionString);
-        p.setProperty("port", kafkaPort);
-        p.setProperty("log.dir", logDir.getAbsolutePath());
-        p.setProperty("host.name", "127.0.0.1");
-        p.setProperty("advertised.host.name", "127.0.0.1");
-        p.setProperty("advertised.port", kafkaPort);
-        p.setProperty("auto.create.topics.enable", "true");
-        p.setProperty("zookeeper.session.timeout.ms", "30000");
-        p.setProperty("broker.id", "1");
+        Properties properties = new Properties();
+        properties.setProperty("zookeeper.connect", connectionString);
+        properties.setProperty("port", kafkaPort);
+        properties.setProperty("log.dir", logDir.getAbsolutePath());
+        properties.setProperty("host.name", "127.0.0.1");
+        properties.setProperty("advertised.host.name", "127.0.0.1");
+        properties.setProperty("advertised.port", kafkaPort);
+        properties.setProperty("auto.create.topics.enable", "true");
+        properties.setProperty("zookeeper.session.timeout.ms", "30000");
+        properties.setProperty("broker.id", "1");
 
-        KafkaConfig config = new KafkaConfig(p);
+        KafkaConfig config = new KafkaConfig(properties);
         kafka = new KafkaServerStartable(config);
         getKafkaServer().startup();
     }
@@ -120,7 +123,12 @@ public class KafkaTestServer implements AutoCloseable {
          * will only seem to work (it will return without error). The namespace will exist only in ZooKeeper
          * and will be returned when listing topics, but Kafka itself does not create the namespace.
          */
-        ZkClient zkClient = new ZkClient(getZkServer().getConnectString(), sessionTimeoutInMs, connectionTimeoutInMs, ZKStringSerializer$.MODULE$);
+        ZkClient zkClient = new ZkClient(
+            getZkServer().getConnectString(),
+            sessionTimeoutInMs,
+            connectionTimeoutInMs,
+            ZKStringSerializer$.MODULE$
+        );
         ZkUtils zkUtils = ZkUtils.apply(zkClient, false);
         if (!AdminUtils.topicExists(zkUtils, topicName)) {
             int replicationFactor = 1;
@@ -134,7 +142,7 @@ public class KafkaTestServer implements AutoCloseable {
     /**
      * Shuts down the ZooKeeper and Kafka server instances. This *must* be called before the integration
      * test completes in order to clean up any running processes and data that was created.
-     * @throws Exception
+     * @throws Exception Something went wrong.
      */
     public void shutdown() throws Exception {
         close();
@@ -144,7 +152,10 @@ public class KafkaTestServer implements AutoCloseable {
      * Creates a kafka producer that is connected to our test server.
      */
     public KafkaProducer getKafkaProducer() {
-        return getKafkaProducer("org.apache.kafka.common.serialization.StringSerializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+        return getKafkaProducer(
+            StringSerializer.class.getName(),
+            ByteArraySerializer.class.getName()
+        );
     }
 
     /**
@@ -182,7 +193,7 @@ public class KafkaTestServer implements AutoCloseable {
     /**
      * Depending on your version of Kafka, this may or may not be implemented.
      * 0.8.2.2 this does NOT work!.
-     * @return
+     * @return Kafka consumer instance.
      */
     public KafkaConsumer getKafkaConsumer() {
         Map<String, Object> kafkaConsumerConfig = Maps.newHashMap();

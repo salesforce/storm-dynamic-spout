@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.mocks;
 
 import com.google.common.collect.Maps;
@@ -32,6 +33,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Mock for Storm's TopologyContext..
+ */
 public class MockTopologyContext extends TopologyContext {
 
     public Map<String, IMetric> mockRegisteredMetrics = Maps.newHashMap();
@@ -39,6 +43,9 @@ public class MockTopologyContext extends TopologyContext {
     public int taskIndex = 0;
     public List<Integer> componentTasks = Collections.singletonList(1);
 
+    /**
+     * Mock for Storm's TopologyContext..
+     */
     public MockTopologyContext() {
         super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
