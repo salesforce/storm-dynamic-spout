@@ -6,8 +6,8 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="com.salesforce.storm.spout.sideline" level="INFO"/>
-        <Logger name="com.salesforce.storm.spout.sideline.config.SpoutConfig" level="ERROR"/>
+        <Logger name="com.salesforce.storm.spout.dynamic" level="INFO"/>
+        <Logger name="com.salesforce.storm.spout.dynamic.config.SpoutConfig" level="ERROR"/>
         <Logger name="org.apache.kafka" level="WARN"/>
         <Root level="ERROR">
             <AppenderRef ref="Console"/>
