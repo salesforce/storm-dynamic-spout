@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Preconditions;
@@ -325,7 +326,10 @@ public class VirtualSpout implements DelegateSpout {
             // Simply return null.
             return null;
         }
-        nextTupleTimeBuckets.put("doesExceedEndOffset", nextTupleTimeBuckets.get("doesExceedEndOffset") + (System.currentTimeMillis() - startTime));
+        nextTupleTimeBuckets.put(
+            "doesExceedEndOffset",
+            nextTupleTimeBuckets.get("doesExceedEndOffset") + (System.currentTimeMillis() - startTime)
+        );
 
         // Create Message
         startTime = System.currentTimeMillis();
@@ -362,7 +366,12 @@ public class VirtualSpout implements DelegateSpout {
             final long bucketTime = nextTupleTimeBuckets.get("totalTime");
             logger.info("==== nextTuple() Totals after {} calls ====", nextTupleTimeBuckets.get("totalCalls"));
             for (Map.Entry<String, Long> entry : nextTupleTimeBuckets.entrySet()) {
-                logger.info("nextTuple() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / bucketTime) * 100);
+                logger.info(
+                    "nextTuple() {} => {} ms ({}%)",
+                    entry.getKey(),
+                    entry.getValue(),
+                    ((float) entry.getValue() / bucketTime) * 100
+                );
             }
         }
 
@@ -388,7 +397,10 @@ public class VirtualSpout implements DelegateSpout {
         final Long endingOffset = endingState.getOffsetForNamespaceAndPartition(messageId.getNamespace(), messageId.getPartition());
         if (endingOffset == null) {
             // None defined?  Probably an error
-            throw new IllegalStateException("Consuming from a namespace/partition without a defined end offset? [" + messageId.getNamespace() + "-" + messageId.getPartition() + "] not in (" + endingState + ")");
+            throw new IllegalStateException(
+                "Consuming from a namespace/partition without a defined end offset? ["
+                    + messageId.getNamespace() + "-" + messageId.getPartition() + "] not in (" + endingState + ")"
+            );
         }
 
         // If its > the ending offset
@@ -660,7 +672,12 @@ public class VirtualSpout implements DelegateSpout {
             }
             // Log that this partition is finished, and make sure we unsubscribe from it.
             if (consumer.unsubscribeConsumerPartition(consumerPartition)) {
-                logger.debug("On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)", consumerPartition, currentOffset, endingOffset);
+                logger.debug(
+                    "On {} Current Offset: {}  Ending Offset: {} (This partition is completed!)",
+                    consumerPartition,
+                    currentOffset,
+                    endingOffset
+                );
             }
         }
 

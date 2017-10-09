@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.Tools;
@@ -351,7 +352,10 @@ public class SpoutMonitor implements Runnable {
                 );
 
                 // Report how many filters are applied on this virtual spout.
-                getMetricsRecorder().assignValue(VirtualSpout.class, spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied());
+                getMetricsRecorder().assignValue(
+                    VirtualSpout.class,
+                    spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied()
+                );
             }
         } catch (Throwable t) {
             logger.error("Caught exception during status checks {}", t.getMessage(), t);

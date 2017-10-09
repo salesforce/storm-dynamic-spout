@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.persistence;
 
 import com.google.common.collect.Lists;
@@ -107,8 +108,18 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
      * @param endingOffset The ending offset to persist.
      */
     @Override
-    public void persistSidelineRequestState(SidelineType type, SidelineRequestIdentifier id, SidelineRequest request, int partitionId, Long startingOffset, Long endingOffset) {
-        storedSidelineRequests.put(getSidelineRequestStateKey(id, partitionId), new SidelinePayload(type, id, request, startingOffset, endingOffset));
+    public void persistSidelineRequestState(
+        final SidelineType type,
+        final SidelineRequestIdentifier id,
+        final SidelineRequest request,
+        final int partitionId,
+        final Long startingOffset,
+        final Long endingOffset
+    ) {
+        storedSidelineRequests.put(
+            getSidelineRequestStateKey(id, partitionId),
+            new SidelinePayload(type, id, request, startingOffset, endingOffset)
+        );
     }
 
     /**

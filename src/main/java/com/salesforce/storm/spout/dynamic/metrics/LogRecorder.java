@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
@@ -34,6 +35,11 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+/**
+ * Metrics recorder that dumps metrics to logs.
+ *
+ * This is useful in your development and test environments.
+ */
 public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);

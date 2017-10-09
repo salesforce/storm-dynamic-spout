@@ -22,20 +22,39 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.trigger;
 
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 
+/**
+ * A request to sideline.
+ */
 public class SidelineRequest {
 
+    /**
+     * Id of the sideline request.
+     */
     public final SidelineRequestIdentifier id;
+    /**
+     * Filter chain step for this sideline.
+     */
     public final FilterChainStep step;
 
+    /**
+     * A request to sideline.
+     * @param id id of the sideline request.
+     * @param step filter chain step for this sideline.
+     */
     public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
         this.id = id;
         this.step = step;
     }
 
+    /**
+     * A request to sideline.
+     * @param step filter chain step for this sideline.
+     */
     @Deprecated
     public SidelineRequest(final FilterChainStep step) {
         this(new SidelineRequestIdentifier(), step);

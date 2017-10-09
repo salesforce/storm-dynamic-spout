@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.google.common.collect.Lists;
@@ -170,7 +171,13 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * @param persistenceAdapter The persistence adapter used to manage any state.
      * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
      */
-    public void open(final Map<String, Object> spoutConfig, final VirtualSpoutIdentifier virtualSpoutIdentifier, final ConsumerPeerContext consumerPeerContext, final PersistenceAdapter persistenceAdapter, final ConsumerState startingState) {
+    public void open(
+        final Map<String, Object> spoutConfig,
+        final VirtualSpoutIdentifier virtualSpoutIdentifier,
+        final ConsumerPeerContext consumerPeerContext,
+        final PersistenceAdapter persistenceAdapter,
+        final ConsumerState startingState
+    ) {
         // Simple state enforcement.
         if (isOpen) {
             throw new IllegalStateException("Cannot call open more than once.");
@@ -196,11 +203,15 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Optionally set state autocommit properties
         if (spoutConfig.containsKey(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT)) {
             consumerConfig.setConsumerStateAutoCommit((Boolean) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT));
-            consumerConfig.setConsumerStateAutoCommitIntervalMs((Long) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS));
+            consumerConfig.setConsumerStateAutoCommitIntervalMs(
+                (Long) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS)
+            );
         }
 
         // Create deserializer.
-        final Deserializer deserializer = FactoryManager.createNewInstance((String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS));
+        final Deserializer deserializer = FactoryManager.createNewInstance(
+            (String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS)
+        );
 
         // Save references
         this.consumerConfig = consumerConfig;
@@ -235,7 +246,12 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             // If we have a non-null offset
             if (offset != null) {
                 // We have a stored offset, so pick up on the partition where we left off
-                logger.info("Resuming namespace {} partition {} at offset {}", topicPartition.topic(), topicPartition.partition(), (offset + 1));
+                logger.info(
+                    "Resuming namespace {} partition {} at offset {}",
+                    topicPartition.topic(),
+                    topicPartition.partition(),
+                    (offset + 1)
+                );
                 getKafkaConsumer().seek(topicPartition, (offset + 1));
             } else {
                 // We do not have an existing offset saved, so start from the head
@@ -281,7 +297,13 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         partitionOffsetsManager.startOffset(consumerPartition, nextRecord.offset());
 
         // Deserialize into values
-        final Values deserializedValues = getDeserializer().deserialize(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), nextRecord.key(), nextRecord.value());
+        final Values deserializedValues = getDeserializer().deserialize(
+            nextRecord.topic(),
+            nextRecord.partition(),
+            nextRecord.offset(),
+            nextRecord.key(),
+            nextRecord.value()
+        );
 
         // Handle null
         if (deserializedValues == null) {
@@ -431,7 +453,10 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Loop over all subscribed partitions
         for (ConsumerPartition assignedConsumerPartition : allAssignedPartitions) {
             // Convert to TopicPartition
-            final TopicPartition assignedTopicPartition = new TopicPartition(assignedConsumerPartition.namespace(), assignedConsumerPartition.partition());
+            final TopicPartition assignedTopicPartition = new TopicPartition(
+                assignedConsumerPartition.namespace(),
+                assignedConsumerPartition.partition()
+            );
 
             // The last offset we went to start
             final long lastStartedOffset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
@@ -449,7 +474,8 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
 
                 logger.error(
-                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {}, lastFinished = {}, original exception = {}",
+                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {},"
+                    + " lastFinished = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
                     lastStartedOffset,

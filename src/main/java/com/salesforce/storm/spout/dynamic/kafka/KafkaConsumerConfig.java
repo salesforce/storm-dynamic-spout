@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -148,8 +149,14 @@ public class KafkaConsumerConfig {
         setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "10000");
 
         // We use our own deserializer interface, so force ByteArray deserialization.
-        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
-        setKafkaConsumerProperty(org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getCanonicalName());
+        setKafkaConsumerProperty(
+            org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+            ByteArrayDeserializer.class.getCanonicalName()
+        );
+        setKafkaConsumerProperty(
+            org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+            ByteArrayDeserializer.class.getCanonicalName()
+        );
 
         // Other random tunings
         // Default is 65536 bytes, we 4x'd it

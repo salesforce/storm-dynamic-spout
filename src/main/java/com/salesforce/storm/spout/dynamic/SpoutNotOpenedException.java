@@ -22,10 +22,17 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic;
 
+/**
+ * Spout has not yet been opened, but needed to be for the performed operation.
+ */
 public class SpoutNotOpenedException extends RuntimeException {
 
+    /**
+     * Spout has not yet been opened, but needed to be for the performed operation.
+     */
     public SpoutNotOpenedException() {
         super("Spout has not yet been opened!");
     }

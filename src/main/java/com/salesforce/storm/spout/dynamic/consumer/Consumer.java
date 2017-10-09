@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
@@ -46,7 +47,13 @@ public interface Consumer {
      * @param persistenceAdapter The persistence adapter used to manage any state.
      * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
      */
-    void open(final Map<String, Object> spoutConfig, final VirtualSpoutIdentifier virtualSpoutIdentifier, final ConsumerPeerContext consumerPeerContext, final PersistenceAdapter persistenceAdapter, final ConsumerState startingState);
+    void open(
+        final Map<String, Object> spoutConfig,
+        final VirtualSpoutIdentifier virtualSpoutIdentifier,
+        final ConsumerPeerContext consumerPeerContext,
+        final PersistenceAdapter persistenceAdapter,
+        final ConsumerState startingState
+    );
 
     /**
      * This method is called when a VirtualSpout is shutting down.  It should perform any necessary cleanup.

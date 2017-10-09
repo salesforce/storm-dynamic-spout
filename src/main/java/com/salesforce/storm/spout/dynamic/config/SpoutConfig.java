@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.config;
 
 import com.google.common.collect.Maps;
@@ -418,90 +419,164 @@ public class SpoutConfig {
         // Add in defaults where needed.
         if (!clonedConfig.containsKey(OUTPUT_STREAM_ID)) {
             clonedConfig.put(OUTPUT_STREAM_ID, "default");
-            logger.info("Unspecified configuration value for {} using default value {}", OUTPUT_STREAM_ID, clonedConfig.get(OUTPUT_STREAM_ID));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                OUTPUT_STREAM_ID,
+                clonedConfig.get(OUTPUT_STREAM_ID)
+            );
         }
         if (!clonedConfig.containsKey(CONSUMER_CLASS)) {
             // For now default KafkaConsumer
             clonedConfig.put(CONSUMER_CLASS, Consumer.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_CLASS, clonedConfig.get(CONSUMER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                CONSUMER_CLASS,
+                clonedConfig.get(CONSUMER_CLASS)
+            );
         }
         if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
             clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                METRICS_RECORDER_CLASS,
+                clonedConfig.get(METRICS_RECORDER_CLASS)
+            );
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
             clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_RETRY_LIMIT)) {
             clonedConfig.put(RETRY_MANAGER_RETRY_LIMIT, 25);
-            logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_RETRY_LIMIT, clonedConfig.get(RETRY_MANAGER_RETRY_LIMIT));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                RETRY_MANAGER_RETRY_LIMIT,
+                clonedConfig.get(RETRY_MANAGER_RETRY_LIMIT)
+            );
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_INITIAL_DELAY_MS)) {
             clonedConfig.put(RETRY_MANAGER_INITIAL_DELAY_MS, 1000L);
-            logger.info("Unspecified configuration value for {} using default value {}", RETRY_MANAGER_INITIAL_DELAY_MS, clonedConfig.get(RETRY_MANAGER_INITIAL_DELAY_MS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                RETRY_MANAGER_INITIAL_DELAY_MS,
+                clonedConfig.get(RETRY_MANAGER_INITIAL_DELAY_MS)
+            );
         }
         if (!clonedConfig.containsKey(METRICS_RECORDER_CLASS)) {
             clonedConfig.put(METRICS_RECORDER_CLASS, LogRecorder.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", METRICS_RECORDER_CLASS, clonedConfig.get(METRICS_RECORDER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                METRICS_RECORDER_CLASS,
+                clonedConfig.get(METRICS_RECORDER_CLASS)
+            );
         }
         if (!clonedConfig.containsKey(MONITOR_THREAD_INTERVAL_MS)) {
             clonedConfig.put(MONITOR_THREAD_INTERVAL_MS, 2000L);
-            logger.info("Unspecified configuration value for {} using default value {}", MONITOR_THREAD_INTERVAL_MS, clonedConfig.get(MONITOR_THREAD_INTERVAL_MS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                MONITOR_THREAD_INTERVAL_MS,
+                clonedConfig.get(MONITOR_THREAD_INTERVAL_MS)
+            );
         }
         if (!clonedConfig.containsKey(MAX_SPOUT_SHUTDOWN_TIME_MS)) {
             clonedConfig.put(MAX_SPOUT_SHUTDOWN_TIME_MS, 10000L);
-            logger.info("Unspecified configuration value for {} using default value {}", MAX_SPOUT_SHUTDOWN_TIME_MS, clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                MAX_SPOUT_SHUTDOWN_TIME_MS,
+                clonedConfig.get(MAX_SPOUT_SHUTDOWN_TIME_MS)
+            );
         }
         if (!clonedConfig.containsKey(CONSUMER_STATE_FLUSH_INTERVAL_MS)) {
             clonedConfig.put(CONSUMER_STATE_FLUSH_INTERVAL_MS, 30000L);
-            logger.info("Unspecified configuration value for {} using default value {}", CONSUMER_STATE_FLUSH_INTERVAL_MS, clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                CONSUMER_STATE_FLUSH_INTERVAL_MS,
+                clonedConfig.get(CONSUMER_STATE_FLUSH_INTERVAL_MS)
+            );
         }
         if (!clonedConfig.containsKey(MAX_CONCURRENT_VIRTUAL_SPOUTS)) {
             clonedConfig.put(MAX_CONCURRENT_VIRTUAL_SPOUTS, 10);
-            logger.info("Unspecified configuration value for {} using default value {}", MAX_CONCURRENT_VIRTUAL_SPOUTS, clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                MAX_CONCURRENT_VIRTUAL_SPOUTS,
+                clonedConfig.get(MAX_CONCURRENT_VIRTUAL_SPOUTS)
+            );
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_CLASS)) {
             clonedConfig.put(TUPLE_BUFFER_CLASS, RoundRobinBuffer.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", TUPLE_BUFFER_CLASS, clonedConfig.get(TUPLE_BUFFER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                TUPLE_BUFFER_CLASS,
+                clonedConfig.get(TUPLE_BUFFER_CLASS)
+            );
         }
         if (!clonedConfig.containsKey(TUPLE_BUFFER_MAX_SIZE)) {
             clonedConfig.put(TUPLE_BUFFER_MAX_SIZE, 2000);
-            logger.info("Unspecified configuration value for {} using default value {}", TUPLE_BUFFER_MAX_SIZE, clonedConfig.get(TUPLE_BUFFER_MAX_SIZE));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                TUPLE_BUFFER_MAX_SIZE,
+                clonedConfig.get(TUPLE_BUFFER_MAX_SIZE)
+            );
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_SESSION_TIMEOUT)) {
             clonedConfig.put(PERSISTENCE_ZK_SESSION_TIMEOUT, 6000);
-            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_SESSION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_SESSION_TIMEOUT));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                PERSISTENCE_ZK_SESSION_TIMEOUT,
+                clonedConfig.get(PERSISTENCE_ZK_SESSION_TIMEOUT)
+            );
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_CONNECTION_TIMEOUT)) {
             clonedConfig.put(PERSISTENCE_ZK_CONNECTION_TIMEOUT, 6000);
-            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_CONNECTION_TIMEOUT, clonedConfig.get(PERSISTENCE_ZK_CONNECTION_TIMEOUT));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                PERSISTENCE_ZK_CONNECTION_TIMEOUT,
+                clonedConfig.get(PERSISTENCE_ZK_CONNECTION_TIMEOUT)
+            );
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_ATTEMPTS)) {
             clonedConfig.put(PERSISTENCE_ZK_RETRY_ATTEMPTS, 10);
-            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_RETRY_ATTEMPTS, clonedConfig.get(PERSISTENCE_ZK_RETRY_ATTEMPTS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                PERSISTENCE_ZK_RETRY_ATTEMPTS,
+                clonedConfig.get(PERSISTENCE_ZK_RETRY_ATTEMPTS)
+            );
         }
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_INTERVAL)) {
             clonedConfig.put(PERSISTENCE_ZK_RETRY_INTERVAL, 10);
-            logger.info("Unspecified configuration value for {} using default value {}", PERSISTENCE_ZK_RETRY_INTERVAL, clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                PERSISTENCE_ZK_RETRY_INTERVAL,
+                clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL)
+            );
         }
 
         if (!clonedConfig.containsKey(SPOUT_HANDLER_CLASS)) {
             // If we don't have a spout handler configured use the noop one, which does nothing but helps
             // us avoid null pointers in the main spout code.
             clonedConfig.put(SPOUT_HANDLER_CLASS, NoopSpoutHandler.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", SPOUT_HANDLER_CLASS, clonedConfig.get(SPOUT_HANDLER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                SPOUT_HANDLER_CLASS,
+                clonedConfig.get(SPOUT_HANDLER_CLASS)
+            );
         }
 
         if (!clonedConfig.containsKey(VIRTUAL_SPOUT_HANDLER_CLASS)) {
             // If we don't have a spout handler configured use the noop one, which does nothing but helps
             // us avoid null pointers in the main spout code.
             clonedConfig.put(VIRTUAL_SPOUT_HANDLER_CLASS, NoopVirtualSpoutHandler.class.getName());
-            logger.info("Unspecified configuration value for {} using default value {}", VIRTUAL_SPOUT_HANDLER_CLASS, clonedConfig.get(VIRTUAL_SPOUT_HANDLER_CLASS));
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                VIRTUAL_SPOUT_HANDLER_CLASS,
+                clonedConfig.get(VIRTUAL_SPOUT_HANDLER_CLASS)
+            );
         }
 
         return clonedConfig;

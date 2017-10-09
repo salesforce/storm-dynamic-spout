@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.handler;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
@@ -50,7 +51,8 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
     public void onVirtualSpoutCompletion(DelegateSpout virtualSpout) {
         try {
             // Get the specific sideline request from the virtual spout's id
-            final SidelineRequestIdentifier sidelineRequestIdentifier = ((SidelineVirtualSpoutIdentifier) virtualSpout.getVirtualSpoutId()).getSidelineRequestIdentifier();
+            final SidelineRequestIdentifier sidelineRequestIdentifier =
+                ((SidelineVirtualSpoutIdentifier) virtualSpout.getVirtualSpoutId()).getSidelineRequestIdentifier();
 
             // We can only do this if we have a starting state and a sideline request identifier
             if (sidelineRequestIdentifier != null && virtualSpout.getStartingState() != null) {

@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.handler;
 
 import com.google.common.base.Preconditions;
@@ -269,7 +270,10 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // assigned to this particular sideline spout instance
         for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
             // This is the state that the VirtualSpout should start with
-            final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition.partition());
+            final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(
+                id,
+                consumerPartition.partition()
+            );
 
             logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
 

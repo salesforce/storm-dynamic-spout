@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.persistence;
 
 import com.google.common.base.Charsets;
@@ -104,7 +105,10 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
             curator.start();
 
             // Block until connected
-            curator.blockUntilConnected(((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(), TimeUnit.MILLISECONDS);
+            curator.blockUntilConnected(
+                ((Number) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_CONNECTION_TIMEOUT)).intValue(),
+                TimeUnit.MILLISECONDS
+            );
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

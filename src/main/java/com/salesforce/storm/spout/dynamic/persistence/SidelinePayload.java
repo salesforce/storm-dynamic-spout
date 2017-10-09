@@ -22,20 +22,48 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.persistence;
 
 import com.salesforce.storm.spout.dynamic.trigger.SidelineRequest;
 import com.salesforce.storm.spout.dynamic.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.dynamic.trigger.SidelineType;
 
+/**
+ * Payload for a sideline, includes the type, request, id and positions for the sideline.
+ */
 public class SidelinePayload {
 
+    /**
+     * Type of sideline, either start of stop.
+     */
     public final SidelineType type;
+    /**
+     * Identifier of the sideline request.
+     */
     public final SidelineRequestIdentifier id;
+    /**
+     * Sideline request, contains the identifier and filter chain step to be applied.
+     */
     public final SidelineRequest request;
+    /**
+     * Offset to begin the sideline at.
+     */
     public final Long startingOffset;
+    /**
+     * Offset to end the sideline at.
+     */
     public final Long endingOffset;
 
+    /**
+     * Payload for a sideline, includes the type, request, id and positions for the sideline.
+     *
+     * @param type type of sideline, either start of stop.
+     * @param id identifier of the sideline request.
+     * @param request sideline request, contains the identifier and filter chain step to be applied.
+     * @param startingOffset offset to begin the sideline at.
+     * @param endingOffset offset to end the sideline at.
+     */
     SidelinePayload(
         final SidelineType type,
         final SidelineRequestIdentifier id,

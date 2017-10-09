@@ -22,6 +22,7 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.salesforce.storm.spout.dynamic.config;
 
 import com.google.common.collect.Maps;
@@ -80,7 +81,10 @@ public class ConfigPrinter {
         Files.copy(readmePath, readmeBackupPath);
 
         final File readmeFile = readmePath.toFile();
-        Preconditions.checkArgument(readmeFile.exists() && readmeFile.isFile(), "README.md file must exist: %s", readmeFile.getAbsolutePath());
+        Preconditions.checkArgument(
+            readmeFile.exists() && readmeFile.isFile(),
+            "README.md file must exist: %s", readmeFile.getAbsolutePath()
+        );
 
         try (BufferedReader readmeReader = Files.newBufferedReader(readmePath, StandardCharsets.UTF_8);
             PrintWriter readmePrintWriter = new PrintWriter(Files.newBufferedWriter(readmeTempOutPath, StandardCharsets.UTF_8))) {
@@ -103,8 +107,14 @@ public class ConfigPrinter {
                 }
             }
 
-            Preconditions.checkState(configurationSectionFound, "README.md did not have configuration section delimiters: %s", readmeFile.getAbsolutePath());
-            Preconditions.checkState(!insideConfigurationSection, "README.md did not have closing configuration section delimiter: %s", readmeFile.getAbsolutePath());
+            Preconditions.checkState(
+                configurationSectionFound,
+                "README.md did not have configuration section delimiters: %s", readmeFile.getAbsolutePath()
+            );
+            Preconditions.checkState(
+                !insideConfigurationSection,
+                "README.md did not have closing configuration section delimiter: %s", readmeFile.getAbsolutePath()
+            );
         }
         Files.copy(readmeTempOutPath, readmePath, StandardCopyOption.REPLACE_EXISTING);
         System.out.println("Updated README file: " + readmeFile.getAbsolutePath());
@@ -115,7 +125,11 @@ public class ConfigPrinter {
      * @throws IllegalAccessException on error
      * @throws NoSuchFieldException on error
      */
-    private static void mergeConfigSection(Class configClass, Map<String, Object> defaults, PrintWriter readmePrintWriter) throws IllegalAccessException, NoSuchFieldException {
+    private static void mergeConfigSection(
+        final Class configClass,
+        final Map<String, Object> defaults,
+        final PrintWriter readmePrintWriter
+    ) throws IllegalAccessException, NoSuchFieldException {
         readmePrintWriter.println();
 
         Map<Documentation.Category, List<String>> lines = new TreeMap<>();
