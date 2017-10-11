@@ -29,11 +29,11 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.salesforce</groupId>
-    <artifactId>storm-sideline-spout</artifactId>
+    <groupId>com.salesforce.storm</groupId>
+    <artifactId>dynamic-spout</artifactId>
     <version>0.8-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>storm-sideline-spout</name>
+    <name>dynamic-spout</name>
 
     <!-- Require Maven 3.3.9 -->
     <prerequisites>
