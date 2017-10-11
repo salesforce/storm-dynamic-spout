@@ -43,8 +43,8 @@
     </organization>
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>http://www.opensource.org/licenses/mit-license.php</url>
+            <name>BSD-3</name>
+            <url>https://github.com/salesforce/storm-dynamic-spout/blob/master/LICENSE.txt</url>
         </license>
     </licenses>
 
