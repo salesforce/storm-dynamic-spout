@@ -33,6 +33,7 @@ import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
+import com.salesforce.storm.spout.dynamic.utils.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -44,6 +45,7 @@ import org.apache.zookeeper.data.Stat;
 import org.json.simple.JSONValue;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -75,27 +77,11 @@ public class ZookeeperPersistenceAdapterTest {
     // For logging within test.
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperPersistenceAdapterTest.class);
 
-    // An internal zookeeper server used for testing.
-    private static TestingServer zkServer;
-
     /**
-     * This gets run before all test methods in class.
-     * It stands up an internal zookeeper server that is shared for all test methods in this class.
+     * Create shared zookeeper test server.
      */
-    @BeforeClass
-    public static void setupZkServer() throws Exception {
-        InstanceSpec zkInstanceSpec = new InstanceSpec(null, -1, -1, -1, true, -1, -1, 1000);
-        zkServer = new TestingServer(zkInstanceSpec, true);
-    }
-
-    /**
-     * After running all the test methods in this class, destroy our internal zk server.
-     */
-    @AfterClass
-    public static void destroyZkServer() throws Exception {
-        zkServer.stop();
-        zkServer.close();
-    }
+    @ClassRule
+    public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
     @Rule
     public ExpectedException expectedExceptionOpenMissingConfigForZkRootNode = ExpectedException.none();
@@ -176,7 +162,7 @@ public class ZookeeperPersistenceAdapterTest {
         final int partitionId2 = 2;
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -264,7 +250,7 @@ public class ZookeeperPersistenceAdapterTest {
         final int partitionId = 1;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -281,7 +267,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -383,7 +369,7 @@ public class ZookeeperPersistenceAdapterTest {
         final long partition2Offset = 300L;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -400,7 +386,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -530,7 +516,7 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(null);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -642,7 +628,7 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(null);
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(zkServer.getConnectString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -659,7 +645,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -849,7 +835,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
 
         final String zkRootPath = configuredZkRoot + "/" + configuredConsumerPrefix;
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
@@ -889,7 +875,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
-        final Map topologyConfig = createDefaultConfig(zkServer.getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
@@ -939,5 +925,12 @@ public class ZookeeperPersistenceAdapterTest {
      */
     private String getRandomZkRootNode() {
         return "/testRoot" + System.currentTimeMillis();
+    }
+
+    /**
+     * Simple accessor.
+     */
+    private TestingServer getZkServer() {
+        return sharedZookeeperTestResource.getZookeeperTestServer();
     }
 }

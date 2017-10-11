@@ -23,14 +23,11 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka;
+package com.salesforce.storm.spout.dynamic.utils;
 
 import com.google.common.collect.Maps;
 import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
-import kafka.consumer.Consumer;
-import kafka.consumer.ConsumerConfig;
-import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
 import kafka.utils.ZKStringSerializer$;
@@ -40,12 +37,6 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -59,43 +50,66 @@ import java.util.Properties;
  */
 public class KafkaTestServer implements AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(KafkaTestServer.class);
     private TestingServer zkServer;
     private KafkaServerStartable kafka;
 
-    public TestingServer getZkServer() {
+    /**
+     * @return Internal Zookeeper Server.
+     */
+    public TestingServer getZookeeperServer() {
         return this.zkServer;
     }
 
+    /**
+     * @return Internal Kafka Server.
+     */
     public KafkaServerStartable getKafkaServer() {
         return this.kafka;
     }
 
     /**
+     * @return The proper connect string to use for Kafka.
+     */
+    public String getKafkaConnectString() {
+        return "127.0.0.1:" + getKafkaServer().serverConfig().advertisedPort();
+    }
+
+    /**
+     * @return The proper connect string to use for Zookeeper.
+     */
+    public String getZookeeperConnectString() {
+        return "127.0.0.1:" + getZookeeperServer().getPort();
+    }
+
+    /**
      * Creates and starts ZooKeeper and Kafka server instances.
-     * @throws Exception Something went wrong.
      */
     public void start() throws Exception {
-        InstanceSpec zkInstanceSpec = new InstanceSpec(null, 21811, -1, -1, true, -1, -1, 1000);
+        // Start zookeeper
+        final InstanceSpec zkInstanceSpec = new InstanceSpec(null, -1, -1, -1, true, -1, -1, 1000);
         zkServer = new TestingServer(zkInstanceSpec, true);
-        String connectionString = getZkServer().getConnectString();
+        final String zkConnectionString = getZookeeperServer().getConnectString();
 
-        File logDir = new File("/tmp/kafka-logs-" + Double.toHexString(Math.random()));
+        // Create temp path to store logs
+        final File logDir = new File("/tmp/kafka-logs-" + Double.toHexString(Math.random()));
         logDir.deleteOnExit();
-        String kafkaPort = String.valueOf(InstanceSpec.getRandomPort());
 
-        Properties properties = new Properties();
-        properties.setProperty("zookeeper.connect", connectionString);
-        properties.setProperty("port", kafkaPort);
-        properties.setProperty("log.dir", logDir.getAbsolutePath());
-        properties.setProperty("host.name", "127.0.0.1");
-        properties.setProperty("advertised.host.name", "127.0.0.1");
-        properties.setProperty("advertised.port", kafkaPort);
-        properties.setProperty("auto.create.topics.enable", "true");
-        properties.setProperty("zookeeper.session.timeout.ms", "30000");
-        properties.setProperty("broker.id", "1");
+        // Determine what port to run kafka on
+        final String kafkaPort = String.valueOf(InstanceSpec.getRandomPort());
 
-        KafkaConfig config = new KafkaConfig(properties);
+        // Build properties
+        Properties kafkaProperties = new Properties();
+        kafkaProperties.setProperty("zookeeper.connect", zkConnectionString);
+        kafkaProperties.setProperty("port", kafkaPort);
+        kafkaProperties.setProperty("log.dir", logDir.getAbsolutePath());
+        kafkaProperties.setProperty("host.name", "127.0.0.1");
+        kafkaProperties.setProperty("advertised.host.name", "127.0.0.1");
+        kafkaProperties.setProperty("advertised.port", kafkaPort);
+        kafkaProperties.setProperty("auto.create.topics.enable", "true");
+        kafkaProperties.setProperty("zookeeper.session.timeout.ms", "30000");
+        kafkaProperties.setProperty("broker.id", "1");
+
+        final KafkaConfig config = new KafkaConfig(kafkaProperties);
         kafka = new KafkaServerStartable(config);
         getKafkaServer().startup();
     }
@@ -105,7 +119,7 @@ public class KafkaTestServer implements AutoCloseable {
      * Will create a namespace with exactly 1 partition.
      * @param topicName - the namespace name to create.
      */
-    public void createTopic(String topicName) {
+    public void createTopic(final String topicName) {
         createTopic(topicName, 1);
     }
 
@@ -115,16 +129,16 @@ public class KafkaTestServer implements AutoCloseable {
      * @param partitions - the number of partitions to create.
      */
     public void createTopic(final String topicName, final int partitions) {
-        int sessionTimeoutInMs = 10000;
-        int connectionTimeoutInMs = 10000;
+        final int sessionTimeoutInMs = 10000;
+        final int connectionTimeoutInMs = 10000;
 
-        /**
+        /*
          * Note: You must initialize the ZkClient with ZKStringSerializer. If you don't then createTopic()
          * will only seem to work (it will return without error). The namespace will exist only in ZooKeeper
          * and will be returned when listing topics, but Kafka itself does not create the namespace.
          */
         ZkClient zkClient = new ZkClient(
-            getZkServer().getConnectString(),
+            getZookeeperServer().getConnectString(),
             sessionTimeoutInMs,
             connectionTimeoutInMs,
             ZKStringSerializer$.MODULE$
@@ -142,7 +156,6 @@ public class KafkaTestServer implements AutoCloseable {
     /**
      * Shuts down the ZooKeeper and Kafka server instances. This *must* be called before the integration
      * test completes in order to clean up any running processes and data that was created.
-     * @throws Exception Something went wrong.
      */
     public void shutdown() throws Exception {
         close();
@@ -151,20 +164,10 @@ public class KafkaTestServer implements AutoCloseable {
     /**
      * Creates a kafka producer that is connected to our test server.
      */
-    public KafkaProducer getKafkaProducer() {
-        return getKafkaProducer(
-            StringSerializer.class.getName(),
-            ByteArraySerializer.class.getName()
-        );
-    }
-
-    /**
-     * Creates a kafka producer that is connected to our test server.
-     */
-    public KafkaProducer getKafkaProducer(String keySerializer, String valueSerializer) {
+    public KafkaProducer getKafkaProducer(final String keySerializer, final String valueSerializer) {
         // Create producer
-        Map<String, Object> kafkaProducerConfig = Maps.newHashMap();
-        kafkaProducerConfig.put("bootstrap.servers", "127.0.0.1:" + getKafkaServer().serverConfig().advertisedPort());
+        final Map<String, Object> kafkaProducerConfig = Maps.newHashMap();
+        kafkaProducerConfig.put("bootstrap.servers", getKafkaConnectString());
         kafkaProducerConfig.put("key.serializer", keySerializer);
         kafkaProducerConfig.put("value.serializer", valueSerializer);
         kafkaProducerConfig.put("batch.size", 0);
@@ -174,46 +177,33 @@ public class KafkaTestServer implements AutoCloseable {
     }
 
     /**
-     * Old 0.8.2.x consumer.
+     * Return Kafka Consumer configured to consume from internal Kafka Server.
+     * @param keyDeserializer which deserializer to use for key
+     * @param valueDeserializer which deserializer to use for value
      */
-    public ConsumerConnector getKafkaConsumerConnector() {
-        Properties consumerProperties = new Properties();
-        consumerProperties.put("zookeeper.connect", getZkServer().getConnectString());
-        consumerProperties.put("group.id", "test-group");
-
-        // Start from the head of the namespace by default
-        consumerProperties.put("auto.offset.reset", "smallest");
-
-        // Don't commit offsets anywhere for our consumerId
-        consumerProperties.put("auto.commit.enable", "false");
-        logger.info("Consumer properties {}", consumerProperties);
-        return Consumer.createJavaConsumerConnector(new ConsumerConfig(consumerProperties));
-    }
-
-    /**
-     * Depending on your version of Kafka, this may or may not be implemented.
-     * 0.8.2.2 this does NOT work!.
-     * @return Kafka consumer instance.
-     */
-    public KafkaConsumer getKafkaConsumer() {
+    public KafkaConsumer getKafkaConsumer(final String keyDeserializer, final String valueDeserializer) {
         Map<String, Object> kafkaConsumerConfig = Maps.newHashMap();
-        kafkaConsumerConfig.put("bootstrap.servers", "127.0.0.1:" + getKafkaServer().serverConfig().advertisedPort());
+        kafkaConsumerConfig.put("bootstrap.servers", getKafkaConnectString());
         kafkaConsumerConfig.put("group.id", "test-consumer-id");
-        kafkaConsumerConfig.put("key.deserializer", StringDeserializer.class.getName());
-        kafkaConsumerConfig.put("value.deserializer", ByteArrayDeserializer.class.getName());
+        kafkaConsumerConfig.put("key.deserializer", keyDeserializer);
+        kafkaConsumerConfig.put("value.deserializer", valueDeserializer);
         kafkaConsumerConfig.put("partition.assignment.strategy", "org.apache.kafka.clients.consumer.RoundRobinAssignor");
 
         return new KafkaConsumer(kafkaConsumerConfig);
     }
 
+    /**
+     * Closes the internal servers. Failing to call this at the end of your tests will likely
+     * result in leaking instances.
+     */
     @Override
     public void close() throws Exception {
         if (getKafkaServer() != null) {
             getKafkaServer().shutdown();
             kafka = null;
         }
-        if (getZkServer() != null) {
-            getZkServer().close();
+        if (getZookeeperServer() != null) {
+            getZookeeperServer().close();
             zkServer = null;
         }
     }

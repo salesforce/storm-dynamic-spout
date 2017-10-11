@@ -29,12 +29,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.utils.SharedKafkaTestResource;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaTestServer;
+import com.salesforce.storm.spout.dynamic.utils.KafkaTestServer;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.retry.FailedTuplesFirstRetryManager;
@@ -58,9 +59,8 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -93,22 +93,16 @@ public class DynamicSpoutTest {
     // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpoutTest.class);
 
-    // Our internal Kafka and Zookeeper Server, used to test against.
-    private static KafkaTestServer kafkaTestServer;
-
-    // Gets set to our randomly generated namespace created for the test.
-    private String topicName;
+    /**
+     * Create shared kafka test server.
+     */
+    @ClassRule
+    public static final SharedKafkaTestResource sharedKafkaTestResource = new SharedKafkaTestResource();
 
     /**
-     * Here we stand up an internal test kafka and zookeeper service.
-     * Once for all methods in this class.
+     * We generate a unique topic name for every test case.
      */
-    @BeforeClass
-    public static void setupKafkaServer() throws Exception {
-        // Setup kafka test server
-        kafkaTestServer = new KafkaTestServer();
-        kafkaTestServer.start();
-    }
+    private String topicName;
 
     /**
      * This happens once before every test method.
@@ -120,24 +114,7 @@ public class DynamicSpoutTest {
         topicName = DynamicSpoutTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create namespace
-        kafkaTestServer.createTopic(topicName);
-    }
-
-    /**
-     * Here we shut down the internal test kafka and zookeeper services.
-     */
-    @AfterClass
-    public static void destroyKafkaServer() {
-        // Close out kafka test server if needed
-        if (kafkaTestServer == null) {
-            return;
-        }
-        try {
-            kafkaTestServer.shutdown();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        kafkaTestServer = null;
+        getKafkaTestServer().createTopic(topicName);
     }
 
     @Rule
@@ -815,7 +792,7 @@ public class DynamicSpoutTest {
 
         // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
-        kafkaTestServer.createTopic(topicName, 4);
+        getKafkaTestServer().createTopic(topicName, 4);
 
         // Define some topicPartitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -912,7 +889,7 @@ public class DynamicSpoutTest {
 
         // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
-        kafkaTestServer.createTopic(topicName, 5);
+        getKafkaTestServer().createTopic(topicName, 5);
 
         // Define some topicPartitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -1336,7 +1313,7 @@ public class DynamicSpoutTest {
      * helper method to produce records into kafka.
      */
     private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords, int partitionId) {
-        KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(kafkaTestServer);
+        KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(getKafkaTestServer());
         return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
     }
 
@@ -1357,14 +1334,11 @@ public class DynamicSpoutTest {
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(
-            KafkaConsumerConfig.KAFKA_BROKERS,
-            Lists.newArrayList("localhost:" + kafkaTestServer.getKafkaServer().serverConfig().advertisedPort())
-        );
+        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(getKafkaTestServer().getKafkaConnectString()));
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
@@ -1406,5 +1380,12 @@ public class DynamicSpoutTest {
                 // Explicitly defined streamId should get used as is.
                 { "SpecialStreamId", "SpecialStreamId" }
         };
+    }
+
+    /**
+     * Simple accessor.
+     */
+    private KafkaTestServer getKafkaTestServer() {
+        return sharedKafkaTestResource.getKafkaTestServer();
     }
 }
