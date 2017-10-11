@@ -85,7 +85,7 @@
         <kafkaVersion>0.10.0.1</kafkaVersion>
 
         <!-- Define which Curator version -->
-        <curatorVersion>2.12.0</curatorVersion>
+        <curatorVersion>4.0.0</curatorVersion>
 
         <!-- Define which Curator version -->
         <curatorTestVersion>2.12.0</curatorTestVersion>
