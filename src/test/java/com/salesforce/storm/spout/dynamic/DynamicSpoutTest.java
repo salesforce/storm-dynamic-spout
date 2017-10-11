@@ -1364,7 +1364,7 @@ public class DynamicSpoutTest {
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:" + kafkaTestServer.getZkServer().getPort()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(kafkaTestServer.getKafkaConnectString()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
