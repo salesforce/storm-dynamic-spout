@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka;
+package com.salesforce.storm.spout.dynamic.utils;
 
 import com.google.common.collect.Maps;
 import kafka.admin.AdminUtils;
@@ -72,6 +72,13 @@ public class KafkaTestServer implements AutoCloseable {
      */
     public String getKafkaConnectString() {
         return "127.0.0.1:" + getKafkaServer().serverConfig().advertisedPort();
+    }
+
+    /**
+     * @return The proper connect string to use for Zookeeper.
+     */
+    public String getZookeeperConnectString() {
+        return "127.0.0.1:" + getZookeeperServer().getPort();
     }
 
     /**

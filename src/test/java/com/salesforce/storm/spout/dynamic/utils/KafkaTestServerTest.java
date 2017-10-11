@@ -23,14 +23,9 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka;
+package com.salesforce.storm.spout.dynamic.utils;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import kafka.consumer.ConsumerIterator;
-import kafka.consumer.KafkaStream;
-import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.message.MessageAndMetadata;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -39,21 +34,16 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
@@ -66,12 +56,10 @@ public class KafkaTestServerTest {
     private static final Logger logger = LoggerFactory.getLogger(KafkaTestServerTest.class);
 
     /**
-     * We have a single embedded kafka server that runs for every test within this class.
-     *
-     * It's automatically started before any methods are run via the @BeforeClass annotation.
-     * It's automatically stopped after all of the tests are completed via the @AfterClass annotation.
+     * Create shared kafka test server.
      */
-    private KafkaTestServer kafkaTestServer;
+    @ClassRule
+    public static final SharedKafkaTestResource sharedKafkaTestResource = new SharedKafkaTestResource();
 
     /**
      * Before every test, we generate a random topic name and create it within the embedded kafka server.
@@ -85,34 +73,12 @@ public class KafkaTestServerTest {
      */
     @Before
     public void beforeTest() throws Exception {
-        // Setup kafka test server
-        kafkaTestServer = new KafkaTestServer();
-        kafkaTestServer.start();
-
         // Generate topic name
         topicName = getClass().getSimpleName() + Clock.systemUTC().millis();
 
         // Create topic with a single partition,
         // NOTE: This will create partition id 0, because partitions are indexed at 0 :)
-        kafkaTestServer.createTopic(topicName, 1);
-    }
-
-    /**
-     * Here we shut down the internal test kafka and zookeeper services.
-     */
-    @After
-    public void destroyKafkaServer() {
-        // Close out kafka test server if needed
-        if (kafkaTestServer == null) {
-            return;
-        }
-
-        try {
-            kafkaTestServer.shutdown();
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
-        }
-        kafkaTestServer = null;
+        getKafkaTestServer().createTopic(topicName, 1);
     }
 
     /**
@@ -132,7 +98,8 @@ public class KafkaTestServerTest {
         ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topicName, partitionId, expectedKey, expectedValue);
 
         // Create a new producer
-        KafkaProducer<String, String> producer = kafkaTestServer.getKafkaProducer(StringSerializer.class.getName(), StringSerializer.class.getName());
+        KafkaProducer<String, String> producer = getKafkaTestServer()
+            .getKafkaProducer(StringSerializer.class.getName(), StringSerializer.class.getName());
 
         // Produce it & wait for it to complete.
         final RecordMetadata recordMetadata = producer.send(producerRecord).get();
@@ -142,7 +109,8 @@ public class KafkaTestServerTest {
         // Close producer!
         producer.close();
 
-        KafkaConsumer<String, String> kafkaConsumer = kafkaTestServer.getKafkaConsumer(StringDeserializer.class.getName(), StringDeserializer.class.getName());
+        KafkaConsumer<String, String> kafkaConsumer = getKafkaTestServer()
+            .getKafkaConsumer(StringDeserializer.class.getName(), StringDeserializer.class.getName());
         List<TopicPartition> topicPartitionList = Lists.newArrayList();
         for (PartitionInfo partitionInfo: kafkaConsumer.partitionsFor(topicName)) {
             topicPartitionList.add(new TopicPartition(partitionInfo.topic(), partitionInfo.partition()));
@@ -165,5 +133,12 @@ public class KafkaTestServerTest {
 
         // close consumer
         kafkaConsumer.close();
+    }
+
+    /**
+     * Simple accessor.
+     */
+    private KafkaTestServer getKafkaTestServer() {
+        return sharedKafkaTestResource.getKafkaTestServer();
     }
 }

@@ -25,12 +25,11 @@
 
 package com.salesforce.storm.spout.dynamic.utils;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaTestServer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import com.google.common.base.Charsets;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
