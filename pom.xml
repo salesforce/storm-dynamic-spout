@@ -29,11 +29,42 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.salesforce</groupId>
-    <artifactId>storm-sideline-spout</artifactId>
+    <groupId>com.salesforce.storm</groupId>
+    <artifactId>dynamic-spout</artifactId>
     <version>0.8-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>storm-sideline-spout</name>
+    <name>dynamic-spout</name>
+    <description>A framework for building spouts for Apache Storm and a Kafka based spout for dynamically skipping messages to be processed later.</description>
+    <inceptionYear>2017</inceptionYear>
+    <url>https://github.com/salesforce/storm-dynamic-spout</url>
+    <organization>
+        <name>Salesforce</name>
+        <url>http://www.salesforce.com</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>BSD-3</name>
+            <url>https://github.com/salesforce/storm-dynamic-spout/blob/master/LICENSE.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Stephen Powis</name>
+            <email>spowis@salesforce.com</email>
+            <organization>Salesforce</organization>
+        </developer>
+        <developer>
+            <name>Stan Lemon</name>
+            <email>slemon@salesforce.com</email>
+            <organization>Salesforce</organization>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git://github.com/salesforce/storm-dynamic-spout.git</connection>
+        <developerConnection>scm:git:ssh://github.com:salesforce/storm-dynamic-spout.git</developerConnection>
+        <url>https://github.com/salesforce/storm-dynamic-spout/tree/master</url>
+    </scm>
 
     <!-- Require Maven 3.3.9 -->
     <prerequisites>
