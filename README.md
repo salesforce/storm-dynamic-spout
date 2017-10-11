@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/salesforce/storm-dynamic-spout.svg?branch=master)](https://travis-ci.org/salesforce/storm-dynamic-spout)
+
 *This project is under active development.*
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
