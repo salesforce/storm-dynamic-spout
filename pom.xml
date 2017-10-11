@@ -87,6 +87,9 @@
         <!-- Define which Curator version -->
         <curatorVersion>2.12.0</curatorVersion>
 
+        <!-- Define which Curator version -->
+        <curatorTestVersion>2.12.0</curatorTestVersion>
+
         <!-- test toggling -->
         <skipTests>false</skipTests>
         <skipCodeCoverage>true</skipCodeCoverage>
@@ -103,29 +106,13 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Kafka -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.11</artifactId>
-            <version>${kafkaVersion}</version>
-            <exclusions>
-                <!-- Don't bring in kafka's logging framework -->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- Kafka Client -->
+        <!-- Kafka Client - Optional Dependency -->
+        <!-- Only required if you make use of the Kafka based consumer -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>${kafkaVersion}</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- Google Commons -->
@@ -214,10 +201,30 @@
             </exclusions>
         </dependency>
 
+        <!-- To stand up an internal zookeeper server within tests -->
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>${curatorVersion}</version>
+            <version>${curatorTestVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- To stand up an internal kafka cluster within tests -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.11</artifactId>
+            <version>${kafkaVersion}</version>
+            <exclusions>
+                <!-- Don't bring in kafka's logging framework -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>test</scope>
         </dependency>
     </dependencies>
