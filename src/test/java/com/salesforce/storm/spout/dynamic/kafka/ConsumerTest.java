@@ -149,9 +149,7 @@ public class ConsumerTest {
         final ConsumerPeerContext consumerPeerContext = getDefaultConsumerCohortDefinition();
 
         // Define expected kafka brokers
-        final String expectedKafkaBrokers =
-            getKafkaTestServer().getKafkaServer().serverConfig().advertisedHostName() + ":"
-            + getKafkaTestServer().getKafkaServer().serverConfig().advertisedPort();
+        final String expectedKafkaBrokers = getKafkaTestServer().getKafkaConnectString();
 
         // Call constructor
         final Consumer consumer = new Consumer();
@@ -2620,8 +2618,7 @@ public class ConsumerTest {
         // Kafka Consumer config items
         defaultConfig.put(
             KafkaConsumerConfig.KAFKA_BROKERS,
-            Lists.newArrayList(getKafkaTestServer().getKafkaServer().serverConfig().advertisedHostName()
-            + ":" + getKafkaTestServer().getKafkaServer().serverConfig().advertisedPort())
+            Lists.newArrayList(getKafkaTestServer().getKafkaConnectString())
         );
         defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");
@@ -2629,7 +2626,7 @@ public class ConsumerTest {
 
         // Dynamic Spout config items
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getKafkaConnectString()));
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);
