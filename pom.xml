@@ -87,8 +87,6 @@
         <!-- Define which Curator version -->
         <curatorVersion>2.12.0</curatorVersion>
 
-
-
         <!-- test toggling -->
         <skipTests>false</skipTests>
         <skipCodeCoverage>true</skipCodeCoverage>
@@ -186,7 +184,7 @@
         <dependency>
             <groupId>com.tngtech.java</groupId>
             <artifactId>junit-dataprovider</artifactId>
-            <version>1.12.0</version>
+            <version>1.13.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -232,14 +230,6 @@
                 <directory>src/test/resources/</directory>
             </testResource>
         </testResources>
-
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh</artifactId>
-                <version>2.4</version>
-            </extension>
-        </extensions>
 
         <plugins>
             <plugin>
@@ -296,7 +286,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.7.201606060606</version>
+                <version>0.7.9</version>
                 <configuration>
                     <skip>${skipCodeCoverage}</skip>
                 </configuration>
@@ -327,7 +317,7 @@
                 </executions>
             </plugin>
 
-            <!-- prevents integration tests from running in normal test suite -->
+            <!-- Surefire plugin for running tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -340,25 +330,9 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <!-- ${argLine} gets defined by jacoco plugin -->
                     <argLine>${argLine} -Xmx1g</argLine>
                     <skipTests>${skipTests}</skipTests>
-                    <runOrder>alphabetical</runOrder>
-                </configuration>
-            </plugin>
-
-            <!-- Artifactory deploy -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-            </plugin>
-
-            <!-- set output location -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <outputDirectory>${project.build.directory}/${jarOutputDir}</outputDirectory>
                 </configuration>
             </plugin>
 
@@ -375,14 +349,9 @@
                         <exclude>**.yml</exclude>
                         <exclude>**.yaml</exclude>
                         <exclude>**.xml</exclude>
-                        <exclude>OWNERS</exclude>
-                        <exclude>Dockerfile</exclude>
                         <exclude>script/**</exclude>
                         <exclude>src/test/resources/**</exclude>
                         <exclude>src/main/resources/**</exclude>
-                        <exclude>src/main/resources/**</exclude>
-                        <!-- Whole bunch of stuff from CI lives in here that we shouldn't be checking for licenses -->
-                        <exclude>**/bamboo-configuration/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -413,7 +382,7 @@
                             <failsOnError>true</failsOnError>
                             <enableRSS>false</enableRSS>
 
-                            <!-- By default skip checkstyle validation-->
+                            <!-- By default we enable checkstyle validation -->
                             <skip>${skipCheckStyle}</skip>
                         </configuration>
                         <goals>
@@ -470,9 +439,4 @@
             </plugin>
         </plugins>
     </reporting>
-
-
-
-
-
 </project>
