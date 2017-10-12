@@ -85,9 +85,10 @@
         <kafkaVersion>0.10.0.1</kafkaVersion>
 
         <!-- Define which Curator version -->
-        <curatorVersion>2.12.0</curatorVersion>
+        <curatorVersion>4.0.0</curatorVersion>
 
-
+        <!-- Define which Curator Test version -->
+        <curatorTestVersion>2.12.0</curatorTestVersion>
 
         <!-- test toggling -->
         <skipTests>false</skipTests>
@@ -105,29 +106,13 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Kafka -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.11</artifactId>
-            <version>${kafkaVersion}</version>
-            <exclusions>
-                <!-- Don't bring in kafka's logging framework -->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- Kafka Client -->
+        <!-- Kafka Client - Optional Dependency -->
+        <!-- Only required if you make use of the Kafka based consumer -->
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>${kafkaVersion}</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- Google Commons -->
@@ -186,7 +171,7 @@
         <dependency>
             <groupId>com.tngtech.java</groupId>
             <artifactId>junit-dataprovider</artifactId>
-            <version>1.12.0</version>
+            <version>1.13.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -216,10 +201,30 @@
             </exclusions>
         </dependency>
 
+        <!-- To stand up an internal zookeeper server within tests -->
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
-            <version>${curatorVersion}</version>
+            <version>${curatorTestVersion}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- To stand up an internal kafka cluster within tests -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.11</artifactId>
+            <version>${kafkaVersion}</version>
+            <exclusions>
+                <!-- Don't bring in kafka's logging framework -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -232,14 +237,6 @@
                 <directory>src/test/resources/</directory>
             </testResource>
         </testResources>
-
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh</artifactId>
-                <version>2.4</version>
-            </extension>
-        </extensions>
 
         <plugins>
             <plugin>
@@ -296,7 +293,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.7.201606060606</version>
+                <version>0.7.9</version>
                 <configuration>
                     <skip>${skipCodeCoverage}</skip>
                 </configuration>
@@ -327,7 +324,7 @@
                 </executions>
             </plugin>
 
-            <!-- prevents integration tests from running in normal test suite -->
+            <!-- Surefire plugin for running tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -340,25 +337,9 @@
                     </dependency>
                 </dependencies>
                 <configuration>
+                    <!-- ${argLine} gets defined by jacoco plugin -->
                     <argLine>${argLine} -Xmx1g</argLine>
                     <skipTests>${skipTests}</skipTests>
-                    <runOrder>alphabetical</runOrder>
-                </configuration>
-            </plugin>
-
-            <!-- Artifactory deploy -->
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-            </plugin>
-
-            <!-- set output location -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <outputDirectory>${project.build.directory}/${jarOutputDir}</outputDirectory>
                 </configuration>
             </plugin>
 
@@ -375,14 +356,9 @@
                         <exclude>**.yml</exclude>
                         <exclude>**.yaml</exclude>
                         <exclude>**.xml</exclude>
-                        <exclude>OWNERS</exclude>
-                        <exclude>Dockerfile</exclude>
                         <exclude>script/**</exclude>
                         <exclude>src/test/resources/**</exclude>
                         <exclude>src/main/resources/**</exclude>
-                        <exclude>src/main/resources/**</exclude>
-                        <!-- Whole bunch of stuff from CI lives in here that we shouldn't be checking for licenses -->
-                        <exclude>**/bamboo-configuration/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -413,7 +389,7 @@
                             <failsOnError>true</failsOnError>
                             <enableRSS>false</enableRSS>
 
-                            <!-- By default skip checkstyle validation-->
+                            <!-- By default we enable checkstyle validation -->
                             <skip>${skipCheckStyle}</skip>
                         </configuration>
                         <goals>
@@ -470,9 +446,4 @@
             </plugin>
         </plugins>
     </reporting>
-
-
-
-
-
 </project>
