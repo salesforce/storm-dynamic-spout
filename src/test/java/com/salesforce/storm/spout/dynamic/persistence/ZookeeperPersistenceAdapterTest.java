@@ -834,9 +834,9 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
-        final String zkRootPath = configuredZkRoot + "/" + configuredConsumerPrefix;
         final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
+        // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -865,6 +865,9 @@ public class ZookeeperPersistenceAdapterTest {
         assertTrue(ids.contains(sidelineRequestIdentifier1));
         assertTrue(ids.contains(sidelineRequestIdentifier2));
         assertTrue(ids.contains(sidelineRequestIdentifier3));
+
+        // Close adapter
+        persistenceAdapter.close();
     }
 
     /**
@@ -877,6 +880,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
+        // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -899,6 +903,9 @@ public class ZookeeperPersistenceAdapterTest {
         Set<Integer> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
 
         assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0)), partitionsForSidelineRequest2);
+
+        // Close adapter
+        persistenceAdapter.close();
     }
 
     /**
