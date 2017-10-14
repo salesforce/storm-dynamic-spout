@@ -39,6 +39,7 @@ import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.InvalidOffsetException;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.Metric;
@@ -256,7 +257,14 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             } else {
                 // We do not have an existing offset saved, so start from the head
                 getKafkaConsumer().seekToBeginning(Collections.singletonList(topicPartition));
-                offset = getKafkaConsumer().position(topicPartition) - 1;
+
+                // This preserve the 0.10 behavior where a seekToBeginning() call followed by position() on an
+                // otherwise empty partition would yield us a -1.
+                try {
+                    offset = getKafkaConsumer().position(topicPartition) - 1;
+                } catch (InvalidOffsetException ex) {
+                    offset = -1L;
+                }
 
                 logger.info(
                     "Starting at the beginning of namespace {} partition {} => offset {}",
