@@ -80,7 +80,7 @@
         <jarOutputDir></jarOutputDir>
 
         <!-- Define which version of storm you'll be running this topology on -->
-        <stormVersion>1.0.3</stormVersion>
+        <stormVersion>1.1.1</stormVersion>
 
         <!-- Define which kafka version -->
         <kafkaVersion>0.10.0.1</kafkaVersion>
