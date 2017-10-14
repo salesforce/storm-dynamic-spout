@@ -108,6 +108,15 @@ public class KafkaTestServer implements AutoCloseable {
         kafkaProperties.setProperty("auto.create.topics.enable", "true");
         kafkaProperties.setProperty("zookeeper.session.timeout.ms", "30000");
         kafkaProperties.setProperty("broker.id", "1");
+        kafkaProperties.setProperty("auto.offset.reset", "latest");
+
+        // Define replication factor for internal topics to 1
+        kafkaProperties.setProperty("offsets.topic.replication.factor", "1");
+        kafkaProperties.setProperty("offset.storage.replication.factor", "1");
+        kafkaProperties.setProperty("transaction.state.log.replication.factor", "1");
+        kafkaProperties.setProperty("config.storage.replication.factor", "1");
+        kafkaProperties.setProperty("status.storage.replication.factor", "1");
+        kafkaProperties.setProperty("default.replication.factor", "1");
 
         final KafkaConfig config = new KafkaConfig(kafkaProperties);
         kafka = new KafkaServerStartable(config);
