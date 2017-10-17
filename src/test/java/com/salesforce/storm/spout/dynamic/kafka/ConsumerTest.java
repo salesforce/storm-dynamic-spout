@@ -1823,6 +1823,9 @@ public class ConsumerTest {
         };
     }
 
+    @Rule
+    public ExpectedException expectedExceptionConsumeFromTopicAfterUnsubscribingFromSinglePartition = ExpectedException.none();
+
     /**
      * 1. Setup a consumer to consume from a topic with 1 partition.
      * 2. Produce several messages into that partition.
@@ -1872,11 +1875,13 @@ public class ConsumerTest {
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should be true", result);
 
-        // Attempt to consume, but nothing should be returned, because we unsubscribed.
-        for (int x = 0; x < expectedNumberOfMsgs; x++) {
-            foundRecord = consumer.nextRecord();
-            assertNull(foundRecord);
-        }
+        // Now call nextRecord() again, we expect this to throw an exception
+        expectedExceptionConsumeFromTopicAfterUnsubscribingFromSinglePartition
+            .expect(IllegalStateException.class);
+        expectedExceptionConsumeFromTopicAfterUnsubscribingFromSinglePartition
+            .expectMessage("Consumer is not subscribed to any topics or assigned any partitions");
+
+        consumer.nextRecord();
 
         // Close out consumer
         consumer.close();
@@ -2067,27 +2072,16 @@ public class ConsumerTest {
             "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
         );
 
-        final List<Record> records = Lists.newArrayList();
-        Record consumerRecord;
-        int attempts = 0;
-        do {
-            consumerRecord = consumer.nextRecord();
-            if (consumerRecord != null) {
-                logger.info("Found offset {} on {}", consumerRecord.getOffset(), consumerRecord.getPartition());
-                records.add(consumerRecord);
+        final List<Record> records = asyncConsumeMessages(consumer, 7);
 
-                // Remove from our expected set
-                expectedValues.remove("partition" + consumerRecord.getPartition() + "-offset" + consumerRecord.getOffset());
-            } else {
-                attempts++;
-            }
+        for (final Record record : records) {
+            expectedValues.remove("partition" + record.getPartition() + "-offset" + record.getOffset());
         }
-        while (attempts <= 2);
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
         assertEquals("Should have 7 messages from kafka", numberOfExpectedMessages + 1, records.size());
-        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+        assertTrue("Expected set should now be empty, we found everything " + expectedValues, expectedValues.isEmpty());
 
         // Call nextRecord 2 more times, both should be null
         for (int x = 0; x < 2; x++) {
