@@ -1823,9 +1823,6 @@ public class ConsumerTest {
         };
     }
 
-    @Rule
-    public ExpectedException expectedExceptionConsumeFromTopicAfterUnsubscribingFromSinglePartition = ExpectedException.none();
-
     /**
      * 1. Setup a consumer to consume from a topic with 1 partition.
      * 2. Produce several messages into that partition.
@@ -1875,13 +1872,11 @@ public class ConsumerTest {
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should be true", result);
 
-        // Now call nextRecord() again, we expect this to throw an exception
-        expectedExceptionConsumeFromTopicAfterUnsubscribingFromSinglePartition
-            .expect(IllegalStateException.class);
-        expectedExceptionConsumeFromTopicAfterUnsubscribingFromSinglePartition
-            .expectMessage("Consumer is not subscribed to any topics or assigned any partitions");
-
-        consumer.nextRecord();
+        // Attempt to consume, but nothing should be returned, because we unsubscribed.
+        for (int x = 0; x < expectedNumberOfMsgs; x++) {
+            foundRecord = consumer.nextRecord();
+            assertNull(foundRecord);
+        }
 
         // Close out consumer
         consumer.close();

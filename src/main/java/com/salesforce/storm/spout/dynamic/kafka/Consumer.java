@@ -418,6 +418,8 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             // Time to refill the buffer
             try {
                 buffer = getKafkaConsumer().poll(300);
+            } catch (IllegalStateException illegalStateException) {
+                return;
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
                 handleOffsetOutOfRange(outOfRangeException);
