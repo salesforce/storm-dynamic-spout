@@ -456,14 +456,14 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      *
      * @param outOfRangeException The exception that was raised by the consumer.
      */
-    private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
+    private void handleOffsetOutOfRange(final OffsetOutOfRangeException outOfRangeException) {
         final Set<TopicPartition> resetPartitions = Sets.newHashSet();
 
         // Grab all partitions our consumer is subscribed too.
-        Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
+        final Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
 
         // Loop over all subscribed partitions
-        for (ConsumerPartition assignedConsumerPartition : allAssignedPartitions) {
+        for (final ConsumerPartition assignedConsumerPartition : allAssignedPartitions) {
             // Convert to TopicPartition
             final TopicPartition assignedTopicPartition = new TopicPartition(
                 assignedConsumerPartition.namespace(),
