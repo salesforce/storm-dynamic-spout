@@ -26,21 +26,23 @@
 package com.salesforce.storm.spout.dynamic.utils;
 
 import com.google.common.collect.Maps;
-import kafka.admin.AdminUtils;
-import kafka.admin.RackAwareMode;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
-import kafka.utils.ZKStringSerializer$;
-import kafka.utils.ZkUtils;
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingServer;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 /**
  * This will spin up a ZooKeeper and Kafka server for use in integration tests. Simply
@@ -49,7 +51,6 @@ import java.util.Properties;
  * or use the AutoCloseable interface.
  */
 public class KafkaTestServer implements AutoCloseable {
-
     private TestingServer zkServer;
     private KafkaServerStartable kafka;
 
@@ -97,17 +98,38 @@ public class KafkaTestServer implements AutoCloseable {
         // Determine what port to run kafka on
         final String kafkaPort = String.valueOf(InstanceSpec.getRandomPort());
 
+        // Assume local host.
+        final String hostname = "127.0.0.1";
+
         // Build properties
         Properties kafkaProperties = new Properties();
         kafkaProperties.setProperty("zookeeper.connect", zkConnectionString);
         kafkaProperties.setProperty("port", kafkaPort);
         kafkaProperties.setProperty("log.dir", logDir.getAbsolutePath());
-        kafkaProperties.setProperty("host.name", "127.0.0.1");
-        kafkaProperties.setProperty("advertised.host.name", "127.0.0.1");
-        kafkaProperties.setProperty("advertised.port", kafkaPort);
         kafkaProperties.setProperty("auto.create.topics.enable", "true");
         kafkaProperties.setProperty("zookeeper.session.timeout.ms", "30000");
         kafkaProperties.setProperty("broker.id", "1");
+        kafkaProperties.setProperty("auto.offset.reset", "latest");
+
+        // Ensure that we're advertising appropriately
+        kafkaProperties.setProperty("host.name", hostname);
+        kafkaProperties.setProperty("advertised.host.name", hostname);
+        kafkaProperties.setProperty("advertised.port", kafkaPort);
+        kafkaProperties.setProperty("advertised.listeners", "PLAINTEXT://" + hostname + ":" + kafkaPort);
+        kafkaProperties.setProperty("listeners", "PLAINTEXT://" + hostname + ":" + kafkaPort);
+
+        // Lower active threads.
+        kafkaProperties.setProperty("num.io.threads", "2");
+        kafkaProperties.setProperty("num.network.threads", "2");
+        kafkaProperties.setProperty("log.flush.interval.messages", "1");
+
+        // Define replication factor for internal topics to 1
+        kafkaProperties.setProperty("offsets.topic.replication.factor", "1");
+        kafkaProperties.setProperty("offset.storage.replication.factor", "1");
+        kafkaProperties.setProperty("transaction.state.log.replication.factor", "1");
+        kafkaProperties.setProperty("config.storage.replication.factor", "1");
+        kafkaProperties.setProperty("status.storage.replication.factor", "1");
+        kafkaProperties.setProperty("default.replication.factor", "1");
 
         final KafkaConfig config = new KafkaConfig(kafkaProperties);
         kafka = new KafkaServerStartable(config);
@@ -124,33 +146,28 @@ public class KafkaTestServer implements AutoCloseable {
     }
 
     /**
-     * Creates a namespace in Kafka. If the namespace already exists this does nothing.
+     * Creates a topic in Kafka. If the topic already exists this does nothing.
      * @param topicName - the namespace name to create.
      * @param partitions - the number of partitions to create.
      */
     public void createTopic(final String topicName, final int partitions) {
-        final int sessionTimeoutInMs = 10000;
-        final int connectionTimeoutInMs = 10000;
+        final short replicationFactor = 1;
 
-        /*
-         * Note: You must initialize the ZkClient with ZKStringSerializer. If you don't then createTopic()
-         * will only seem to work (it will return without error). The namespace will exist only in ZooKeeper
-         * and will be returned when listing topics, but Kafka itself does not create the namespace.
-         */
-        ZkClient zkClient = new ZkClient(
-            getZookeeperServer().getConnectString(),
-            sessionTimeoutInMs,
-            connectionTimeoutInMs,
-            ZKStringSerializer$.MODULE$
-        );
-        ZkUtils zkUtils = ZkUtils.apply(zkClient, false);
-        if (!AdminUtils.topicExists(zkUtils, topicName)) {
-            int replicationFactor = 1;
-            AdminUtils.createTopic(zkUtils, topicName, partitions, replicationFactor, new Properties(), new RackAwareMode.Disabled$());
+        // Create admin client
+        try (final AdminClient adminClient = KafkaAdminClient.create(buildDefaultClientConfig())) {
+            // Define topic
+            final NewTopic newTopic = new NewTopic(topicName, partitions, replicationFactor);
+
+            // Create topic, which is async call.
+            final CreateTopicsResult createTopicsResult = adminClient.createTopics(Collections.singleton(newTopic));
+
+            // Since the call is Async, Lets wait for it to complete.
+            try {
+                createTopicsResult.values().get(topicName).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
         }
-
-        // Close connection
-        zkClient.close();
     }
 
     /**
@@ -170,6 +187,9 @@ public class KafkaTestServer implements AutoCloseable {
         kafkaProducerConfig.put("bootstrap.servers", getKafkaConnectString());
         kafkaProducerConfig.put("key.serializer", keySerializer);
         kafkaProducerConfig.put("value.serializer", valueSerializer);
+        kafkaProducerConfig.put("max.in.flight.requests.per.connection", 1);
+        kafkaProducerConfig.put("retries", 5);
+        kafkaProducerConfig.put("client.id", getClass().getSimpleName() + " Producer");
         kafkaProducerConfig.put("batch.size", 0);
 
         // Return our producer
@@ -182,14 +202,19 @@ public class KafkaTestServer implements AutoCloseable {
      * @param valueDeserializer which deserializer to use for value
      */
     public KafkaConsumer getKafkaConsumer(final String keyDeserializer, final String valueDeserializer) {
-        Map<String, Object> kafkaConsumerConfig = Maps.newHashMap();
-        kafkaConsumerConfig.put("bootstrap.servers", getKafkaConnectString());
-        kafkaConsumerConfig.put("group.id", "test-consumer-id");
+        Map<String, Object> kafkaConsumerConfig = buildDefaultClientConfig();
         kafkaConsumerConfig.put("key.deserializer", keyDeserializer);
         kafkaConsumerConfig.put("value.deserializer", valueDeserializer);
         kafkaConsumerConfig.put("partition.assignment.strategy", "org.apache.kafka.clients.consumer.RoundRobinAssignor");
 
         return new KafkaConsumer(kafkaConsumerConfig);
+    }
+
+    private Map<String, Object> buildDefaultClientConfig() {
+        Map<String, Object> defaultClientConfig = Maps.newHashMap();
+        defaultClientConfig.put("bootstrap.servers", getKafkaConnectString());
+        defaultClientConfig.put("client.id", "test-consumer-id");
+        return defaultClientConfig;
     }
 
     /**

@@ -39,6 +39,7 @@ import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.InvalidOffsetException;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.Metric;
@@ -256,7 +257,16 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             } else {
                 // We do not have an existing offset saved, so start from the head
                 getKafkaConsumer().seekToBeginning(Collections.singletonList(topicPartition));
-                offset = getKafkaConsumer().position(topicPartition) - 1;
+
+                // This preserve the 0.10.0.x behavior where a seekToBeginning() call followed by position() on an
+                // otherwise empty partition would yield us a -1.  In 0.11.0.x it throws this exception if the
+                // partition is empty.
+                try {
+                    offset = getKafkaConsumer().position(topicPartition) - 1;
+                } catch (InvalidOffsetException ex) {
+                    logger.info("{} appears to be empty!", topicPartition);
+                    offset = -1L;
+                }
 
                 logger.info(
                     "Starting at the beginning of namespace {} partition {} => offset {}",
@@ -407,6 +417,14 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private void fillBuffer() {
         // If our buffer is null, or our iterator is at the end
         if (buffer == null || !bufferIterator.hasNext()) {
+
+            // If we have no assigned partitions to consume from, then don't call poll()
+            // The underlying consumer call here does NOT make an API call, so this is safe to call within this loop.
+            if (getKafkaConsumer().assignment().isEmpty()) {
+                // No assigned partitions, nothing to consume :)
+                return;
+            }
+
             // Time to refill the buffer
             try {
                 buffer = getKafkaConsumer().poll(300);
@@ -464,6 +482,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
+            // TODO invert this if statement and call continue.
             if (outOfRangePartitions.contains(assignedTopicPartition)) {
                 // The last offset we have in our persistence layer
                 final long lastPersistedOffset = persistenceAdapter.retrieveConsumerState(
@@ -507,33 +526,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 } else {
                     resetPartitions.add(assignedTopicPartition);
                 }
-
-                continue;
-            }
-
-            // This partition did NOT have any errors, but its possible that we "lost" some messages
-            // during the poll() call.  This partition needs to seek back to its previous position
-            // before the exception was thrown.
-
-            // Annoyingly we can't ask the KafkaConsumer for the current position via position() because
-            // it will assume we've consumed the messages it received prior to throwing the exception
-            // and we'll skip message, and we have no way to access those already consumed messages.
-
-            // Whatever offset is returned here, we've already played into the system.  We could try to seek
-            // to the this offset + 1, but there's no promise that offset actually exists!  If we did that and it doesn't
-            // exist, we'll reset that partition back to the earliest erroneously.
-
-            // The short of this means, we're going to replay a message from each partition we seek back to, but
-            // thats better than missing offsets entirely.
-
-            // If offset is -1
-            if (lastStartedOffset == -1) {
-                // That means we haven't started tracking any offsets yet, we should seek to earliest on this partition
-                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, lastStartedOffset);
-                resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
-            } else {
-                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, lastStartedOffset);
-                getKafkaConsumer().seek(assignedTopicPartition, lastStartedOffset);
             }
         }
 
@@ -632,7 +624,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
         // Determine what we're currently assigned to,
         // We clone the returned set so we can modify it.
-        Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
+        final Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
 
         // If it doesn't contain our namespace partition
         if (!assignedTopicPartitions.contains(consumerPartitionToUnsubscribe)) {

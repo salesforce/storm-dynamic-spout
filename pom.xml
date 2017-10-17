@@ -32,7 +32,7 @@
     <groupId>com.salesforce.storm</groupId>
     <artifactId>dynamic-spout</artifactId>
     <!-- Last release was 0.8.0 on 2017-10-12 -->
-    <version>0.8-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>dynamic-spout</name>
     <description>A framework for building spouts for Apache Storm and a Kafka based spout for dynamically skipping messages to be processed later.</description>
@@ -83,7 +83,7 @@
         <stormVersion>1.0.3</stormVersion>
 
         <!-- Define which kafka version -->
-        <kafkaVersion>0.10.0.1</kafkaVersion>
+        <kafkaVersion>0.11.0.1</kafkaVersion>
 
         <!-- Define which Curator version -->
         <curatorVersion>4.0.0</curatorVersion>
