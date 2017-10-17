@@ -93,4 +93,15 @@ public class ProducedKafkaRecord<K, V> {
     public V getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "ProducedKafkaRecord{"
+            + "topic='" + topic + '\''
+            + ", partition=" + partition
+            + ", offset=" + offset
+            + ", key=" + key
+            + ", value=" + value
+            + '}';
+    }
 }
