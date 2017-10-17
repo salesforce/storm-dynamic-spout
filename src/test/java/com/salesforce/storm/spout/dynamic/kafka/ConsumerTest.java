@@ -2439,8 +2439,13 @@ public class ConsumerTest {
         // Attempt to retrieve records
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
 
-        // Validate we got 6 records, no need to do deeper inspection for this test
-        assertEquals("We should have 6 records", numberOfExpectedMessages, records.size());
+        // Validate we got 2 records, both should be from partition 0
+        assertEquals("We should have 2 records", numberOfExpectedMessages, records.size());
+
+        // Validate only partition 0
+        for (final Record record: records) {
+            assertEquals("Should have come from partition0 only", 0, record.getPartition());
+        }
 
         // Now validate the state
         ConsumerState consumerState = consumer.flushConsumerState();
@@ -2669,13 +2674,19 @@ public class ConsumerTest {
 
         await()
             .atMost(5, TimeUnit.SECONDS)
+            .pollInterval(100, TimeUnit.MILLISECONDS)
             .until(() -> {
-                Record nextRecord = consumer.nextRecord();
+                final Record nextRecord = consumer.nextRecord();
                 if (nextRecord != null) {
                     consumedMessages.add(nextRecord);
                 }
                 return consumedMessages.size();
             }, equalTo(numberOfMessagesToConsume));
+
+        // Santity Test - Now call consume again, we shouldn't get any messages
+        final Record nextRecord = consumer.nextRecord();
+        assertNull("Should have no more records", nextRecord);
+
         return consumedMessages;
     }
 

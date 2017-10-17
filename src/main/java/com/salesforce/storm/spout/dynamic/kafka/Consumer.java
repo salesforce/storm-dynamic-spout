@@ -468,6 +468,9 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             final long endingOffset = getKafkaConsumer().endOffsets(Collections.singletonList(topicPartition))
                 .get(topicPartition);
 
+            logger.warn("Offset Out of Range for partition {} at offset {}, kafka says last offset in partition is {}",
+                topicPartition.partition(), exceptionOffset, endingOffset);
+
             // We have a hypothesis that the consumer can actually seek past the last message of the topic,
             // this yields this error and we want to catch it and try to back it up just a bit to a place that
             // we can work from.
