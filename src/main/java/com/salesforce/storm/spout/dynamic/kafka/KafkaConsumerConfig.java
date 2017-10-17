@@ -193,7 +193,7 @@ public class KafkaConsumerConfig {
          *
          * Note: If we use earliest the following problem arises:
          * We ack offsets 1,2,3,4,5 so our last completed offset is 5.  Then we determine offset 6
-         * is out of range, and jump to offset 10 and start acking 10,11,12,13.  Our largest completed
+         * is out of range, and jump to the new earliest offset of 10 and start acking 10,11,12,13.  Our largest completed
          * offset will still be 5 because of the hole.  So we'll have issues using smallest.
          *
          * We probably need to bubble up an exception, catch it, log a scary error about
