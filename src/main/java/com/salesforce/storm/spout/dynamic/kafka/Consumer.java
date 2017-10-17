@@ -478,6 +478,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
             // If this partition was out of range
             // we simply log an error about data loss, and skip them for now.
+            // TODO invert this if statement and call continue.
             if (outOfRangePartitions.contains(assignedTopicPartition)) {
                 // The last offset we have in our persistence layer
                 final long lastPersistedOffset = persistenceAdapter.retrieveConsumerState(
@@ -489,7 +490,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
                 logger.error(
                     "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {},"
-                        + " lastFinished = {}, original exception = {}",
+                    + " lastFinished = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
                     lastStartedOffset,
@@ -521,36 +522,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 } else {
                     resetPartitions.add(assignedTopicPartition);
                 }
-
-                continue;
-            }
-
-            // This partition did NOT have any errors, but its possible that we "lost" some messages
-            // during the poll() call.  This partition needs to seek back to its previous position
-            // before the exception was thrown.
-
-            // Annoyingly we can't ask the KafkaConsumer for the current position via position() because
-            // it will assume we've consumed the messages it received prior to throwing the exception
-            // and we'll skip message, and we have no way to access those already consumed messages.
-
-            // Whatever offset is returned here, we've already played into the system.  We could try to seek
-            // to the this offset + 1, but there's no promise that offset actually exists!  If we did that and it doesn't
-            // exist, we'll reset that partition back to the earliest erroneously.
-
-            // The short of this means, we're going to replay a message from each partition we seek back to, but
-            // thats better than missing offsets entirely.
-
-            // If offset is -1
-            if (lastStartedOffset == -1) {
-                // That means we haven't started tracking any offsets yet, we should seek to earliest on this partition
-                logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, lastStartedOffset);
-                resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
-            } else {
-                long lastKnownPosition = getKafkaConsumer().position(assignedTopicPartition);
-//                logger.info("Position before BT: {}", lastKnownPosition);
-//                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, lastStartedOffset);
-//                //getKafkaConsumer().seek(assignedTopicPartition, lastStartedOffset);
-//                getKafkaConsumer().seek(assignedTopicPartition, lastKnownPosition);
             }
         }
 

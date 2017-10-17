@@ -2067,22 +2067,10 @@ public class ConsumerTest {
             "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
         );
 
-        final List<Record> records = Lists.newArrayList();
-        Record consumerRecord;
-        int attempts = 0;
-        do {
-            consumerRecord = consumer.nextRecord();
-            if (consumerRecord != null) {
-                logger.info("Found offset {} on {}", consumerRecord.getOffset(), consumerRecord.getPartition());
-                records.add(consumerRecord);
-
-                // Remove from our expected set
-                expectedValues.remove("partition" + consumerRecord.getPartition() + "-offset" + consumerRecord.getOffset());
-            } else {
-                attempts++;
-            }
+        final List<Record> records = asyncConsumeMessages(consumer, 6);
+        for (final Record record : records) {
+            expectedValues.remove("partition" + record.getPartition() + "-offset" + record.getOffset());
         }
-        while (attempts <= 2);
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
