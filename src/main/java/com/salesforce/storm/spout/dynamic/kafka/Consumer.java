@@ -258,11 +258,13 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 // We do not have an existing offset saved, so start from the head
                 getKafkaConsumer().seekToBeginning(Collections.singletonList(topicPartition));
 
-                // This preserve the 0.10 behavior where a seekToBeginning() call followed by position() on an
-                // otherwise empty partition would yield us a -1.
+                // This preserve the 0.10.0.x behavior where a seekToBeginning() call followed by position() on an
+                // otherwise empty partition would yield us a -1.  In 0.11.0.x it throws this exception if the
+                // partition is empty.
                 try {
                     offset = getKafkaConsumer().position(topicPartition) - 1;
                 } catch (InvalidOffsetException ex) {
+                    logger.info("{} appears to be empty!", topicPartition);
                     offset = -1L;
                 }
 
@@ -419,6 +421,8 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             try {
                 buffer = getKafkaConsumer().poll(300);
             } catch (IllegalStateException illegalStateException) {
+                // TODO add tests around this scenario
+                logger.error(illegalStateException.getMessage(), illegalStateException);
                 return;
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
@@ -485,7 +489,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
                 logger.error(
                     "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {},"
-                    + " lastFinished = {}, original exception = {}",
+                        + " lastFinished = {}, original exception = {}",
                     exceptionOffset,
                     assignedConsumerPartition,
                     lastStartedOffset,
@@ -542,8 +546,11 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 logger.info("Partition {} has no stored offset, resetting to earliest {}", assignedConsumerPartition, lastStartedOffset);
                 resetPartitionsToEarliest(Collections.singletonList(assignedTopicPartition));
             } else {
-                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, lastStartedOffset);
-                getKafkaConsumer().seek(assignedTopicPartition, lastStartedOffset);
+                long lastKnownPosition = getKafkaConsumer().position(assignedTopicPartition);
+//                logger.info("Position before BT: {}", lastKnownPosition);
+//                logger.info("Backtracking {} offset to {}", assignedConsumerPartition, lastStartedOffset);
+//                //getKafkaConsumer().seek(assignedTopicPartition, lastStartedOffset);
+//                getKafkaConsumer().seek(assignedTopicPartition, lastKnownPosition);
             }
         }
 
