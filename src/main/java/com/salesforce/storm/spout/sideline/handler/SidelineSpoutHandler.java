@@ -39,6 +39,7 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
@@ -415,7 +416,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      */
     @SuppressWarnings("unchecked")
     synchronized void createSidelineTriggers() {
-        final Object triggerClass = getSpoutConfig().get(SpoutConfig.TRIGGER_CLASS);
+        final Object triggerClass = getSpoutConfig().get(SidelineConfig.TRIGGER_CLASS);
 
         // No triggers configured, nothing to setup!
         if (triggerClass == null) {

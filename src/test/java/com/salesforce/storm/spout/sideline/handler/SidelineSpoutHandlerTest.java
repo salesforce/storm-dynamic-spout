@@ -33,6 +33,7 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
@@ -352,7 +353,7 @@ public class SidelineSpoutHandlerTest {
     public void testOnSpoutClose() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SpoutConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
@@ -384,7 +385,7 @@ public class SidelineSpoutHandlerTest {
     public void testMisconfiguredCreateSidelineTriggers() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         // This class better not exist!
-        config.put(SpoutConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
+        config.put(SidelineConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);

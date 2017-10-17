@@ -31,6 +31,7 @@ import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.utils.SharedKafkaTestResource;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
@@ -1364,7 +1365,7 @@ public class DynamicSpoutTest {
 
         config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
 
-        config.put(SpoutConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
