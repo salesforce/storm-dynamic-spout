@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.kafka;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
@@ -190,6 +191,16 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Construct SidelineConsumerConfig based on topology config.
         final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
         final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
+
+        Preconditions.checkArgument(
+            !kafkaBrokers.isEmpty(),
+            "Kafka brokers are required"
+        );
+
+        Preconditions.checkArgument(
+            topic != null && !topic.isEmpty(),
+            "Kafka topic is required"
+        );
 
         // TODO ConsumerConfig should use a VirtualSpoutIdentifier
         final KafkaConsumerConfig consumerConfig = new KafkaConsumerConfig(kafkaBrokers, virtualSpoutIdentifier.toString(), topic);
