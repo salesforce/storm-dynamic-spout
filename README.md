@@ -45,6 +45,22 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
+# Getting Started
+
+To use this library add the following to your pom.xml:
+
+```
+<dependency>
+    <groupId>com.salesforce.storm</groupId>
+    <artifactId>dynamic-spout</artifactId>
+    <version>0.8.0</version>
+</dependency>
+```
+
+In addition to the library we publish source jars and javadocs to maven central. You can find those [here](https://search.maven.org/#artifactdetails%7Ccom.salesforce.storm%7Cdynamic-spout%7C0.8.0%7Cjar).
+
+This project uses the latest [Apache Storm](https://storm.apache.org/) and [Apache Kafka](https://kafka.apache.org/) releases, but this library should function fine using any Storm 1.0 release or higher and any Kafka release 0.10 or higher.  If you run into compatibility problems please let us know by [filing an issue on GitHub](https://github.com/salesforce/storm-dynamic-spout/issues).
+
 # Dynamic Spout Framework
 
 ## Purpose of this project
