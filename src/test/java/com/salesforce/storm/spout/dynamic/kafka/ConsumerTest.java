@@ -2010,7 +2010,7 @@ public class ConsumerTest {
         final int numberOfMsgsPerPartition = 4;
 
         // How many msgs we should expect, 2 for partition 0, 4 from partition1
-        final int numberOfExpectedMessages = 6;
+        final int numberOfExpectedMessages = 2;
 
         // Define our namespace/partitions
         final ConsumerPartition topicPartition0 = new ConsumerPartition(topicName, 0);
@@ -2061,13 +2061,11 @@ public class ConsumerTest {
         // Define the values we expect to get
         final Set<String> expectedValues = Sets.newHashSet(
             // Partition 0 should not skip any messages,
-            "partition0-offset2", "partition0-offset3",
-
-            // Partition 1 should get reset to offset 0
-            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
+            "partition0-offset2", "partition0-offset3"
+            // Nothing from partition 1 since we will reset from tail
         );
 
-        final List<Record> records = asyncConsumeMessages(consumer, 6);
+        final List<Record> records = asyncConsumeMessages(consumer, 2);
         for (final Record record : records) {
             expectedValues.remove("partition" + record.getPartition() + "-offset" + record.getOffset());
         }
@@ -2075,7 +2073,7 @@ public class ConsumerTest {
         // Now do validation
         logger.info("Found {} msgs", records.size());
         assertEquals("Should have " + numberOfExpectedMessages + " messages from kafka", numberOfExpectedMessages, records.size());
-        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+        assertTrue("Expected set should now be empty, we found everything " + expectedValues, expectedValues.isEmpty());
 
         // Call nextRecord 2 more times, both should be null
         for (int x = 0; x < 2; x++) {
@@ -2092,8 +2090,9 @@ public class ConsumerTest {
 
         // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
         assertEquals(
-            "Partition 1's last committed offset should be reset to earliest, or -1 in our case",
-            (Long)(-1L), consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            "Partition 1's last committed offset should be reset to latest, or 4 in our case",
+            Long.valueOf(4L),
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
         );
 
         // Close consumer
@@ -2214,11 +2213,8 @@ public class ConsumerTest {
         expectedValues.clear();
         expectedValues.addAll(ImmutableSet.of(
             // The next 4 entries from partition 0
-            "partition0-offset4", "partition0-offset5", "partition0-offset6", "partition0-offset7",
-
-            // Partition1 gets reset to earliest, so it should be offsets 0->7
-            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3", "partition1-offset4",
-            "partition1-offset5", "partition1-offset6", "partition1-offset7"
+            "partition0-offset4", "partition0-offset5", "partition0-offset6", "partition0-offset7"
+            // Nothing from partition 1 because we reset it to the tail
         ));
 
         // Now set partition 1's offset to something invalid
@@ -2253,10 +2249,10 @@ public class ConsumerTest {
         // Now do validation
         logger.info("Found {} msgs", records.size());
         assertEquals(
-            "Should have 12 (4 from partition0, 8 from partition1) messages from kafka",
-            (3 * numberOfMsgsPerPartition), records.size()
+            "Should have 4 (4 from partition0, 0 from partition1) messages from kafka",
+            (1 * numberOfMsgsPerPartition), records.size()
         );
-        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+        assertTrue("Expected set should now be empty, we found everything " + expectedValues, expectedValues.isEmpty());
 
         // Call nextRecord 2 more times, both should be null
         for (int x = 0; x < 2; x++) {
@@ -2271,10 +2267,11 @@ public class ConsumerTest {
             (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0)
         );
 
-        // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
+        // This is 8 because the original offset we asked for was invalid, so it got set to the latest offset, or for us 8
         assertEquals(
-            "Partition 1's last committed offset should be reset to earliest, or -1 in our case",
-            (Long)(-1L), consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            "Partition 1's last committed offset should be reset to latest, or 8 in our case",
+            Long.valueOf(8L),
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
         );
 
         // Close consumer
@@ -2304,8 +2301,9 @@ public class ConsumerTest {
         final int numberOfMsgsOnPartition0 = 0;
         final int numberOfMsgsOnPartition1 = 4;
 
-        // How many msgs we should expect, 0 for partition 0, 4 from partition1
-        final int numberOfExpectedMessages = numberOfMsgsOnPartition0 + numberOfMsgsOnPartition1;
+        // How many msgs we should expect, 0 for partition 0, 0 from partition1
+        // We'll skip over partition 1 because we're going to reset to tail
+        final int numberOfExpectedMessages = numberOfMsgsOnPartition0;
 
         // Define our namespace/partitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -2342,8 +2340,8 @@ public class ConsumerTest {
         // Attempt to retrieve records
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
 
-        // Validate we got 4 records, no need to do deeper inspection for this test
-        assertEquals("We should have 4 records", 4, records.size());
+        // Validate we got 0 records, no need to do deeper inspection for this test
+        assertEquals("We should have 0 records", 0, records.size());
 
         // Now validate the state
         ConsumerState consumerState = consumer.flushConsumerState();
@@ -2354,7 +2352,7 @@ public class ConsumerTest {
 
         // Before acking anything
         assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
 
         // Ack all of our messages in consumer
         for (final Record record: records) {
@@ -2370,7 +2368,7 @@ public class ConsumerTest {
 
         // After acking messages
         assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at 3", Long.valueOf(3L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
 
         // Clean up
         consumer.close();
@@ -2400,8 +2398,9 @@ public class ConsumerTest {
         final int numberOfMsgsOnPartition0 = 2;
         final int numberOfMsgsOnPartition1 = 4;
 
-        // How many msgs we should expect, 2 for partition 0, 4 from partition1
-        final int numberOfExpectedMessages = numberOfMsgsOnPartition0 + numberOfMsgsOnPartition1;
+        // How many msgs we should expect, 2 for partition 0, 0 from partition1 because our offset is past it
+        // and presumable we have played those before.
+        final int numberOfExpectedMessages = numberOfMsgsOnPartition0;
 
         // Define our namespace/partitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -2440,8 +2439,13 @@ public class ConsumerTest {
         // Attempt to retrieve records
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
 
-        // Validate we got 6 records, no need to do deeper inspection for this test
-        assertEquals("We should have 6 records", numberOfExpectedMessages, records.size());
+        // Validate we got 2 records, both should be from partition 0
+        assertEquals("We should have 2 records", numberOfExpectedMessages, records.size());
+
+        // Validate only partition 0
+        for (final Record record: records) {
+            assertEquals("Should have come from partition0 only", 0, record.getPartition());
+        }
 
         // Now validate the state
         ConsumerState consumerState = consumer.flushConsumerState();
@@ -2452,7 +2456,11 @@ public class ConsumerTest {
 
         // Before acking anything
         assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals(
+            "Has partition 1 offset at " + numberOfMsgsOnPartition1,
+            Long.valueOf(numberOfMsgsOnPartition1),
+            consumerState.getOffsetForNamespaceAndPartition(topicName, 1)
+        );
 
         // Ack all of our messages in consumer
         for (final Record record: records) {
@@ -2468,7 +2476,12 @@ public class ConsumerTest {
 
         // After acking messages
         assertEquals("Has partition 0 offset at 1", Long.valueOf(1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at 3", Long.valueOf(3L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        // We haven't moved, we reset to the tail so nothing should have changed since we've not published new messages
+        assertEquals(
+            "Has partition 1 offset at " + numberOfMsgsOnPartition1,
+            Long.valueOf(numberOfMsgsOnPartition1),
+            consumerState.getOffsetForNamespaceAndPartition(topicName, 1)
+        );
 
         // Clean up
         consumer.close();
@@ -2661,13 +2674,19 @@ public class ConsumerTest {
 
         await()
             .atMost(5, TimeUnit.SECONDS)
+            .pollInterval(100, TimeUnit.MILLISECONDS)
             .until(() -> {
-                Record nextRecord = consumer.nextRecord();
+                final Record nextRecord = consumer.nextRecord();
                 if (nextRecord != null) {
                     consumedMessages.add(nextRecord);
                 }
                 return consumedMessages.size();
             }, equalTo(numberOfMessagesToConsume));
+
+        // Santity Test - Now call consume again, we shouldn't get any messages
+        final Record nextRecord = consumer.nextRecord();
+        assertNull("Should have no more records", nextRecord);
+
         return consumedMessages;
     }
 
