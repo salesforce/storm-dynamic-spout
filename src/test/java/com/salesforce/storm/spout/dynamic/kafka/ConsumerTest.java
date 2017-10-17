@@ -2303,8 +2303,9 @@ public class ConsumerTest {
         final int numberOfMsgsOnPartition0 = 0;
         final int numberOfMsgsOnPartition1 = 4;
 
-        // How many msgs we should expect, 0 for partition 0, 4 from partition1
-        final int numberOfExpectedMessages = numberOfMsgsOnPartition0 + numberOfMsgsOnPartition1;
+        // How many msgs we should expect, 0 for partition 0, 0 from partition1
+        // We'll skip over partition 1 because we're going to reset to tail
+        final int numberOfExpectedMessages = numberOfMsgsOnPartition0;
 
         // Define our namespace/partitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -2341,8 +2342,8 @@ public class ConsumerTest {
         // Attempt to retrieve records
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
 
-        // Validate we got 4 records, no need to do deeper inspection for this test
-        assertEquals("We should have 4 records", 4, records.size());
+        // Validate we got 0 records, no need to do deeper inspection for this test
+        assertEquals("We should have 0 records", 0, records.size());
 
         // Now validate the state
         ConsumerState consumerState = consumer.flushConsumerState();
@@ -2353,7 +2354,7 @@ public class ConsumerTest {
 
         // Before acking anything
         assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
 
         // Ack all of our messages in consumer
         for (final Record record: records) {
@@ -2369,7 +2370,7 @@ public class ConsumerTest {
 
         // After acking messages
         assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at 3", Long.valueOf(3L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
 
         // Clean up
         consumer.close();
