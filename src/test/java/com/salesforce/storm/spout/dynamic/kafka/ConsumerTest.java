@@ -2010,7 +2010,7 @@ public class ConsumerTest {
         final int numberOfMsgsPerPartition = 4;
 
         // How many msgs we should expect, 2 for partition 0, 4 from partition1
-        final int numberOfExpectedMessages = 6;
+        final int numberOfExpectedMessages = 2;
 
         // Define our namespace/partitions
         final ConsumerPartition topicPartition0 = new ConsumerPartition(topicName, 0);
@@ -2061,13 +2061,11 @@ public class ConsumerTest {
         // Define the values we expect to get
         final Set<String> expectedValues = Sets.newHashSet(
             // Partition 0 should not skip any messages,
-            "partition0-offset2", "partition0-offset3",
-
-            // Partition 1 should get reset to offset 0
-            "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
+            "partition0-offset2", "partition0-offset3"
+            // Nothing from partition 1 since we will reset from tail
         );
 
-        final List<Record> records = asyncConsumeMessages(consumer, 6);
+        final List<Record> records = asyncConsumeMessages(consumer, 2);
         for (final Record record : records) {
             expectedValues.remove("partition" + record.getPartition() + "-offset" + record.getOffset());
         }
@@ -2075,7 +2073,7 @@ public class ConsumerTest {
         // Now do validation
         logger.info("Found {} msgs", records.size());
         assertEquals("Should have " + numberOfExpectedMessages + " messages from kafka", numberOfExpectedMessages, records.size());
-        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+        assertTrue("Expected set should now be empty, we found everything " + expectedValues, expectedValues.isEmpty());
 
         // Call nextRecord 2 more times, both should be null
         for (int x = 0; x < 2; x++) {
@@ -2092,8 +2090,9 @@ public class ConsumerTest {
 
         // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
         assertEquals(
-            "Partition 1's last committed offset should be reset to earliest, or -1 in our case",
-            (Long)(-1L), consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            "Partition 1's last committed offset should be reset to latest, or 4 in our case",
+            Long.valueOf(4L),
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
         );
 
         // Close consumer
