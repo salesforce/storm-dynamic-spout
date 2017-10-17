@@ -1818,8 +1818,8 @@ public class ConsumerTest {
     @DataProvider
     public static Object[][] providerOfConsumerIndexes() {
         return new Object[][]{
-                {0},
-                {1}
+            {0},
+            {1}
         };
     }
 
@@ -1829,7 +1829,7 @@ public class ConsumerTest {
      * 3. Consume all of the msgs from the topic.
      * 4. Produce more msgs into the topic.
      * 5. Unsubscribe from that partition.
-     * 6. Attempt to consume more msgs, verify none are found.
+     * 6. Attempt to consume more msgs, verify none are returned, because we told the consumer to unsubscribe.
      */
     @Test
     public void testConsumeFromTopicAfterUnsubscribingFromSinglePartition() {
@@ -1866,9 +1866,9 @@ public class ConsumerTest {
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         // Now produce 5 more msgs
-        producedRecords = produceRecords(expectedNumberOfMsgs, 0);
+        produceRecords(expectedNumberOfMsgs, 0);
 
-        // Now unsub from the partition
+        // Now unsubscribe from the partition
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should be true", result);
 
@@ -2060,33 +2060,21 @@ public class ConsumerTest {
 
         // Define the values we expect to get
         final Set<String> expectedValues = Sets.newHashSet(
-            // Partition 0 should not skip any messages, but unfortunately it will replay partition0-offset1
-            "partition0-offset1", "partition0-offset2", "partition0-offset3",
+            // Partition 0 should not skip any messages,
+            "partition0-offset2", "partition0-offset3",
 
             // Partition 1 should get reset to offset 0
             "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3"
         );
 
-        final List<Record> records = Lists.newArrayList();
-        Record consumerRecord;
-        int attempts = 0;
-        do {
-            consumerRecord = consumer.nextRecord();
-            if (consumerRecord != null) {
-                logger.info("Found offset {} on {}", consumerRecord.getOffset(), consumerRecord.getPartition());
-                records.add(consumerRecord);
-
-                // Remove from our expected set
-                expectedValues.remove("partition" + consumerRecord.getPartition() + "-offset" + consumerRecord.getOffset());
-            } else {
-                attempts++;
-            }
+        final List<Record> records = asyncConsumeMessages(consumer, 6);
+        for (final Record record : records) {
+            expectedValues.remove("partition" + record.getPartition() + "-offset" + record.getOffset());
         }
-        while (attempts <= 2);
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
-        assertEquals("Should have 7 messages from kafka", numberOfExpectedMessages + 1, records.size());
+        assertEquals("Should have " + numberOfExpectedMessages + " messages from kafka", numberOfExpectedMessages, records.size());
         assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
 
         // Call nextRecord 2 more times, both should be null
@@ -2225,8 +2213,8 @@ public class ConsumerTest {
         // Re-define what we expect to see.
         expectedValues.clear();
         expectedValues.addAll(ImmutableSet.of(
-            // The next 4 entries from partition 0, plus the 1 replayed message @ offset 3
-            "partition0-offset3","partition0-offset4", "partition0-offset5", "partition0-offset6", "partition0-offset7",
+            // The next 4 entries from partition 0
+            "partition0-offset4", "partition0-offset5", "partition0-offset6", "partition0-offset7",
 
             // Partition1 gets reset to earliest, so it should be offsets 0->7
             "partition1-offset0", "partition1-offset1", "partition1-offset2", "partition1-offset3", "partition1-offset4",
@@ -2265,8 +2253,8 @@ public class ConsumerTest {
         // Now do validation
         logger.info("Found {} msgs", records.size());
         assertEquals(
-            "Should have 12 (4 from partition0, 8 from partition1 + 1 replayed) messages from kafka",
-            (3 * numberOfMsgsPerPartition) + 1, records.size()
+            "Should have 12 (4 from partition0, 8 from partition1) messages from kafka",
+            (3 * numberOfMsgsPerPartition), records.size()
         );
         assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
 
@@ -2396,9 +2384,9 @@ public class ConsumerTest {
      *     Partition 0: has no data / empty
      *     Partition 1: has data
      *
-     * 2 - Set state for all 3 partitions
+     * 2 - Set state for 2 partitions
      *     Partition 0: have stored offset of -1
-     *     Partition 1: set offset = 1000 (higher than how much data we have)
+     *     Partition 1: set offset = 100 (higher than how much data we have)
      *
      * 3 - Start consumer, see what happens.
      *     Partition 0: should start from head

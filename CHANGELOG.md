@@ -2,6 +2,9 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.9.0 (RELEASE DATE TBD)
+- Update Kafka dependencies to 0.11.0.1
+
 ## 0.8.x
 - Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.
   - Anyone implementing a `DynamicSpout` will need to update package names.
