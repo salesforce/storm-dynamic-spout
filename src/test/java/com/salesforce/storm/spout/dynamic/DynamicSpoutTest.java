@@ -1220,7 +1220,7 @@ public class DynamicSpoutTest {
                 // Lets log it
                 logger.error("Got an unexpected emission: {}", collector.getEmissions().get(collector.getEmissions().size() - 1));
             }
-            assertEquals("No new tuple emits on iteration " + (x+1), originalSize, collector.getEmissions().size());
+            assertEquals("No new tuple emits on iteration " + (x + 1), originalSize, collector.getEmissions().size());
         }
     }
 
