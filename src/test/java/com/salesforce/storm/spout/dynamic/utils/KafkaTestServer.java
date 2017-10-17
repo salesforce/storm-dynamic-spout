@@ -163,7 +163,7 @@ public class KafkaTestServer implements AutoCloseable {
 
             // Since the call is Async, Lets wait for it to complete.
             try {
-                createTopicsResult.values().get(topicName).get());
+                createTopicsResult.values().get(topicName).get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e.getMessage(), e);
             }
