@@ -30,7 +30,7 @@ import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
+import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;

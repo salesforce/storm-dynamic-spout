@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.persistence;
+package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -33,7 +33,6 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.Serializer;
-import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -73,7 +72,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
      * @param spoutConfig - The storm topology config map.
      */
     public void open(Map spoutConfig) {
-         // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
+        // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
         final List<String> zkServers = (List<String>) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_SERVERS);
 
         // Root node / prefix to write entries under.
@@ -128,61 +127,161 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     }
 
     /**
-     * Pass in the consumer state that you'd like persisted.
-     * @param consumerId The consumer's id.
-     * @param partitionId The partition id
-     * @param offset Offset for the partition to be persisted
+     * Persist a sideline request
+     * @param type Sideline Type (Start/Stop)
+     * @param id Unique identifier for the sideline request.
+     * @param request Sideline Request
+     * @param partitionId Partition id
+     * @param startingOffset Ending offset
+     * @param endingOffset Starting offset
      */
     @Override
-    public void persistConsumerState(final String consumerId, final int partitionId, final long offset) {
+    public void persistSidelineRequestState(
+        SidelineType type,
+        SidelineRequestIdentifier id,
+        SidelineRequest request,
+        int partitionId,
+        Long startingOffset,
+        Long endingOffset
+    ) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
+        Map<String, Object> data = Maps.newHashMap();
+        data.put("type", type.toString());
+        data.put("startingOffset", startingOffset);
+        if (endingOffset != null) { // Optional
+            data.put("endingOffset", endingOffset);
+        }
+        data.put("filterChainStep", Serializer.serialize(request.step));
+
         // Persist!
-        writeBytes(getZkConsumerStatePath(consumerId, partitionId), String.valueOf(offset).getBytes(Charsets.UTF_8));
+        writeJson(getZkRequestStatePath(id.toString(), partitionId), data);
     }
 
-    /**
-     * Retrieves the consumer state from the persistence layer.
-     * @param consumerId The consumer's id.
-     * @param partitionId The partition id
-     * @return ConsumerState Consumer state that was persisted
-     */
     @Override
-    public Long retrieveConsumerState(final String consumerId, final int partitionId) {
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Read!
-        final String path = getZkConsumerStatePath(consumerId, partitionId);
+        final String path = getZkRequestStatePath(id.toString(), partitionId);
+        Map<Object, Object> json = readJson(path);
+        logger.debug("Read request state from Zookeeper at {}: {}", path, json);
 
-        final byte[] bytes = readBytes(path);
-
-        if (bytes == null) {
+        if (json == null) {
             return null;
         }
-        return Long.valueOf(new String(bytes, Charsets.UTF_8));
+
+        final String typeString = (String) json.get("type");
+
+        final SidelineType type = typeString.equals(SidelineType.STOP.toString()) ? SidelineType.STOP : SidelineType.START;
+
+        final FilterChainStep step = parseJsonToFilterChainSteps(json);
+
+        final Long startingOffset = (Long) json.get("startingOffset");
+        final Long endingOffset = (Long) json.get("endingOffset");
+
+        return new SidelinePayload(
+            type,
+            id,
+            new SidelineRequest(id, step),
+            startingOffset,
+            endingOffset
+        );
     }
 
     /**
-     * Removes consumer state.
-     * @param consumerId The consumer's id
-     * @param partitionId The partition id
+     * Removes a sideline request from the persistence layer.
+     * @param id SidelineRequestIdentifier you want to clear.
+     * @param partitionId PartitionId to clear.
      */
     @Override
-    public void clearConsumerState(final String consumerId, final int partitionId) {
+    public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         // Delete!
-        final String path = getZkConsumerStatePath(consumerId, partitionId);
-        logger.info("Delete state from Zookeeper at {}", path);
+        final String path = getZkRequestStatePath(id.toString(), partitionId);
+        logger.info("Delete request from Zookeeper at {}", path);
         deleteNode(path);
 
         // Attempt to delete the parent path.
         // This is a noop if the parent path is not empty.
         final String parentPath = path.substring(0, path.lastIndexOf('/'));
         deleteNodeIfNoChildren(parentPath);
+    }
+
+    /**
+     * Lists out a unique list of current sideline requests.
+     * @return List of sideline request identifier objects
+     */
+    public List<SidelineRequestIdentifier> listSidelineRequests() {
+        verifyHasBeenOpened();
+
+        final List<SidelineRequestIdentifier> ids = Lists.newArrayList();
+
+        try {
+            final String path = getZkRequestStateRoot();
+
+            if (curator.checkExists().forPath(path) == null) {
+                return ids;
+            }
+
+            final List<String> requests = curator.getChildren().forPath(path);
+
+            for (String request : requests) {
+                ids.add(new SidelineRequestIdentifier(request));
+            }
+
+            logger.debug("Existing sideline request identifiers = {}", ids);
+        } catch (Exception ex) {
+            logger.error("{}", ex);
+        }
+
+        return ids;
+    }
+
+    /**
+     * List the partitions for the given sideline request.
+     * @param id Identifier for the sideline request that you want the partitions for
+     * @return A list of the partitions for the sideline request
+     */
+    @Override
+    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+        verifyHasBeenOpened();
+
+        final Set<Integer> partitions = Sets.newHashSet();
+
+        try {
+            final String path = getZkRequestStatePath(id.toString());
+
+            if (curator.checkExists().forPath(path) == null) {
+                return partitions;
+            }
+
+            final List<String> partitionNodes = curator.getChildren().forPath(path);
+
+            for (String partition : partitionNodes) {
+                partitions.add(Integer.valueOf(partition));
+            }
+
+            logger.debug("Partitions for sideline request {} = {}", id, partitions);
+        } catch (Exception ex) {
+            logger.error("{}", ex);
+        }
+
+        return Collections.unmodifiableSet(partitions);
+    }
+
+    private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
+        if (json == null) {
+            return null;
+        }
+
+        final String chainStepData = (String) json.get("filterChainStep");
+
+        return Serializer.deserialize(chainStepData);
     }
 
     /**
@@ -202,6 +301,33 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
             .sessionTimeoutMs(sessionTimeoutMs)
             .retryPolicy(new RetryNTimes(retryAttempts, retryIntervalMs))
             .build();
+    }
+
+    /**
+     * Internal method to write JSON structured data into a zookeeper node.
+     * @param path - the node to write the JSON data into.
+     * @param data - Map representation of JSON data to write.
+     */
+    private void writeJson(String path, Map data) {
+        logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
+        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charsets.UTF_8));
+    }
+
+    /**
+     * Internal method for reading JSON from a zookeeper node.
+     * @param path - the node containing JSON to read from.
+     * @return - Map representing the JSON stored within the zookeeper node.
+     */
+    private Map<Object, Object> readJson(String path) {
+        try {
+            byte[] bytes = readBytes(path);
+            if (bytes == null) {
+                return null;
+            }
+            return (Map<Object, Object>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -287,13 +413,6 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         }
     }
 
-    /**
-     * @return - The full zookeeper path to where our consumer state is stored.
-     */
-    String getZkConsumerStatePath(final String consumerId, final int partitionId) {
-        return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
-    }
-
     String getZkRequestStatePath(final String sidelineIdentifierStr) {
         return getZkRoot() + "/requests/" + sidelineIdentifierStr;
     }
@@ -303,6 +422,13 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
      */
     String getZkRequestStatePath(final String sidelineIdentifierStr, final int partitionId) {
         return getZkRequestStatePath(sidelineIdentifierStr) + "/" + partitionId;
+    }
+
+    /**
+     * @return - The full zookeeper root to where our request state is stored.
+     */
+    String getZkRequestStateRoot() {
+        return getZkRoot() + "/requests";
     }
 
     /**

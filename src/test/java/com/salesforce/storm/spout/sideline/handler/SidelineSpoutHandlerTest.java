@@ -40,7 +40,7 @@ import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
+import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;

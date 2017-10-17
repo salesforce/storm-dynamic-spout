@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.persistence;
+package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -32,7 +32,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 /**
  * Payload for a sideline, includes the type, request, id and positions for the sideline.
  */
-// TODO: Move this into the sideline package after sidelining is split out from {@link PersistenceAdapter}
 public class SidelinePayload {
 
     /**
