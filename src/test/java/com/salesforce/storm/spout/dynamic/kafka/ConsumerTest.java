@@ -2400,8 +2400,9 @@ public class ConsumerTest {
         final int numberOfMsgsOnPartition0 = 2;
         final int numberOfMsgsOnPartition1 = 4;
 
-        // How many msgs we should expect, 2 for partition 0, 4 from partition1
-        final int numberOfExpectedMessages = numberOfMsgsOnPartition0 + numberOfMsgsOnPartition1;
+        // How many msgs we should expect, 2 for partition 0, 0 from partition1 because our offset is past it
+        // and presumable we have played those before.
+        final int numberOfExpectedMessages = numberOfMsgsOnPartition0;
 
         // Define our namespace/partitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -2452,7 +2453,11 @@ public class ConsumerTest {
 
         // Before acking anything
         assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals(
+            "Has partition 1 offset at " + numberOfMsgsOnPartition1,
+            Long.valueOf(numberOfMsgsOnPartition1),
+            consumerState.getOffsetForNamespaceAndPartition(topicName, 1)
+        );
 
         // Ack all of our messages in consumer
         for (final Record record: records) {
@@ -2468,7 +2473,12 @@ public class ConsumerTest {
 
         // After acking messages
         assertEquals("Has partition 0 offset at 1", Long.valueOf(1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at 3", Long.valueOf(3L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        // We haven't moved, we reset to the tail so nothing should have changed since we've not published new messages
+        assertEquals(
+            "Has partition 1 offset at " + numberOfMsgsOnPartition1,
+            Long.valueOf(numberOfMsgsOnPartition1),
+            consumerState.getOffsetForNamespaceAndPartition(topicName, 1)
+        );
 
         // Clean up
         consumer.close();

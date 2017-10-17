@@ -496,6 +496,11 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                     assignedTopicPartition,
                     endingOffset
                 );
+
+                partitionOffsetsManager.replaceEntry(
+                    new ConsumerPartition(assignedTopicPartition.topic(), assignedTopicPartition.partition()),
+                    endingOffset
+                );
             } else {
                 resetPartitions.add(assignedTopicPartition);
             }
