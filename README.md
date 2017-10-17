@@ -6,6 +6,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
+- [Getting Started](#getting-started)
 - [Dynamic Spout Framework](#dynamic-spout-framework)
   - [Purpose of this project](#purpose-of-this-project)
     - [Example use case: Multi-tenant processing](#example-use-case-multi-tenant-processing)
@@ -29,7 +30,7 @@
     - [VirtualSpoutHandler](#virtualspouthandler)
   - [Metrics](#metrics)
 - [Sidelining](#sidelining)
-  - [Getting Started](#getting-started)
+  - [Getting Started](#getting-started-1)
   - [Starting Sideline Request](#starting-sideline-request)
   - [Stoping Sideline Request](#stoping-sideline-request)
   - [Dependencies](#dependencies-1)
