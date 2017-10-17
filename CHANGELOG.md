@@ -3,8 +3,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.9.0 (RELEASE DATE TBD)
-- Update Kafka dependencies to 0.11.0.1
-- Update Storm dependencies to 1.1.1
+- [PR-14](https://github.com/salesforce/storm-dynamic-spout/pull/14) Update Kafka dependencies to 0.11.0.1
+- [PR-15](https://github.com/salesforce/storm-dynamic-spout/pull/15) Update Storm dependencies to 1.1.1
+
+### Bug Fixes
+- [PR-16](https://github.com/salesforce/storm-dynamic-spout/pull/16) *Kafka Consumer* Improved handling of Out Of Range exceptions
+- [PR-13](https://github.com/salesforce/storm-dynamic-spout/pull/13) *Sideline Spout* Fixed race condition on-redeploy of Spout when a sideline is active for firehose.
 
 ## 0.8.x
 - Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.
