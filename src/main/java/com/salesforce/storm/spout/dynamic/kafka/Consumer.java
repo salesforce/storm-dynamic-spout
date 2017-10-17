@@ -491,8 +491,10 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                     assignedTopicPartition
                 );
 
-                getKafkaConsumer().seekToEnd(
-                    Collections.singletonList(assignedTopicPartition)
+                // Seek to the end we found above.  The end may have moved since we last asked, which is why we are not doing seekToEnd()
+                getKafkaConsumer().seek(
+                    assignedTopicPartition,
+                    endingOffset
                 );
             } else {
                 resetPartitions.add(assignedTopicPartition);
