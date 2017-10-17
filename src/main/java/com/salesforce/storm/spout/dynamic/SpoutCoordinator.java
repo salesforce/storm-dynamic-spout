@@ -155,6 +155,8 @@ public class SpoutCoordinator {
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
         // Create a countdown latch
+        // TODO I think this latch is now not needed, as at open time, nothing can be in the queue yet.
+        // TODO we should remove it as its just extra clutter being passed all over.
         final CountDownLatch latch = new CountDownLatch(getNewSpoutQueue().size());
 
         // Create new single threaded executor.

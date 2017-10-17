@@ -1212,8 +1212,15 @@ public class DynamicSpoutTest {
         // Try a certain number of times
         final int originalSize = collector.getEmissions().size();
         for (int x = 0; x < numberOfAttempts; x++) {
+            // Call next Tuple
             spout.nextTuple();
-            assertEquals("No new tuple emits", originalSize, collector.getEmissions().size());
+
+            // If we get an unexpected emission
+            if (originalSize != collector.getEmissions().size()) {
+                // Lets log it
+                logger.error("Got an unexpected emission: {}", collector.getEmissions().get(collector.getEmissions().size() - 1));
+            }
+            assertEquals("No new tuple emits on iteration " + (x + 1), originalSize, collector.getEmissions().size());
         }
     }
 
