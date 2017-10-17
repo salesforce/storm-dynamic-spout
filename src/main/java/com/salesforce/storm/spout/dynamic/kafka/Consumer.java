@@ -46,6 +46,7 @@ import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.internals.Topic;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -459,26 +460,13 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private void handleOffsetOutOfRange(final OffsetOutOfRangeException outOfRangeException) {
         final Set<TopicPartition> resetPartitions = Sets.newHashSet();
 
-        // Grab all partitions our consumer is subscribed too.
-        final Set<ConsumerPartition> allAssignedPartitions = getAssignedPartitions();
-
-        // Loop over all subscribed partitions
-        for (final ConsumerPartition assignedConsumerPartition : allAssignedPartitions) {
-            // Convert to TopicPartition
-            final TopicPartition assignedTopicPartition = new TopicPartition(
-                assignedConsumerPartition.namespace(),
-                assignedConsumerPartition.partition()
-            );
-
-            if (!outOfRangeException.offsetOutOfRangePartitions().containsKey(assignedTopicPartition)) {
-                continue;
-            }
-
+        // Loop over all the partitions in this exception
+        for (final TopicPartition topicPartition : outOfRangeException.offsetOutOfRangePartitions().keySet()) {
             // The offset that was in the error
-            final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
+            final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(topicPartition);
             // What kafka says the last offset is
-            final long endingOffset = getKafkaConsumer().endOffsets(Collections.singletonList(assignedTopicPartition))
-                .get(assignedTopicPartition);
+            final long endingOffset = getKafkaConsumer().endOffsets(Collections.singletonList(topicPartition))
+                .get(topicPartition);
 
             // We have a hypothesis that the consumer can actually seek past the last message of the topic,
             // this yields this error and we want to catch it and try to back it up just a bit to a place that
@@ -488,21 +476,21 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                     "OutOfRangeException yielded offset {}, which is past our ending offset of {} for {}",
                     exceptionOffset,
                     endingOffset,
-                    assignedTopicPartition
+                    topicPartition
                 );
 
                 // Seek to the end we found above.  The end may have moved since we last asked, which is why we are not doing seekToEnd()
                 getKafkaConsumer().seek(
-                    assignedTopicPartition,
+                    topicPartition,
                     endingOffset
                 );
 
                 partitionOffsetsManager.replaceEntry(
-                    new ConsumerPartition(assignedTopicPartition.topic(), assignedTopicPartition.partition()),
+                    new ConsumerPartition(topicPartition.topic(), topicPartition.partition()),
                     endingOffset
                 );
             } else {
-                resetPartitions.add(assignedTopicPartition);
+                resetPartitions.add(topicPartition);
             }
         }
 
