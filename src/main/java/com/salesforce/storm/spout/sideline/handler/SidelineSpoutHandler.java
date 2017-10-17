@@ -127,9 +127,6 @@ public class SidelineSpoutHandler implements SpoutHandler {
             null
         );
 
-        // Our main firehose spout instance.
-        spout.addVirtualSpout(fireHoseSpout);
-
         final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
 
         final List<SidelineRequestIdentifier> existingRequestIds = spout.getPersistenceAdapter().listSidelineRequests();
@@ -186,6 +183,11 @@ public class SidelineSpoutHandler implements SpoutHandler {
         for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
             sidelineTrigger.open(getSpoutConfig());
         }
+
+        // After altering the filter chain is complete, lets NOW start the fire hose
+        // This keeps a race condition where the fire hose could start consuming before filter chain
+        // steps get added.
+        spout.addVirtualSpout(fireHoseSpout);
     }
 
     /**

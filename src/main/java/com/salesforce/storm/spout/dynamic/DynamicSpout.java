@@ -171,7 +171,7 @@ public class DynamicSpout extends BaseRichSpout {
         );
 
         // Call open on coordinator.
-        coordinator.open(getSpoutConfig());
+        getCoordinator().open(getSpoutConfig());
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
