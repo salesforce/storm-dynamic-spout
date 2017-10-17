@@ -457,8 +457,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * @param outOfRangeException The exception that was raised by the consumer.
      */
     private void handleOffsetOutOfRange(OffsetOutOfRangeException outOfRangeException) {
-        // Grab the partitions that had errors
-        final Set<TopicPartition> outOfRangePartitions = outOfRangeException.partitions();
         final Set<TopicPartition> resetPartitions = Sets.newHashSet();
 
         // Grab all partitions our consumer is subscribed too.
@@ -472,56 +470,32 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 assignedConsumerPartition.partition()
             );
 
-            // The last offset we went to start
-            final long lastStartedOffset = partitionOffsetsManager.getLastStartedOffset(assignedConsumerPartition);
-            final long lastFinishedOffset = partitionOffsetsManager.getLastFinishedOffset(assignedConsumerPartition);
+            if (!outOfRangeException.offsetOutOfRangePartitions().containsKey(assignedTopicPartition)) {
+                continue;
+            }
 
-            // If this partition was out of range
-            // we simply log an error about data loss, and skip them for now.
-            // TODO invert this if statement and call continue.
-            if (outOfRangePartitions.contains(assignedTopicPartition)) {
-                // The last offset we have in our persistence layer
-                final long lastPersistedOffset = persistenceAdapter.retrieveConsumerState(
-                    getConsumerId(),
-                    assignedTopicPartition.partition()
-                );
-                // The offset that was in the error
-                final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
+            // The offset that was in the error
+            final long exceptionOffset = outOfRangeException.offsetOutOfRangePartitions().get(assignedTopicPartition);
+            // What kafka says the last offset is
+            final long endingOffset = getKafkaConsumer().endOffsets(Collections.singletonList(assignedTopicPartition))
+                .get(assignedTopicPartition);
 
-                logger.error(
-                    "DATA LOSS ERROR - offset {} for partition {} was out of range, last started = {}, last persisted = {},"
-                    + " lastFinished = {}, original exception = {}",
+            // We have a hypothesis that the consumer can actually seek past the last message of the topic,
+            // this yields this error and we want to catch it and try to back it up just a bit to a place that
+            // we can work from.
+            if (exceptionOffset >= endingOffset) {
+                logger.warn(
+                    "OutOfRangeException yielded offset {}, which is past our ending offset of {} for {}",
                     exceptionOffset,
-                    assignedConsumerPartition,
-                    lastStartedOffset,
-                    lastPersistedOffset,
-                    lastFinishedOffset,
-                    outOfRangeException
+                    endingOffset,
+                    assignedTopicPartition
                 );
 
-                // We have a hypothesis that the consumer can actually seek past the last message of the topic,
-                // this yields this error and we want to catch it and try to back it up just a bit to a place that
-                // we can work from.
-                if (exceptionOffset - 1 == lastStartedOffset || exceptionOffset - 1 == lastPersistedOffset) {
-                    final long resetOffset = lastStartedOffset > lastPersistedOffset ? lastStartedOffset : lastPersistedOffset;
-
-                    getKafkaConsumer().seekToEnd(Collections.singletonList(assignedTopicPartition));
-
-                    final long endOffset = getKafkaConsumer().position(assignedTopicPartition);
-
-                    logger.warn(
-                        "KAFKA SEEK - On {} Seeking {} (lastPersistedOffset = {}, lastStartedOffset = {}, endOffset = {})",
-                        assignedTopicPartition,
-                        resetOffset,
-                        lastPersistedOffset,
-                        lastStartedOffset,
-                        endOffset
-                    );
-
-                    getKafkaConsumer().seek(assignedTopicPartition, resetOffset);
-                } else {
-                    resetPartitions.add(assignedTopicPartition);
-                }
+                getKafkaConsumer().seekToEnd(
+                    Collections.singletonList(assignedTopicPartition)
+                );
+            } else {
+                resetPartitions.add(assignedTopicPartition);
             }
         }
 
