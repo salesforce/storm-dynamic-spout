@@ -1829,7 +1829,7 @@ public class ConsumerTest {
      * 3. Consume all of the msgs from the topic.
      * 4. Produce more msgs into the topic.
      * 5. Unsubscribe from that partition.
-     * 6. Attempt to consume more msgs, verify none are found.
+     * 6. Attempt to consume more msgs, verify none are returned, because we told the consumer to unsubscribe.
      */
     @Test
     public void testConsumeFromTopicAfterUnsubscribingFromSinglePartition() {
@@ -1866,9 +1866,9 @@ public class ConsumerTest {
         assertNull("Should have nothing new to consume and be null", foundRecord);
 
         // Now produce 5 more msgs
-        producedRecords = produceRecords(expectedNumberOfMsgs, 0);
+        produceRecords(expectedNumberOfMsgs, 0);
 
-        // Now unsub from the partition
+        // Now unsubscribe from the partition
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
         assertTrue("Should be true", result);
 

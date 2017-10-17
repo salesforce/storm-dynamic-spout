@@ -417,13 +417,17 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private void fillBuffer() {
         // If our buffer is null, or our iterator is at the end
         if (buffer == null || !bufferIterator.hasNext()) {
+
+            // If we have no assigned partitions to consume from, then don't call poll()
+            // The underlying consumer call here does NOT make an API call, so this is safe to call within this loop.
+            if (getKafkaConsumer().assignment().isEmpty()) {
+                // No assigned partitions, nothing to consume :)
+                return;
+            }
+
             // Time to refill the buffer
             try {
                 buffer = getKafkaConsumer().poll(300);
-            } catch (IllegalStateException illegalStateException) {
-                // TODO add tests around this scenario
-                logger.error(illegalStateException.getMessage(), illegalStateException);
-                return;
             } catch (OffsetOutOfRangeException outOfRangeException) {
                 // Handle it
                 handleOffsetOutOfRange(outOfRangeException);
@@ -620,7 +624,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
         // Determine what we're currently assigned to,
         // We clone the returned set so we can modify it.
-        Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
+        final Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
 
         // If it doesn't contain our namespace partition
         if (!assignedTopicPartitions.contains(consumerPartitionToUnsubscribe)) {
