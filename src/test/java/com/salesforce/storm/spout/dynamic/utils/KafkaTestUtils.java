@@ -75,10 +75,11 @@ public class KafkaTestUtils {
         // This holds futures returned
         List<Future<RecordMetadata>> producerFutures = Lists.newArrayList();
 
-        KafkaProducer producer = kafkaTestServer.getKafkaProducer(
+        final KafkaProducer producer = kafkaTestServer.getKafkaProducer(
             ByteArraySerializer.class.getName(),
             ByteArraySerializer.class.getName()
         );
+
         for (int x = 0; x < numberOfRecords; x++) {
             // Construct key and value
             long timeStamp = Clock.systemUTC().millis();
@@ -101,10 +102,9 @@ public class KafkaTestUtils {
         // Publish to the namespace and close.
         producer.flush();
         logger.info("Produce completed");
-        producer.close();
 
         // Loop thru the futures, and build KafkaRecord objects
-        List<ProducedKafkaRecord<byte[], byte[]>> kafkaRecords = Lists.newArrayList();
+        final List<ProducedKafkaRecord<byte[], byte[]>> kafkaRecords = Lists.newArrayList();
         try {
             for (int x = 0; x < numberOfRecords; x++) {
                 final RecordMetadata metadata = producerFutures.get(x).get();
@@ -117,6 +117,10 @@ public class KafkaTestUtils {
             throw new RuntimeException(e);
         }
 
+        // Close producer
+        producer.close();
+
+        // return records
         return kafkaRecords;
     }
 }
