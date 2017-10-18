@@ -111,6 +111,7 @@ public class ThrottledMessageBuffer implements MessageBuffer {
 
     /**
      * Helper method for creating a default instance.
+     * @return factory method for create an instance of the buffer.
      */
     public static ThrottledMessageBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();

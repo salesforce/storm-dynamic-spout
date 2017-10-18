@@ -229,7 +229,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
     /**
      * Starts a sideline request.
-     * @param sidelineRequest A representation of the request that is being started
+     * @param sidelineRequest representation of the request that is being started.
+     * @return sideline request identifier.
      */
     public SidelineRequestIdentifier startSidelining(SidelineRequest sidelineRequest) {
         logger.info("Received START sideline request");

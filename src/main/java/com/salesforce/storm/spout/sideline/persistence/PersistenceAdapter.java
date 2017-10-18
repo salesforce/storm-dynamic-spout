@@ -51,8 +51,9 @@ public interface PersistenceAdapter {
     void close();
 
     /**
-     * @param type Sideline Type (Start/Stop)
+     * @param type type of the sideline (Start/Stop).
      * @param id unique identifier for the sideline request.
+     * @param request sideline request.
      * @param partitionId Partition id
      * @param startingOffset Ending offset
      * @param endingOffset Starting offset

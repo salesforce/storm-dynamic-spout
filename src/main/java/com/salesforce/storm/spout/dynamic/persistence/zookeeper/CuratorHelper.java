@@ -74,6 +74,8 @@ public class CuratorHelper {
     /**
      * Internal method for reading JSON from a zookeeper node.
      * @param path node containing JSON to read from.
+     * @param <K> key of the json field.
+     * @param <V> value of the json field.
      * @return map representing the JSON stored within the zookeeper node.
      */
     public <K, V> Map<K, V> readJson(String path) {

@@ -37,7 +37,12 @@ public class PartitionDistributor {
 
     /**
      * Get partition ids for assignment based upon the number of consumers give one of those consumers.
+     *
+     * @param totalConsumers number of consumer total across all instances
+     * @param consumerIndex current consumers index.
+     * @param allPartitionIds number of partitions to distribute across.
      * @return List of partition ids for assignment
+
      */
     public static int[] calculatePartitionAssignment(final int totalConsumers, final int consumerIndex, final int[] allPartitionIds) {
         // If total consumers is 0, that's not possible!

@@ -115,6 +115,7 @@ public class RatioMessageBuffer implements MessageBuffer {
 
     /**
      * Helper method for creating a default instance.
+     * @return factory method for create an instance of the buffer.
      */
     public static RatioMessageBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();

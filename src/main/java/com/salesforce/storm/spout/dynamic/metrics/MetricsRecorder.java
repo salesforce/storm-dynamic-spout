@@ -40,6 +40,8 @@ public interface MetricsRecorder {
      * Performs any required initialization/connection/setup required for
      * the implementation.  By contract, this will be called once prior to calling
      * collecting any metrics.
+     * @param spoutConfig spout configuration.
+     * @param topologyContext topology context.
      */
     void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext);
 
@@ -50,22 +52,33 @@ public interface MetricsRecorder {
 
     /**
      * Count a metric, given a name, increments it by 1.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
      */
     void count(final Class sourceClass, final String metricName);
 
     /**
      * Count a metric, given a name, increments it by value.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
+     * @param incrementBy amount to increment the metric by.
      */
     void count(final Class sourceClass, final String metricName, final long incrementBy);
 
 
     /**
      * Gauge a metric, given a name, by a specify value.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
+     * @param value value of the metric.
      */
     void averageValue(final Class sourceClass, final String metricName, final Object value);
 
     /**
      * Assign a value to metric.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
+     * @param value value of the metric.
      */
     void assignValue(final Class sourceClass, final String metricName, final Object value);
 
@@ -74,7 +87,10 @@ public interface MetricsRecorder {
      *
      * A scope is a secondary key space, so Foo.Bar as a metric name.
      *
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
      * @param callable Some code that you want to time when it runs
+     * @param <T> return type of the callable.
      * @return The result of the Callable, whatever they might be
      * @throws Exception Hopefully whatever went wrong in your callable
      */
@@ -82,16 +98,23 @@ public interface MetricsRecorder {
 
     /**
      * Record the execution time, given a name and scope.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
+     * @param timeInMs time to capture for the metric.
      */
     void timer(final Class sourceClass, final String metricName, final long timeInMs);
 
     /**
      * Starts a timer for the given sourceClass and metricName.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
      */
     void startTimer(final Class sourceClass, final String metricName);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
+     * @param sourceClass class the metric originates from.
+     * @param metricName name of the metric.
      */
     void stopTimer(final Class sourceClass, final String metricName);
 }

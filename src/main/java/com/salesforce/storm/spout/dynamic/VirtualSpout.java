@@ -591,6 +591,7 @@ public class VirtualSpout implements DelegateSpout {
 
     /**
      * Access the FactoryManager for creating various configurable classes.
+     * @return factory manager instance.
      */
     public FactoryManager getFactoryManager() {
         return factoryManager;

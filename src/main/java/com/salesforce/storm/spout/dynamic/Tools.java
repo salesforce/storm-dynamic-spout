@@ -41,8 +41,10 @@ public class Tools {
     /**
      * Creates a shallow copy of a map and wraps it in an UnmodifiableMap.
      *
-     * @param sourceMap - the map we want to shallow clone and make immutable.
-     * @return - A shallow cloned map that is immutable.
+     * @param sourceMap map we want to shallow clone and make immutable.
+     * @param <K> key of the map.
+     * @param <V> value of the map.
+     * @return sshallow cloned map that is immutable.
      */
     public static <K,V> Map<K,V> immutableCopy(Map<K,V> sourceMap) {
         // If we're already dealing with an UnmodifiableMap
@@ -82,12 +84,13 @@ public class Tools {
      *
      * Example:
      * SourceMap:
-     *   {prefix.key1 => value1, prefix.key2 => value2, key3 => value3}
+     *   {prefix.key1: value1, prefix.key2: value2, key3: value3}
      * Result Returned:
-     *   {key1 => value1, key2 => value2}
+     *   {key1: value1, key2: value2}
      *
      * @param prefix prefix to search for and strip out.
      * @param sourceConfig map (likely config) to rekey.
+     * @param <V> object representing the configuration value.
      * @return rekeyed map (likely config).
      */
     public static <V> Map<String, V> stripKeyPrefix(

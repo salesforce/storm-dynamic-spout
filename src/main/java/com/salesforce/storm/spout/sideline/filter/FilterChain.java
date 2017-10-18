@@ -39,16 +39,23 @@ public class FilterChain {
     final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
 
     /**
-     * Fluent method for adding steps to the chain (must be done in order).
+     * Add a step to the filter chain.
      *
-     * @param step A step for processing in the chain
-     * @return The chain instance
+     * @param id is of the sideline request to add the step for.
+     * @param step step for processing in the chain.
+     * @return filter chain, for fluent a interface.
      */
     public FilterChain addStep(final SidelineRequestIdentifier id, final FilterChainStep step) {
         this.steps.put(id, step);
         return this;
     }
 
+    /**
+     * Remove a step to the filter chain.
+     *
+     * @param id is of the sideline request to add the step for.
+     * @return filter chain, for fluent a interface.
+     */
     public FilterChainStep removeSteps(final SidelineRequestIdentifier id) {
         return this.steps.remove(id);
     }
@@ -59,7 +66,7 @@ public class FilterChain {
      * @param message The filter to be processed by this step of the chain
      * @return Should this message be filtered out? True means yes.
      */
-    public boolean filter(Message message) {
+    public boolean filter(final Message message) {
         // No steps = nothing to filter by
         if (steps.values().isEmpty()) {
             return false;
@@ -77,10 +84,10 @@ public class FilterChain {
     /**
      * Find the identifier for a set of steps.
      *
-     * @param seek The list of steps to find
+     * @param seek filter chain step to find.
      * @return Identifier for the steps in the chain
      */
-    public SidelineRequestIdentifier findStep(FilterChainStep seek) {
+    public SidelineRequestIdentifier findStep(final FilterChainStep seek) {
         for (Map.Entry<SidelineRequestIdentifier, FilterChainStep> entry : steps.entrySet()) {
             FilterChainStep step = entry.getValue();
 
@@ -92,6 +99,10 @@ public class FilterChain {
         return null;
     }
 
+    /**
+     * Get a map of the filter chain steps by sideline request identifier.
+     * @return map of the filter chain steps by sideline request identifier.
+     */
     public Map<SidelineRequestIdentifier,FilterChainStep> getSteps() {
         return steps;
     }

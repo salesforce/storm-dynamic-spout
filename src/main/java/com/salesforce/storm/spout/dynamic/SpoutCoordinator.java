@@ -144,6 +144,7 @@ public class SpoutCoordinator {
 
     /**
      * Open the coordinator and begin spinning up virtual spout threads.
+     * @param topologyConfig topology configuration.
      */
     public void open(Map<String, Object> topologyConfig) {
         if (isOpen) {

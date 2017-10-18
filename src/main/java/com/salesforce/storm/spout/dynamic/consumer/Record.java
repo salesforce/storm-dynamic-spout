@@ -37,9 +37,13 @@ public class Record {
     private final Values values;
 
     /**
-     * Constructor.
+     * Consumer Record.
+     * @param namespace namespace of the record.
+     * @param partition partition of the record.
+     * @param offset offset of the record.
+     * @param values values of the record.
      */
-    public Record(String namespace, int partition, long offset, Values values) {
+    public Record(final String namespace, final int partition, final long offset, final Values values) {
         this.namespace = namespace;
         this.partition = partition;
         this.offset = offset;
