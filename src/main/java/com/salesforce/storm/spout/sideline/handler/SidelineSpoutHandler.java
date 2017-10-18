@@ -101,21 +101,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * @param spoutConfig Spout configuration.
      */
     @Override
-    public void open(Map<String, Object> spoutConfig) {
+    public void open(final Map<String, Object> spoutConfig) {
         this.spoutConfig = spoutConfig;
-    }
-
-    /**
-     * Handler called when the dynamic spout opens, this method is responsible for creating and setting triggers for
-     * handling the spinning up and down of sidelines.
-     * @param spout Dynamic spout instance.
-     * @param topologyConfig Topology configuration.
-     * @param topologyContext Topology context.
-     */
-    @Override
-    public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
-        this.spout = spout;
-        this.topologyContext = topologyContext;
 
         final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
 
@@ -127,6 +114,24 @@ public class SidelineSpoutHandler implements SpoutHandler {
         persistenceAdapter = FactoryManager.createNewInstance(
             persistenceAdapterClass
         );
+        persistenceAdapter.open(spoutConfig);
+    }
+
+    /**
+     * Handler called when the dynamic spout opens, this method is responsible for creating and setting triggers for
+     * handling the spinning up and down of sidelines.
+     * @param spout Dynamic spout instance.
+     * @param topologyConfig Topology configuration.
+     * @param topologyContext Topology context.
+     */
+    @Override
+    public void onSpoutOpen(
+        final DynamicSpout spout,
+        final Map topologyConfig, final
+        TopologyContext topologyContext
+    ) {
+        this.spout = spout;
+        this.topologyContext = topologyContext;
 
         createSidelineTriggers();
 

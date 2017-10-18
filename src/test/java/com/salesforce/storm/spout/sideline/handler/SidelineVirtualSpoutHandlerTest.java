@@ -25,11 +25,13 @@
 
 package com.salesforce.storm.spout.sideline.handler;
 
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
-import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -37,7 +39,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertNull;
 
@@ -60,12 +62,18 @@ public class SidelineVirtualSpoutHandlerTest {
             sidelineRequestIdentifier
         );
 
+        final Map<String,Object> config = Maps.newHashMap();
+        config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.toString());
+
         final MockDelegateSpout mockDelegateSpout = new MockDelegateSpout(sidelineVirtualSpoutIdentifier);
-        final PersistenceAdapter persistenceAdapter = mockDelegateSpout.getConsumer().getPersistenceAdapter();
-        persistenceAdapter.open(new HashMap());
+
+        MockConsumer.partitions = Arrays.asList(0, 5);
+
+        final SidelineVirtualSpoutHandler sidelineVirtualSpoutHandler = new SidelineVirtualSpoutHandler();
+        sidelineVirtualSpoutHandler.open(config);
 
         // Persist some stopping requests that we cleanup upon completion
-        persistenceAdapter.persistSidelineRequestState(
+        sidelineVirtualSpoutHandler.getPersistenceAdapter().persistSidelineRequestState(
             SidelineType.STOP,
             sidelineRequestIdentifier,
             sidelineRequest,
@@ -73,7 +81,7 @@ public class SidelineVirtualSpoutHandlerTest {
             1L, // starting offset
             1L // ending offset
         );
-        persistenceAdapter.persistSidelineRequestState(
+        sidelineVirtualSpoutHandler.getPersistenceAdapter().persistSidelineRequestState(
             SidelineType.START,
             sidelineRequestIdentifier,
             sidelineRequest,
@@ -82,20 +90,18 @@ public class SidelineVirtualSpoutHandlerTest {
             2L // ending offset
         );
 
-        MockConsumer.partitions = Arrays.asList(0, 5);
-
-        final SidelineVirtualSpoutHandler sidelineVirtualSpoutHandler = new SidelineVirtualSpoutHandler();
-
         // Complete the sideline
         sidelineVirtualSpoutHandler.onVirtualSpoutCompletion(mockDelegateSpout);
 
         // Do we still have a record for partition 0?
-        SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
+        SidelinePayload partition0 = sidelineVirtualSpoutHandler.getPersistenceAdapter()
+            .retrieveSidelineRequest(sidelineRequestIdentifier, 0);
 
         assertNull(partition0);
 
         // Do we still have a record for partition 5?
-        SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 5);
+        SidelinePayload partition5 = sidelineVirtualSpoutHandler.getPersistenceAdapter()
+            .retrieveSidelineRequest(sidelineRequestIdentifier, 5);
 
         assertNull(partition5);
     }

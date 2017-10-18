@@ -62,6 +62,7 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
         persistenceAdapter = FactoryManager.createNewInstance(
             persistenceAdapterClass
         );
+        persistenceAdapter.open(spoutConfig);
     }
 
     /**
@@ -89,5 +90,13 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
         } catch (Exception ex) {
             logger.error("I was unable to completion the virtual spout for {} {}", virtualSpout.getVirtualSpoutId(), ex);
         }
+    }
+
+    /**
+     * Get the persistence adapter, only use this for tests!
+     * @return persistence adapter.
+     */
+    PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
     }
 }

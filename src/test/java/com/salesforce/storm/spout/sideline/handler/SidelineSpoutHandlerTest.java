@@ -38,8 +38,8 @@ import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -98,7 +98,6 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -157,7 +156,6 @@ public class SidelineSpoutHandlerTest {
         };
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.doAnswer(addVirtualSpoutAnswer).when(spout).addVirtualSpout(
             Matchers.<VirtualSpout>any()
@@ -219,7 +217,6 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.when(spout.getMetricsRecorder()).thenReturn(new LogRecorder());
 
@@ -284,7 +281,6 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.when(spout.getMetricsRecorder()).thenReturn(new LogRecorder());
 
@@ -359,7 +355,6 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -414,7 +409,6 @@ public class SidelineSpoutHandlerTest {
         // Mock our core DynamicSpout, which is called from the handler
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         // Again, trying to avoid NullPointer's here
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         // Create our handler

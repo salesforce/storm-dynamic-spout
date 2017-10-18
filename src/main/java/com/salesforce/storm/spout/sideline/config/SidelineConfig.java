@@ -127,7 +127,7 @@ public class SidelineConfig {
     /**
      * Logger for logging logs.
      */
-    private static final Logger logger = LoggerFactory.getLogger(SpoutConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(SidelineConfig.class);
 
     /**
      * Utility method to add any unspecified configuration value for items with their defaults.

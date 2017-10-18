@@ -1362,9 +1362,6 @@ public class VirtualSpoutTest {
 
         // But we never called remove consumer state.
         verify(mockConsumer, never()).removeConsumerState();
-
-        // Never remove sideline request state
-        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
     }
 
     /**
@@ -1419,7 +1416,6 @@ public class VirtualSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceAdapter, times(1)).clearSidelineRequest(eq(sidelineRequestId), eq(0));
         verify(mockConsumer, times(1)).close();
 
         // But we never called flush consumer state.
@@ -1472,7 +1468,6 @@ public class VirtualSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
         verify(mockConsumer, times(1)).close();
 
         // But we never called flush consumer state.
