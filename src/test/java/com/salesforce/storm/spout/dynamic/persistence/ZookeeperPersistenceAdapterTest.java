@@ -98,7 +98,7 @@ public class ZookeeperPersistenceAdapterTest {
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        expectedExceptionOpenMissingConfigForZkRootNode.expect(IllegalStateException.class);
+        expectedExceptionOpenMissingConfigForZkRootNode.expect(IllegalArgumentException.class);
         persistenceAdapter.open(topologyConfig);
     }
 

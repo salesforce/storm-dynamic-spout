@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
+import com.google.common.base.Preconditions;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -66,6 +67,7 @@ public class CuratorFactory {
 
     /**
      * Create new curator instance based upon the provided config.
+     *
      * @param config configuration object.
      * @return curator instance.
      */
@@ -74,6 +76,8 @@ public class CuratorFactory {
     ) {
         // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
         final List<String> zkServers = (List<String>) config.get(CONFIG_SERVERS);
+
+        Preconditions.checkArgument(!zkServers.isEmpty(), "Zookeepers servers are required");
 
         // Build out our bits and pieces.
         final StringBuilder stringBuilder = new StringBuilder();
@@ -85,19 +89,14 @@ public class CuratorFactory {
 
         final String zkConnectionString = serverPorts;
 
-        final int connectionTimeoutMs = ((Number) config.get(CONFIG_CONNECTION_TIMEOUT)).intValue();
-        final int sessionTimeoutMs = ((Number) config.get(CONFIG_SESSION_TIMEOUT)).intValue();
-        final int retryAttempts = ((Number) config.get(CONFIG_RETRY_ATTEMPTS)).intValue();
-        final int retryIntervalMs = ((Number) config.get(CONFIG_RETRY_INTERVAL)).intValue();
-
         try {
             // Use builder to create new curator
             CuratorFramework curator = CuratorFrameworkFactory
                 .builder()
                 .connectString(zkConnectionString)
-                .connectionTimeoutMs(connectionTimeoutMs)
-                .sessionTimeoutMs(sessionTimeoutMs)
-                .retryPolicy(new RetryNTimes(retryAttempts, retryIntervalMs))
+                .connectionTimeoutMs(getConnectionTimeoutMs(config))
+                .sessionTimeoutMs(getSessionTimeoutMs(config))
+                .retryPolicy(new RetryNTimes(getRetryAttempts(config), getRetryIntervalMs(config)))
                 .build();
 
             // Call start
@@ -105,7 +104,7 @@ public class CuratorFactory {
 
             // Block until connected
             curator.blockUntilConnected(
-                ((Number) config.get(CONFIG_CONNECTION_TIMEOUT)).intValue(),
+                getConnectionTimeoutMs(config),
                 TimeUnit.MILLISECONDS
             );
 
@@ -113,5 +112,33 @@ public class CuratorFactory {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static int getConnectionTimeoutMs(final Map<String, Object> config) {
+        if (config.containsKey(CONFIG_CONNECTION_TIMEOUT)) {
+            return ((Number) config.get(CONFIG_CONNECTION_TIMEOUT)).intValue();
+        }
+        return 6000;
+    }
+
+    private static int getSessionTimeoutMs(final Map<String, Object> config) {
+        if (config.containsKey(CONFIG_SESSION_TIMEOUT)) {
+            ((Number) config.get(CONFIG_SESSION_TIMEOUT)).intValue();
+        }
+        return 6000;
+    }
+
+    private static int getRetryAttempts(final Map<String, Object> config) {
+        if (config.containsKey(CONFIG_RETRY_ATTEMPTS)) {
+            ((Number) config.get(CONFIG_RETRY_ATTEMPTS)).intValue();
+        }
+        return 10;
+    }
+
+    private static int getRetryIntervalMs(final Map<String, Object> config) {
+        if (config.containsKey(CONFIG_RETRY_ATTEMPTS)) {
+            ((Number) config.get(CONFIG_RETRY_INTERVAL)).intValue();
+        }
+        return 10;
     }
 }

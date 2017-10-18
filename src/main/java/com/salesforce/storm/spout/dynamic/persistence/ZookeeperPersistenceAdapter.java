@@ -89,7 +89,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         this.curator = CuratorFactory.createNewCuratorInstance(
             // Take out spout persistence config and strip the key from it for our factory.
-            Tools.stripKeyPrefix("spout.persistence.zookeeper", spoutConfig)
+            Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig)
         );
 
         this.curatorHelper = new CuratorHelper(curator);

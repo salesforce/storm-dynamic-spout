@@ -55,7 +55,7 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
         final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
 
         Preconditions.checkArgument(
-            persistenceAdapterClass != null & !persistenceAdapterClass.isEmpty(),
+            persistenceAdapterClass != null && !persistenceAdapterClass.isEmpty(),
             "Sideline persistence adapter class is required"
         );
 

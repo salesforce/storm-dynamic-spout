@@ -34,6 +34,7 @@ import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.utils.SharedZookeeperTestResource;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -97,7 +98,7 @@ public class ZookeeperPersistenceAdapterTest {
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        expectedExceptionOpenMissingConfigForZkRootNode.expect(IllegalStateException.class);
+        expectedExceptionOpenMissingConfigForZkRootNode.expect(IllegalArgumentException.class);
         persistenceAdapter.open(topologyConfig);
     }
 
@@ -497,8 +498,8 @@ public class ZookeeperPersistenceAdapterTest {
      */
     private Map createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
         Map config = Maps.newHashMap();
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
-        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
+        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, zkServers);
+        config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
         return Tools.immutableCopy(SpoutConfig.setDefaults(config));

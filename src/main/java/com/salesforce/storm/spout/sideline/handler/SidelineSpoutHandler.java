@@ -107,7 +107,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
 
         Preconditions.checkArgument(
-            persistenceAdapterClass != null & !persistenceAdapterClass.isEmpty(),
+            persistenceAdapterClass != null && !persistenceAdapterClass.isEmpty(),
             "Sideline persistence adapter class is required"
         );
 
@@ -480,6 +480,10 @@ public class SidelineSpoutHandler implements SpoutHandler {
      */
     List<SidelineTrigger> getSidelineTriggers() {
         return sidelineTriggers;
+    }
+
+    PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
     }
 
     private FactoryManager getFactoryManager() {

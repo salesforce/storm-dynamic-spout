@@ -1352,6 +1352,10 @@ public class DynamicSpoutTest {
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
+        // TODO: Separate the dependencies on this from this test!!!
+        // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
+        config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName());
+
         // Configure SpoutMonitor thread to run every 1 second
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
