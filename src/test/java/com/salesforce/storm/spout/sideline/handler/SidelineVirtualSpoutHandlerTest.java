@@ -63,7 +63,7 @@ public class SidelineVirtualSpoutHandlerTest {
         );
 
         final Map<String,Object> config = Maps.newHashMap();
-        config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.toString());
+        config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         final MockDelegateSpout mockDelegateSpout = new MockDelegateSpout(sidelineVirtualSpoutIdentifier);
 
