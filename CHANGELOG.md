@@ -3,6 +3,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.9.0 (RELEASE DATE TBD)
+### Improvements
 - [PR-14](https://github.com/salesforce/storm-dynamic-spout/pull/14) Update Kafka dependencies to 0.11.0.1
 - [PR-15](https://github.com/salesforce/storm-dynamic-spout/pull/15) Update Storm dependencies to 1.1.1
 
