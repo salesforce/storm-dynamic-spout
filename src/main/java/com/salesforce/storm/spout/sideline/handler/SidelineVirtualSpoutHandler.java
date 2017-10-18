@@ -25,15 +25,20 @@
 
 package com.salesforce.storm.spout.sideline.handler;
 
+import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
+import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
-import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
-import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Handler for sideline virtual spouts.
@@ -42,6 +47,23 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
 
     // Logger for logging
     private static final Logger logger = LoggerFactory.getLogger(SidelineVirtualSpoutHandler.class);
+
+    private PersistenceAdapter persistenceAdapter;
+
+    @Override
+    public void open(final Map<String, Object> spoutConfig) {
+        final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
+
+        Preconditions.checkArgument(
+            persistenceAdapterClass != null && !persistenceAdapterClass.isEmpty(),
+            "Sideline persistence adapter class is required"
+        );
+
+        persistenceAdapter = FactoryManager.createNewInstance(
+            persistenceAdapterClass
+        );
+        persistenceAdapter.open(spoutConfig);
+    }
 
     /**
      * Handler for when a sideline spout is completed.  When a sideline spout completes clean up the metadata for the
@@ -59,9 +81,6 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
             if (sidelineRequestIdentifier != null && virtualSpout.getStartingState() != null) {
                 // Clean up sideline request
                 for (final ConsumerPartition consumerPartition : virtualSpout.getStartingState().getConsumerPartitions()) {
-                    final Consumer consumer = virtualSpout.getConsumer();
-                    final PersistenceAdapter persistenceAdapter = consumer.getPersistenceAdapter();
-
                     persistenceAdapter.clearSidelineRequest(
                         sidelineRequestIdentifier,
                         consumerPartition.partition()
@@ -71,5 +90,13 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
         } catch (Exception ex) {
             logger.error("I was unable to completion the virtual spout for {} {}", virtualSpout.getVirtualSpoutId(), ex);
         }
+    }
+
+    /**
+     * Get the persistence adapter, only use this for tests!
+     * @return persistence adapter.
+     */
+    PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
     }
 }

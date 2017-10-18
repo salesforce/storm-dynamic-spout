@@ -30,6 +30,7 @@ import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
@@ -1362,9 +1363,6 @@ public class VirtualSpoutTest {
 
         // But we never called remove consumer state.
         verify(mockConsumer, never()).removeConsumerState();
-
-        // Never remove sideline request state
-        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
     }
 
     /**
@@ -1419,7 +1417,6 @@ public class VirtualSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceAdapter, times(1)).clearSidelineRequest(eq(sidelineRequestId), eq(0));
         verify(mockConsumer, times(1)).close();
 
         // But we never called flush consumer state.
@@ -1472,7 +1469,6 @@ public class VirtualSpoutTest {
 
         // Verify close was called, and state was cleared
         verify(mockConsumer, times(1)).removeConsumerState();
-        verify(mockPersistenceAdapter, never()).clearSidelineRequest(anyObject(), anyInt());
         verify(mockConsumer, times(1)).close();
 
         // But we never called flush consumer state.
@@ -1620,6 +1616,11 @@ public class VirtualSpoutTest {
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        defaultConfig.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
+
         defaultConfig.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);

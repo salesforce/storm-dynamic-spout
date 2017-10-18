@@ -33,13 +33,14 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
-import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
+import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -74,7 +75,10 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOpen() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -91,13 +95,16 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutOpenCreatesFirehose() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "VirtualSpoutPrefix");
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -113,6 +120,10 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutOpenResumesSidelines() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
 
@@ -124,8 +135,27 @@ public class SidelineSpoutHandlerTest {
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
 
-        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(config);
+        final List<VirtualSpout> sidelineSpouts = new ArrayList<>();
+
+        // We use this to replace DynamicSpout.addVirtualSpout() so that we can hijack the list of vspouts and validate
+        // the sidelines.
+        final Answer<Void> addVirtualSpoutAnswer = invocation -> {
+            final VirtualSpout virtualSpout = invocation.getArgumentAt(0, VirtualSpout.class);
+            sidelineSpouts.add(virtualSpout);
+            return null;
+        };
+
+        final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
+        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
+        Mockito.doAnswer(addVirtualSpoutAnswer).when(spout).addVirtualSpout(
+            Matchers.<VirtualSpout>any()
+        );
+
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
+
+        final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
+
         // Make a starting request that we expect to resume
         persistenceAdapter.persistSidelineRequestState(
             SidelineType.START,
@@ -145,25 +175,6 @@ public class SidelineSpoutHandlerTest {
             4L
         );
 
-        final List<VirtualSpout> sidelineSpouts = new ArrayList<>();
-
-        // We use this to replace DynamicSpout.addVirtualSpout() so that we can hijack the list of vspouts and validate
-        // the sidelines.
-        final Answer<Void> addVirtualSpoutAnswer = invocation -> {
-            final VirtualSpout virtualSpout = invocation.getArgumentAt(0, VirtualSpout.class);
-            sidelineSpouts.add(virtualSpout);
-            return null;
-        };
-
-        final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
-        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
-        Mockito.doAnswer(addVirtualSpoutAnswer).when(spout).addVirtualSpout(
-            Matchers.<VirtualSpout>any()
-        );
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Make sure we have a firehose
@@ -207,23 +218,29 @@ public class SidelineSpoutHandlerTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
         final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
 
-        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(config);
-
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.when(spout.getMetricsRecorder()).thenReturn(new LogRecorder());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
+
+        final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
+
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
@@ -272,23 +289,29 @@ public class SidelineSpoutHandlerTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
 
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
 
-        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(config);
-
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.when(spout.getMetricsRecorder()).thenReturn(new LogRecorder());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
+
+        final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
+
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Persist our stop request as a start, so that when we stop it, it can be found
@@ -351,14 +374,17 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutClose() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SpoutConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -383,8 +409,12 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testMisconfiguredCreateSidelineTriggers() {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         // This class better not exist!
-        config.put(SpoutConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
+        config.put(SidelineConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -404,6 +434,10 @@ public class SidelineSpoutHandlerTest {
 
         // Create our config, specify the consumer id because it will be used as a prefix
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, expectedPrefix);
 
         // Create a persistence adapter, this is called in the handler onSpoutOpen() method, we're just trying to avoid a NullPointer here
@@ -413,7 +447,6 @@ public class SidelineSpoutHandlerTest {
         // Mock our core DynamicSpout, which is called from the handler
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         // Again, trying to avoid NullPointer's here
-        Mockito.when(spout.getPersistenceAdapter()).thenReturn(persistenceAdapter);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
 
         // Create our handler

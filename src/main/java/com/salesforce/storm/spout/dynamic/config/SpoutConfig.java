@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
+ * Dynamic Spout Configuration Directives.
  */
 public class SpoutConfig {
 
@@ -390,26 +390,14 @@ public class SpoutConfig {
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
 
     /**
-     * (List|String) Defines one or more sideline trigger(s) (if any) to use.
-     * Should be a fully qualified class path that implements thee SidelineTrigger interface.
+     * Logger for logging logs.
      */
-    @Documentation(
-        category = Documentation.Category.SIDELINE,
-        description = "Defines one or more sideline trigger(s) (if any) to use. "
-        + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
-        type = String.class
-    )
-    public static final String TRIGGER_CLASS = "sideline.trigger_class";
-
-///////////////////////////////////
-// Utility Methods.
-///////////////////////////////////
     private static final Logger logger = LoggerFactory.getLogger(SpoutConfig.class);
 
     /**
      * Utility method to add any unspecified configuration value for items with their defaults.
-     * @param config - the config to update.
-     * @return - a cloned copy of the config that is updated.
+     * @param config config to update.
+     * @return cloned copy of the config that is updated.
      */
     public static Map<String, Object> setDefaults(Map config) {
         // Clone the map

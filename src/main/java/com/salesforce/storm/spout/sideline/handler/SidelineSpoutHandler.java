@@ -39,9 +39,11 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
-import com.salesforce.storm.spout.dynamic.persistence.SidelinePayload;
+import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
+import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;
@@ -87,6 +89,8 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
     private DynamicSpout spout;
 
+    private PersistenceAdapter persistenceAdapter;
+
     /**
      * This is our main Virtual Spout instance which consumes from the configured namespace.
      */
@@ -97,8 +101,20 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * @param spoutConfig Spout configuration.
      */
     @Override
-    public void open(Map<String, Object> spoutConfig) {
+    public void open(final Map<String, Object> spoutConfig) {
         this.spoutConfig = spoutConfig;
+
+        final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
+
+        Preconditions.checkArgument(
+            persistenceAdapterClass != null && !persistenceAdapterClass.isEmpty(),
+            "Sideline persistence adapter class is required"
+        );
+
+        persistenceAdapter = FactoryManager.createNewInstance(
+            persistenceAdapterClass
+        );
+        persistenceAdapter.open(spoutConfig);
     }
 
     /**
@@ -109,7 +125,11 @@ public class SidelineSpoutHandler implements SpoutHandler {
      * @param topologyContext Topology context.
      */
     @Override
-    public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
+    public void onSpoutOpen(
+        final DynamicSpout spout,
+        final Map topologyConfig,
+        final TopologyContext topologyContext
+    ) {
         this.spout = spout;
         this.topologyContext = topologyContext;
 
@@ -129,7 +149,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
 
-        final List<SidelineRequestIdentifier> existingRequestIds = spout.getPersistenceAdapter().listSidelineRequests();
+        final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
         for (SidelineRequestIdentifier id : existingRequestIds) {
@@ -138,10 +158,10 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
             SidelinePayload payload = null;
 
-            final Set<Integer> partitions = spout.getPersistenceAdapter().listSidelineRequestPartitions(id);
+            final Set<Integer> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
 
             for (final Integer partition : partitions) {
-                payload = spout.getPersistenceAdapter().retrieveSidelineRequest(id, partition);
+                payload = getPersistenceAdapter().retrieveSidelineRequest(id, partition);
 
                 if (payload == null) {
                     continue;
@@ -220,7 +240,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
 
         for (final ConsumerPartition consumerPartition : startingState.getConsumerPartitions()) {
             // Store in request manager
-            spout.getPersistenceAdapter().persistSidelineRequestState(
+            getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.START,
                 sidelineRequest.id, // TODO: Now that this is in the request, we should change the persistence adapter
                 sidelineRequest,
@@ -273,7 +293,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
         // assigned to this particular sideline spout instance
         for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
             // This is the state that the VirtualSpout should start with
-            final SidelinePayload sidelinePayload = spout.getPersistenceAdapter().retrieveSidelineRequest(
+            final SidelinePayload sidelinePayload = getPersistenceAdapter().retrieveSidelineRequest(
                 id,
                 consumerPartition.partition()
             );
@@ -284,7 +304,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
             startingStateBuilder.withPartition(consumerPartition, sidelinePayload.startingOffset);
 
             // Persist the side line request state with the new negated version of the steps.
-            spout.getPersistenceAdapter().persistSidelineRequestState(
+            getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.STOP,
                 id,
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
@@ -415,7 +435,7 @@ public class SidelineSpoutHandler implements SpoutHandler {
      */
     @SuppressWarnings("unchecked")
     synchronized void createSidelineTriggers() {
-        final Object triggerClass = getSpoutConfig().get(SpoutConfig.TRIGGER_CLASS);
+        final Object triggerClass = getSpoutConfig().get(SidelineConfig.TRIGGER_CLASS);
 
         // No triggers configured, nothing to setup!
         if (triggerClass == null) {
@@ -460,5 +480,13 @@ public class SidelineSpoutHandler implements SpoutHandler {
      */
     List<SidelineTrigger> getSidelineTriggers() {
         return sidelineTriggers;
+    }
+
+    PersistenceAdapter getPersistenceAdapter() {
+        return persistenceAdapter;
+    }
+
+    private FactoryManager getFactoryManager() {
+        return new FactoryManager(spoutConfig);
     }
 }

@@ -30,6 +30,7 @@ import org.apache.commons.collections.map.UnmodifiableMap;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -72,5 +73,41 @@ public class Tools {
             + " mins "
             + String.valueOf(duration.getSeconds() % 60)
             + "secs";
+    }
+
+    /**
+     * Take a map of strings and objects (probably a config object) and strips a prefix out of its keys.
+     *
+     * If a key does not include the prefix, it gets dropped during the rekeying process.
+     *
+     * Example:
+     * SourceMap:
+     *   {prefix.key1 => value1, prefix.key2 => value2, key3 => value3}
+     * Result Returned:
+     *   {key1 => value1, key2 => value2}
+     *
+     * @param prefix prefix to search for and strip out.
+     * @param sourceConfig map (likely config) to rekey.
+     * @return rekeyed map (likely config).
+     */
+    public static <V> Map<String, V> stripKeyPrefix(
+        final String prefix,
+        final Map<String, V> sourceConfig
+    ) {
+        // Create new map instance with initial size equal to the source config map.
+        final Map<String, V> clonedConfig = new HashMap<>(sourceConfig.size());
+
+        // Loop over each entry
+        for (final Map.Entry<String, V> entry : sourceConfig.entrySet()) {
+            final String key = entry.getKey();
+
+            if (key.startsWith(prefix)) {
+                clonedConfig.put(
+                    key.substring(prefix.length()),
+                    entry.getValue()
+                );
+            }
+        }
+        return clonedConfig;
     }
 }

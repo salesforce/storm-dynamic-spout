@@ -31,6 +31,7 @@ import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.utils.SharedKafkaTestResource;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
@@ -554,6 +555,10 @@ public class DynamicSpoutTest {
 
         // Use zookeeper persistence manager
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName()
+        );
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -1351,6 +1356,15 @@ public class DynamicSpoutTest {
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
+        // TODO: Separate the dependencies on this from this test!!!
+        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+        // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
+
         // Configure SpoutMonitor thread to run every 1 second
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
@@ -1364,7 +1378,7 @@ public class DynamicSpoutTest {
 
         config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
 
-        config.put(SpoutConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
