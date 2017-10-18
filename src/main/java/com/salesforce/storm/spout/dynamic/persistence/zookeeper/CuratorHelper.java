@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Charsets;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.json.simple.JSONValue;
@@ -75,13 +76,13 @@ public class CuratorHelper {
      * @param path node containing JSON to read from.
      * @return map representing the JSON stored within the zookeeper node.
      */
-    public Map<Object, Object> readJson(String path) {
+    public <K, V> Map<K, V> readJson(String path) {
         try {
             byte[] bytes = readBytes(path);
             if (bytes == null) {
                 return null;
             }
-            return (Map<Object, Object>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
+            return (Map<K, V>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -94,6 +95,9 @@ public class CuratorHelper {
      */
     public byte[] readBytes(final String path) {
         try {
+            // Make sure our curator client has started.
+            ensureCuratorHasStarted();
+
             if (curator.checkExists().forPath(path) != null) {
                 return curator.getData().forPath(path);
             } else {
@@ -111,6 +115,9 @@ public class CuratorHelper {
      */
     public void writeBytes(final String path, final byte[] bytes) {
         try {
+            // Make sure our curator client has started.
+            ensureCuratorHasStarted();
+
             if (curator.checkExists().forPath(path) == null) {
                 curator.create()
                     .creatingParentsIfNeeded()
@@ -133,6 +140,9 @@ public class CuratorHelper {
      */
     public void deleteNode(final String path) {
         try {
+            // Make sure our curator client has started.
+            ensureCuratorHasStarted();
+
             // If it doesn't exist,
             if (curator.checkExists().forPath(path) == null) {
                 // Nothing to do!
@@ -153,6 +163,9 @@ public class CuratorHelper {
      */
     public void deleteNodeIfNoChildren(final String path) {
         try {
+            // Make sure our curator client has started.
+            ensureCuratorHasStarted();
+
             // If it doesn't exist,
             if (curator.checkExists().forPath(path) == null) {
                 // Nothing to do!
@@ -167,6 +180,18 @@ public class CuratorHelper {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Quick check to ensure that Curator has been started.
+     */
+    private void ensureCuratorHasStarted() {
+        // If our client isn't started yet
+        if (CuratorFrameworkState.STARTED != curator.getState()) {
+            // Lets start it!
+            logger.debug("Curator not started, starting it now!");
+            curator.start();
         }
     }
 }
