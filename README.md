@@ -126,11 +126,6 @@ spout.retry_manager.retry_limit | Integer |  | Defines how many times a failed m
 spout.spout_handler_class | String |  | Defines which SpoutHandler implementation to use. Should be a fully qualified class path that implements the SpoutHandler interface. | com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler
 spout.virtual_spout_handler_class | String |  | Defines which VirtualSpoutHandler implementation to use. Should be a fully qualified class path that implements the VirtualSpoutHandler interface. | com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler
 
-### Sideline
-Config Key | Type | Required | Description | Default Value |
----------- | ---- | -------- | ----------- | ------------- |
-sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
-
 ### Persistence
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
@@ -157,6 +152,19 @@ spout.kafka.autocommit_interval_ms | Long |  | todo. |
 spout.kafka.brokers | List |  | Holds a list of Kafka Broker hostnames + ports in the following format: ["broker1:9092", "broker2:9092", ...] | 
 spout.kafka.deserializer.class | String |  | Defines which Deserializer (Schema?) implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | 
 spout.kafka.topic | String |  | Defines which Kafka topic we will consume messages from. | 
+
+
+
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
+sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 
+sideline.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 
+sideline.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 
+sideline.persistence.zookeeper.root | String |  | Defines the root path to persist state under. Example: "/consumer-state" | 
+sideline.persistence.zookeeper.servers | List |  | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | 
+sideline.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 
+sideline.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
+sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
 
 
 [//]: <> (CONFIGURATION_END_DELIMITER)

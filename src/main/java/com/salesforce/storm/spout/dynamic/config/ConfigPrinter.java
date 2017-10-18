@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -100,6 +101,7 @@ public class ConfigPrinter {
                 } else if (CONFIGURATION_END_DELIMITER.equals(line)) {
                     mergeConfigSection(SpoutConfig.class, SpoutConfig.setDefaults(Maps.newHashMap()), readmePrintWriter);
                     mergeConfigSection(KafkaConsumerConfig.class, Maps.newHashMap(), readmePrintWriter);
+                    mergeConfigSection(SidelineConfig.class, Maps.newHashMap(), readmePrintWriter);
                     insideConfigurationSection = false;
                     readmePrintWriter.println(line);
                 } else if (!insideConfigurationSection) {
