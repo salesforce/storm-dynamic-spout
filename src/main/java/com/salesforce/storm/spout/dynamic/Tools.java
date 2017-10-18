@@ -73,4 +73,33 @@ public class Tools {
             + String.valueOf(duration.getSeconds() % 60)
             + "secs";
     }
+
+    /**
+     * Take a map of strings and objects (probably a config object) and strips a prefix out of its keys.
+     *
+     * If a key does not include the prefix, it gets dropped during the rekeying process.
+     *
+     * @param prefix prefix to search for and strip out.
+     * @param config map (likely config) to rekey.
+     * @return rekeyed map (likely config).
+     */
+    public static Map<String, Object> stripKeyPrefix(
+        final String prefix,
+        final Map<String, Object> config
+    ) {
+        Map<String, Object> clonedConfig = Maps.newHashMap();
+
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            final String key = entry.getKey();
+
+            if (key.startsWith(prefix)) {
+                clonedConfig.put(
+                    key.substring(prefix.length()),
+                    entry.getValue()
+                );
+            }
+        }
+
+        return clonedConfig;
+    }
 }

@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Start to define some configuration keys.  This may be all for nothing, but its a first pass.
+ * Dynamic Spout Configuration Directives.
  */
 public class SpoutConfig {
 

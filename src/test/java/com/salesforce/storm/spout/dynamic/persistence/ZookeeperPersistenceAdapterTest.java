@@ -131,7 +131,7 @@ public class ZookeeperPersistenceAdapterTest {
         // Validate that getZkXXXXStatePath returns the expected value
         assertEquals(
             "Unexpected zkConsumerStatePath returned",
-            expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePath(expectedConsumerId, partitionId)
+            expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePathForPartition(expectedConsumerId, partitionId)
         );
         assertEquals(
             "Unexpected zkRequestStatePath returned",

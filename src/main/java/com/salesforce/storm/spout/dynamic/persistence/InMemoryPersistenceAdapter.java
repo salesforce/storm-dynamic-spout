@@ -25,18 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
-import com.salesforce.storm.spout.sideline.trigger.SidelineType;
-
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * In memory persistence layer implementation. useful for tests.

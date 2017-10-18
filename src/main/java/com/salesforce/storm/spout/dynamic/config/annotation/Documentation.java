@@ -44,7 +44,6 @@ public @interface Documentation {
      */
     enum Category {
         NONE(""),
-        SIDELINE("Sideline"),
         KAFKA("Kafka"),
         PERSISTENCE("Persistence"),
         PERSISTENCE_ZOOKEEPER("Zookeeper Persistence");
