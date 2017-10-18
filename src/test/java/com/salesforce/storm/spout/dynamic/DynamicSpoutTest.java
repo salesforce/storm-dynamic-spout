@@ -555,7 +555,10 @@ public class DynamicSpoutTest {
 
         // Use zookeeper persistence manager
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
-        config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName());
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName()
+        );
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
