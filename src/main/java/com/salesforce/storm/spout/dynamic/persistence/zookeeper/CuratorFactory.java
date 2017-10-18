@@ -33,6 +33,7 @@ import org.apache.curator.retry.RetryNTimes;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Factory for creating a new curator instance.
@@ -51,7 +52,7 @@ public class CuratorFactory {
     private static final String CONFIG_SESSION_TIMEOUT = "session_timeout";
 
     /**
-     * (Integer) Configuration for  connection timeout.
+     * (Integer) Configuration for connection timeout.
      */
     private static final String CONFIG_CONNECTION_TIMEOUT = "connection_timeout";
 
@@ -71,27 +72,19 @@ public class CuratorFactory {
      * @param config configuration object.
      * @return curator instance.
      */
-    public static CuratorFramework createNewCuratorInstance(
-        final Map<String, Object> config
-    ) {
+    public static CuratorFramework createNewCuratorInstance(final Map<String, Object> config) {
         // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
         final List<String> zkServers = (List<String>) config.get(CONFIG_SERVERS);
 
         Preconditions.checkArgument(!zkServers.isEmpty(), "Zookeepers servers are required");
 
-        // Build out our bits and pieces.
-        final StringBuilder stringBuilder = new StringBuilder();
-        for (final String server : zkServers) {
-            stringBuilder.append(server).append(",");
-        }
-        String serverPorts = stringBuilder.toString();
-        serverPorts = serverPorts.substring(0, serverPorts.length() - 1);
-
-        final String zkConnectionString = serverPorts;
+        // Convert list of servers into comma deliminated string of servers.
+        final String zkConnectionString = zkServers.stream()
+            .collect(Collectors.joining(","));
 
         try {
             // Use builder to create new curator
-            CuratorFramework curator = CuratorFrameworkFactory
+            final CuratorFramework curator = CuratorFrameworkFactory
                 .builder()
                 .connectString(zkConnectionString)
                 .connectionTimeoutMs(getConnectionTimeoutMs(config))

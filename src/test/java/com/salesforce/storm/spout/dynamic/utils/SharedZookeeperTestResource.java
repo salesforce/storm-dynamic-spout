@@ -91,4 +91,11 @@ public class SharedZookeeperTestResource extends ExternalResource {
     public TestingServer getZookeeperTestServer() {
         return zookeeperTestServer;
     }
+
+    /**
+     * @return Connection String to server.
+     */
+    public String getZookeeperConnectString() {
+        return getZookeeperTestServer().getConnectString();
+    }
 }
