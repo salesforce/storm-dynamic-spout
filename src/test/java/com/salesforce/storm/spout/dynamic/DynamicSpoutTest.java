@@ -555,6 +555,7 @@ public class DynamicSpoutTest {
 
         // Use zookeeper persistence manager
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName());
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
@@ -1353,6 +1354,8 @@ public class DynamicSpoutTest {
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // TODO: Separate the dependencies on this from this test!!!
+        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
