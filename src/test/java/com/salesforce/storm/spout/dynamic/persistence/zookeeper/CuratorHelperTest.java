@@ -39,6 +39,10 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+/**
+ * Aims to provide integration testing over CuratorHelper and CuratorFactory against a 'live'
+ * embedded Zookeeper server.
+ */
 public class CuratorHelperTest {
 
     /**
