@@ -30,6 +30,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
+import org.apache.storm.shade.org.apache.http.annotation.NotThreadSafe;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -150,6 +151,40 @@ public class StormRecorder implements MetricsRecorder {
         assignedValues.scope(key).setValue(value);
     }
 
+    @Override
+    public long incrementAssignedValue(final Class sourceClass, final String metricName, final long incrementBy) {
+        final String key = generateKey(sourceClass, metricName);
+        return incrementAssignedValue(key, incrementBy);
+    }
+
+    /**
+     * Internal helper method to increment an assigned value.
+     *
+     * !Important, this is synchronized to make it thread safe.
+     * Need to perf test this and see if its worth doing.
+     *
+     * @param key The key to increment.
+     * @param incrementBy How much to increment by.
+     * @return The new value.
+     */
+    private synchronized long incrementAssignedValue(final String key, final long incrementBy) {
+        // Grab existing value and increment
+        try {
+            Long value = (Long) assignedValues.scope(key).getValueAndReset();
+
+            if (value == null) {
+                value = incrementBy;
+            } else {
+                value += incrementBy;
+            }
+            assignedValues.scope(key).setValue(value);
+            return value;
+        } catch (ClassCastException e) {
+            // Wrong type!  How should we hande this?
+            return -1;
+        }
+    }
+
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!).
      */
@@ -176,6 +211,11 @@ public class StormRecorder implements MetricsRecorder {
     public void timer(final Class sourceClass, final String metricName, final long timeInMs) {
         final String key = generateKey(sourceClass, metricName);
         timers.scope(key).update(timeInMs);
+
+        // Update total time value.  This tracks how much time in total has been
+        // spent in this area, in MS
+        final String totalTimeKey = key + "_totalTimeMs";
+        incrementAssignedValue(totalTimeKey, timeInMs);
     }
 
     @Override
@@ -185,7 +225,7 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void stopTimer(final Class sourceClass, final String metricName) {
+    public long stopTimer(final Class sourceClass, final String metricName) {
         final long stopTime = Clock.systemUTC().millis();
 
         final String key = generateKey(sourceClass, metricName);
@@ -193,9 +233,15 @@ public class StormRecorder implements MetricsRecorder {
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
-            return;
+            return -1;
         }
-        timer(sourceClass, metricName, stopTime - startTime);
+
+        // Calculate total time inbetween starting and stopping
+        final long totalTime = stopTime - startTime;
+
+        // Update averaged timer
+        timer(sourceClass, metricName, totalTime);
+        return totalTime;
     }
 
     /**

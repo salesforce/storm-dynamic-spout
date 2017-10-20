@@ -279,7 +279,8 @@ public class VirtualSpout implements DelegateSpout {
      */
     @Override
     public Message nextTuple() {
-        final long totalTime = System.currentTimeMillis();
+        // Start total Time timer.
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.entireMethod");
 
         // Talk to a "failed tuple manager interface" object to see if any tuples
         // that failed previously are ready to be replayed.  This is an interface
@@ -287,7 +288,7 @@ public class VirtualSpout implements DelegateSpout {
         // Maybe they get replayed a maximum number of times?  Maybe they get replayed forever but have
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
         // If so, emit that and return.
-        long startTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.failedRetry");
         final MessageId nextFailedMessageId = retryManager.nextFailedMessageToRetry();
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
@@ -298,24 +299,24 @@ public class VirtualSpout implements DelegateSpout {
                 retryManager.acked(nextFailedMessageId);
             }
         }
-        nextTupleTimeBuckets.put("failedRetry", nextTupleTimeBuckets.get("failedRetry") + (System.currentTimeMillis() - startTime));
+        getMetricsRecorder().stopTimer(getClass(), "nextTuple.failedRetry");
 
         // Grab the next message from Consumer instance.
-        startTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.nextRecord");
         final Record record = consumer.nextRecord();
         if (record == null) {
             logger.debug("Unable to find any new messages from consumer");
             return null;
         }
-        nextTupleTimeBuckets.put("nextRecord", nextTupleTimeBuckets.get("nextRecord") + (System.currentTimeMillis() - startTime));
+        getMetricsRecorder().stopTimer(getClass(), "nextTuple.nextRecord");
 
         // Create a Tuple Message Id
-        startTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.messageId");
         final MessageId messageId = new MessageId(record.getNamespace(), record.getPartition(), record.getOffset(), getVirtualSpoutId());
-        nextTupleTimeBuckets.put("messageId", nextTupleTimeBuckets.get("messageId") + (System.currentTimeMillis() - startTime));
+        getMetricsRecorder().stopTimer(getClass(), "nextTuple.messageId");
 
         // Determine if this tuple exceeds our ending offset
-        startTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.doesExceedEndOffset");
         if (doesMessageExceedEndingOffset(messageId)) {
             logger.debug("Tuple {} exceeds max offset, acking", messageId);
 
@@ -326,21 +327,18 @@ public class VirtualSpout implements DelegateSpout {
             // Simply return null.
             return null;
         }
-        nextTupleTimeBuckets.put(
-            "doesExceedEndOffset",
-            nextTupleTimeBuckets.get("doesExceedEndOffset") + (System.currentTimeMillis() - startTime)
-        );
+        getMetricsRecorder().stopTimer(getClass(), "nextTuple.doesExceedEndOffset");
 
         // Create Message
-        startTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.message");
         final Message message = new Message(messageId, record.getValues());
-        nextTupleTimeBuckets.put("message", nextTupleTimeBuckets.get("message") + (System.currentTimeMillis() - startTime));
+        getMetricsRecorder().stopTimer(getClass(), "nextTuple.message");
 
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?
         // Loops through each step in the chain to filter a filter before emitting
-        startTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "nextTuple.isFiltered");
         final boolean isFiltered  = getFilterChain().filter(message);
-        nextTupleTimeBuckets.put("isFiltered", nextTupleTimeBuckets.get("isFiltered") + (System.currentTimeMillis() - startTime));
+        getMetricsRecorder().stopTimer(getClass(), "nextTuple.isFiltered");
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
@@ -358,22 +356,8 @@ public class VirtualSpout implements DelegateSpout {
         trackedMessages.put(messageId, message);
 
         // record total time and total calls
-        nextTupleTimeBuckets.put("totalTime", nextTupleTimeBuckets.get("totalTime") + (System.currentTimeMillis() - totalTime));
-        nextTupleTimeBuckets.put("totalCalls", nextTupleTimeBuckets.get("totalCalls") + 1);
-
-        // TEMP Every so often display stats
-        if (nextTupleTimeBuckets.get("totalCalls") % 10_000_000 == 0) {
-            final long bucketTime = nextTupleTimeBuckets.get("totalTime");
-            logger.info("==== nextTuple() Totals after {} calls ====", nextTupleTimeBuckets.get("totalCalls"));
-            for (Map.Entry<String, Long> entry : nextTupleTimeBuckets.entrySet()) {
-                logger.info(
-                    "nextTuple() {} => {} ms ({}%)",
-                    entry.getKey(),
-                    entry.getValue(),
-                    ((float) entry.getValue() / bucketTime) * 100
-                );
-            }
-        }
+        getMetricsRecorder().stopTimer(getClass(),"nextTuple.entireMethod");
+        getMetricsRecorder().incrementAssignedValue(getClass(), "nextTuple.totalCalls", 1);
 
         // Return it.
         return message;

@@ -131,7 +131,7 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void stopTimer(Class sourceClass, String metricName) {
+    public long stopTimer(Class sourceClass, String metricName) {
         final long stopTime = Clock.systemUTC().millis();
 
         final String key = generateKey(sourceClass, metricName);
@@ -139,9 +139,11 @@ public class LogRecorder implements MetricsRecorder {
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
-            return;
+            return -1;
         }
-        timer(sourceClass, metricName, stopTime - startTime);
+        final long totalTime = stopTime - startTime;
+        timer(sourceClass, metricName, totalTime);
+        return totalTime;
     }
 
     private String generateKey(Class sourceClass, String metricName) {
