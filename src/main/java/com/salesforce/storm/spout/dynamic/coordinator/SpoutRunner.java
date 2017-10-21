@@ -145,6 +145,7 @@ public class SpoutRunner implements Runnable {
                     try {
                         tupleQueue.put(message);
                     } catch (InterruptedException ex) {
+
                         logger.error("Shutting down due to interruption {}", ex);
                         spout.requestStop();
                     }
