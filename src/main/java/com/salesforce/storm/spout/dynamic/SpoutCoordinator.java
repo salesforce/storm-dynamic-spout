@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
+import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
@@ -102,6 +103,11 @@ public class SpoutCoordinator {
     private ExecutorService executor;
 
     /**
+     * SpoutMonitorFactory for creating new SpoutMonitors.
+     */
+    private final SpoutMonitorFactory spoutMonitorFactory;
+
+    /**
      * The spout monitor runnable, which handles spinning up threads for virtual spouts.
      */
     private SpoutMonitor spoutMonitor;
@@ -117,8 +123,23 @@ public class SpoutCoordinator {
      * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
      */
     public SpoutCoordinator(final MetricsRecorder metricsRecorder, final MessageBuffer messageBuffer) {
+        this(metricsRecorder, messageBuffer, new SpoutMonitorFactory());
+    }
+
+    /**
+     * Constructor used for injecting a mock SpoutMonitorFactory instance.
+     * @param metricsRecorder Recorder for capturing metrics
+     * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
+     * @param spoutMonitorFactory A Factory for creating SpoutMonitors.
+     */
+    SpoutCoordinator(
+        final MetricsRecorder metricsRecorder,
+        final MessageBuffer messageBuffer,
+        final SpoutMonitorFactory spoutMonitorFactory) {
+
         this.metricsRecorder = metricsRecorder;
         this.messageBuffer = messageBuffer;
+        this.spoutMonitorFactory = spoutMonitorFactory;
     }
 
     /**
@@ -145,12 +166,12 @@ public class SpoutCoordinator {
         if (!isOpen) {
             throw new IllegalStateException("You cannot check for a spout in the coordinator before it has been opened!");
         }
-        return spoutMonitor.hasSpout(spoutIdentifier);
+        return getSpoutMonitor().hasSpout(spoutIdentifier);
     }
 
     /**
      * Open the coordinator and begin spinning up virtual spout threads.
-     * @param topologyConfig topology configuration.
+     * @param config topology configuration.
      */
     public void open(final Map<String, Object> config) {
         if (isOpen) {
@@ -170,7 +191,7 @@ public class SpoutCoordinator {
         this.executor = Executors.newSingleThreadExecutor();
 
         // Create our spout monitor instance.
-        spoutMonitor = new SpoutMonitor(
+        spoutMonitor = getSpoutMonitorFactory().create(
             getNewSpoutQueue(),
             getMessageBuffer(),
             getAckedTuplesQueue(),
@@ -200,7 +221,7 @@ public class SpoutCoordinator {
      * It also handles if it dies un-naturally and re-starts it.
      */
     private void startSpoutMonitor() {
-        CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((exception) -> {
+        CompletableFuture.runAsync(getSpoutMonitor(), getExecutor()).exceptionally((exception) -> {
             // This fires if SpoutMonitor dies because it threw an unhandled exception.
 
             // On errors, we need to restart it.  We throttle restarts @ 10 seconds to prevent thrashing.
@@ -267,7 +288,9 @@ public class SpoutCoordinator {
             getExecutor().shutdown();
 
             // Call close on the spout monitor
-            spoutMonitor.close();
+            if (getSpoutMonitor() != null) {
+                getSpoutMonitor().close();
+            }
 
             // Wait for clean termination
             getExecutor().awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
@@ -287,7 +310,7 @@ public class SpoutCoordinator {
      * @return The total number of spouts the coordinator is running
      */
     int getTotalSpouts() {
-        return spoutMonitor.getTotalSpouts();
+        return getSpoutMonitor().getTotalSpouts();
     }
 
     /**
@@ -344,6 +367,20 @@ public class SpoutCoordinator {
      */
     private MetricsRecorder getMetricsRecorder() {
         return metricsRecorder;
+    }
+
+    /**
+     * @return Factory for creating SpoutMonitors.
+     */
+    private SpoutMonitorFactory getSpoutMonitorFactory() {
+        return spoutMonitorFactory;
+    }
+
+    /**
+     * @return The spout monitor runnable, which handles spinning up threads for virtual spouts.
+     */
+    private SpoutMonitor getSpoutMonitor() {
+        return spoutMonitor;
     }
 
     /**
