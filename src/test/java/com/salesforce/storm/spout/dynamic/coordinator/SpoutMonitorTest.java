@@ -77,6 +77,9 @@ public class SpoutMonitorTest {
     private static final Logger logger = LoggerFactory.getLogger(SpoutMonitorTest.class);
     private static final int maxWaitTime = 5;
 
+    /**
+     * This is the executor pool we run tests against.
+     */
     private ThreadPoolExecutor executorService;
 
     /**
@@ -233,13 +236,13 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(newSpoutQueue::isEmpty, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(1));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(1));
 
         // validate the executor is running it
         assertEquals("Should have 1 running task", 1, spoutMonitor.getExecutor().getActiveCount());
@@ -259,8 +262,8 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(future::isDone, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(future::isDone, equalTo(true));
 
         // Verify close called on the mock spout
         verify(mockSpout, times(1)).close();
@@ -304,13 +307,13 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(newSpoutQueue::isEmpty, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(1));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(1));
 
         // Verify open was called
         assertTrue("open() should have been called", mockSpout.wasOpenCalled);
@@ -323,8 +326,8 @@ public class SpoutMonitorTest {
 
         // Wait for spout count to decrease
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(0));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(0));
 
         // validate the executor should no longer have any running tasks?
         assertEquals("Should have no running tasks", 0, spoutMonitor.getExecutor().getActiveCount());
@@ -334,8 +337,8 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(future::isDone, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(future::isDone, equalTo(true));
 
         // Verify closed was called
         assertTrue("Close() should have been called", mockSpout.wasCloseCalled);
@@ -383,13 +386,13 @@ public class SpoutMonitorTest {
         // wait for it to be picked up
         // This means our queue should go to 0
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(newSpoutQueue::isEmpty, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(newSpoutQueue::isEmpty, equalTo(true));
 
         // Wait for spout count to increase to the number of spout instances we submitted.
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
 
         // Now the executor should only run a certain number
         assertEquals("Only configured max running concurrently", maxConccurentInstances, spoutMonitor.getExecutor().getActiveCount());
@@ -417,8 +420,8 @@ public class SpoutMonitorTest {
 
         // Wait for it to stop running.
         await()
-                .atMost(maxWaitTime, TimeUnit.SECONDS)
-                .until(future::isDone, equalTo(true));
+            .atMost(maxWaitTime, TimeUnit.SECONDS)
+            .until(future::isDone, equalTo(true));
 
         // Verify close was called on running spouts
         for (int x = 0; x < mockSpouts.size(); x++) {
@@ -554,17 +557,11 @@ public class SpoutMonitorTest {
         // Create instance.
         SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
-        // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
-
         // Our new spout queue
         final Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
 
         // call run in async thread.
         final CompletableFuture future = startSpoutMonitor(spoutMonitor);
-
-        // Wait for it to fire up
-        Thread.sleep(testWaitTime);
 
         // Sanity test - Now validate we have no spouts submitted
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
@@ -591,7 +588,8 @@ public class SpoutMonitorTest {
         assertTrue("open() should have been called", mockSpout.wasOpenCalled);
 
         // Tell the spout to throw an exception.
-        mockSpout.exceptionToThrow = new RuntimeException("This is my runtime exception");
+        final RuntimeException runtimeException = new RuntimeException("This is my runtime exception");
+        mockSpout.exceptionToThrow = runtimeException;
 
         // Wait for spout count to decrease
         await()
@@ -605,6 +603,10 @@ public class SpoutMonitorTest {
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(future::isDone, equalTo(true));
+
+        // Verify that the exception error was reported.
+        assertEquals("Should have reported one error", 1, spoutMonitor.getReportedErrorsQueue().size());
+        assertTrue("Should be our reported error", spoutMonitor.getReportedErrorsQueue().contains(runtimeException));
 
         // Verify closed was called on the spout instance?
         //assertTrue("Close() should have been called", mockSpout.wasCloseCalled);

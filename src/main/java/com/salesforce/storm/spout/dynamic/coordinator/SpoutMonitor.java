@@ -40,6 +40,7 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -273,7 +274,13 @@ public class SpoutMonitor implements Runnable {
                     // If we got passed an exception
                     if (exception != null) {
                         // We failed via some kind of error, lets report it
-                        reportError(exception);
+                        if (exception instanceof CompletionException) {
+                            // CompletionException is a wrapper, lets report the cause.
+                            reportError(exception.getCause());
+                        } else {
+                            // I have a feeling all exceptions will be of type CompletionException.
+                            reportError(exception);
+                        }
 
                         // Log error
                         logger.error(
@@ -469,12 +476,19 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
+     * @return The Error Queue.
+     */
+    Queue<Throwable> getReportedErrorsQueue() {
+        return reportedErrorsQueue;
+    }
+
+    /**
      * Adds an error to the reported errors queue.  These will get pushed up and reported
      * to the topology.
      * @param throwable The error to be reported.
      */
     private void reportError(final Throwable throwable) {
-        reportedErrorsQueue.add(throwable);
+        getReportedErrorsQueue().add(throwable);
     }
 
     /**
