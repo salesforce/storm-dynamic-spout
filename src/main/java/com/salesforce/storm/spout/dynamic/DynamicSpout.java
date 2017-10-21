@@ -31,7 +31,6 @@ import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -80,11 +79,6 @@ public class DynamicSpout extends BaseRichSpout {
      * Manages creating implementation instances.
      */
     private final FactoryManager factoryManager;
-
-    /**
-     * Stores state from the spout.
-     */
-    private PersistenceAdapter persistenceAdapter;
 
     /**
      * Handler for callbacks at various stages of a dynamic spout's lifecycle.
@@ -146,17 +140,13 @@ public class DynamicSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
         }
 
-        // We do not use the getters for things like the metricsRecorder, persistenceAdapter and coordinator here
+        // We do not use the getters for things like the metricsRecorder and coordinator here
         // because each of these getters perform a check to see if the spout is open, and it's not yet until we've
         // finished setting all of these things up.
 
         // Initialize Metrics Collection
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
         metricsRecorder.open(getSpoutConfig(), getTopologyContext());
-
-        // Create and open() persistence manager passing appropriate configuration.
-        persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-        persistenceAdapter.open(getSpoutConfig());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
@@ -268,12 +258,6 @@ public class DynamicSpout extends BaseRichSpout {
         if (getCoordinator() != null) {
             getCoordinator().close();
             coordinator = null;
-        }
-
-        // Close persistence manager
-        if (getPersistenceAdapter() != null) {
-            getPersistenceAdapter().close();
-            persistenceAdapter = null;
         }
 
         // Close metrics recorder.
@@ -414,14 +398,6 @@ public class DynamicSpout extends BaseRichSpout {
     SpoutCoordinator getCoordinator() {
         checkSpoutOpened();
         return coordinator;
-    }
-
-    /**
-     * @return The persistence manager.
-     */
-    public PersistenceAdapter getPersistenceAdapter() {
-        checkSpoutOpened();
-        return persistenceAdapter;
     }
 
     /**
