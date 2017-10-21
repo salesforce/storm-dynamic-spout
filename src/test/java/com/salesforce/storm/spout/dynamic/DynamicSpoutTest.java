@@ -57,6 +57,7 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.generated.StreamInfo;
 import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.IRichSpout;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -71,7 +72,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -994,6 +997,138 @@ public class DynamicSpoutTest {
         };
     }
 
+    /**
+     * Tests that pending errors get reported via OutputCollector.
+     */
+    @Test
+    public void testReportErrors() {
+        // Define config
+        //final Map<String, Object> config = getDefaultConfig("ConsumerIdPrefix", "StreamId");
+        final Map<String, Object> config = new HashMap<>();
+        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "ConsumerIdPrefix");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+
+        // Create mocks
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector mockSpoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout
+        final DynamicSpout spout = new DynamicSpout(config);
+
+        // Call open
+        spout.open(config, topologyContext, mockSpoutOutputCollector);
+
+        // Hook into error queue, and queue some errors
+        final Throwable exception1 = new RuntimeException("My RuntimeException");
+        final Throwable exception2 = new Exception("My Exception");
+
+        // "Report" our exceptions
+        spout.getCoordinator().getReportedErrorsQueue().add(exception1);
+        spout.getCoordinator().getReportedErrorsQueue().add(exception2);
+
+        // Call next tuple a couple times, validate errors get reported.
+        await()
+            .atMost(30, TimeUnit.SECONDS)
+            .until(() -> {
+                // Call next tuple
+                spout.nextTuple();
+
+                return mockSpoutOutputCollector.getReportedErrors().size() >= 2;
+            });
+
+        // Validate
+        final List<Throwable> reportedErrors = mockSpoutOutputCollector.getReportedErrors();
+        assertEquals("Should have 2 reported errors", 2, reportedErrors.size());
+        assertTrue("Contains first exception", reportedErrors.contains(exception1));
+        assertTrue("Contains second exception", reportedErrors.contains(exception2));
+
+        // Call close
+        spout.close();
+    }
+
+    /**
+     * Verifies that you do not define an output stream via the SidelineSpoutConfig
+     * declareOutputFields() method with default to using 'default' stream.
+     */
+    @Test
+    public void testDeclareOutputFields_without_stream() {
+        // Create config with null stream id config option.
+        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
+
+        // Define our output fields as key and value.
+        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
+
+        final OutputFieldsGetter declarer = new OutputFieldsGetter();
+
+        // Create spout, but don't call open
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        // call declareOutputFields
+        spout.declareOutputFields(declarer);
+
+        // Validate results.
+        final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
+
+        assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
+        assertEquals(
+            fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
+            Lists.newArrayList("key", "value")
+        );
+
+        spout.close();
+    }
+
+    /**
+     * Verifies that you can define an output stream via the SidelineSpoutConfig and it gets used
+     * in the declareOutputFields() method.
+     */
+    @Test
+    public void testDeclareOutputFields_with_stream() {
+        final String streamId = "foobar";
+        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
+
+        // Define our output fields as key and value.
+        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
+
+        final OutputFieldsGetter declarer = new OutputFieldsGetter();
+
+        // Create spout, but do not call open.
+        final SidelineSpout spout = new SidelineSpout(config);
+
+        // call declareOutputFields
+        spout.declareOutputFields(declarer);
+
+        final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
+
+        assertTrue(fieldsDeclaration.containsKey(streamId));
+        assertEquals(
+            fieldsDeclaration.get(streamId).get_output_fields(),
+            Lists.newArrayList("key", "value")
+        );
+
+        spout.close();
+    }
+
+    /**
+     * Noop, just doing coverage!  These methods don't actually
+     * do anything right now anyways.
+     */
+    @Test
+    public void testActivate() {
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
+        spout.activate();
+    }
+
+    /**
+     * Noop, just doing coverage!  These methods don't actually
+     * do anything right now anyways.
+     */
+    @Test
+    public void testDeactivate() {
+        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
+        spout.deactivate();
+    }
+
     // Helper methods
 
     /**
@@ -1111,89 +1246,6 @@ public class DynamicSpoutTest {
                 // If all entries are empty, return true
                 return true;
             }, equalTo(true));
-    }
-
-    /**
-     * Verifies that you do not define an output stream via the SidelineSpoutConfig
-     * declareOutputFields() method with default to using 'default' stream.
-     */
-    @Test
-    public void testDeclareOutputFields_without_stream() {
-        // Create config with null stream id config option.
-        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
-
-        // Define our output fields as key and value.
-        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
-
-        final OutputFieldsGetter declarer = new OutputFieldsGetter();
-
-        // Create spout, but don't call open
-        final SidelineSpout spout = new SidelineSpout(config);
-
-        // call declareOutputFields
-        spout.declareOutputFields(declarer);
-
-        // Validate results.
-        final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
-
-        assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
-        assertEquals(
-            fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
-            Lists.newArrayList("key", "value")
-        );
-
-        spout.close();
-    }
-
-    /**
-     * Verifies that you can define an output stream via the SidelineSpoutConfig and it gets used
-     * in the declareOutputFields() method.
-     */
-    @Test
-    public void testDeclareOutputFields_with_stream() {
-        final String streamId = "foobar";
-        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
-
-        // Define our output fields as key and value.
-        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
-
-        final OutputFieldsGetter declarer = new OutputFieldsGetter();
-
-        // Create spout, but do not call open.
-        final SidelineSpout spout = new SidelineSpout(config);
-
-        // call declareOutputFields
-        spout.declareOutputFields(declarer);
-
-        final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
-
-        assertTrue(fieldsDeclaration.containsKey(streamId));
-        assertEquals(
-            fieldsDeclaration.get(streamId).get_output_fields(),
-            Lists.newArrayList("key", "value")
-        );
-
-        spout.close();
-    }
-
-    /**
-     * Noop, just doing coverage!  These methods don't actually
-     * do anything right now anyways.
-     */
-    @Test
-    public void testActivate() {
-        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
-        spout.activate();
-    }
-
-    /**
-     * Noop, just doing coverage!  These methods don't actually
-     * do anything right now anyways.
-     */
-    @Test
-    public void testDeactivate() {
-        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
-        spout.deactivate();
     }
 
     /**

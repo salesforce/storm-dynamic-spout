@@ -421,7 +421,7 @@ public class VirtualSpout implements DelegateSpout {
         final MessageId messageId;
         try {
             messageId = (MessageId) msgId;
-        } catch (ClassCastException e) {
+        } catch (final ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
         ackTimeBuckets.put("MessageId", ackTimeBuckets.get("MessageId") + (System.currentTimeMillis() - start));
@@ -466,7 +466,7 @@ public class VirtualSpout implements DelegateSpout {
         final MessageId messageId;
         try {
             messageId = (MessageId) msgId;
-        } catch (ClassCastException e) {
+        } catch (final ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
 

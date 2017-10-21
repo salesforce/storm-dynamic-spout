@@ -181,7 +181,12 @@ public class DynamicSpout extends BaseRichSpout {
      */
     @Override
     public void nextTuple() {
-         // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
+        // Report any errors
+        getCoordinator()
+            .getErrors()
+            .ifPresent(throwable -> getOutputCollector().reportError(throwable));
+
+        // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
         // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
         // Values for the tuple that should be emitted.
         final Message message = getCoordinator().nextMessage();
