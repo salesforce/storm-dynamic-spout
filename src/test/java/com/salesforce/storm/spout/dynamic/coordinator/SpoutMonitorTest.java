@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -109,6 +110,7 @@ public class SpoutMonitorTest {
         final MessageBuffer messageBuffer = new FifoBuffer();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Queue<Throwable> errorQueue = Queues.newConcurrentLinkedQueue();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -130,6 +132,7 @@ public class SpoutMonitorTest {
             messageBuffer,
             ackQueue,
             failQueue,
+            errorQueue,
             latch,
             clock,
             topologyConfig,
@@ -628,6 +631,7 @@ public class SpoutMonitorTest {
         final MessageBuffer messageBuffer = new FifoBuffer();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Queue<Throwable> errorQueue = Queues.newConcurrentLinkedQueue();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -644,6 +648,7 @@ public class SpoutMonitorTest {
             messageBuffer,
             ackQueue,
             failQueue,
+            errorQueue,
             latch,
             clock,
             topologyConfig,
