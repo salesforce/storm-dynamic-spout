@@ -87,7 +87,7 @@ public class SpoutCoordinator {
     private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
-     * Buffer by spout consumer id of errors to be reported.
+     * Buffer for errors that need to be reported.
      */
     private final Queue<Throwable> reportedErrorsQueue = new ConcurrentLinkedQueue<>();
 
@@ -201,7 +201,7 @@ public class SpoutCoordinator {
      */
     private void startSpoutMonitor() {
         CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((exception) -> {
-            // This fires if SpoutMonitor dies unexpectedly by throwing an exception.
+            // This fires if SpoutMonitor dies because it threw an unhandled exception.
 
             // On errors, we need to restart it.  We throttle restarts @ 10 seconds to prevent thrashing.
             logger.error("Spout monitor died unnaturally.  Will restart after 10 seconds. {}", exception.getMessage(), exception);
@@ -244,14 +244,14 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - Returns the next available Message to be emitted into the topology.
+     * @return Returns the next available Message to be emitted into the topology.
      */
     public Message nextMessage() {
         return getMessageBuffer().poll();
     }
 
     /**
-     * @return - Returns any errors that should be reported up to the topology.
+     * @return Returns any errors that should be reported up to the topology.
      */
     public Optional<Throwable> getErrors() {
         // Poll is non-blocking.
@@ -347,14 +347,14 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
+     * @return The maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     private long getMaxTerminationWaitTimeMs() {
         return ((Number) getTopologyConfig().get(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**
-     * @return - our internal executor service.
+     * @return Our internal executor service.
      */
     ExecutorService getExecutor() {
         return executor;
