@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * DynamicSpout's contain other virtualized spouts, and provide mechanisms for interacting with the spout life cycle
@@ -192,7 +191,12 @@ public class DynamicSpout extends BaseRichSpout {
      */
     @Override
     public void nextTuple() {
-         // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
+        // Report any errors
+        getCoordinator()
+            .getErrors()
+            .ifPresent(throwable -> getOutputCollector().reportError(throwable));
+
+        // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
         // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
         // Values for the tuple that should be emitted.
         final Message message = getCoordinator().nextMessage();
@@ -206,11 +210,6 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Update emit count metric for VirtualSpout this tuple originated from
         getMetricsRecorder().count(VirtualSpout.class, message.getMessageId().getSrcVirtualSpoutId() + ".emit", 1);
-
-        // Report any errors
-        getCoordinator()
-            .getErrors()
-            .ifPresent(throwable -> getOutputCollector().reportError(throwable));
 
         // Everything below is temporary emit metrics for debugging.
 

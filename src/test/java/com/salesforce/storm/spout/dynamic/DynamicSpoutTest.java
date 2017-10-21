@@ -1006,6 +1006,7 @@ public class DynamicSpoutTest {
         //final Map<String, Object> config = getDefaultConfig("ConsumerIdPrefix", "StreamId");
         final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "ConsumerIdPrefix");
+        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Create mocks
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -1025,7 +1026,7 @@ public class DynamicSpoutTest {
         spout.getCoordinator().getReportedErrorsQueue().add(exception1);
         spout.getCoordinator().getReportedErrorsQueue().add(exception2);
 
-        // Call next tuple repeatedly, validate they get reported.
+        // Call next tuple a couple times, validate errors get reported.
         await()
             .atMost(30, TimeUnit.SECONDS)
             .until(() -> {
