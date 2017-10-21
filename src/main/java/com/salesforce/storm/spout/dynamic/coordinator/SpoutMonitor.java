@@ -230,8 +230,11 @@ public class SpoutMonitor implements Runnable {
             // Lets report the error
             reportError(ex);
 
-            // And log it.
+            // Log it.
             logger.error("!!!!!! SpoutMonitor threw an exception {}", ex.getMessage(), ex);
+
+            // And bubble it up
+            throw ex;
         }
     }
 
@@ -412,7 +415,7 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * @return - return the number of spout runner instances.
-     *           *note* - it doesn't mean all of these are actually running, some may be queued.
+     *           *note* it doesn't mean all of these are actually running, some may be queued.
      */
     public int getTotalSpouts() {
         return spoutRunners.size();
