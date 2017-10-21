@@ -232,7 +232,7 @@ public class SpoutMonitor implements Runnable {
             reportError(ex);
 
             // Log it.
-            logger.error("!!!!!! SpoutMonitor threw an exception {}", ex.getMessage(), ex);
+            logger.error("SpoutMonitor threw an exception {}", ex.getMessage(), ex);
 
             // And bubble it up
             throw ex;
