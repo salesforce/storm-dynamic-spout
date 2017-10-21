@@ -1,16 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<!-- Test Logging Configuration -->
+<Configuration>
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1.} [%t]: %msg%n"/>
         </Console>
+        <File name="File" fileName="target/logs/test.log" immediateFlush="true" append="true">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1.} [%t]: %msg%n"/>
+        </File>
     </Appenders>
     <Loggers>
-        <Logger name="com.salesforce.storm.spout.dynamic" level="INFO"/>
-        <Logger name="com.salesforce.storm.spout.dynamic.config.SpoutConfig" level="ERROR"/>
-        <Logger name="org.apache.kafka" level="WARN"/>
-        <Root level="ERROR">
+        <!-- Relevant classes we want to see INFO logs on the Console -->
+        <Logger name="com.salesforce.storm.spout.dynamic" level="INFO">
             <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="com.salesforce.storm.spout.dynamic.config.SpoutConfig" level="WARN">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Squelch noise from kafka -->
+        <Logger name="kafka" level="WARN">
+            <AppenderRef ref="File"/>
+        </Logger>
+        <Logger name="kafka.server" level="WARN">
+            <AppenderRef ref="File"/>
+        </Logger>
+        <Logger name="org.apache.kafka" level="WARN">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Logger>
+
+        <!-- Squelch noise from zookeeper -->
+        <Logger name="org.apache.zookeeper" level="WARN">
+            <AppenderRef ref="File"/>
+        </Logger>
+        <Logger name="org.I0Itec.zkclient" level="WARN">
+            <AppenderRef ref="File"/>
+        </Logger>
+
+
+        <!-- Define our loggers -->
+        <Root level="INFO">
+            <!-- Only Errors go to console, except for the specific classpaths defined above -->
+            <AppenderRef level="ERROR" ref="Console"/>
+
+            <!-- Info level go to the log file -->
+            <AppenderRef level="INFO" ref="File"/>
         </Root>
+
     </Loggers>
 </Configuration>
