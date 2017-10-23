@@ -46,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Monitors and manages the lifecycle of virtual spouts.
@@ -115,6 +116,11 @@ public class SpoutMonitor implements Runnable {
      * Metrics Recorder implementation for collecting metrics.
      */
     private final MetricsRecorder metricsRecorder;
+
+    /**
+     * Used to track metric for number of failed virtual spouts.
+     */
+    private final AtomicInteger failedTaskCounter = new AtomicInteger(0);
 
     /**
      * Calculates progress of {@link VirtualSpout} instances.
@@ -288,6 +294,9 @@ public class SpoutMonitor implements Runnable {
                             virtualSpoutIdentifier,
                             exception
                         );
+
+                        // Increment failed task counter
+                        incrementFailedTaskCounter();
                     } else {
                         // Log that we completed successfully.
                         logger.info("{} seems to have finished, cleaning up", virtualSpoutIdentifier);
@@ -325,12 +334,14 @@ public class SpoutMonitor implements Runnable {
         lastStatusReport = now;
 
         // Show a status report
-        logger.info("Active Tasks: {}, Queued Tasks: {}, ThreadPool Size: {}/{}, Completed Tasks: {}, Total Tasks Submitted: {}",
+        logger.info(
+            "Active Tasks: {}, Queued Tasks: {}, ThreadPool Size: {}/{}, Completed Tasks: {}, Errored Tasks: {}, Total Tasks Submitted: {}",
             executor.getActiveCount(),
             executor.getQueue().size(),
             executor.getPoolSize(),
             executor.getMaximumPoolSize(),
             executor.getCompletedTaskCount(),
+            getNumberOfFailedTasks(),
             executor.getTaskCount()
         );
         logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutRunners.keySet());
@@ -339,6 +350,7 @@ public class SpoutMonitor implements Runnable {
         getMetricsRecorder().assignValue(getClass(), "bufferSize", tupleOutputQueue.size());
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
         getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
+        getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
         getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
         getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
 
@@ -499,17 +511,32 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * @return - ThreadPoolExecutor Service that runs VirtualSpout instances.
+     * @return ThreadPoolExecutor Service that runs VirtualSpout instances.
      */
     ThreadPoolExecutor getExecutor() {
         return executor;
     }
 
     /**
-     * @return - The new spout queue.
+     * @return The new spout queue.
      */
     Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
+    }
+
+    /**
+     * @return How many VirtualSpout tasks have terminated abnormally.
+     */
+    int getNumberOfFailedTasks() {
+        return failedTaskCounter.get();
+    }
+
+    /**
+     * Increments the failed task counter metric.
+     * @return The new number of failed tasks.
+     */
+    private int incrementFailedTaskCounter() {
+        return failedTaskCounter.incrementAndGet();
     }
 
     /**
