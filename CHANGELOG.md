@@ -9,8 +9,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-24](https://github.com/salesforce/storm-dynamic-spout/pull/24) Add ability for errors to be reported up to the Storm web UI.
 
 ### Bug Fixes
-- [PR-16](https://github.com/salesforce/storm-dynamic-spout/pull/16) *Kafka Consumer* Improved handling of Out Of Range exceptions
-- [PR-13](https://github.com/salesforce/storm-dynamic-spout/pull/13) *Sideline Spout* Fixed race condition on-redeploy of Spout when a sideline is active for firehose.
+##### Kafka Consumer
+- [PR-16](https://github.com/salesforce/storm-dynamic-spout/pull/16) Improved handling of Out Of Range exceptions
+##### Sideline Spout
+- [PR-13](https://github.com/salesforce/storm-dynamic-spout/pull/13) Fixed race condition on-redeploy of Spout when a 
+sideline is active for firehose.
+
+### Removed
+##### Kafka Consumer
+- [PR-31](https://github.com/salesforce/storm-dynamic-spout/pull/31) Removed configuration items: `spout.kafka
+.autocommit` and `spout.kafka.autocommit_interval_ms`.  This functionality is covered by configuration item `spout.coordinator
+.consumer_state_flush_interval_ms`
 
 ## 0.8.x
 - Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.
