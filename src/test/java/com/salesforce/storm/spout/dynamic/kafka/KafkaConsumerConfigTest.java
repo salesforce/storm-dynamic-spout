@@ -59,8 +59,6 @@ public class KafkaConsumerConfigTest {
         assertEquals("BrokerHosts set", "broker1:9092,broker2:9093", config.getKafkaConsumerProperty("bootstrap.servers"));
 
         // Check defaults are sane.
-        assertFalse("Consumer Autocommit defaults to false", config.isConsumerStateAutoCommit());
-        assertEquals("autocommit set to false", "false", config.getKafkaConsumerProperty("enable.auto.commit"));
         assertEquals("group.id set", consumerId, config.getKafkaConsumerProperty("group.id"));
         assertEquals("auto.offset.reset set to none", "none", config.getKafkaConsumerProperty("auto.offset.reset"));
         assertEquals(
