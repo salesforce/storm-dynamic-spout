@@ -206,15 +206,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         consumerConfig.setIndexOfConsumer(
             consumerPeerContext.getInstanceNumber()
         );
-
-        // Optionally set state autocommit properties
-        if (spoutConfig.containsKey(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT)) {
-            consumerConfig.setConsumerStateAutoCommit((Boolean) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT));
-            consumerConfig.setConsumerStateAutoCommitIntervalMs(
-                (Long) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS)
-            );
-        }
-
+        
         // Create deserializer.
         final Deserializer deserializer = FactoryManager.createNewInstance(
             (String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS)
