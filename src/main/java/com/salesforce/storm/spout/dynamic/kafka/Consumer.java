@@ -129,12 +129,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private Iterator<ConsumerRecord<byte[], byte[]>> bufferIterator = null;
 
     /**
-     * Used to control how often we flush state using PersistenceAdapter.
-     */
-    private transient Clock clock = Clock.systemUTC();
-    private long lastFlushTime = 0;
-
-    /**
      * Default constructor.
      */
     public Consumer() {
@@ -351,9 +345,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
         // Track internally which offsets we've marked completed
         partitionOffsetsManager.finishOffset(consumerPartition, offset);
-
-        // Occasionally flush
-        timedFlushConsumerState();
     }
 
     /**
@@ -364,36 +355,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      */
     public void commitOffset(final String namespace, final int partition, final long offset) {
         commitOffset(new ConsumerPartition(namespace, partition), offset);
-    }
-
-    /**
-     * Conditionally flushes the consumer state to the persistence layer based
-     * on a time-out condition.
-     *
-     * @return True if we flushed state, false if we didn't
-     */
-    protected boolean timedFlushConsumerState() {
-        // If we have auto commit off, don't commit
-        if (!getConsumerConfig().isConsumerStateAutoCommit()) {
-            return false;
-        }
-
-        // Get current system time.
-        final long now = getClock().millis();
-
-        // Set initial state if not defined
-        if (lastFlushTime == 0) {
-            lastFlushTime = now;
-            return false;
-        }
-
-        // Determine if we should flush.
-        if ((now - lastFlushTime) > getConsumerConfig().getConsumerStateAutoCommitIntervalMs()) {
-            flushConsumerState();
-            lastFlushTime = now;
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -645,21 +606,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      */
     String getConsumerId() {
         return getConsumerConfig().getConsumerId();
-    }
-
-    /**
-     * @return return our clock implementation.  Useful for testing.
-     */
-    protected Clock getClock() {
-        return clock;
-    }
-
-    /**
-     * For injecting a clock implementation.  Useful for testing.
-     * @param clock the clock implementation to use.
-     */
-    protected void setClock(Clock clock) {
-        this.clock = clock;
     }
 
     /**
