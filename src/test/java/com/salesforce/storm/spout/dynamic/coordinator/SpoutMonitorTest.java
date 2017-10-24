@@ -565,6 +565,7 @@ public class SpoutMonitorTest {
 
         // Sanity test - Now validate we have no spouts submitted
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no failed tasks yet", 0, spoutMonitor.getNumberOfFailedTasks());
 
         // Create a mock spout
         MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
@@ -595,6 +596,9 @@ public class SpoutMonitorTest {
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
             .until(spoutMonitor::getTotalSpouts, equalTo(0));
+
+        // Validate that we incremented our failed task counter
+        assertEquals("Should have 1 failed task", 1, spoutMonitor.getNumberOfFailedTasks());
 
         // Close the monitor
         spoutMonitor.close();
