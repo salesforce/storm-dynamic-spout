@@ -23,33 +23,35 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
+package com.salesforce.storm.spout.dynamic.exception;
 
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
-
-import java.util.Map;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 
 /**
- * A trigger is a class that can start and stop a sideline by constructing sideline requests.
+ * Thrown when attempting to remove a spout from the coordinator and that spout does not exist.
  */
-public interface SidelineTrigger {
+public class SpoutDoesNotExistException extends RuntimeException {
 
     /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
+     * Spout with this identifier does not exist in the coordinator.
      */
-    void setSidelineSpout(SpoutTriggerProxy spout);
+    private final VirtualSpoutIdentifier virtualSpoutIdentifier;
 
     /**
-     * Open the trigger.
-     * @param spoutConfig Spout configuration.
+     * Thrown when attempting to remove a spout from the coordinator and that spout does not exist.
+     * @param message specific message about the already existing spout.
+     * @param virtualSpoutIdentifier identifer of the virtual spout that does not exist
      */
-    default void open(Map spoutConfig) {
+    public SpoutDoesNotExistException(final String message, final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        super(message);
+        this.virtualSpoutIdentifier = virtualSpoutIdentifier;
     }
 
     /**
-     * Close the trigger.
+     * Spout that caused this exception to be thrown.
+     * @return spout that caused this exception to be thrown.
      */
-    default void close() {
+    public VirtualSpoutIdentifier getVirtualSpoutIdentifier() {
+        return virtualSpoutIdentifier;
     }
 }

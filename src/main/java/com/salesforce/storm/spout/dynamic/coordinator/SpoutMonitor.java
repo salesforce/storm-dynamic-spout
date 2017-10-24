@@ -197,7 +197,7 @@ public class SpoutMonitor implements Runnable {
      * @param virtualSpoutIdentifier Identifier of the spout we're looking for.
      * @return Whether or not a spout with that identifier exists.
      */
-    public boolean hasSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    public boolean hasVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         // Synchronized on new spout queue
         synchronized (newSpoutQueue) {
             for (final DelegateSpout spout : newSpoutQueue) {
@@ -207,6 +207,21 @@ public class SpoutMonitor implements Runnable {
             }
             return spoutRunners.containsKey(virtualSpoutIdentifier);
         }
+    }
+
+    /**
+     * Signals to a VirtualSpout to stop, ultimately removing it from the monitor.
+     * @param virtualSpoutIdentifier identifier of the VirtualSpout instance to request stopped.
+     */
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
+            throw new IllegalArgumentException(
+                "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor."
+            );
+        }
+
+        // Request the spout stop
+        spoutRunners.get(virtualSpoutIdentifier).requestStop();
     }
 
     @Override

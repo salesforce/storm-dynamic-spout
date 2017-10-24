@@ -28,6 +28,8 @@ package com.salesforce.storm.spout.dynamic;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
+import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
+import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
@@ -135,7 +137,8 @@ public class SpoutCoordinator {
     SpoutCoordinator(
         final MetricsRecorder metricsRecorder,
         final MessageBuffer messageBuffer,
-        final SpoutMonitorFactory spoutMonitorFactory) {
+        final SpoutMonitorFactory spoutMonitorFactory
+    ) {
 
         this.metricsRecorder = metricsRecorder;
         this.messageBuffer = messageBuffer;
@@ -143,7 +146,7 @@ public class SpoutCoordinator {
     }
 
     /**
-     * Add a new spout to the coordinator, this will get picked up by the coordinator's monitor, opened and
+     * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
      */
@@ -158,6 +161,42 @@ public class SpoutCoordinator {
     }
 
     /**
+     * Remove a new VirtualSpout from the coordinator. This will signal to the monitor to request that the VirtualSpout
+     * be stopped and ultimately removed.
+     *
+     * This method will blocked until the VirtualSpout has completely stopped.
+     *
+     * @param virtualSpoutIdentifier identifier of the VirtualSpout to be removed.
+     */
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        if (hasVirtualSpout(virtualSpoutIdentifier)) {
+            throw new SpoutDoesNotExistException(
+                "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
+                virtualSpoutIdentifier
+            );
+        }
+
+        getSpoutMonitor().removeVirtualSpout(virtualSpoutIdentifier);
+
+        // Let's block until we no longer detect that the spout is in monitor.
+        while (getSpoutMonitor().hasVirtualSpout(virtualSpoutIdentifier)) {
+            logger.info("Checking for VirtualSpout {} to see if it has finished stopping.", virtualSpoutIdentifier);
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException ex) {
+                logger.error(
+                    "Something went wrong pausing between checking for VirtualSpout {} to stop. {}",
+                    virtualSpoutIdentifier,
+                    ex
+                );
+            }
+        }
+
+        logger.info("VirtualSpout {} is no longer running.", virtualSpoutIdentifier);
+    }
+
+    /**
      * Check if a given spout already exists in the spout coordinator.
      * @param spoutIdentifier spout identifier to check the coordinator for.
      * @return true when the spout exists, false when it does not.
@@ -166,7 +205,7 @@ public class SpoutCoordinator {
         if (!isOpen) {
             throw new IllegalStateException("You cannot check for a spout in the coordinator before it has been opened!");
         }
-        return getSpoutMonitor().hasSpout(spoutIdentifier);
+        return getSpoutMonitor().hasVirtualSpout(spoutIdentifier);
     }
 
     /**

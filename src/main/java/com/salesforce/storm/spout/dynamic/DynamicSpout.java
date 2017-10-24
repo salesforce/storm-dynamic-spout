@@ -29,6 +29,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.apache.storm.spout.SpoutOutputCollector;
@@ -357,12 +358,21 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Add a delegate spout to the coordinator.
-     * @param spout Delegate spout to add
+     * Add a spout to the coordinator.
+     * @param spout spout to add
      */
     public void addVirtualSpout(final DelegateSpout spout) {
         checkSpoutOpened();
         getCoordinator().addVirtualSpout(spout);
+    }
+
+    /**
+     * Remove a spout from the coordinator by it's identifier.
+     * @param virtualSpoutIdentifier identifier of the spout to remove.
+     */
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        checkSpoutOpened();
+        getCoordinator().removeVirtualSpout(virtualSpoutIdentifier);
     }
 
     /**

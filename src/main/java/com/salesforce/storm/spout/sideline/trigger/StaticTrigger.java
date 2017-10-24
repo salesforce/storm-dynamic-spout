@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
+import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 
 import java.util.Map;
 
