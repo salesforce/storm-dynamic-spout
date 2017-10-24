@@ -88,42 +88,11 @@ public class KafkaConsumerConfig {
     )
     public static final String CONSUMER_ID_PREFIX = SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
 
-    /**
-     * (Boolean) TODO.
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "todo.",
-        type = Boolean.class
-    )
-    public static final String CONSUMER_STATE_AUTOCOMMIT = "spout.kafka.autocommit";
-
-    /**
-     * (Boolean) TODO.
-     */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
-        description = "todo.",
-        type = Long.class
-    )
-    public static final String CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS = "spout.kafka.autocommit_interval_ms";
-
     private final Properties kafkaConsumerProperties = new Properties();
     private final String topic;
     private final String consumerId;
     private int numberOfConsumers;
     private int indexOfConsumer;
-
-    /**
-     * Settings for consumer state auto commit.  Defaulted to off.
-     */
-    private boolean consumerStateAutoCommit = false;
-
-    /**
-     * If autoCommit is enabled, how often we will flush that state, in milliseconds.
-     * Defaults to 15 seconds.
-     */
-    private long consumerStateAutoCommitIntervalMs = 15000;
 
     /**
      * Constructor.
@@ -224,22 +193,6 @@ public class KafkaConsumerConfig {
 
     public Properties getKafkaConsumerProperties() {
         return kafkaConsumerProperties;
-    }
-
-    public boolean isConsumerStateAutoCommit() {
-        return consumerStateAutoCommit;
-    }
-
-    public void setConsumerStateAutoCommit(boolean consumerStateAutoCommit) {
-        this.consumerStateAutoCommit = consumerStateAutoCommit;
-    }
-
-    public long getConsumerStateAutoCommitIntervalMs() {
-        return consumerStateAutoCommitIntervalMs;
-    }
-
-    public void setConsumerStateAutoCommitIntervalMs(long consumerStateAutoCommitIntervalMs) {
-        this.consumerStateAutoCommitIntervalMs = consumerStateAutoCommitIntervalMs;
     }
 
     public int getNumberOfConsumers() {
