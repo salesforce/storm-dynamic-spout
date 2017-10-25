@@ -23,35 +23,45 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
+package com.salesforce.storm.spout.sideline;
+
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
- * Thrown when attempting to add a spout to the coordinator and that spout already exists. This doesn't necessarily
- * mean that the instance is the same, but that the identifier on the instance matches one that the coordinator was
- * already running.
+ * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
+ * starting and stopping a sideline is handled from without breaking every single trigger implementation.
  */
-public class SpoutAlreadyExistsException extends RuntimeException {
+public class SpoutTriggerProxy {
 
     /**
-     * The spout with an identifier that already exists in the coordinator.
+     * DynamicSpout SpoutHandler for sidelining.
      */
-    private final DelegateSpout spout;
+    private final SidelineSpoutHandler spoutHandler;
 
     /**
-     * Thrown when attempting to add a spout to the coordinator and that spout already exists.
-     * @param message specific message about the already existing spout.
-     * @param spout specific spout that appears to already exist in the coordinator.
+     * Create a new proxy.
+     * @param spoutHandler Sidelining SpoutHandler instance.
      */
-    public SpoutAlreadyExistsException(String message, DelegateSpout spout) {
-        super(message);
-        this.spout = spout;
+    public SpoutTriggerProxy(final SidelineSpoutHandler spoutHandler) {
+        this.spoutHandler = spoutHandler;
     }
 
     /**
-     * Spout that caused this exception to be thrown.
-     * @return spout that caused this exception to be thrown.
+     * Start sidelining.
+     * @param request Sideline request, container an id and a filter chain step.
+     * @return Identifier of the sideline request. You probably shouldn't count on this, it might go away.
      */
-    public DelegateSpout getSpout() {
-        return spout;
+    public SidelineRequestIdentifier startSidelining(final SidelineRequest request) {
+        return this.spoutHandler.startSidelining(request);
+    }
+
+    /**
+     * Stop sidelining.
+     * @param request Sideline request, container an id and a filter chain step.
+     */
+    public void stopSidelining(final SidelineRequest request) {
+        this.spoutHandler.stopSidelining(request);
     }
 }

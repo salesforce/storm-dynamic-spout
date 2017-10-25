@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-14](https://github.com/salesforce/storm-dynamic-spout/pull/14) Update Kafka dependencies to 0.11.0.1
 - [PR-15](https://github.com/salesforce/storm-dynamic-spout/pull/15) Update Storm dependencies to 1.1.1
 - [PR-24](https://github.com/salesforce/storm-dynamic-spout/pull/24) Add ability for errors to be reported up to the Storm web UI.
+- [PR-34](https://github.com/salesforce/storm-dynamic-spout/pull/34) Add removeVirtualSpout() method to DynamicSpout
 
 ### Bug Fixes
 ##### Kafka Consumer
