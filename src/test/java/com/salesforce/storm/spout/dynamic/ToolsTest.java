@@ -140,7 +140,7 @@ public class ToolsTest {
     }
 
     /**
-     * Call split and trim with null input, get null pointer.
+     * Call split and trim with various input strings, validate we get the expected array of values back.
      */
     @Test
     @UseDataProvider("provideSplittableStrings")
