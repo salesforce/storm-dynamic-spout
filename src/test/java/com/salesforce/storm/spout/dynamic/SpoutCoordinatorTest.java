@@ -352,9 +352,7 @@ public class SpoutCoordinatorTest {
         assertTrue("Spout is not in the coordinator", coordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
         // Wait until this spout is moved into the monitor.
-        await().until(() ->
-            coordinator.getNewSpoutQueue().contains(spout1)
-        , equalTo(false));
+        await().until(() -> coordinator.getNewSpoutQueue().contains(spout1), equalTo(false));
 
         // Now that it's into the monitor, go ahead and remove it
         // Note if we hadn't waited we would have gotten an exception
