@@ -106,7 +106,6 @@ public class KafkaConsumerConfig {
 
         // Convert list to string
         final String brokerHostsStr = brokerHosts.stream()
-            .map(String::toString)
             .collect(Collectors.joining(","));
 
         // Autocommit is disabled, we handle offset tracking.

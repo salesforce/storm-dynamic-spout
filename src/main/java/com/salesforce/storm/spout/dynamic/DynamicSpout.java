@@ -41,6 +41,7 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -237,7 +238,7 @@ public class DynamicSpout extends BaseRichSpout {
         final Fields fields;
         if (fieldsCfgValue instanceof String) {
             // Comma separated
-            fields = new Fields(((String) fieldsCfgValue).split(","));
+            fields = new Fields(Tools.splitAndTrim((String) fieldsCfgValue));
         } else if (fieldsCfgValue instanceof Fields) {
             fields = (Fields) fieldsCfgValue;
         } else {

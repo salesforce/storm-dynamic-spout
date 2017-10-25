@@ -1051,12 +1051,13 @@ public class DynamicSpoutTest {
      * declareOutputFields() method with default to using 'default' stream.
      */
     @Test
-    public void testDeclareOutputFields_without_stream() {
+    @UseDataProvider("provideOutputFields")
+    public void testDeclareOutputFields_without_stream(final String inputFields, final String[] expectedFields) {
         // Create config with null stream id config option.
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
 
         // Define our output fields as key and value.
-        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
+        config.put(SpoutConfig.OUTPUT_FIELDS, inputFields);
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
@@ -1072,7 +1073,7 @@ public class DynamicSpoutTest {
         assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
         assertEquals(
             fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
-            Lists.newArrayList("key", "value")
+            Lists.newArrayList(expectedFields)
         );
 
         spout.close();
@@ -1083,12 +1084,13 @@ public class DynamicSpoutTest {
      * in the declareOutputFields() method.
      */
     @Test
-    public void testDeclareOutputFields_with_stream() {
+    @UseDataProvider("provideOutputFields")
+    public void testDeclareOutputFields_with_stream(final String inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
 
         // Define our output fields as key and value.
-        config.put(SpoutConfig.OUTPUT_FIELDS, "key,value");
+        config.put(SpoutConfig.OUTPUT_FIELDS, inputFields);
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
@@ -1103,10 +1105,22 @@ public class DynamicSpoutTest {
         assertTrue(fieldsDeclaration.containsKey(streamId));
         assertEquals(
             fieldsDeclaration.get(streamId).get_output_fields(),
-            Lists.newArrayList("key", "value")
+            Lists.newArrayList(expectedFields)
         );
 
         spout.close();
+    }
+
+    /**
+     * Provides various inputs to be split.
+     */
+    @DataProvider
+    public static Object[][] provideOutputFields() throws InstantiationException, IllegalAccessException {
+        return new Object[][]{
+            {"key,value", new String[] {"key", "value"} },
+            {"key, value", new String[] {"key", "value"} },
+            {" key    , value  ,", new String[] {"key", "value"} },
+        };
     }
 
     /**

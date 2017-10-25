@@ -25,9 +25,13 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Provides test coverage over Tools methods.
  */
+@RunWith(DataProviderRunner.class)
 public class ToolsTest {
 
     /**
@@ -123,5 +128,49 @@ public class ToolsTest {
         assertEquals("Has value for key3", "value3", sourceMap.get(prefix + "key3"));
         assertEquals("Has value for key4", "value4", sourceMap.get("key4"));
         assertEquals("Has value for key5", "value5", sourceMap.get("key5"));
+    }
+
+    /**
+     * Call split and trim with null input, get null pointer.
+     */
+    @Test
+    public void testSplitAndTrimWithNullInput() {
+        expectedException.expect(NullPointerException.class);
+        Tools.splitAndTrim(null);
+    }
+
+    /**
+     * Call split and trim with null input, get null pointer.
+     */
+    @Test
+    @UseDataProvider("provideSplittableStrings")
+    public void testSplitAndTrim(final String input, final String[] expectedOutputValues) {
+        final String[] output = Tools.splitAndTrim(input);
+
+        // validate
+        assertNotNull(output);
+
+        assertEquals("Should have expected number of results", expectedOutputValues.length, output.length);
+        for (int x = 0; x < expectedOutputValues.length; x++) {
+            assertEquals("Has expected value", expectedOutputValues[x], output[x]);
+        }
+    }
+
+    /**
+     * Provides various inputs to be split.
+     */
+    @DataProvider
+    public static Object[][] provideSplittableStrings() throws InstantiationException, IllegalAccessException {
+        return new Object[][]{
+            { "a,b,c,d", new String[] { "a", "b", "c", "d" } },
+            { "my input", new String[] { "my input",} },
+            { "my input, your input", new String[] { "my input", "your input"} },
+            { "my input       ,         your    input   ", new String[] { "my input", "your    input"} },
+
+            // A couple special cases
+            { "a,b,", new String[] { "a","b" } },
+            { "a,,b", new String[] { "a","b" } },
+            { ",a,b", new String[] { "a","b" } }
+        };
     }
 }

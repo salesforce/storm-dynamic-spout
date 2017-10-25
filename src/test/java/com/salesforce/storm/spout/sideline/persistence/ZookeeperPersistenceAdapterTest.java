@@ -509,7 +509,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
-        return createDefaultConfig(Lists.newArrayList(zkServers.split(",")), zkRootNode, consumerIdPrefix);
+        return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 
     /**
