@@ -132,7 +132,7 @@ public class Tools {
             .splitToList(input)
             .stream()
             .map(String::trim)
-            .filter((s) -> !s.isEmpty())
+            .filter((inputString) -> !inputString.isEmpty())
             .toArray(String[]::new);
     }
 }
