@@ -246,7 +246,7 @@ public class SpoutMonitor implements Runnable {
                     return;
                 }
             }
-            logger.warn("Spout coordinator is ceasing to run due to shutdown request...");
+            logger.warn("Spout monitor is ceasing to run due to shutdown request...");
         } catch (final Exception ex) {
             // We handle restarting spout monitor in the coordinator, which is who monitors this thread.
             // Lets report the error
