@@ -169,7 +169,7 @@ public class SpoutCoordinator {
      * @param virtualSpoutIdentifier identifier of the VirtualSpout to be removed.
      */
     public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
-        if (hasVirtualSpout(virtualSpoutIdentifier)) {
+        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
             throw new SpoutDoesNotExistException(
                 "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
                 virtualSpoutIdentifier

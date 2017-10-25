@@ -32,6 +32,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
+import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
@@ -318,5 +319,53 @@ public class SpoutCoordinatorTest {
 
         // Verify close got called
         verify(mockSpoutMonitor, times(1)).close();
+    }
+
+    @Rule
+    public ExpectedException expectedExceptionAddAndRemoveVirtualSpout = ExpectedException.none();
+
+    /**
+     * Test that removing a virtual spout takes it out of the coordinator.
+     */
+    @Test
+    public void testAddAndRemoveVirtualSpout() {
+        final FifoBuffer messageBuffer = FifoBuffer.createDefaultInstance();
+
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+
+        // Define our configuration
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+
+        // Create coordinator
+        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        coordinator.open(config);
+
+        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
+
+        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+
+        assertFalse("Spout is already in the coordinator", coordinator.hasVirtualSpout(virtualSpoutIdentifier));
+
+        coordinator.addVirtualSpout(spout1);
+
+        assertTrue("Spout is not in the coordinator", coordinator.hasVirtualSpout(virtualSpoutIdentifier));
+
+        // Wait until the spout monitor moves this spout into the monitor.
+        await().until(() ->
+            coordinator.getNewSpoutQueue().contains(spout1)
+        , equalTo(false));
+
+        // Now that it's into the monitor, go ahead and remove it
+        // Note if we hadn't waited we would have gotten an exception
+        coordinator.removeVirtualSpout(virtualSpoutIdentifier);
+
+        assertFalse("Spout is still in the coordinator", coordinator.hasVirtualSpout(virtualSpoutIdentifier));
+
+        // We are going to try t remove it again, at this point it does not exist, so we expect to get an
+        // exception thrown at us indicating so
+        expectedExceptionAddAndRemoveVirtualSpout.expect(SpoutDoesNotExistException.class);
+
+        coordinator.removeVirtualSpout(virtualSpoutIdentifier);
     }
 }
