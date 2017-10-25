@@ -23,44 +23,19 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
-
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
-import com.salesforce.storm.spout.sideline.handler.SidelineController;
-
-import java.util.Map;
+package com.salesforce.storm.spout.sideline.filter;
 
 /**
- * A trigger is a class that can start and stop a sideline by constructing sideline requests.
+ * Thrown when a filter chain step cannot be serialized/unserialized correctly.
  */
-public interface SidelineTrigger {
+public class InvalidFilterChainStepException extends RuntimeException {
 
     /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
+     * Thrown when a filter chain step cannot be serialized/unserialized correctly.
+     * @param message message.
+     * @param cause underlying exception causing this one to be thrown.
      */
-    @Deprecated
-    void setSidelineSpout(SpoutTriggerProxy spout);
-
-
-    /**
-     * Set the sideline controller instance.
-     * @param sidelineController sideline controller instance.
-     */
-    default void setSidelineController(SidelineController sidelineController) {
-        // TODO: Drop the default here when we're ready to switch over to this method.
-    }
-
-    /**
-     * Open the trigger.
-     * @param spoutConfig Spout configuration.
-     */
-    default void open(Map spoutConfig) {
-    }
-
-    /**
-     * Close the trigger.
-     */
-    default void close() {
+    public InvalidFilterChainStepException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

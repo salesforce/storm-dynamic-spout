@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.filter;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -46,6 +47,8 @@ public class FilterChain {
      * @return filter chain, for fluent a interface.
      */
     public FilterChain addStep(final SidelineRequestIdentifier id, final FilterChainStep step) {
+        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required to add a step.");
+        Preconditions.checkNotNull(step, "Cannot add a null FilterChainStep to the FilterChain.");
         this.steps.put(id, step);
         return this;
     }
@@ -56,7 +59,8 @@ public class FilterChain {
      * @param id is of the sideline request to add the step for.
      * @return filter chain, for fluent a interface.
      */
-    public FilterChainStep removeSteps(final SidelineRequestIdentifier id) {
+    public FilterChainStep removeStep(final SidelineRequestIdentifier id) {
+        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required to remove a step.");
         return this.steps.remove(id);
     }
 
@@ -105,6 +109,24 @@ public class FilterChain {
      */
     public Map<SidelineRequestIdentifier,FilterChainStep> getSteps() {
         return steps;
+    }
+
+    /**
+     * Does the current sideline request have a filter chain step?
+     * @param sidelineRequestIdentifier sideline request identifier.
+     * @return true, the filter chain step exists, false it does not.
+     */
+    public boolean hasStep(final SidelineRequestIdentifier sidelineRequestIdentifier) {
+        return steps.containsKey(sidelineRequestIdentifier);
+    }
+
+    /**
+     * Get the filter chain step for the given sideline request identifier.
+     * @param sidelineRequestIdentifier sideline request identifier.
+     * @return corresponding filter chain step.
+     */
+    public FilterChainStep getStep(final SidelineRequestIdentifier sidelineRequestIdentifier) {
+        return steps.get(sidelineRequestIdentifier);
     }
 
     @Override

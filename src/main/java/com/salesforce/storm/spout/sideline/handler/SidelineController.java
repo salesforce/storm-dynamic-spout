@@ -23,44 +23,42 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
+package com.salesforce.storm.spout.sideline.handler;
 
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
-import com.salesforce.storm.spout.sideline.handler.SidelineController;
-
-import java.util.Map;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
- * A trigger is a class that can start and stop a sideline by constructing sideline requests.
+ * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
+ * starting and stopping a sideline is handled from without breaking every single trigger implementation. It also prevents
+ * other methods on the SpoutHandler from being accessible.
  */
-public interface SidelineTrigger {
+public interface SidelineController {
 
     /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
+     * Does a sideline exist in the started state?
+     * @param sidelineRequest sideline request.
+     * @return true it does, false it does not.
      */
-    @Deprecated
-    void setSidelineSpout(SpoutTriggerProxy spout);
-
-
-    /**
-     * Set the sideline controller instance.
-     * @param sidelineController sideline controller instance.
-     */
-    default void setSidelineController(SidelineController sidelineController) {
-        // TODO: Drop the default here when we're ready to switch over to this method.
-    }
+    boolean isSidelineStarted(SidelineRequest sidelineRequest);
 
     /**
-     * Open the trigger.
-     * @param spoutConfig Spout configuration.
+     * Start sidelining.
+     * @param request Sideline request, container an id and a filter chain step.
+     * @return Identifier of the sideline request. You probably shouldn't count on this, it might go away.
      */
-    default void open(Map spoutConfig) {
-    }
+    SidelineRequestIdentifier startSidelining(final SidelineRequest request);
 
     /**
-     * Close the trigger.
+     * Does a sideline exist in the stopped state?
+     * @param sidelineRequest sideline request.
+     * @return true it has, false it has not.
      */
-    default void close() {
-    }
+    boolean isSidelineStopped(SidelineRequest sidelineRequest);
+
+    /**
+     * Stop sidelining.
+     * @param request Sideline request, container an id and a filter chain step.
+     */
+    void stopSidelining(final SidelineRequest request);
 }

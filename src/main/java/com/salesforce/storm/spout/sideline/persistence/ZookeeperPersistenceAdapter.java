@@ -139,6 +139,10 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
+        Preconditions.checkNotNull(type, "SidelineType is required.");
+        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
+        Preconditions.checkNotNull(request, "SidelineRequest is required.");
+
         Map<String, Object> data = Maps.newHashMap();
         data.put("type", type.toString());
         data.put("startingOffset", startingOffset);
@@ -155,6 +159,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
+
+        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Read!
         final String path = getZkRequestStatePathForPartition(id.toString(), partitionId);
@@ -192,6 +198,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
+
+        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Delete!
         final String path = getZkRequestStatePathForPartition(id.toString(), partitionId);
@@ -242,6 +250,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
     @Override
     public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
         verifyHasBeenOpened();
+
+        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         final Set<Integer> partitions = Sets.newHashSet();
 

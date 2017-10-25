@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline;
 
+import com.salesforce.storm.spout.sideline.handler.SidelineController;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -33,7 +34,8 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
  * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
  * starting and stopping a sideline is handled from without breaking every single trigger implementation.
  */
-public class SpoutTriggerProxy {
+@Deprecated
+public class SpoutTriggerProxy implements SidelineController {
 
     /**
      * DynamicSpout SpoutHandler for sidelining.
@@ -63,5 +65,23 @@ public class SpoutTriggerProxy {
      */
     public void stopSidelining(final SidelineRequest request) {
         this.spoutHandler.stopSidelining(request);
+    }
+
+    /**
+     * Does a sideline exist in the started state?
+     * @param sidelineRequest sideline request.
+     * @return true it does, false it does not.
+     */
+    public boolean isSidelineStarted(SidelineRequest sidelineRequest) {
+        return this.spoutHandler.isSidelineStarted(sidelineRequest);
+    }
+
+    /**
+     * Does a sideline exist in the stopped state?
+     * @param sidelineRequest sideline request.
+     * @return true it has, false it has not.
+     */
+    public boolean isSidelineStopped(SidelineRequest sidelineRequest) {
+        return this.spoutHandler.isSidelineStopped(sidelineRequest);
     }
 }
