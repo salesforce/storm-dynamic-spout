@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## 0.10.0 (RELEASE DATE TBD)
 ### Improvements
 - [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method Deserializer.getOutputFields()
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SpoutTriggerProxy` which is now deprecated in favor of the interface `SidelineController`.  Added hasStep() and getStep() to `FilterChain` also added a specific exception for serializing/deserializing FilterChainSteps. 
+
+### Bug Fixes
+
+#### Sideline Spout
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) When deserializing an invalid FilterChainStep it would crash the spout instance. 
 
 ## 0.9.0 (2017-10-26)
 ### Improvements

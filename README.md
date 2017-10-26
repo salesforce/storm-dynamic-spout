@@ -362,7 +362,7 @@ Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sid
 
 
 ## Components
-[SidelineTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SpoutTriggerProxy` via `setSidelineSpout()`.  This implementation can call `startSidelining()` and `stopSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a new sideline should be spun up.
+[SidelineTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SidelineController` via `setSidelineController()`.  This implementation can call `startSidelining()` and `stopSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a new sideline should be spun up.
 
 [Deserializer](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Deserializer.java) - The `Deserializer` interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple.  An example `Utf8StringDeserializer` is provided implementing this interface.
 
@@ -403,7 +403,7 @@ public class PollingSidelineTrigger implements SidelineTrigger {
 
     private transient ScheduledExecutorService executor;
 
-    private transient SpoutTriggerProxy sidelineSpout;
+    private transient SidelineController sidelineController;
 
     @Override
     public void open(final Map config) {
@@ -428,17 +428,17 @@ public class PollingSidelineTrigger implements SidelineTrigger {
     }
 
     @Override
-    public void setSidelineSpout(SpoutTriggerProxy sidelineSpout) {
-        this.sidelineSpout = sidelineSpout;
+    public void setSidelineController(SidelineController sidelineController) {
+        this.sidelineController = sidelineController;
     }
 
     static class Poll implements Runnable {
 
-        private SpoutTriggerProxy spout;
+        private SidelineController sidelineController;
         private Integer number = 0;
 
-        Poll(SpoutTriggerProxy spout) {
-            this.spout = spout;
+        Poll(SidelineController sidelineController) {
+            this.sidelineController = sidelineController;
         }
 
         @Override
@@ -447,13 +447,13 @@ public class PollingSidelineTrigger implements SidelineTrigger {
             final SidelineRequest startRequest = new SidelineRequest(
                 new NumberFilter(number++)
             );
-            spout.startSidelining(startRequest);
+            sidelineController.startSidelining(startRequest);
 
             // Stop a sideline request for the last number
             final SidelineRequest stopRequest = new SidelineRequest(
                 new NumberFilter(number - 1)
             );
-            spout.stopSidelining(stopRequest);
+            sidelineController.stopSidelining(stopRequest);
         }
     }
 }
