@@ -56,7 +56,7 @@ public class Serializer {
             FilterChainStep step = (FilterChainStep) objectInputStream.readObject();
             objectInputStream.close();
             return step;
-        } catch (IOException | ClassNotFoundException ex) {
+        } catch (IllegalArgumentException | IOException | ClassNotFoundException ex) {
             throw new InvalidFilterChainStepException(
                 "Unable to deserialize FilterChainStep",
                 ex

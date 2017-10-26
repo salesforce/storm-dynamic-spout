@@ -235,25 +235,4 @@ public class FilterChainTest {
             filterChain.getStep(sidelineRequestIdentifier2)
         );
     }
-
-    private static class NumberFilter implements FilterChainStep {
-
-        private final int number;
-
-        NumberFilter(final int number) {
-            this.number = number;
-        }
-
-        /**
-         * Filter a message.
-         * @param message The filter to be processed by this step of the chain.
-         * @return true if the message should be filtered, false otherwise.
-         */
-        @Override
-        public boolean filter(Message message) {
-            Integer messageNumber = (Integer) message.getValues().get(0);
-            // Filter them if they don't match, in other words "not" equals
-            return messageNumber.equals(number);
-        }
-    }
 }
