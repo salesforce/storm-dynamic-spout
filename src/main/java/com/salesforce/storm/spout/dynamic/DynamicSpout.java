@@ -241,6 +241,11 @@ public class DynamicSpout extends BaseRichSpout {
             // List of String values.
             fields = new Fields((List<String>) fieldsCfgValue);
         } else if (fieldsCfgValue instanceof String) {
+            // Log deprecation warning.
+            logger.warn(
+                "Supplying configuration {} as a comma separated string is deprecated.  Please migrate your " +
+                "configuration to provide this option as a List.", SpoutConfig.OUTPUT_FIELDS
+            );
             // Comma separated
             fields = new Fields(Tools.splitAndTrim((String) fieldsCfgValue));
         } else if (fieldsCfgValue instanceof Fields) {
