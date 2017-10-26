@@ -37,7 +37,7 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
+    private final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
 
     /**
      * Add a step to the filter chain.
