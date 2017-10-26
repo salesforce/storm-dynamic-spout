@@ -32,7 +32,6 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
