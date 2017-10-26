@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 
 /**
@@ -35,10 +34,5 @@ public class NullDeserializer implements Deserializer {
     @Override
     public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
         return null;
-    }
-
-    @Override
-    public Fields getOutputFields() {
-        return new Fields();
     }
 }

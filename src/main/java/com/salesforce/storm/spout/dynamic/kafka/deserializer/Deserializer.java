@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 
 import java.io.Serializable;
@@ -48,10 +47,4 @@ public interface Deserializer extends Serializable {
      * @return Values that should be emitted by the spout to the topology.
      */
     Values deserialize(final String topic, final int partition, final long offset, final byte[] key, final byte[] value);
-
-    /**
-     * Declares the output fields for the deserializer.
-     * @return An instance of the fields
-     */
-    Fields getOutputFields();
 }

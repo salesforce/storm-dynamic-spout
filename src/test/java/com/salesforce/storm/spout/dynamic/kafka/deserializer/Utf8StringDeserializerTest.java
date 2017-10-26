@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
 import com.google.common.base.Charsets;
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
@@ -64,13 +63,5 @@ public class Utf8StringDeserializerTest {
         assertEquals("Values has 2 entries", 2, deserializedValues.size());
         assertEquals("Got expected key", expectedKey, deserializedValues.get(0));
         assertEquals("Got expected value", expectedValue, deserializedValues.get(1));
-    }
-
-    @Test
-    public void testGetOutputFields() {
-        final Deserializer deserializer = new Utf8StringDeserializer();
-        final Fields fields = deserializer.getOutputFields();
-        assertEquals(fields.get(0), "key");
-        assertEquals(fields.get(1), "value");
     }
 }
