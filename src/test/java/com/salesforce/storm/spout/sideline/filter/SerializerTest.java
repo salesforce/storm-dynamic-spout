@@ -91,7 +91,7 @@ public class SerializerTest {
      * Tests that a non base64 string that does not correspond to a FilterChainStep chokes at the right point.
      */
     @Test
-    public void deserializeInvalidJunlString() {
+    public void deserializeInvalidJunkString() {
         // This will throw an IllegalArgumentException when passed to the base64 decoder, which is different then the previous test.
         final String invalidSerializedFilterChainStep = "FooBar";
 
