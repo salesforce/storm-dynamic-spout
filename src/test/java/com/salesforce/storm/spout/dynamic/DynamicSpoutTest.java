@@ -57,8 +57,8 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.generated.StreamInfo;
 import com.google.common.base.Charsets;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichSpout;
 import org.apache.storm.topology.OutputFieldsGetter;
+import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
@@ -72,7 +72,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1052,7 +1051,7 @@ public class DynamicSpoutTest {
      */
     @Test
     @UseDataProvider("provideOutputFields")
-    public void testDeclareOutputFields_without_stream(final String inputFields, final String[] expectedFields) {
+    public void testDeclareOutputFields_without_stream(final Object inputFields, final String[] expectedFields) {
         // Create config with null stream id config option.
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
 
@@ -1085,7 +1084,7 @@ public class DynamicSpoutTest {
      */
     @Test
     @UseDataProvider("provideOutputFields")
-    public void testDeclareOutputFields_with_stream(final String inputFields, final String[] expectedFields) {
+    public void testDeclareOutputFields_with_stream(final Object inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
 
@@ -1116,10 +1115,21 @@ public class DynamicSpoutTest {
      */
     @DataProvider
     public static Object[][] provideOutputFields() throws InstantiationException, IllegalAccessException {
-        return new Object[][]{
-            {"key,value", new String[] {"key", "value"} },
-            {"key, value", new String[] {"key", "value"} },
-            {" key    , value  ,", new String[] {"key", "value"} },
+        return new Object[][] {
+            // String inputs, these get split and trimmed.
+            { "key,value", new String[] {"key", "value"} },
+            { "key, value", new String[] {"key", "value"} },
+            { " key    , value  ,", new String[] {"key", "value"} },
+
+            // List of Strings, used as is.
+            { Lists.newArrayList("key", "value"), new String[] { "key", "value"} },
+            { Lists.newArrayList("  key  ", " value"), new String[] { "  key  ", " value"} },
+            { Lists.newArrayList("key,value", "another"), new String[] { "key,value", "another"} },
+
+            // Fields inputs, used as is.
+            { new Fields("key", "value"), new String[] { "key", "value" } },
+            { new Fields(" key ", "    value"), new String[] { " key ", "    value" } },
+            { new Fields("key,value ", "another"), new String[] { "key,value ", "another" } },
         };
     }
 

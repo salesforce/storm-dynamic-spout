@@ -41,7 +41,9 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -228,14 +230,17 @@ public class DynamicSpout extends BaseRichSpout {
      * @param declarer The output field declarer
      */
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    public void declareOutputFields(final OutputFieldsDeclarer declarer) {
         // Handles both explicitly defined and default stream definitions.
         final String streamId = getOutputStreamId();
 
         // Construct fields from config
         final Object fieldsCfgValue = getSpoutConfigItem(SpoutConfig.OUTPUT_FIELDS);
         final Fields fields;
-        if (fieldsCfgValue instanceof String) {
+        if (fieldsCfgValue instanceof List && !((List) fieldsCfgValue).isEmpty() && ((List) fieldsCfgValue).get(0) instanceof String) {
+            // List of String values.
+            fields = new Fields((List<String>) fieldsCfgValue);
+        } else if (fieldsCfgValue instanceof String) {
             // Comma separated
             fields = new Fields(Tools.splitAndTrim((String) fieldsCfgValue));
         } else if (fieldsCfgValue instanceof Fields) {
