@@ -26,6 +26,7 @@
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Charsets;
+import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.utils.SharedZookeeperTestResource;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.ClassRule;
@@ -109,7 +110,7 @@ public class CuratorHelperTest {
     private CuratorFramework createCurator() {
         // Create list of Servers
         final String serverStr = sharedZookeeperTestResource.getZookeeperConnectString();
-        final List<String> serverList = Arrays.asList(serverStr.split(","));
+        final List<String> serverList = Arrays.asList(Tools.splitAndTrim(serverStr));
 
         // Create config map
         final Map<String, Object> config = new HashMap<>();
