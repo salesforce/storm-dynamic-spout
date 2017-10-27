@@ -33,7 +33,6 @@ import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
@@ -487,8 +486,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             // Will throw a RuntimeException if this is not configured correctly
             final SidelineTrigger sidelineTrigger = FactoryManager.createNewInstance(sidelineTriggerClass);
 
-            // TODO: Remove this in 0.10
-            sidelineTrigger.setSidelineSpout(new SpoutTriggerProxy(this));
             // This is the new preferred approach for triggers
             sidelineTrigger.setSidelineController(this);
 
