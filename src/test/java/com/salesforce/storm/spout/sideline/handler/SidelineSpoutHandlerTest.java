@@ -186,9 +186,7 @@ public class SidelineSpoutHandlerTest {
 
         assertTrue(
             "The stop request should have created a new VirtualSpout instance",
-            spout.hasVirtualSpout(
-                virtualSpoutIdentifier2
-            )
+            spout.hasVirtualSpout(virtualSpoutIdentifier2)
         );
     }
 
