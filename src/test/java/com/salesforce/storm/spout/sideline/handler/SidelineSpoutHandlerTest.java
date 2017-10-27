@@ -252,6 +252,11 @@ public class SidelineSpoutHandlerTest {
         // Finally, start a sideline with out given request
         sidelineSpoutHandler.startSidelining(startRequest);
 
+        assertTrue(
+            "Sideline should be started",
+            sidelineSpoutHandler.isSidelineStarted(startRequest)
+        );
+
         // Make sure we have a firehose
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
 
@@ -286,8 +291,9 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testStopSidelining() {
+        final String consumerId = "VirtualSpoutPrefix";
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
+        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerId);
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
         config.put(
             SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
@@ -306,6 +312,7 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
         Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
         Mockito.when(spout.getMetricsRecorder()).thenReturn(new LogRecorder());
+        Mockito.when(spout.hasVirtualSpout(new SidelineVirtualSpoutIdentifier(consumerId, stopRequestId))).thenReturn(true);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -344,6 +351,11 @@ public class SidelineSpoutHandlerTest {
 
         // Finally, start a sideline with out given request
         sidelineSpoutHandler.stopSidelining(stopRequest);
+
+        assertTrue(
+            "Sideline should be stopped",
+            sidelineSpoutHandler.isSidelineStopped(stopRequest)
+        );
 
         // Firehose no longer has any filters
         assertEquals(
