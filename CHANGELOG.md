@@ -2,6 +2,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.10.0 (RELEASE DATE TBD)
+### Improvements
+- [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method Deserializer.getOutputFields()
+
 ## 0.9.0 (2017-10-26)
 ### Improvements
 - [PR-14](https://github.com/salesforce/storm-dynamic-spout/pull/14) Update Kafka dependencies to 0.11.0.1
@@ -9,7 +13,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-24](https://github.com/salesforce/storm-dynamic-spout/pull/24) Add ability for errors to be reported up to the Storm web UI.
 - [PR-34](https://github.com/salesforce/storm-dynamic-spout/pull/34) Add removeVirtualSpout() method to DynamicSpout
 - [PR-35](https://github.com/salesforce/storm-dynamic-spout/pull/35/files) Output fields should now be declared as a List of String objects. In 0.10 we will drop the comma delimited strings, in the interim we are also now trimming whitespace off of the comma delimited version. 
-- [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method Deserializer.getOutputFields()
 
 ### Bug Fixes
 ##### Kafka Consumer
