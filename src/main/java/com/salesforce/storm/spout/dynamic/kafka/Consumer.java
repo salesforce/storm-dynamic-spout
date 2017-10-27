@@ -181,8 +181,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         }
         isOpen = true;
 
-        // Build ConsumerConfig from spout Config
-        // Construct SidelineConsumerConfig based on topology config.
+        // Build KafkaConsumerConfig from spoutConfig
         final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
         final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
 

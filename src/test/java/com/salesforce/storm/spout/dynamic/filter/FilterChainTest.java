@@ -23,11 +23,12 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
@@ -49,19 +50,19 @@ public class FilterChainTest {
      */
     @Test
     public void addStepAndRemoveStep() {
-        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("1");
+        final FilterChainStepIdentifier filterChainStepIdentifier = new DefaultFilterChainStepIdentifier("1");
 
         final FilterChain filterChain = new FilterChain();
 
-        assertFalse("There shouldn't be a step for the identifier", filterChain.hasStep(sidelineRequestIdentifier));
+        assertFalse("There shouldn't be a step for the identifier", filterChain.hasStep(filterChainStepIdentifier));
 
-        filterChain.addStep(sidelineRequestIdentifier, new NumberFilter(2));
+        filterChain.addStep(filterChainStepIdentifier, new NumberFilter(2));
 
-        assertTrue("There should be a step for the identifier", filterChain.hasStep(sidelineRequestIdentifier));
+        assertTrue("There should be a step for the identifier", filterChain.hasStep(filterChainStepIdentifier));
 
-        filterChain.removeStep(sidelineRequestIdentifier);
+        filterChain.removeStep(filterChainStepIdentifier);
 
-        assertFalse("There shouldn't be a step for the identifier", filterChain.hasStep(sidelineRequestIdentifier));
+        assertFalse("There shouldn't be a step for the identifier", filterChain.hasStep(filterChainStepIdentifier));
     }
 
     /**
@@ -69,7 +70,7 @@ public class FilterChainTest {
      */
     @Test
     public void filter() {
-        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("FakeConsumer");
+        final VirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("FakeConsumer");
 
         final Message message1 = new Message(
             new MessageId("foobar", 1, 0L, consumerId),
@@ -115,7 +116,7 @@ public class FilterChainTest {
      */
     @Test
     public void testNegatingChain() {
-        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("FakeConsumer");
+        final VirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("FakeConsumer");
 
         final Message message1 = new Message(
             new MessageId("foobar", 1, 0L, consumerId),
@@ -141,26 +142,26 @@ public class FilterChainTest {
      */
     @Test
     public void findStep() {
-        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("1");
+        final FilterChainStepIdentifier filterChainStepIdentifier = new DefaultFilterChainStepIdentifier("1");
         final FilterChainStep filterChainStep1 = new NumberFilter(2);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier("2");
+        final FilterChainStepIdentifier filterChainStepIdentifier2 = new DefaultFilterChainStepIdentifier("2");
         final FilterChainStep filterChainStep2 = new NumberFilter(4);
 
         final FilterChain filterChain = new FilterChain()
-            .addStep(sidelineRequestIdentifier1, filterChainStep1)
-            .addStep(sidelineRequestIdentifier2, filterChainStep2)
+            .addStep(filterChainStepIdentifier, filterChainStep1)
+            .addStep(filterChainStepIdentifier2, filterChainStep2)
         ;
 
         assertEquals(
             "Identifier 1 does not match step 1",
-            sidelineRequestIdentifier1,
+            filterChainStepIdentifier,
             filterChain.findStep(filterChainStep1)
         );
 
         assertEquals(
             "Identifier 2 does not match step 2",
-            sidelineRequestIdentifier2,
+            filterChainStepIdentifier2,
             filterChain.findStep(filterChainStep2)
         );
     }
@@ -170,39 +171,39 @@ public class FilterChainTest {
      */
     @Test
     public void getSteps() {
-        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("1");
+        final FilterChainStepIdentifier filterChainStepIdentifier = new DefaultFilterChainStepIdentifier("1");
         final FilterChainStep filterChainStep1 = new NumberFilter(2);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier("2");
+        final FilterChainStepIdentifier filterChainStepIdentifier2 = new DefaultFilterChainStepIdentifier("2");
         final FilterChainStep filterChainStep2 = new NumberFilter(4);
 
         final FilterChain filterChain = new FilterChain()
-            .addStep(sidelineRequestIdentifier1, filterChainStep1)
-            .addStep(sidelineRequestIdentifier2, filterChainStep2)
+            .addStep(filterChainStepIdentifier, filterChainStep1)
+            .addStep(filterChainStepIdentifier2, filterChainStep2)
         ;
 
-        final Map<SidelineRequestIdentifier,FilterChainStep> steps = filterChain.getSteps();
+        final Map<FilterChainStepIdentifier,FilterChainStep> steps = filterChain.getSteps();
 
         assertNotNull("Steps should not be null", filterChain.getSteps());
 
         assertTrue(
             "Identifier 1 should be in the map",
-            steps.containsKey(sidelineRequestIdentifier1)
+            steps.containsKey(filterChainStepIdentifier)
         );
         assertEquals(
             "Step 1 should match",
             filterChainStep1,
-            steps.get(sidelineRequestIdentifier1)
+            steps.get(filterChainStepIdentifier)
         );
 
         assertTrue(
             "Identifier 2 should be in the map",
-            steps.containsKey(sidelineRequestIdentifier2)
+            steps.containsKey(filterChainStepIdentifier2)
         );
         assertEquals(
             "Step 2 should match",
             filterChainStep2,
-            steps.get(sidelineRequestIdentifier2)
+            steps.get(filterChainStepIdentifier2)
         );
     }
 
@@ -211,27 +212,27 @@ public class FilterChainTest {
      */
     @Test
     public void getStep() {
-        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("1");
+        final FilterChainStepIdentifier filterChainStepIdentifier = new DefaultFilterChainStepIdentifier("1");
         final FilterChainStep filterChainStep1 = new NumberFilter(2);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier("2");
+        final FilterChainStepIdentifier filterChainStepIdentifier2 = new DefaultFilterChainStepIdentifier("2");
         final FilterChainStep filterChainStep2 = new NumberFilter(4);
 
         final FilterChain filterChain = new FilterChain()
-            .addStep(sidelineRequestIdentifier1, filterChainStep1)
-            .addStep(sidelineRequestIdentifier2, filterChainStep2)
+            .addStep(filterChainStepIdentifier, filterChainStep1)
+            .addStep(filterChainStepIdentifier2, filterChainStep2)
         ;
 
         assertEquals(
             "Identifier 1 should yield step 1",
             filterChainStep1,
-            filterChain.getStep(sidelineRequestIdentifier1)
+            filterChain.getStep(filterChainStepIdentifier)
         );
 
         assertEquals(
             "Identifier 2 should yield step 2",
             filterChainStep2,
-            filterChain.getStep(sidelineRequestIdentifier2)
+            filterChain.getStep(filterChainStepIdentifier2)
         );
     }
 }

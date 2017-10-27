@@ -40,9 +40,9 @@ import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
-import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
-import com.salesforce.storm.spout.sideline.filter.InvalidFilterChainStepException;
-import com.salesforce.storm.spout.sideline.filter.NegatingFilterChainStep;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.filter.InvalidFilterChainStepException;
+import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -287,7 +287,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * @param sidelineRequest A representation of the request that is being stopped
      */
     public void stopSidelining(SidelineRequest sidelineRequest) {
-        final SidelineRequestIdentifier id = fireHoseSpout.getFilterChain().findStep(sidelineRequest.step);
+        final SidelineRequestIdentifier id = (SidelineRequestIdentifier) fireHoseSpout.getFilterChain().findStep(sidelineRequest.step);
 
         if (id == null) {
             logger.error(

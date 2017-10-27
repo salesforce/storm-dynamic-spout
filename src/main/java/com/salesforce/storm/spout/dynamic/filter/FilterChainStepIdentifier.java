@@ -23,23 +23,10 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
-
-import com.salesforce.storm.spout.dynamic.Message;
-
-import java.io.Serializable;
+package com.salesforce.storm.spout.dynamic.filter;
 
 /**
- * A step in a chain for processing records, these steps must be serializable and should include
- * an equals() method.
+ * Identifier to a FilterChainStep, make sure you implement a toString() and equals().
  */
-public interface FilterChainStep extends Serializable {
-
-    /**
-     * Inputs an object, performs some business logic on it and then returns the result.
-     *
-     * @param message The filter to be processed by this step of the chain
-     * @return The resulting filter after being processed
-     */
-    boolean filter(Message message);
+public interface FilterChainStepIdentifier {
 }

@@ -23,35 +23,23 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import com.salesforce.storm.spout.dynamic.Message;
 
-class NumberFilter implements FilterChainStep {
+import java.io.Serializable;
 
-    private final int number;
-
-    NumberFilter(final int number) {
-        this.number = number;
-    }
-
-    /**
-     * Filter a message.
-     * @param message The filter to be processed by this step of the chain.
-     * @return true if the message should be filtered, false otherwise.
-     */
-    @Override
-    public boolean filter(Message message) {
-        Integer messageNumber = (Integer) message.getValues().get(0);
-        // Filter them if they don't match, in other words "not" equals
-        return messageNumber.equals(number);
-    }
+/**
+ * A step in a chain for processing records, these steps must be serializable and should include
+ * an equals() method.
+ */
+public interface FilterChainStep extends Serializable {
 
     /**
-     * Get the number used in the filter.
-     * @return number used in the filter.
+     * Inputs an object, performs some business logic on it and then returns the result.
+     *
+     * @param message The filter to be processed by this step of the chain
+     * @return The resulting filter after being processed
      */
-    int getNumber() {
-        return number;
-    }
+    boolean filter(Message message);
 }

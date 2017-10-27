@@ -23,19 +23,48 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+
+import java.util.Objects;
 
 /**
- * Thrown when a filter chain step cannot be serialized/unserialized correctly.
+ * Identifier for a FilterChainStep.
  */
-public class InvalidFilterChainStepException extends RuntimeException {
+public class DefaultFilterChainStepIdentifier implements FilterChainStepIdentifier {
+
+    private final String id;
 
     /**
-     * Thrown when a filter chain step cannot be serialized/unserialized correctly.
-     * @param message message.
-     * @param cause underlying exception causing this one to be thrown.
+     * Identifier for a FilterChainStep.
+     * @param id identifier.
      */
-    public InvalidFilterChainStepException(final String message, final Throwable cause) {
-        super(message, cause);
+    public DefaultFilterChainStepIdentifier(final String id) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(id), "You must provide something in order to create an identifier!");
+        this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        DefaultFilterChainStepIdentifier that = (DefaultFilterChainStepIdentifier) obj;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return id;
     }
 }

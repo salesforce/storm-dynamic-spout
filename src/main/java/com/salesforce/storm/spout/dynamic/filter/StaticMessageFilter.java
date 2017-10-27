@@ -23,32 +23,30 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
+package com.salesforce.storm.spout.dynamic.filter;
 
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.Message;
+
+import java.util.UUID;
 
 /**
- * A request to sideline.
+ * We use this filter in tests because it allows us an easy way to define
+ * how a filter behaves.
  */
-public class SidelineRequest {
+public class StaticMessageFilter implements FilterChainStep {
 
     /**
-     * Id of the sideline request.
+     * We need a way to make this instance unique from others, so we use a UUID.
      */
-    public final SidelineRequestIdentifier id;
-    /**
-     * Filter chain step for this sideline.
-     */
-    public final FilterChainStep step;
+    private final UUID uniqueId;
 
-    /**
-     * A request to sideline.
-     * @param id id of the sideline request.
-     * @param step filter chain step for this sideline.
-     */
-    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
-        this.id = id;
-        this.step = step;
+    public StaticMessageFilter() {
+        this.uniqueId = UUID.randomUUID();
+    }
+
+    @Override
+    public boolean filter(Message message) {
+        return true;
     }
 
     @Override
@@ -60,23 +58,20 @@ public class SidelineRequest {
             return false;
         }
 
-        SidelineRequest that = (SidelineRequest) other;
+        StaticMessageFilter that = (StaticMessageFilter) other;
 
-        return step != null ? step.equals(that.step) : that.step == null;
+        return uniqueId.equals(that.uniqueId);
     }
 
     @Override
     public int hashCode() {
-        return step != null ? step.hashCode() : 0;
+        return uniqueId.hashCode();
     }
 
     @Override
     public String toString() {
-        return "SidelineRequest{"
-            + "id="
-            + id
-            + ", step="
-            + step
+        return "StaticMessageFilter{"
+            + "uniqueId=" + uniqueId
             + '}';
     }
 }

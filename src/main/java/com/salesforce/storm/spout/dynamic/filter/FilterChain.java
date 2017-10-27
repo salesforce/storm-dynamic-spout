@@ -23,12 +23,11 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 import java.util.Map;
 
@@ -37,17 +36,17 @@ import java.util.Map;
  */
 public class FilterChain {
 
-    private final Map<SidelineRequestIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
+    private final Map<FilterChainStepIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
 
     /**
      * Add a step to the filter chain.
      *
-     * @param id is of the sideline request to add the step for.
+     * @param id is of the filter chain step to add the step for.
      * @param step step for processing in the chain.
      * @return filter chain, for fluent a interface.
      */
-    public FilterChain addStep(final SidelineRequestIdentifier id, final FilterChainStep step) {
-        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required to add a step.");
+    public FilterChain addStep(final FilterChainStepIdentifier id, final FilterChainStep step) {
+        Preconditions.checkNotNull(id, "FilterChainStepIdentifier is required to add a step.");
         Preconditions.checkNotNull(step, "Cannot add a null FilterChainStep to the FilterChain.");
         this.steps.put(id, step);
         return this;
@@ -56,11 +55,11 @@ public class FilterChain {
     /**
      * Remove a step to the filter chain.
      *
-     * @param id is of the sideline request to add the step for.
+     * @param id is of the filter chain step to add the step for.
      * @return filter chain, for fluent a interface.
      */
-    public FilterChainStep removeStep(final SidelineRequestIdentifier id) {
-        Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required to remove a step.");
+    public FilterChainStep removeStep(final FilterChainStepIdentifier id) {
+        Preconditions.checkNotNull(id, "FilterChainStepIdentifier is required to remove a step.");
         return this.steps.remove(id);
     }
 
@@ -91,8 +90,8 @@ public class FilterChain {
      * @param seek filter chain step to find.
      * @return Identifier for the steps in the chain
      */
-    public SidelineRequestIdentifier findStep(final FilterChainStep seek) {
-        for (Map.Entry<SidelineRequestIdentifier, FilterChainStep> entry : steps.entrySet()) {
+    public FilterChainStepIdentifier findStep(final FilterChainStep seek) {
+        for (Map.Entry<FilterChainStepIdentifier, FilterChainStep> entry : steps.entrySet()) {
             FilterChainStep step = entry.getValue();
 
             if (step.equals(seek)) {
@@ -104,29 +103,29 @@ public class FilterChain {
     }
 
     /**
-     * Get a map of the filter chain steps by sideline request identifier.
-     * @return map of the filter chain steps by sideline request identifier.
+     * Get a map of the filter chain steps by filter chain step identifier.
+     * @return map of the filter chain steps by filter chain step identifier.
      */
-    public Map<SidelineRequestIdentifier,FilterChainStep> getSteps() {
+    public Map<FilterChainStepIdentifier,FilterChainStep> getSteps() {
         return steps;
     }
 
     /**
-     * Does the current sideline request have a filter chain step?
-     * @param sidelineRequestIdentifier sideline request identifier.
+     * Does the current filter chain step have a filter chain step?
+     * @param filterChainStepIdentifier filter chain step identifier.
      * @return true, the filter chain step exists, false it does not.
      */
-    public boolean hasStep(final SidelineRequestIdentifier sidelineRequestIdentifier) {
-        return steps.containsKey(sidelineRequestIdentifier);
+    public boolean hasStep(final FilterChainStepIdentifier filterChainStepIdentifier) {
+        return steps.containsKey(filterChainStepIdentifier);
     }
 
     /**
-     * Get the filter chain step for the given sideline request identifier.
-     * @param sidelineRequestIdentifier sideline request identifier.
+     * Get the filter chain step for the given filter chain step identifier.
+     * @param filterChainStepIdentifier filter chain step identifier.
      * @return corresponding filter chain step.
      */
-    public FilterChainStep getStep(final SidelineRequestIdentifier sidelineRequestIdentifier) {
-        return steps.get(sidelineRequestIdentifier);
+    public FilterChainStep getStep(final FilterChainStepIdentifier filterChainStepIdentifier) {
+        return steps.get(filterChainStepIdentifier);
     }
 
     @Override

@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.utils.SharedKafkaTestResource;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
-import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;

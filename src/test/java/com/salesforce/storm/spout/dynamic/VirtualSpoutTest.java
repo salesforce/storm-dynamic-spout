@@ -31,7 +31,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
-import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
