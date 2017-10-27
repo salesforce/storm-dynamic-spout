@@ -57,7 +57,7 @@ public class SerializerTest {
 
         assertEquals(
             "FilterChainStep looks right serialized",
-            "rO0ABXNyADdjb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5zaWRlbGluZS5maWx0ZXIuTnVtYmVyRmlsdGVyybY4TXdgvkUCAAFJAAZudW1iZXJ4cAAAACo=",
+            "rO0ABXNyADdjb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5zaWRlbGluZS5maWx0ZXIuTnVtYmVyRmlsdGVy4thB9B01JTYCAAFJAAZudW1iZXJ4cAAAACo=",
             serializedFilterChainStep
         );
 
