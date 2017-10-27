@@ -36,7 +36,6 @@ import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
-import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
@@ -48,16 +47,10 @@ import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
@@ -116,16 +109,23 @@ public class SidelineSpoutHandlerTest {
 
     /**
      * Test upon spout opening sidelines, both starts and stops are resumed properly.
+     *
+     * This test has one started sideline and one stopped sideline, both of which should resume correctly.
      */
     @Test
     public void testOnSpoutOpenResumesSidelines() {
+        final String consumerId = "VirtualSpoutPrefix";
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             InMemoryPersistenceAdapter.class.getName()
         );
-        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
+        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
+        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -134,22 +134,13 @@ public class SidelineSpoutHandlerTest {
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
-
-        final List<VirtualSpout> sidelineSpouts = new ArrayList<>();
-
-        // We use this to replace DynamicSpout.addVirtualSpout() so that we can hijack the list of vspouts and validate
-        // the sidelines.
-        final Answer<Void> addVirtualSpoutAnswer = invocation -> {
-            final VirtualSpout virtualSpout = invocation.getArgumentAt(0, VirtualSpout.class);
-            sidelineSpouts.add(virtualSpout);
-            return null;
-        };
-
-        final DynamicSpout spout = Mockito.mock(DynamicSpout.class);
-        Mockito.when(spout.getFactoryManager()).thenReturn(new FactoryManager(config));
-        Mockito.doAnswer(addVirtualSpoutAnswer).when(spout).addVirtualSpout(
-            Matchers.<VirtualSpout>any()
+        final VirtualSpoutIdentifier virtualSpoutIdentifier2 = new SidelineVirtualSpoutIdentifier(
+            consumerId,
+            stopRequestId
         );
+
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(null, null, null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -178,35 +169,26 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Make sure we have a firehose
-        assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
+        assertNotNull("Firehose should not be null", sidelineSpoutHandler.getFireHoseSpout());
 
         // Our firehose should have gotten a filter chain step on resume
-        assertEquals(1, sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size());
+        assertEquals(
+            "FilterChain should have one step for the start request",
+            1,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+        );
         // When we fetch that step by startRequestId it should be our start filter
         assertEquals(
+            "FilterChain should have the start filter on it",
             startFilter,
             sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().get(startRequestId)
         );
 
-        // Two spouts, one firehose and one sideline
-        assertEquals(2, sidelineSpouts.size());
-
-        // Find our sideline spout
-        Optional<VirtualSpout> sidelineSpout = sidelineSpouts.stream().reduce(
-            (VirtualSpout virtualSpout, VirtualSpout virtualSpout2) -> {
-                return !virtualSpout.getVirtualSpoutId().toString().contains("main") ? virtualSpout : virtualSpout2;
-            }
-        );
-
-        // Make sure that we got it, it was an optional after all
-        assertTrue(sidelineSpout.isPresent());
-
-        // Make sure the sideline spout has one filter
-        assertEquals(1, sidelineSpout.get().getFilterChain().getSteps().size());
-        // Make sure that one filter is our stop request it
-        assertEquals(
-            stopFilter,
-            sidelineSpout.get().getFilterChain().getSteps().get(stopRequestId)
+        assertTrue(
+            "The stop request should have created a new VirtualSpout instance",
+            spout.hasVirtualSpout(
+                virtualSpoutIdentifier2
+            )
         );
     }
 

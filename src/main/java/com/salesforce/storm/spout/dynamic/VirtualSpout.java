@@ -190,7 +190,7 @@ public class VirtualSpout implements DelegateSpout {
             throw new IllegalStateException("Cannot call open more than once!");
         }
 
-        logger.info("Open has starting state {} and ending state {}", startingState, endingState);
+        logger.info("Open for VirtualSpout {} has starting state {} and ending state {}", getVirtualSpoutId(), startingState, endingState);
 
         // Create our failed msg retry manager & open
         retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
