@@ -72,6 +72,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     private static final String MAIN_ID = "main";
 
+    private boolean isOpen = false;
+
     /**
      * The Spout configuration map.
      */
@@ -102,6 +104,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void open(final Map<String, Object> spoutConfig) {
+        if (isOpen) {
+            throw new RuntimeException("SidelineSpoutHandler is already opened!");
+        }
+
+        isOpen = true;
+
         this.spoutConfig = spoutConfig;
 
         final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
@@ -115,6 +123,16 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             persistenceAdapterClass
         );
         persistenceAdapter.open(spoutConfig);
+    }
+
+    /**
+     * When this handler is closed this method is called.
+     */
+    @Override
+    public void close() {
+        persistenceAdapter.close();
+
+        isOpen = false;
     }
 
     /**
@@ -135,17 +153,34 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         createSidelineTriggers();
 
-        // Create the main spout for the namespace, we'll dub it the 'firehose'
-        fireHoseSpout = new VirtualSpout(
-            // We use a normal virtual spout identifier here rather than the sideline one because this is NOT a sideline, it's our firehose.
-            new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID),
-            getSpoutConfig(),
-            topologyContext,
-            spout.getFactoryManager(),
-            spout.getMetricsRecorder(),
-            null,
-            null
-        );
+        loadSidelines();
+
+        for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
+            sidelineTrigger.open(getSpoutConfig());
+        }
+    }
+
+    /**
+     * Loads existing sideline requests that have been previously persisted and checks to make sure that they are running.
+     */
+    private void loadSidelines() {
+        final VirtualSpoutIdentifier fireHoseIdentifier = new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID);
+
+        // If we haven't spun up a VirtualSpout yet, we create it here.
+        if (fireHoseSpout == null) {
+            // Create the main spout for the namespace, we'll dub it the 'firehose'
+            fireHoseSpout = new VirtualSpout(
+                // We use a normal virtual spout identifier here rather than the sideline one because this is NOT a sideline,
+                // it's our firehose.
+                fireHoseIdentifier,
+                getSpoutConfig(),
+                topologyContext,
+                spout.getFactoryManager(),
+                spout.getMetricsRecorder(),
+                null,
+                null
+            );
+        }
 
         final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
 
@@ -177,7 +212,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             }
 
             if (payload == null) {
-                logger.warn("Sideline request {} did not have any partitions persisted", id);
+                logger.warn("Sideline request {} did not have any persisted partitions", id);
                 continue;
             }
 
@@ -185,14 +220,20 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             if (payload.type.equals(SidelineType.START)) {
                 logger.info("Resuming START sideline {} {}", payload.id, payload.request.step);
 
-                fireHoseSpout.getFilterChain().addStep(
-                    payload.id,
-                    payload.request.step
-                );
+                // Only add the step if the id isn't already in the chain.  Note that we do NOT check for the step here, it's possible
+                // though very unusual to have the exact same step used in different requests. While that's silly, we don't want to choke
+                // on it here and put the filter chain in a weird state.
+                if (!fireHoseSpout.getFilterChain().hasStep(payload.id)) {
+                    fireHoseSpout.getFilterChain().addStep(
+                        payload.id,
+                        payload.request.step
+                    );
+                }
             }
 
             // Resuming a stopped request means we spin up a new sideline spout
             if (payload.type.equals(SidelineType.STOP)) {
+                // This method will check to see that the VirtualSpout isn't already in the SpoutCoordinator before adding it
                 addSidelineVirtualSpout(
                     payload.id,
                     payload.request.step,
@@ -202,14 +243,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             }
         }
 
-        for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
-            sidelineTrigger.open(getSpoutConfig());
-        }
-
         // After altering the filter chain is complete, lets NOW start the fire hose
         // This keeps a race condition where the fire hose could start consuming before filter chain
         // steps get added.
-        spout.addVirtualSpout(fireHoseSpout);
+        if (!spout.hasVirtualSpout(fireHoseIdentifier)) {
+            spout.addVirtualSpout(fireHoseSpout);
+        }
     }
 
     /**
@@ -241,9 +280,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * Starts a sideline request.
      * @param sidelineRequest representation of the request that is being started.
-     * @return sideline request identifier.
      */
-    public SidelineRequestIdentifier startSidelining(SidelineRequest sidelineRequest) {
+    public void startSidelining(SidelineRequest sidelineRequest) {
         logger.info("Received START sideline request");
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
@@ -267,8 +305,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         // Update start count metric
         spout.getMetricsRecorder().count(getClass(), "start-sideline", 1L);
-
-        return sidelineRequest.id;
     }
 
     /**
@@ -412,6 +448,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         // Generate our virtualSpoutId using the payload id.
         final VirtualSpoutIdentifier virtualSpoutId = generateSidelineVirtualSpoutId(id);
 
+        if (spout.hasVirtualSpout(virtualSpoutId)) {
+            logger.info("VirtualSpout {} is already running", virtualSpoutId);
+            return;
+        }
+
         // This info is repeated in VirtualSpout.open(), not needed here.
         logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
@@ -468,8 +509,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     }
 
     /**
-     * Create an instance of the configured StartingTrigger.
-     * @return Instance of a StartingTrigger
+     * Create an instance of the configured SidelineTrigger.
      */
     @SuppressWarnings("unchecked")
     synchronized void createSidelineTriggers() {

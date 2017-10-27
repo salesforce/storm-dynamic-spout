@@ -45,9 +45,8 @@ public interface SidelineController {
     /**
      * Start sidelining.
      * @param request Sideline request, container an id and a filter chain step.
-     * @return Identifier of the sideline request. You probably shouldn't count on this, it might go away.
      */
-    SidelineRequestIdentifier startSidelining(final SidelineRequest request);
+    void startSidelining(final SidelineRequest request);
 
     /**
      * Does a sideline exist in the stopped state?

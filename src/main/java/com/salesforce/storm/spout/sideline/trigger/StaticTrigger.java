@@ -35,11 +35,6 @@ import java.util.Map;
 public class StaticTrigger implements SidelineTrigger {
 
     /**
-     * Current sideline request, which is captured after a sideline request identifier is started.
-     */
-    private static SidelineRequestIdentifier currentSidelineRequestIdentifier;
-
-    /**
      * Sideline controller instance.
      */
     private static SidelineController sidelineController;
@@ -73,7 +68,7 @@ public class StaticTrigger implements SidelineTrigger {
      * @param request sideline request.
      */
     public static void sendStartRequest(final SidelineRequest request) {
-        StaticTrigger.currentSidelineRequestIdentifier = StaticTrigger.sidelineController.startSidelining(request);
+        StaticTrigger.sidelineController.startSidelining(request);
     }
 
     /**
@@ -82,13 +77,5 @@ public class StaticTrigger implements SidelineTrigger {
      */
     public static void sendStopRequest(final SidelineRequest request) {
         StaticTrigger.sidelineController.stopSidelining(request);
-    }
-
-    /**
-     * Get current the sideline request identifier.
-     * @return current sideline request identifier.
-     */
-    public static SidelineRequestIdentifier getCurrentSidelineRequestIdentifier() {
-        return currentSidelineRequestIdentifier;
     }
 }
