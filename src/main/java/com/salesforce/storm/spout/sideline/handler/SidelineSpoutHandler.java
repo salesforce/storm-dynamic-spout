@@ -164,6 +164,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 payload = retrieveSidelinePayload(id, partition);
 
                 if (payload == null) {
+                    logger.warn("Sideline {} on partition {} payload was null, this is probably a serialization problem.");
                     continue;
                 }
 
@@ -321,6 +322,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             );
 
             if (sidelinePayload == null) {
+                logger.warn("Sideline {} on partition {} payload was null, this is probably a serialization problem.");
                 continue;
             }
 
