@@ -26,7 +26,11 @@
 package com.salesforce.storm.spout.dynamic.filter;
 
 /**
- * Identifier to a FilterChainStep, make sure you implement a toString() and equals().
+ * Identifier to a FilterChainStep.
+ *
+ * This object marks a given step as unique, and provides a way to identify it.  You can implement your FilterChainStep however
+ * you see fit, say a descriptive string of the filter or an md5 hash of it, etc.  It is important that you implement a toString()
+ * and equals() method and that these should be deterministic when identifying a FilterChainStep instance..
  */
 public interface FilterChainStepIdentifier {
 }

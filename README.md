@@ -54,7 +54,17 @@ To use this library add the following to your pom.xml:
 <dependency>
     <groupId>com.salesforce.storm</groupId>
     <artifactId>dynamic-spout</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.0</version>
+</dependency>
+```
+
+Or try out the bleeding edge version (API may be unstable:
+
+```
+<dependency>
+    <groupId>com.salesforce.storm</groupId>
+    <artifactId>dynamic-spout</artifactId>
+    <version>0.10-SNAPSHOT</version>
 </dependency>
 ```
 
