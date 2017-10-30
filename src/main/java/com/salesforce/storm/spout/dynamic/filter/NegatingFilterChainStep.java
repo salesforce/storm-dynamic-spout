@@ -23,30 +23,23 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import com.salesforce.storm.spout.dynamic.Message;
 
-import java.util.UUID;
-
 /**
- * We use this filter in tests because it allows us an easy way to define
- * how a filter behaves.
+ * Negates a {@link FilterChainStep} basically doing the opposite of the intended filtering.
  */
-public class StaticMessageFilter implements FilterChainStep {
+public class NegatingFilterChainStep implements FilterChainStep {
 
-    /**
-     * We need a way to make this instance unique from others, so we use a UUID.
-     */
-    private final UUID uniqueId;
+    private final FilterChainStep step;
 
-    public StaticMessageFilter() {
-        this.uniqueId = UUID.randomUUID();
+    public NegatingFilterChainStep(FilterChainStep step) {
+        this.step = step;
     }
 
-    @Override
     public boolean filter(Message message) {
-        return true;
+        return !this.step.filter(message);
     }
 
     @Override
@@ -58,20 +51,13 @@ public class StaticMessageFilter implements FilterChainStep {
             return false;
         }
 
-        StaticMessageFilter that = (StaticMessageFilter) other;
+        NegatingFilterChainStep that = (NegatingFilterChainStep) other;
 
-        return uniqueId.equals(that.uniqueId);
+        return step != null ? step.equals(that.step) : that.step == null;
     }
 
     @Override
     public int hashCode() {
-        return uniqueId.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "StaticMessageFilter{"
-            + "uniqueId=" + uniqueId
-            + '}';
+        return step != null ? step.hashCode() : 0;
     }
 }

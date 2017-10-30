@@ -350,6 +350,7 @@
                     <!-- ${argLine} gets defined by jacoco plugin -->
                     <argLine>${argLine} -Xmx1g</argLine>
                     <skipTests>${skipTests}</skipTests>
+                    <reportFormat>plain</reportFormat>
                 </configuration>
             </plugin>
 

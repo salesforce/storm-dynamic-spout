@@ -23,41 +23,35 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import com.salesforce.storm.spout.dynamic.Message;
 
-/**
- * Negates a {@link FilterChainStep} basically doing the opposite of the intended filtering.
- */
-public class NegatingFilterChainStep implements FilterChainStep {
+class NumberFilter implements FilterChainStep {
 
-    private final FilterChainStep step;
+    private final int number;
 
-    public NegatingFilterChainStep(FilterChainStep step) {
-        this.step = step;
+    NumberFilter(final int number) {
+        this.number = number;
     }
 
+    /**
+     * Filter a message.
+     * @param message The filter to be processed by this step of the chain.
+     * @return true if the message should be filtered, false otherwise.
+     */
+    @Override
     public boolean filter(Message message) {
-        return !this.step.filter(message);
+        Integer messageNumber = (Integer) message.getValues().get(0);
+        // Filter them if they don't match, in other words "not" equals
+        return messageNumber.equals(number);
     }
 
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        NegatingFilterChainStep that = (NegatingFilterChainStep) other;
-
-        return step != null ? step.equals(that.step) : that.step == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return step != null ? step.hashCode() : 0;
+    /**
+     * Get the number used in the filter.
+     * @return number used in the filter.
+     */
+    int getNumber() {
+        return number;
     }
 }

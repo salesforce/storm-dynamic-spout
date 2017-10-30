@@ -111,7 +111,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @param spoutConfig Our configuration.
      */
     public DynamicSpout(Map<String, Object> spoutConfig) {
-        // TODO: This method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
+        // TODO: Should this method change to a SpoutConfig instance?
         // Save off config, injecting appropriate default values for anything not explicitly configured.
         this.spoutConfig = Collections.unmodifiableMap(SpoutConfig.setDefaults(spoutConfig));
 
@@ -431,7 +431,7 @@ public class DynamicSpout extends BaseRichSpout {
     String getOutputStreamId() {
         if (outputStreamId == null) {
             if (spoutConfig == null) {
-                throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
+                throw new IllegalStateException("Missing required configuration! SpoutConfig not defined!");
             }
             outputStreamId = (String) getSpoutConfigItem(SpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {

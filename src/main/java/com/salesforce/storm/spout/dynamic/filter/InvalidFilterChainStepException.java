@@ -23,60 +23,19 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
-
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+package com.salesforce.storm.spout.dynamic.filter;
 
 /**
- * A request to sideline.
+ * Thrown when a filter chain step cannot be serialized/unserialized correctly.
  */
-public class SidelineRequest {
+public class InvalidFilterChainStepException extends RuntimeException {
 
     /**
-     * Id of the sideline request.
+     * Thrown when a filter chain step cannot be serialized/unserialized correctly.
+     * @param message message.
+     * @param cause underlying exception causing this one to be thrown.
      */
-    public final SidelineRequestIdentifier id;
-    /**
-     * Filter chain step for this sideline.
-     */
-    public final FilterChainStep step;
-
-    /**
-     * A request to sideline.
-     * @param id id of the sideline request.
-     * @param step filter chain step for this sideline.
-     */
-    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
-        this.id = id;
-        this.step = step;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        SidelineRequest that = (SidelineRequest) other;
-
-        return step != null ? step.equals(that.step) : that.step == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return step != null ? step.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "SidelineRequest{"
-            + "id="
-            + id
-            + ", step="
-            + step
-            + '}';
+    public InvalidFilterChainStepException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

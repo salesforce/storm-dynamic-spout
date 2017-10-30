@@ -23,60 +23,48 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
+package com.salesforce.storm.spout.dynamic.filter;
 
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+
+import java.util.Objects;
 
 /**
- * A request to sideline.
+ * Identifier for a FilterChainStep.
  */
-public class SidelineRequest {
+public class DefaultFilterChainStepIdentifier implements FilterChainStepIdentifier {
+
+    private final String id;
 
     /**
-     * Id of the sideline request.
+     * Identifier for a FilterChainStep.
+     * @param id identifier.
      */
-    public final SidelineRequestIdentifier id;
-    /**
-     * Filter chain step for this sideline.
-     */
-    public final FilterChainStep step;
-
-    /**
-     * A request to sideline.
-     * @param id id of the sideline request.
-     * @param step filter chain step for this sideline.
-     */
-    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
+    public DefaultFilterChainStepIdentifier(final String id) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(id), "You must provide something in order to create an identifier!");
         this.id = id;
-        this.step = step;
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
+    public boolean equals(Object obj) {
+        if (this == obj) {
             return true;
         }
-        if (other == null || getClass() != other.getClass()) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-
-        SidelineRequest that = (SidelineRequest) other;
-
-        return step != null ? step.equals(that.step) : that.step == null;
+        DefaultFilterChainStepIdentifier that = (DefaultFilterChainStepIdentifier) obj;
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return step != null ? step.hashCode() : 0;
+        return Objects.hash(id);
     }
 
     @Override
     public String toString() {
-        return "SidelineRequest{"
-            + "id="
-            + id
-            + ", step="
-            + step
-            + '}';
+        return id;
     }
 }

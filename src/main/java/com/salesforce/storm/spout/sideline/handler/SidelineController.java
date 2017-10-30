@@ -23,45 +23,41 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline;
+package com.salesforce.storm.spout.sideline.handler;
 
-import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
  * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
- * starting and stopping a sideline is handled from without breaking every single trigger implementation.
+ * starting and stopping a sideline is handled from without breaking every single trigger implementation. It also prevents
+ * other methods on the SpoutHandler from being accessible.
  */
-public class SpoutTriggerProxy {
+public interface SidelineController {
 
     /**
-     * DynamicSpout SpoutHandler for sidelining.
+     * Does a sideline exist in the started state?
+     * @param sidelineRequest sideline request.
+     * @return true it does, false it does not.
      */
-    private final SidelineSpoutHandler spoutHandler;
-
-    /**
-     * Create a new proxy.
-     * @param spoutHandler Sidelining SpoutHandler instance.
-     */
-    public SpoutTriggerProxy(final SidelineSpoutHandler spoutHandler) {
-        this.spoutHandler = spoutHandler;
-    }
+    boolean isSidelineStarted(SidelineRequest sidelineRequest);
 
     /**
      * Start sidelining.
      * @param request Sideline request, container an id and a filter chain step.
-     * @return Identifier of the sideline request. You probably shouldn't count on this, it might go away.
      */
-    public SidelineRequestIdentifier startSidelining(final SidelineRequest request) {
-        return this.spoutHandler.startSidelining(request);
-    }
+    void startSidelining(final SidelineRequest request);
+
+    /**
+     * Does a sideline exist in the stopped state?
+     * @param sidelineRequest sideline request.
+     * @return true it has, false it has not.
+     */
+    boolean isSidelineStopped(SidelineRequest sidelineRequest);
 
     /**
      * Stop sidelining.
      * @param request Sideline request, container an id and a filter chain step.
      */
-    public void stopSidelining(final SidelineRequest request) {
-        this.spoutHandler.stopSidelining(request);
-    }
+    void stopSidelining(final SidelineRequest request);
 }

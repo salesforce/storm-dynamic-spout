@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.utils.SharedKafkaTestResource;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
-import com.salesforce.storm.spout.sideline.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
@@ -397,7 +397,7 @@ public class DynamicSpoutTest {
             producedRecords,
             spoutEmissions,
             expectedStreamId,
-            consumerIdPrefix + ":sideline:" + StaticTrigger.getCurrentSidelineRequestIdentifier()
+            consumerIdPrefix + ":sideline:" + request.id
         );
 
         // Call next tuple a few more times to be safe nothing else comes in.
@@ -604,7 +604,7 @@ public class DynamicSpoutTest {
         // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
         StaticTrigger.sendStartRequest(request);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier = StaticTrigger.getCurrentSidelineRequestIdentifier();
+        final SidelineRequestIdentifier sidelineRequestIdentifier = request.id;
 
         // Produce 5 more messages into kafka, should be offsets [10,11,12,13,14]
         final List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5, 0);

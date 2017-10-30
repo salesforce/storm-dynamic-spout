@@ -23,60 +23,14 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger;
-
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+package com.salesforce.storm.spout.dynamic.filter;
 
 /**
- * A request to sideline.
+ * Identifier to a FilterChainStep.
+ *
+ * This object marks a given step as unique, and provides a way to identify it.  You can implement your FilterChainStep however
+ * you see fit, say a descriptive string of the filter or an md5 hash of it, etc.  It is important that you implement a toString()
+ * and equals() method and that these should be deterministic when identifying a FilterChainStep instance..
  */
-public class SidelineRequest {
-
-    /**
-     * Id of the sideline request.
-     */
-    public final SidelineRequestIdentifier id;
-    /**
-     * Filter chain step for this sideline.
-     */
-    public final FilterChainStep step;
-
-    /**
-     * A request to sideline.
-     * @param id id of the sideline request.
-     * @param step filter chain step for this sideline.
-     */
-    public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
-        this.id = id;
-        this.step = step;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        SidelineRequest that = (SidelineRequest) other;
-
-        return step != null ? step.equals(that.step) : that.step == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return step != null ? step.hashCode() : 0;
-    }
-
-    @Override
-    public String toString() {
-        return "SidelineRequest{"
-            + "id="
-            + id
-            + ", step="
-            + step
-            + '}';
-    }
+public interface FilterChainStepIdentifier {
 }

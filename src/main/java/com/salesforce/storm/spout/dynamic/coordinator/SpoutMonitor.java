@@ -73,21 +73,21 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * This buffer/queue holds tuples that are ready to be sent out to the topology.
-     * It is filled by VirtualSpout instances, and drained by SidelineSpout.
+     * It is filled by VirtualSpout instances, and drained by DynamicSpout.
      */
     private final MessageBuffer tupleOutputQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be acked by VirtualSpouts.
      * Its segmented by VirtualSpout ids => Queue of tuples to be acked.
-     * It is filled by SidelineSpout, and drained by VirtualSpout instances.
+     * It is filled by DynamicSpout, and drained by VirtualSpout instances.
      */
     private final Map<VirtualSpoutIdentifier,Queue<MessageId>> ackedTuplesQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be failed by VirtualSpouts.
      * Its segmented by VirtualSpout ids => Queue of tuples to be failed.
-     * It is filled by SidelineSpout, and drained by VirtualSpout instances.
+     * It is filled by DynamicSpout, and drained by VirtualSpout instances.
      */
     private final Map<VirtualSpoutIdentifier,Queue<MessageId>> failedTuplesQueue;
 

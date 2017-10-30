@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.sideline.SpoutTriggerProxy;
+import com.salesforce.storm.spout.sideline.handler.SidelineController;
 
 import java.util.Map;
 
@@ -35,14 +35,9 @@ import java.util.Map;
 public class StaticTrigger implements SidelineTrigger {
 
     /**
-     * Sideline proxy instance that created the trigger.
+     * Sideline controller instance.
      */
-    private static SpoutTriggerProxy sidelineSpout;
-
-    /**
-     * Current sideline request, which is captured after a sideline request identifier is started.
-     */
-    private static SidelineRequestIdentifier currentSidelineRequestIdentifier;
+    private static SidelineController sidelineController;
 
     /**
      * Open the trigger.
@@ -60,12 +55,12 @@ public class StaticTrigger implements SidelineTrigger {
     }
 
     /**
-     * Set the sideline proxy instance.
-     * @param sidelineSpoutProxy sideline proxy instance.
+     * Set the sideline controller instance on this trigger.
+     * @param sidelineController sideline controller instance.
      */
     @Override
-    public void setSidelineSpout(final SpoutTriggerProxy sidelineSpoutProxy) {
-        sidelineSpout = sidelineSpoutProxy;
+    public void setSidelineController(SidelineController sidelineController) {
+        StaticTrigger.sidelineController = sidelineController;
     }
 
     /**
@@ -73,7 +68,7 @@ public class StaticTrigger implements SidelineTrigger {
      * @param request sideline request.
      */
     public static void sendStartRequest(final SidelineRequest request) {
-        currentSidelineRequestIdentifier = sidelineSpout.startSidelining(request);
+        StaticTrigger.sidelineController.startSidelining(request);
     }
 
     /**
@@ -81,14 +76,6 @@ public class StaticTrigger implements SidelineTrigger {
      * @param request sideline request.
      */
     public static void sendStopRequest(final SidelineRequest request) {
-        sidelineSpout.stopSidelining(request);
-    }
-
-    /**
-     * Get current the sideline request identifier.
-     * @return current sideline request identifier.
-     */
-    public static SidelineRequestIdentifier getCurrentSidelineRequestIdentifier() {
-        return currentSidelineRequestIdentifier;
+        StaticTrigger.sidelineController.stopSidelining(request);
     }
 }
