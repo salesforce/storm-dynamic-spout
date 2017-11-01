@@ -51,6 +51,7 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -61,6 +62,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +70,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -2404,6 +2407,41 @@ public class ConsumerTest {
         );
 
         // Clean up
+        consumer.close();
+    }
+
+
+    /**
+     * Calling nextRecord calls fillBuffer() which has special handling for OutOfRangeExceptions.  There is some
+     * recursion in this method, but it should not go on forever and yield a StackOverflow exception.  This test verifies
+     * that when the KafkaConsumer is relentlessly throwing OutOfRangeExceptions that we stop trying to fill the buffer
+     * after five attempts and do not have any other errors.
+     */
+    @Test
+    public void testNextRecordWithRecursiveOutOfRangeException() {
+        final KafkaConsumer<byte[], byte[]> kafkaConsumer = Mockito.mock(KafkaConsumer.class);
+
+        Mockito.when(kafkaConsumer.assignment()).thenReturn(Sets.newHashSet(new TopicPartition("Foobar", 0)));
+        Mockito.when(kafkaConsumer.partitionsFor(topicName)).thenReturn(Arrays.asList(
+            new PartitionInfo(topicName, 0, null, null, null)
+        ));
+        Mockito.when(kafkaConsumer.poll(300)).thenThrow(
+            new OffsetOutOfRangeException(new HashMap<>())
+        );
+
+        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create our consumer
+        final Consumer consumer = new Consumer(kafkaConsumer);
+        consumer.open(getDefaultConfig(topicName), getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        final Record record = consumer.nextRecord();
+
+        assertNull(record);
+
+        Mockito.verify(kafkaConsumer, Mockito.times(5)).poll(300);
+
         consumer.close();
     }
 

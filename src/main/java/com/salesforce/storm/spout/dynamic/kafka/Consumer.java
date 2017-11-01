@@ -287,8 +287,9 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Fill our buffer if its empty
         fillBuffer();
 
-        // Check our iterator for the next message
-        if (!bufferIterator.hasNext()) {
+        // Check our iterator for the next message, it's only null at this point if something bad is happening inside
+        // of the fileBuffer() method, like it bailed after too much recursion. There will be a lot for that scenario.
+        if (bufferIterator == null || !bufferIterator.hasNext()) {
             // Oh no!  No new msg found.
             logger.debug("Unable to fill buffer...nothing new!");
             return null;
@@ -376,9 +377,18 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
     /**
      * Internal method used to fill internal message buffer from kafka.
-     * Maybe this should be marked private.
      */
     private void fillBuffer() {
+        // First trip, here we go! (This method recurses and we only let it do that five times, so we start the counter here.)
+        fillBuffer(1);
+    }
+
+    /**
+     * Internal method used to fill internal message buffer from kafka.
+     *
+     * Limited by the number of trips made. This should only be called from {@link #fillBuffer()}.
+     */
+    private void fillBuffer(final int trips) {
         // If our buffer is null, or our iterator is at the end
         if (buffer == null || !bufferIterator.hasNext()) {
 
@@ -400,8 +410,17 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 buffer = null;
                 bufferIterator = null;
 
-                // TODO: heh... this should be bounded most likely...
-                fillBuffer();
+                // Why 5? Because it's less than 6.
+                if (trips >= 5) {
+                    logger.error(
+                        "Attempted to fill the buffer after an OffsetOutOfRangeException, but this was my fifth attempt so I'm bailing."
+                    );
+                    // nextRecord() will get called by the VirtualSpout instance soon so we're not giving up, just avoiding a StackOverflow
+                    // exception on this current run of checks.
+                    return;
+                }
+
+                fillBuffer(trips + 1);
                 return;
             }
 
