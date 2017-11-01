@@ -31,6 +31,7 @@ import org.apache.storm.tuple.Values;
  * Represents the next 'Record' coming from a Consumer instance.
  */
 public class Record {
+    private final String consumerId;
     private final String namespace;
     private final int partition;
     private final long offset;
@@ -43,11 +44,16 @@ public class Record {
      * @param offset offset of the record.
      * @param values values of the record.
      */
-    public Record(final String namespace, final int partition, final long offset, final Values values) {
+    public Record(final String consumerId, final String namespace, final int partition, final long offset, final Values values) {
+        this.consumerId = consumerId;
         this.namespace = namespace;
         this.partition = partition;
         this.offset = offset;
         this.values = values;
+    }
+
+    public String getConsumerId() {
+        return consumerId;
     }
 
     public String getNamespace() {
@@ -69,7 +75,8 @@ public class Record {
     @Override
     public String toString() {
         return "Record{"
-            + "namespace='" + namespace + '\''
+            + "consumerId='" + consumerId + '\''
+            + ", namespace='" + namespace + '\''
             + ", partition=" + partition
             + ", offset=" + offset
             + ", values=" + values

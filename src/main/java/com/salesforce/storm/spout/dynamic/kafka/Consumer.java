@@ -325,7 +325,13 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         }
 
         // Return the record
-        return new Record(nextRecord.topic(), nextRecord.partition(), nextRecord.offset(), deserializedValues);
+        return new Record(
+            getConsumerId(),
+            nextRecord.topic(),
+            nextRecord.partition(),
+            nextRecord.offset(),
+            deserializedValues
+        );
     }
 
     /**
