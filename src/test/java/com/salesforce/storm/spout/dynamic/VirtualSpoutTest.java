@@ -437,6 +437,7 @@ public class VirtualSpoutTest {
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final Record expectedConsumerRecord = new Record(
+            expectedConsumerId.toString(),
             expectedTopic,
             expectedPartition,
             expectedOffset,
@@ -498,6 +499,7 @@ public class VirtualSpoutTest {
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final Record expectedConsumerRecord = new Record(
+            expectedConsumerId.toString(),
             expectedTopic,
             expectedPartition,
             expectedOffset,
@@ -564,20 +566,45 @@ public class VirtualSpoutTest {
         final long endingOffset = 4444L;
         final int partition = 4;
         final String topic = "MyTopic";
+        final String consumerId = "consumerId";
 
         // Define before offset
         final long beforeOffset = (endingOffset - 100);
         final long afterOffset = (endingOffset + 100);
 
         // Create a ConsumerRecord who's offset is BEFORE the ending offset, this should pass
-        final Record consumerRecordBeforeEnd = new Record(topic, partition, beforeOffset, new Values("before-key", "before-value"));
+        final Record consumerRecordBeforeEnd = new Record(
+            consumerId,
+            topic,
+            partition,
+            beforeOffset,
+            new Values("before-key", "before-value")
+        );
 
         // This ConsumerRecord is EQUAL to the limit, and thus should pass.
-        final Record consumerRecordEqualEnd = new Record(topic, partition, endingOffset, new Values("equal-key", "equal-value"));
+        final Record consumerRecordEqualEnd = new Record(
+            consumerId,
+            topic,
+            partition,
+            endingOffset,
+            new Values("equal-key", "equal-value")
+        );
 
         // These two should exceed the limit (since its >) and nothing should be returned.
-        final Record consumerRecordAfterEnd = new Record(topic, partition, afterOffset, new Values("after-key", "after-value"));
-        final Record consumerRecordAfterEnd2 = new Record(topic, partition, afterOffset + 1, new Values("after-key2", "after-value2"));
+        final Record consumerRecordAfterEnd = new Record(
+            consumerId,
+            topic,
+            partition,
+            afterOffset,
+            new Values("after-key", "after-value")
+        );
+        final Record consumerRecordAfterEnd2 = new Record(
+            consumerId,
+            topic,
+            partition,
+            afterOffset + 1,
+            new Values("after-key2", "after-value2")
+        );
 
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
 
@@ -703,6 +730,7 @@ public class VirtualSpoutTest {
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
         final Record expectedConsumerRecord = new Record(
+            expectedConsumerId.toString(),
             expectedTopic,
             expectedPartition,
             expectedOffset,
@@ -720,6 +748,7 @@ public class VirtualSpoutTest {
         final String unexpectedKey = "NotMyKey";
         final String unexpectedValue = "NotMyValue";
         final Record unexpectedConsumerRecord = new Record(
+            expectedConsumerId.toString(),
             expectedTopic,
             expectedPartition,
             unexpectedOffset,
