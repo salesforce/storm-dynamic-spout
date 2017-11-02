@@ -48,6 +48,16 @@ public class TriggerEvent {
 
     private String description;
 
+    /**
+     * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates whether or not a START or STOP
+     * request should be processed.
+     *
+     * @param type sideline type, either start of stop.
+     * @param data data bag, key => values.
+     * @param createdAt when the event was created.
+     * @param createdBy who created the event.
+     * @param description a description of the reason for the sideline request.
+     */
     public TriggerEvent(
         final SidelineType type,
         final Map<String,Object> data,

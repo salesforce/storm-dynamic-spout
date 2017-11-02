@@ -50,10 +50,13 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
+/**
+ * Test that the reference implementation for sideline triggers works correctly.
+ */
 public class ZookeeperWatchTriggerTest {
 
-    private final static String CREATED_BY = "Test";
-    private final static String DESCRIPTION = "Description";
+    private static final String CREATED_BY = "Test";
+    private static final String DESCRIPTION = "Description";
 
     /**
      * Create shared zookeeper test server.
@@ -62,8 +65,8 @@ public class ZookeeperWatchTriggerTest {
     public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
     /**
-     * Test that the sideline trigger opens and that it calls start and stop properly when nodes are changed
-     * @throws Exception Probably something bad
+     * Test that the sideline trigger opens and that it calls start and stop properly when nodes are changed.
+     * @throws Exception something bad
      */
     @Test
     public void testOpen() throws Exception {
@@ -152,6 +155,9 @@ public class ZookeeperWatchTriggerTest {
         return sharedZookeeperTestResource.getZookeeperTestServer();
     }
 
+    /**
+     * {@link FilterChainStepBuilder} implementation for testing.
+     */
     public static class MockFilterChainStepBuilder implements FilterChainStepBuilder {
 
         @Override
