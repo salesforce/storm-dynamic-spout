@@ -500,6 +500,37 @@ public class SidelineSpoutHandlerTest {
             spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier)
         );
 
+        // Call this again, basically we want to be able to call this without messing with state and nothing else should change,
+        // so we'll validate that number of vspouts stays the same and the filter chain stays the same too.
+        sidelineSpoutHandler.loadSidelines();
+
+        assertEquals(
+            "Spout should have two virtual spouts",
+            2,
+            spout.getTotalVirtualSpouts()
+        );
+
+        assertTrue(
+            "Spout should have the firehose VirtualSpout",
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+        );
+
+        assertTrue(
+            "Spout should have a VirtualSpout for the stop request",
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+        );
+
+        assertFalse(
+            "Spout should not have a VirtualSpout for the start request",
+            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier)
+        );
+
+        assertEquals(
+            "Firehose only has 1 filter",
+            1,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+        );
+
         // Now we're going to mess with the state of the spout and filter chain and see if things reload properly
         spout.removeVirtualSpout(stopRequestVirtualSpoutIdentifier);
         spout.removeVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier());
