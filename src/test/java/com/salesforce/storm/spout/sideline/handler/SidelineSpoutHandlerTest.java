@@ -67,7 +67,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class SidelineSpoutHandlerTest {
 
-    private String CONSUMER_ID_PREFIX = "VirtualSpoutPrefix";
+    private static String CONSUMER_ID_PREFIX = "VirtualSpoutPrefix";
 
     /**
      * Test the open method properly stores the spout's config.
@@ -477,16 +477,12 @@ public class SidelineSpoutHandlerTest {
 
         assertTrue(
             "Start request should be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(
-                startRequestId
-            )
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
         );
 
         assertFalse(
             "Stop request should not be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(
-                stopRequestId
-            )
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(stopRequestId)
         );
 
         // A new sideline spout should be added for our stopped request
@@ -520,9 +516,7 @@ public class SidelineSpoutHandlerTest {
 
         assertFalse(
             "Start request should not be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(
-                startRequestId
-            )
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
         );
 
         // The missing spout and filter chain step should be restored after this
@@ -541,9 +535,7 @@ public class SidelineSpoutHandlerTest {
 
         assertTrue(
             "Start request should be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(
-                startRequestId
-            )
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
         );
 
         // Note that I would love to mess with the filter chain on an existing VirtualSpout that isn't the FireHose, but there's no real way
