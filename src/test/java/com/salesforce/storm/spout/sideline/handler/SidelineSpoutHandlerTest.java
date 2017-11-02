@@ -470,9 +470,10 @@ public class SidelineSpoutHandlerTest {
         // Reload the sidelines, this is normally done via a thread on an interval - we're going to validate it behaves correctly now
         sidelineSpoutHandler.loadSidelines();
 
-        assertFalse(
+        assertEquals(
             "There should be a filter on the firehose for our start request",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().isEmpty()
+            1,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
         );
 
         assertTrue(
