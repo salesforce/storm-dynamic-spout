@@ -30,6 +30,7 @@ import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
+import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
@@ -247,6 +248,8 @@ public class VirtualSpoutTest {
         final FactoryManager factoryManager = spy(new FactoryManager(topologyConfig));
         when(factoryManager.createNewConsumerInstance()).thenReturn(mockConsumer);
 
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+
         // Create virtual spout identifier
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -256,7 +259,7 @@ public class VirtualSpoutTest {
             topologyConfig,
             mockTopologyContext,
             factoryManager,
-            new LogRecorder(),
+            metricsRecorder,
             null,
             null
         );
@@ -269,8 +272,10 @@ public class VirtualSpoutTest {
             anyMap(),
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
-            any(ZookeeperPersistenceAdapter.class
-        ), null, eq(null));
+            any(ZookeeperPersistenceAdapter.class),
+            eq(metricsRecorder),
+            eq(null)
+        );
 
         // Set expected exception
         expectedExceptionCallingOpenTwiceThrowsException.expect(IllegalStateException.class);
@@ -301,6 +306,8 @@ public class VirtualSpoutTest {
         when(mockFactoryManager.createNewPersistenceAdapterInstance()).thenReturn(mockPersistenceAdapter);
         when(mockFactoryManager.createNewConsumerInstance()).thenReturn(mockConsumer);
 
+        final MetricsRecorder metricsRecorder = new LogRecorder();
+
         // Create virtual spout identifier
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -310,7 +317,7 @@ public class VirtualSpoutTest {
             topologyConfig,
             mockTopologyContext,
             mockFactoryManager,
-            new LogRecorder(),
+            metricsRecorder,
             null,
             null
         );
@@ -330,7 +337,8 @@ public class VirtualSpoutTest {
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
             any(ZookeeperPersistenceAdapter.class),
-            null, eq(null)
+            eq(metricsRecorder),
+            eq(null)
         );
     }
 
