@@ -148,14 +148,23 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- For simple Json Serialization -->
+        <!-- Apache Curator Recipes - Optional Dependency -->
+        <!-- Only required if you make use of the ZookeeperWatchTrigger -->
         <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-            <version>1.1.1</version>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>${curatorVersion}</version>
+            <optional>true</optional>
         </dependency>
 
-    <!-- Testing Dependencies -->
+        <!-- For JSON Serialization -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.2</version>
+        </dependency>
+
+        <!-- Testing Dependencies -->
 
         <!-- Deal with hamcrest incompatibilities...argh -->
         <dependency>

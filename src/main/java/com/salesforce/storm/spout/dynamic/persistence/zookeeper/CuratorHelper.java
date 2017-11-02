@@ -26,14 +26,16 @@
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Charsets;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +55,11 @@ public class CuratorHelper {
     private CuratorFramework curator;
 
     /**
+     * JSON parser.
+     */
+    private final Gson gson = new GsonBuilder().create();
+
+    /**
      * Helper methods for common tasks when working with Curator.
      * @param curator curator instance.
      */
@@ -68,7 +75,7 @@ public class CuratorHelper {
      */
     public void writeJson(String path, Map data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, JSONValue.toJSONString(data).getBytes(Charsets.UTF_8));
+        writeBytes(path, gson.toJson(data).getBytes(Charsets.UTF_8));
     }
 
     /**
@@ -84,7 +91,10 @@ public class CuratorHelper {
             if (bytes == null) {
                 return null;
             }
-            return (Map<K, V>) JSONValue.parse(new String(bytes, Charsets.UTF_8));
+            final Gson gson = new GsonBuilder()
+                .setDateFormat("yyyy-MM-dd HH:mm:ss")
+                .create();
+            return (Map<K, V>) gson.fromJson(new String(bytes, Charsets.UTF_8), HashMap.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
