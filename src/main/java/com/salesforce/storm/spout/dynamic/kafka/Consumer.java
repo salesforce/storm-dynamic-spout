@@ -37,17 +37,15 @@ import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.PartitionOffsetsManager;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.InvalidOffsetException;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
-import org.apache.kafka.common.Metric;
-import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.internals.Topic;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +58,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A high level kafka consumer that handles state/log offset management in a way that supports
@@ -92,11 +91,20 @@ import java.util.Set;
  */
 // TODO - rename this class?
 public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Consumer {
-    // For logging.
+
+    /**
+     * Logger for logging logs.
+     */
     private static final Logger logger = LoggerFactory.getLogger(Consumer.class);
 
-    // Kafka Consumer Instance and its Config.
+    /**
+     * KafkaConsumer configuration.
+     */
     private KafkaConsumerConfig consumerConfig;
+
+    /**
+     * KafkaConsumer, for pulling messages off of a Kafka topic.
+     */
     private KafkaConsumer<byte[], byte[]> kafkaConsumer;
 
     /**
@@ -110,6 +118,11 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * loading the last known consumer state back in.
      */
     private PersistenceAdapter persistenceAdapter;
+
+    /**
+     * MetricsRecorder for reporting metrics from the consumer.
+     */
+    private MetricsRecorder metricsRecorder;
 
     /**
      * Our Deserializer, it deserializes messages from Kafka into objects.
@@ -126,7 +139,21 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * Used to buffers messages read from Kafka.
      */
     private ConsumerRecords<byte[], byte[]> buffer = null;
+
+    /**
+     * Used to iterate over messages buffered from kafka.
+     */
     private Iterator<ConsumerRecord<byte[], byte[]>> bufferIterator = null;
+
+    /**
+     * Clock instance, for controlling time based operations.
+     */
+    private transient Clock clock = Clock.systemUTC();
+
+    /**
+     * Last time that status was reported for metrics.
+     */
+    private Long lastReportedStatusMillis;
 
     /**
      * Default constructor.
@@ -162,17 +189,20 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * Handles connecting to the Kafka cluster, determining which partitions to subscribe to,
      * and based on previously saved state from ConsumerStateManager, seek to the last positions processed on
      * each partition.
-     * @param spoutConfig Configuration of Spout.
+     * @param spoutConfig spout configuration.
      * @param virtualSpoutIdentifier VirtualSpout running this consumer.
      * @param consumerPeerContext defines how many instances in total are running of this consumer.
-     * @param persistenceAdapter The persistence adapter used to manage any state.
-     * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
+     * @param persistenceAdapter persistence adapter used to manage state.
+     * @param metricsRecorder metrics recorder for reporting metrics from the consumer.
+     * @param startingState (optional) if not null, this defines the state at which the consumer should resume from.
      */
+    @Override
     public void open(
         final Map<String, Object> spoutConfig,
         final VirtualSpoutIdentifier virtualSpoutIdentifier,
         final ConsumerPeerContext consumerPeerContext,
         final PersistenceAdapter persistenceAdapter,
+        final MetricsRecorder metricsRecorder,
         final ConsumerState startingState
     ) {
         // Simple state enforcement.
@@ -205,7 +235,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         consumerConfig.setIndexOfConsumer(
             consumerPeerContext.getInstanceNumber()
         );
-        
+
         // Create deserializer.
         final Deserializer deserializer = FactoryManager.createNewInstance(
             (String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS)
@@ -214,6 +244,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Save references
         this.consumerConfig = consumerConfig;
         this.persistenceAdapter = persistenceAdapter;
+        this.metricsRecorder = metricsRecorder;
         this.deserializer = deserializer;
 
         // Get partitions
@@ -283,9 +314,12 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * Ask the consumer for the next message from Kafka.
      * @return The next Record read from kafka, or null if no such msg is available.
      */
+    @Override
     public Record nextRecord() {
         // Fill our buffer if its empty
         fillBuffer();
+
+        reportStatus();
 
         // Check our iterator for the next message, it's only null at this point if something bad is happening inside
         // of the fileBuffer() method, like it bailed after too much recursion. There will be a lot for that scenario.
@@ -330,6 +364,30 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     }
 
     /**
+     * Reports kafka consumer statistics at an interval.
+     */
+    private void reportStatus() {
+        // If we've reported status more recently than 30 seconds we skip over this.
+        if (lastReportedStatusMillis != null && TimeUnit.MILLISECONDS.toSeconds(clock.millis() - lastReportedStatusMillis) < 30) {
+            return;
+        }
+
+        final Map<TopicPartition, Long> topicPartitions = getKafkaConsumer().endOffsets(
+            getKafkaConsumer().assignment()
+        );
+
+        for (final Map.Entry<TopicPartition, Long> topicPartition : topicPartitions.entrySet()) {
+            metricsRecorder.assignValue(
+                getClass(),
+                "endOffset.topic." + topicPartition.getKey().topic() + ".partition." + topicPartition.getKey().partition(),
+                topicPartition.getValue()
+            );
+        }
+
+        lastReportedStatusMillis = clock.millis();
+    }
+
+    /**
      * Mark a particular offset on a Topic/Partition as having been successfully processed.
      * @param consumerPartition The Topic & Partition the offset belongs to
      * @param offset The offset that should be marked as completed.
@@ -345,6 +403,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * @param partition The partition the offset belongs to.
      * @param offset The offset that should be marked as completed.
      */
+    @Override
     public void commitOffset(final String namespace, final int partition, final long offset) {
         commitOffset(new ConsumerPartition(namespace, partition), offset);
     }
@@ -353,6 +412,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * Forces the Consumer's current state to be persisted.
      * @return A copy of the state that was persisted.
      */
+    @Override
     public ConsumerState flushConsumerState() {
         // Get the current state
         final ConsumerState consumerState = partitionOffsetsManager.getCurrentState();
@@ -525,6 +585,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     /**
      * Close out Kafka connections.
      */
+    @Override
     public void close() {
         // If our consumer is already null
         if (kafkaConsumer == null) {
@@ -575,6 +636,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * @param consumerPartitionToUnsubscribe the Topic/Partition to stop consuming from.
      * @return boolean, true if unsubscribed, false if it did not.
      */
+    @Override
     public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
         // Determine what we're currently assigned to,
         // We clone the returned set so we can modify it.
@@ -607,6 +669,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      *
      * @return The Consumer's current state.
      */
+    @Override
     public ConsumerState getCurrentState() {
         return partitionOffsetsManager.getCurrentState();
     }
@@ -630,6 +693,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * This is typically called when the consumer has finished reading
      * everything that it wants to read, and does not need to be resumed.
      */
+    @Override
     public void removeConsumerState() {
         logger.info("Removing Consumer state for ConsumerId: {}", getConsumerId());
 
@@ -668,22 +732,5 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
         // Return TopicPartitions for our assigned partitions
         return topicPartitions;
-    }
-
-    private Map<MetricName, ? extends Metric> metrics() {
-        return getKafkaConsumer().metrics();
-    }
-
-    /**
-     * @return The maximum lag of the consumer.
-     */
-    public double getMaxLag() {
-        for (Map.Entry<MetricName, ? extends Metric> entry : metrics().entrySet()) {
-            if (entry.getKey().name().equals("records-lag-max")) {
-                return entry.getValue().value();
-            }
-        }
-        // Fall thru return value?
-        return -1.0;
     }
 }

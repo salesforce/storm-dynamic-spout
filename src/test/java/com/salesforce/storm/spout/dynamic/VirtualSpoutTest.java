@@ -270,7 +270,7 @@ public class VirtualSpoutTest {
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
             any(ZookeeperPersistenceAdapter.class
-        ), eq(null));
+        ), null, eq(null));
 
         // Set expected exception
         expectedExceptionCallingOpenTwiceThrowsException.expect(IllegalStateException.class);
@@ -330,7 +330,7 @@ public class VirtualSpoutTest {
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
             any(ZookeeperPersistenceAdapter.class),
-            eq(null)
+            null, eq(null)
         );
     }
 

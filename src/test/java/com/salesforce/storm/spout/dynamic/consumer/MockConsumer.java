@@ -28,13 +28,13 @@ package com.salesforce.storm.spout.dynamic.consumer;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -57,6 +57,7 @@ public class MockConsumer implements Consumer {
         VirtualSpoutIdentifier virtualSpoutIdentifier,
         ConsumerPeerContext consumerPeerContext,
         PersistenceAdapter persistenceAdapter,
+        MetricsRecorder metricsRecorder,
         ConsumerState startingState
     ) {
         this.activeVirtualSpoutIdentifier = virtualSpoutIdentifier;
