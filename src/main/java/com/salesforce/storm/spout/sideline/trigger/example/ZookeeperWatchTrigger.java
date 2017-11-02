@@ -100,79 +100,6 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         .create();
 
     /**
-     * Watch implementation for the sideline trigger node in Zookeeper.
-     */
-    private class SidelineTriggerWatch implements PathChildrenCacheListener {
-
-        /**
-         * Path that this watch was set for.
-         */
-        private final String path;
-
-        /**
-         * Whether or not the initialization event has been received for this listener.
-         */
-        private boolean isInitialized = false;
-
-        /**
-         * Watch implementation for the sideline trigger node in Zookeeper.
-         * @param path path that this watch was set for.
-         */
-        private SidelineTriggerWatch(final String path) {
-            this.path = path;
-        }
-
-        /**
-         * Receives events for this node cache and handles them.
-         * @param client curator for interacting with zookeeper.
-         * @param event specific event from the node path being watched.
-         * @throws Exception most likely something is wrong with the zookeeper connection.
-         */
-        @Override
-        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-            logger.info("Received cache event {}", event);
-
-            if (event == null) {
-                logger.warn("Received a null event, this shouldn't happen!");
-                return;
-            }
-
-            if (event.getType() == null) {
-                logger.warn("Received an event, but there was no type, this shouldn't happen!");
-                return;
-            }
-
-            // As long as this is a path related event...
-            if (event.getData() != null && event.getData().getPath() != null) {
-                logger.info("Event path begins with this instance's path {} = {}", path, event.getData().getPath().startsWith(this.path));
-            }
-
-            // Refresh the event from zookeeper, so we have the most current copy
-            final TriggerEvent triggerEvent = getTriggerEvent(event.getData().getData());
-
-            switch (event.getType()) {
-                case INITIALIZED:
-                    isInitialized = true;
-                    break;
-                case CHILD_ADDED:
-                case CHILD_UPDATED:
-                    if (isInitialized) {
-                        handleSidelining(triggerEvent);
-                    }
-                    break;
-                case CHILD_REMOVED:
-                case CONNECTION_SUSPENDED:
-                case CONNECTION_RECONNECTED:
-                case CONNECTION_LOST:
-                    break;
-                default:
-                    logger.info("Unidentified event {}", event);
-                    break;
-            }
-        }
-    }
-
-    /**
      * Set the {@link SidelineController} on this trigger instance.
      * @param sidelineController sideline controller instance.
      */
@@ -369,6 +296,79 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         } catch (Exception e) {
             logger.error("Unable to parse trigger event {} {}", json, e);
             return null;
+        }
+    }
+
+    /**
+     * Watch implementation for the sideline trigger node in Zookeeper.
+     */
+    private class SidelineTriggerWatch implements PathChildrenCacheListener {
+
+        /**
+         * Path that this watch was set for.
+         */
+        private final String path;
+
+        /**
+         * Whether or not the initialization event has been received for this listener.
+         */
+        private boolean isInitialized = false;
+
+        /**
+         * Watch implementation for the sideline trigger node in Zookeeper.
+         * @param path path that this watch was set for.
+         */
+        private SidelineTriggerWatch(final String path) {
+            this.path = path;
+        }
+
+        /**
+         * Receives events for this node cache and handles them.
+         * @param client curator for interacting with zookeeper.
+         * @param event specific event from the node path being watched.
+         * @throws Exception most likely something is wrong with the zookeeper connection.
+         */
+        @Override
+        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+            logger.info("Received cache event {}", event);
+
+            if (event == null) {
+                logger.warn("Received a null event, this shouldn't happen!");
+                return;
+            }
+
+            if (event.getType() == null) {
+                logger.warn("Received an event, but there was no type, this shouldn't happen!");
+                return;
+            }
+
+            // As long as this is a path related event...
+            if (event.getData() != null && event.getData().getPath() != null) {
+                logger.info("Event path begins with this instance's path {} = {}", path, event.getData().getPath().startsWith(this.path));
+            }
+
+            // Refresh the event from zookeeper, so we have the most current copy
+            final TriggerEvent triggerEvent = getTriggerEvent(event.getData().getData());
+
+            switch (event.getType()) {
+                case INITIALIZED:
+                    isInitialized = true;
+                    break;
+                case CHILD_ADDED:
+                case CHILD_UPDATED:
+                    if (isInitialized) {
+                        handleSidelining(triggerEvent);
+                    }
+                    break;
+                case CHILD_REMOVED:
+                case CONNECTION_SUSPENDED:
+                case CONNECTION_RECONNECTED:
+                case CONNECTION_LOST:
+                    break;
+                default:
+                    logger.info("Unidentified event {}", event);
+                    break;
+            }
         }
     }
 }
