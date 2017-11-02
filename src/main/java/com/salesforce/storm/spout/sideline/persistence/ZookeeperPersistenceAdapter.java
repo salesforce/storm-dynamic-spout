@@ -177,15 +177,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         final FilterChainStep step = parseJsonToFilterChainSteps(json);
 
-        final Long startingOffset = (Long) json.get("startingOffset");
-        final Long endingOffset = (Long) json.get("endingOffset");
+        final Double startingOffset = (Double) json.get("startingOffset");
+        final Double endingOffset = (Double) json.get("endingOffset");
 
         return new SidelinePayload(
             type,
             id,
             new SidelineRequest(id, step),
-            startingOffset,
-            endingOffset
+            startingOffset != null ? startingOffset.longValue() : null,
+            endingOffset != null ? endingOffset.longValue() : null
         );
     }
 
