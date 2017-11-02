@@ -376,11 +376,29 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             getKafkaConsumer().assignment()
         );
 
+        // Capture the ending offset for this topic/partition on the kafka topic
         for (final Map.Entry<TopicPartition, Long> topicPartition : topicPartitions.entrySet()) {
             metricsRecorder.assignValue(
                 getClass(),
                 "endOffset.topic." + topicPartition.getKey().topic() + ".partition." + topicPartition.getKey().partition(),
                 topicPartition.getValue()
+            );
+        }
+
+        // Capture the difference, or the "lag" for this topic/partition on the kafka topic
+        for (final ConsumerPartition consumerPartition : getCurrentState().getConsumerPartitions()) {
+            final TopicPartition topicPartition = new TopicPartition(consumerPartition.namespace(), consumerPartition.partition());
+
+            if (!topicPartitions.containsKey(topicPartition)) {
+                continue;
+            }
+
+            final Long endOffset = topicPartitions.get(topicPartition);
+
+            metricsRecorder.assignValue(
+                getClass(),
+                "lag.topic." + consumerPartition.namespace() + ".partition." + consumerPartition.partition(),
+                endOffset - getCurrentState().getOffsetForNamespaceAndPartition(consumerPartition)
             );
         }
 
