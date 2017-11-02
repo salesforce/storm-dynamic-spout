@@ -163,8 +163,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * Loads existing sideline requests that have been previously persisted and checks to make sure that they are running.
      */
-    private void loadSidelines() {
-        final VirtualSpoutIdentifier fireHoseIdentifier = new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID);
+    void loadSidelines() {
+        final VirtualSpoutIdentifier fireHoseIdentifier = getFireHoseSpoutIdentifier();
 
         // If we haven't spun up a VirtualSpout yet, we create it here.
         if (fireHoseSpout == null) {
@@ -542,6 +542,14 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     VirtualSpout getFireHoseSpout() {
         return fireHoseSpout;
+    }
+
+    /**
+     * Get the firehose virtual spout identifier.
+     * @return firehose virtual spout identifier.
+     */
+    VirtualSpoutIdentifier getFireHoseSpoutIdentifier() {
+        return new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID);
     }
 
     /**
