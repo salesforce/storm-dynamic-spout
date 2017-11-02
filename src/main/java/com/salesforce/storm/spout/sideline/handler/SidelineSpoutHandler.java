@@ -58,6 +58,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handler for managing sidelines on a DynamicSpout.
@@ -153,6 +156,20 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         createSidelineTriggers();
 
+        final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
+
+        final long refreshIntervalMillis = TimeUnit.SECONDS.toMillis(refreshIntervalSeconds);
+
+        // Repeat our sidelines check periodically
+        final Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                loadSidelines();
+            }
+        }, refreshIntervalMillis, refreshIntervalMillis);
+
+        // Why not just start the timer at 0? Because we want to block onSpoutOpen() until the first run of loadSidelines()
         loadSidelines();
 
         for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
