@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger.example;
 
+import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.util.Date;
@@ -47,7 +48,24 @@ public class TriggerEvent {
 
     private String description;
 
-    private TriggerEvent() {
+    public TriggerEvent(
+        final SidelineType type,
+        final Map<String,Object> data,
+        final Date createdAt,
+        final String createdBy,
+        final String description
+    ) {
+        Preconditions.checkNotNull(type, "Type is required.");
+        Preconditions.checkNotNull(data, "Data payload is required (But we do accept empty maps!).");
+        Preconditions.checkNotNull(createdAt, "Created at time is required.");
+        Preconditions.checkNotNull(createdBy, "Created by is required.");
+        Preconditions.checkNotNull(description, "Description is required.");
+
+        this.type = type;
+        this.data = data;
+        this.createdAt = createdAt;
+        this.createdBy = createdBy;
+        this.description = description;
     }
 
     public SidelineType getType() {
