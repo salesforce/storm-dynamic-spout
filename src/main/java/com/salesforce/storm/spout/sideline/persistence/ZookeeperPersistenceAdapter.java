@@ -164,6 +164,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         // Read!
         final String path = getZkRequestStatePathForPartition(id.toString(), partitionId);
+        // TODO: We should make a real object for this and update readJson() to support a class declaration
         Map<Object, Object> json = curatorHelper.readJson(path);
         logger.debug("Read request state from Zookeeper at {}: {}", path, json);
 
