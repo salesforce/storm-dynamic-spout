@@ -99,7 +99,8 @@ public class CuratorHelperTest {
             assertNotNull("Not null result", resultMap);
             assertEquals("Has 3 keys", 3, resultMap.size());
             assertEquals("Has key 1", "value1", resultMap.get("key1"));
-            assertEquals("Has key 2", 2L, resultMap.get("key2"));
+            // Note, we put in a Long and got a Double so if we want Long we need to do some casting on maps
+            assertEquals("Has key 2", 2.0, resultMap.get("key2"));
             assertEquals("Has key 3", true, resultMap.get("key3"));
         }
     }
