@@ -97,11 +97,6 @@ public class MockConsumer implements Consumer {
     }
 
     @Override
-    public double getMaxLag() {
-        return 0;
-    }
-
-    @Override
     public void removeConsumerState() {
 
     }
