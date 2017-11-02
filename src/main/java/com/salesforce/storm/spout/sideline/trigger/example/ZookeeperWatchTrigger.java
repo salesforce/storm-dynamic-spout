@@ -32,6 +32,7 @@ import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
+import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.handler.SidelineController;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -98,22 +99,15 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         .setDateFormat("yyyy-MM-dd HH:mm:ss")
         .create();
 
-    // TODO: Move this to a separate class
-
     /**
      * Watch implementation for the sideline trigger node in Zookeeper.
      */
-    private static class SidelineTriggerWatch implements PathChildrenCacheListener {
+    private class SidelineTriggerWatch implements PathChildrenCacheListener {
 
         /**
          * Path that this watch was set for.
          */
         private final String path;
-
-        /**
-         * Calling trigger class, so that we can start and stop sidelining.
-         */
-        private final ZookeeperWatchTrigger trigger;
 
         /**
          * Whether or not the initialization event has been received for this listener.
@@ -123,11 +117,9 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         /**
          * Watch implementation for the sideline trigger node in Zookeeper.
          * @param path path that this watch was set for.
-         * @param trigger calling trigger class, so that we can start and stop sidelining.
          */
-        private SidelineTriggerWatch(final String path, final ZookeeperWatchTrigger trigger) {
+        private SidelineTriggerWatch(final String path) {
             this.path = path;
-            this.trigger = trigger;
         }
 
         /**
@@ -165,7 +157,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                 case CHILD_ADDED:
                 case CHILD_UPDATED:
                     if (isInitialized) {
-                        trigger.handleSidelining(triggerEvent);
+                        handleSidelining(triggerEvent);
                     }
                     break;
                 case CHILD_REMOVED:
@@ -176,36 +168,6 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                 default:
                     logger.info("Unidentified event {}", event);
                     break;
-            }
-        }
-
-        // TODO: Move these out of this class
-
-        /**
-         * Load a trigger event from zookeeper.
-         * @return Trigger event
-         */
-        private TriggerEvent getTriggerEvent(final byte[] data) {
-            try {
-                final String json = new String(data, Charset.forName("UTF-8"));
-                return getTriggerEventFromJson(json);
-            } catch (Exception e) {
-                logger.error("Unable to get trigger event from zookeeper {}", e);
-                return null;
-            }
-        }
-
-        /**
-         * Parse a trigger event from some JSON.
-         * @param json JSON to parse
-         * @return Trigger event
-         */
-        private TriggerEvent getTriggerEventFromJson(final String json) {
-            try {
-                return gson.fromJson(json, TriggerEvent.class);
-            } catch (Exception e) {
-                logger.error("Unable to parse trigger event {} {}", json, e);
-                return null;
             }
         }
     }
@@ -254,13 +216,29 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
 
         for (final String root : roots) {
             try {
+                // Check if this path exists
+                if (curator.checkExists().forPath(root) == null) {
+                    logger.warn("Configured root {} does not exist", root);
+                    continue;
+                }
+
+                // Load the existing requests from it
+                final List<String> sidelineRequests = curator.getChildren().forPath(root);
+
+                for (final String sidelineRequest : sidelineRequests) {
+                    final TriggerEvent triggerEvent = getTriggerEventFromJson(sidelineRequest);
+
+                    logger.info("Loading existing TriggerEvent {}", triggerEvent);
+
+                    handleSidelining(triggerEvent);
+                }
+
                 logger.info("Creating cache for {}", root);
 
-                // TODO: Load existing state and process events
-
+                // Now setup our watch so that we see future changes as they come through
                 final PathChildrenCache cache = new PathChildrenCache(curator, root, true);
                 cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-                cache.getListenable().addListener(new SidelineTriggerWatch(root, this));
+                cache.getListenable().addListener(new SidelineTriggerWatch(root));
 
                 caches.add(cache);
             } catch (Exception ex) {
@@ -274,6 +252,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      */
     @Override
     public void close() {
+        // Close each of the caches that we originally opened
         for (PathChildrenCache cache : caches) {
             try {
                 cache.close();
@@ -290,7 +269,11 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         isOpen = false;
     }
 
-    void handleSidelining(final TriggerEvent triggerEvent) {
+    /**
+     * Using a trigger event process a START/STOP sideline request.
+     * @param triggerEvent trigger event.
+     */
+    private void handleSidelining(final TriggerEvent triggerEvent) {
         if (triggerEvent == null) {
             logger.warn("Received a null TriggerEvent");
             return;
@@ -364,5 +347,28 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         }
 
         return new SidelineRequestIdentifier(identifier.toString());
+    }
+
+    /**
+     * Create a trigger event from the provided data.
+     * @return Trigger event
+     */
+    private TriggerEvent getTriggerEvent(final byte[] data) {
+        final String json = new String(data, Charset.forName("UTF-8"));
+        return getTriggerEventFromJson(json);
+    }
+
+    /**
+     * Parse a trigger event from some JSON.
+     * @param json JSON to parse
+     * @return Trigger event
+     */
+    private TriggerEvent getTriggerEventFromJson(final String json) {
+        try {
+            return gson.fromJson(json, TriggerEvent.class);
+        } catch (Exception e) {
+            logger.error("Unable to parse trigger event {} {}", json, e);
+            return null;
+        }
     }
 }
