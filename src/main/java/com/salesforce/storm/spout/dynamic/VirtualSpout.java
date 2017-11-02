@@ -271,6 +271,8 @@ public class VirtualSpout implements DelegateSpout {
 
         startingState = null;
         endingState = null;
+
+        isOpened = false;
     }
 
     /**

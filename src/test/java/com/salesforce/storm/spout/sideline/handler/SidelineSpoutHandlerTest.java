@@ -546,6 +546,11 @@ public class SidelineSpoutHandlerTest {
             )
         );
 
+        // Note that I would love to mess with the filter chain on an existing VirtualSpout that isn't the FireHose, but there's no real way
+        // to get to the other spouts right now. This may not even be relevant either, because we never manipulate the sideline's filter
+        // chains after they've been opened (whereas we do with the firehose). In fact, it's not even possible to do because of the
+        // aforementioned lack of accessibility to non-firehose spouts.
+
         spout.close();
     }
 
