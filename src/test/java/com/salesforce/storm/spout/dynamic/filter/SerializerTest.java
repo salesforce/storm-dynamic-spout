@@ -55,8 +55,6 @@ public class SerializerTest {
             filterChainStep
         );
 
-        System.out.println(serializedFilterChainStep);
-
         assertEquals(
             "FilterChainStep looks right serialized",
             "rO0ABXNyADZjb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5keW5hbWljLmZpbHRlci5OdW1iZXJGaWx0ZXKP3jjXh+gwbgIAAUkABm51bWJlcnhwAAAAKg==",

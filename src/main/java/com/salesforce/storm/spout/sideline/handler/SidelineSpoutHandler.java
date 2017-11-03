@@ -156,7 +156,14 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         createSidelineTriggers();
 
-        final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
+        final long refreshIntervalSeconds;
+
+        // This should be set by SidelineConfig.setDefaults(), but just in case we want to avoid the NullPointer
+        if (spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)) {
+            refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
+        } else {
+            refreshIntervalSeconds = 600;
+        }
 
         final long refreshIntervalMillis = TimeUnit.SECONDS.toMillis(refreshIntervalSeconds);
 
