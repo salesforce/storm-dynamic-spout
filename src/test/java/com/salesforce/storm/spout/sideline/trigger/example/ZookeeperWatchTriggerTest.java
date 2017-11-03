@@ -28,6 +28,8 @@ package com.salesforce.storm.spout.sideline.trigger.example;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
@@ -40,12 +42,13 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.TestingServer;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -72,9 +75,17 @@ public class ZookeeperWatchTriggerTest {
     public void testOpen() throws Exception {
         final String zkRoot = "/test-trigger";
 
-        final Map<String,Object> config = new HashMap<>();
+        final String consumerId = "VirtualSpoutPrefix";
+
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
+        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
         config.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             InMemoryPersistenceAdapter.class.getName()
@@ -85,8 +96,7 @@ public class ZookeeperWatchTriggerTest {
             Tools.stripKeyPrefix(Config.PREFIX, config)
         );
 
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        final SidelineSpoutHandler sidelineSpoutHandler = Mockito.mock(SidelineSpoutHandler.class);
 
         final ZookeeperWatchTrigger trigger = new ZookeeperWatchTrigger();
         trigger.setSidelineController(sidelineSpoutHandler);
@@ -97,30 +107,15 @@ public class ZookeeperWatchTriggerTest {
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
 
-        final Map<String,Object> startData = new HashMap<>();
-
+        final Map<String,Object> data = new HashMap<>();
         final TriggerEvent startTriggerEvent = new TriggerEvent(
             SidelineType.START,
-            startData,
+            data,
             new Date(),
             CREATED_BY,
             DESCRIPTION
         );
-
         final String id1 = "foo";
-
-        final Map<String,Object> stopData = new HashMap<>();
-
-        final TriggerEvent stopTriggerEvent = new TriggerEvent(
-            SidelineType.STOP,
-            stopData,
-            new Date(),
-            CREATED_BY,
-            DESCRIPTION
-        );
-
-        final String id2 = "bar";
-
         final String path1 = zkRoot + "/" + id1;
 
         // Create a starting request
@@ -129,6 +124,23 @@ public class ZookeeperWatchTriggerTest {
             .creatingParentsIfNeeded()
             .forPath(zkRoot + "/" + id1, gson.toJson(startTriggerEvent).getBytes());
 
+        // Since this is an async operation, use await() to watch for when the nodes are created
+        await()
+            .until(() -> currator.checkExists().forPath(path1), notNullValue());
+
+        Mockito.verify(sidelineSpoutHandler).startSidelining(
+            new ArrayList<>(trigger.getSidelineRequests()).get(0)
+        );
+
+        final Map<String,Object> stopData = new HashMap<>();
+        final TriggerEvent stopTriggerEvent = new TriggerEvent(
+            SidelineType.STOP,
+            stopData,
+            new Date(),
+            CREATED_BY,
+            DESCRIPTION
+        );
+        final String id2 = "bar";
         final String path2 = zkRoot + "/" + id2;
 
         // Create a stopping request
@@ -137,14 +149,12 @@ public class ZookeeperWatchTriggerTest {
             .creatingParentsIfNeeded()
             .forPath(path2, gson.toJson(stopTriggerEvent).getBytes());
 
-        // Since this is an async operation, use await() to watch for when the nodes are created
         await()
-            .atMost(5, TimeUnit.SECONDS)
-            .until(() -> currator.checkExists().forPath(path1), notNullValue());
-
-        await()
-            .atMost(5, TimeUnit.SECONDS)
             .until(() -> currator.checkExists().forPath(path2), notNullValue());
+
+        Mockito.verify(sidelineSpoutHandler).stopSidelining(
+            new ArrayList<>(trigger.getSidelineRequests()).get(1)
+        );
 
         // Clean it all up
         trigger.close();

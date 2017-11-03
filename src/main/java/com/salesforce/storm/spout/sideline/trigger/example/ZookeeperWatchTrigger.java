@@ -52,8 +52,10 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Sideline trigger that uses Zookeeper watches for triggering start and stop requests.
@@ -91,6 +93,8 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      * All of the caches that we set up, so that we can stop them when we close the trigger.
      */
     private final List<PathChildrenCache> caches = new ArrayList<>();
+
+    private final Set<SidelineRequest> sidelineRequests = new HashSet<>();
 
     /**
      * JSON parser.
@@ -146,7 +150,12 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                 // Check if this path exists
                 if (curator.checkExists().forPath(root) == null) {
                     logger.warn("Configured root {} does not exist", root);
-                    continue;
+
+                    // Attempt to create the root if it does not exist.
+                    curator
+                        .create()
+                        .creatingParentsIfNeeded()
+                        .forPath(root, "".getBytes());
                 }
 
                 // Load the existing requests from it
@@ -213,6 +222,10 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             return;
         }
 
+        // Track all of the sideline requests we've built from TriggerEvent's
+        if (!sidelineRequests.contains(sidelineRequest)) {
+            sidelineRequests.add(sidelineRequest);
+        }
 
         if (triggerEvent.getType().equals(SidelineType.START)) {
             logger.info("Starting sideline request {} from event {}", sidelineRequest, triggerEvent);
@@ -299,6 +312,10 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         }
     }
 
+    Set<SidelineRequest> getSidelineRequests() {
+        return this.sidelineRequests;
+    }
+
     /**
      * Watch implementation for the sideline trigger node in Zookeeper.
      */
@@ -342,14 +359,6 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                 return;
             }
 
-            // As long as this is a path related event...
-            if (event.getData() != null && event.getData().getPath() != null) {
-                logger.info("Event path begins with this instance's path {} = {}", path, event.getData().getPath().startsWith(this.path));
-            }
-
-            // Refresh the event from zookeeper, so we have the most current copy
-            final TriggerEvent triggerEvent = getTriggerEvent(event.getData().getData());
-
             switch (event.getType()) {
                 case INITIALIZED:
                     isInitialized = true;
@@ -357,6 +366,9 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                 case CHILD_ADDED:
                 case CHILD_UPDATED:
                     if (isInitialized) {
+                        // Refresh the event from zookeeper, so we have the most current copy
+                        final TriggerEvent triggerEvent = getTriggerEvent(event.getData().getData());
+
                         handleSidelining(triggerEvent);
                     }
                     break;
