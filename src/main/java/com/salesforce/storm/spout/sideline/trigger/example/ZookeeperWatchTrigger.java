@@ -172,10 +172,21 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
 
                 logger.info("Creating cache for {}", root);
 
+                final SidelineTriggerWatch watch = new SidelineTriggerWatch(root);
+
                 // Now setup our watch so that we see future changes as they come through
                 final PathChildrenCache cache = new PathChildrenCache(curator, root, true);
                 cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-                cache.getListenable().addListener(new SidelineTriggerWatch(root));
+                cache.getListenable().addListener(watch);
+
+                // Block the process until we have received our initialization event.
+                while (!watch.isInitialized()) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException ex) {
+                        logger.error("Interrupted while waiting for the listener to initialize.");
+                    }
+                }
 
                 caches.add(cache);
             } catch (Exception ex) {
@@ -382,6 +393,10 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                     logger.info("Unidentified event {}", event);
                     break;
             }
+        }
+
+        public boolean isInitialized() {
+            return isInitialized;
         }
     }
 }

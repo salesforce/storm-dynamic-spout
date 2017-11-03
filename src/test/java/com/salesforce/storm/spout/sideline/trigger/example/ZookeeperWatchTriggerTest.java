@@ -37,6 +37,7 @@ import com.salesforce.storm.spout.dynamic.utils.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.test.TestingServer;
@@ -44,11 +45,11 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -73,7 +74,7 @@ public class ZookeeperWatchTriggerTest {
      */
     @Test
     public void testOpenWithNewEvents() throws Exception {
-        final String zkRoot = "/test-trigger";
+        final String zkRoot = "/test-trigger" + System.currentTimeMillis();
 
         final String consumerId = "VirtualSpoutPrefix";
 
@@ -107,10 +108,11 @@ public class ZookeeperWatchTriggerTest {
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
 
-        final Map<String,Object> data = new HashMap<>();
+        final Map<String,Object> startData = new HashMap<>();
+        startData.put("id", "start");
         final TriggerEvent startTriggerEvent = new TriggerEvent(
             SidelineType.START,
-            data,
+            startData,
             new Date(),
             CREATED_BY,
             DESCRIPTION
@@ -128,11 +130,15 @@ public class ZookeeperWatchTriggerTest {
         await()
             .until(() -> currator.checkExists().forPath(path1), notNullValue());
 
+        await()
+            .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());
+
         Mockito.verify(sidelineSpoutHandler).startSidelining(
-            new ArrayList<>(trigger.getSidelineRequests()).get(0)
+            findSidelineRequest("start", trigger.getSidelineRequests())
         );
 
         final Map<String,Object> stopData = new HashMap<>();
+        stopData.put("id", "stop");
         final TriggerEvent stopTriggerEvent = new TriggerEvent(
             SidelineType.STOP,
             stopData,
@@ -152,8 +158,11 @@ public class ZookeeperWatchTriggerTest {
         await()
             .until(() -> currator.checkExists().forPath(path2), notNullValue());
 
+        await()
+            .until(() -> findSidelineRequest("stop", trigger.getSidelineRequests()), notNullValue());
+
         Mockito.verify(sidelineSpoutHandler).stopSidelining(
-            new ArrayList<>(trigger.getSidelineRequests()).get(1)
+            findSidelineRequest("stop", trigger.getSidelineRequests())
         );
 
         // Clean it all up
@@ -167,7 +176,7 @@ public class ZookeeperWatchTriggerTest {
      */
     @Test
     public void testOpenWithExistingState() throws Exception {
-        final String zkRoot = "/test-trigger";
+        final String zkRoot = "/test-trigger" + System.currentTimeMillis();
 
         final String consumerId = "VirtualSpoutPrefix";
 
@@ -195,10 +204,11 @@ public class ZookeeperWatchTriggerTest {
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
 
-        final Map<String,Object> data = new HashMap<>();
+        final Map<String,Object> startData = new HashMap<>();
+        startData.put("id", "start");
         final TriggerEvent startTriggerEvent = new TriggerEvent(
             SidelineType.START,
-            data,
+            startData,
             new Date(),
             CREATED_BY,
             DESCRIPTION
@@ -217,6 +227,7 @@ public class ZookeeperWatchTriggerTest {
             .until(() -> currator.checkExists().forPath(path1), notNullValue());
 
         final Map<String,Object> stopData = new HashMap<>();
+        stopData.put("id", "stop");
         final TriggerEvent stopTriggerEvent = new TriggerEvent(
             SidelineType.STOP,
             stopData,
@@ -242,12 +253,18 @@ public class ZookeeperWatchTriggerTest {
         trigger.setSidelineController(sidelineSpoutHandler);
         trigger.open(config);
 
+        await()
+            .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());
+
         Mockito.verify(sidelineSpoutHandler).startSidelining(
-            new ArrayList<>(trigger.getSidelineRequests()).get(0)
+            findSidelineRequest("start", trigger.getSidelineRequests())
         );
 
+        await()
+            .until(() -> findSidelineRequest("stop", trigger.getSidelineRequests()), notNullValue());
+
         Mockito.verify(sidelineSpoutHandler).stopSidelining(
-            new ArrayList<>(trigger.getSidelineRequests()).get(1)
+            findSidelineRequest("stop", trigger.getSidelineRequests())
         );
 
         // Clean it all up
@@ -255,6 +272,17 @@ public class ZookeeperWatchTriggerTest {
         currator.close();
     }
 
+    private SidelineRequest findSidelineRequest(final String id, Set<SidelineRequest> sidelineRequests) {
+        for (final SidelineRequest sidelineRequest : sidelineRequests) {
+            StaticMessageFilter filterChainStep = (StaticMessageFilter) sidelineRequest.step;
+
+            if (filterChainStep.getId().equals(id)) {
+                return sidelineRequest;
+            }
+        }
+
+        return null;
+    }
 
     private TestingServer getZkServer() {
         return sharedZookeeperTestResource.getZookeeperTestServer();
@@ -267,8 +295,7 @@ public class ZookeeperWatchTriggerTest {
 
         @Override
         public FilterChainStep build(final Map<String,Object> data) {
-            // Temp
-            return new StaticMessageFilter();
+            return new StaticMessageFilter((String) data.get("id"));
         }
     }
 }

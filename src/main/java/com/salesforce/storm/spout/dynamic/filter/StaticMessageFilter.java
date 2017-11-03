@@ -38,15 +38,23 @@ public class StaticMessageFilter implements FilterChainStep {
     /**
      * We need a way to make this instance unique from others, so we use a UUID.
      */
-    private final UUID uniqueId;
+    private final String id;
 
     public StaticMessageFilter() {
-        this.uniqueId = UUID.randomUUID();
+        this.id = UUID.randomUUID().toString();
+    }
+
+    public StaticMessageFilter(final String id) {
+        this.id = id;
     }
 
     @Override
     public boolean filter(Message message) {
         return true;
+    }
+
+    public String getId() {
+        return id;
     }
 
     @Override
@@ -60,18 +68,18 @@ public class StaticMessageFilter implements FilterChainStep {
 
         StaticMessageFilter that = (StaticMessageFilter) other;
 
-        return uniqueId.equals(that.uniqueId);
+        return id.equals(that.id);
     }
 
     @Override
     public int hashCode() {
-        return uniqueId.hashCode();
+        return id.hashCode();
     }
 
     @Override
     public String toString() {
         return "StaticMessageFilter{"
-            + "uniqueId=" + uniqueId
+            + "id=" + id
             + '}';
     }
 }
