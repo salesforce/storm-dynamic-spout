@@ -72,7 +72,7 @@ public class ZookeeperWatchTriggerTest {
      * @throws Exception something bad
      */
     @Test
-    public void testOpen() throws Exception {
+    public void testOpenWithNewEvents() throws Exception {
         final String zkRoot = "/test-trigger";
 
         final String consumerId = "VirtualSpoutPrefix";
@@ -160,6 +160,101 @@ public class ZookeeperWatchTriggerTest {
         trigger.close();
         currator.close();
     }
+
+    /**
+     * Test that the sideline trigger opens and that it calls start and stop properly when nodes are changed.
+     * @throws Exception something bad
+     */
+    @Test
+    public void testOpenWithExistingState() throws Exception {
+        final String zkRoot = "/test-trigger";
+
+        final String consumerId = "VirtualSpoutPrefix";
+
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
+        config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
+        config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
+        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
+        config.put(Config.FILTER_CHAIN_STEP_BUILDER_CLASS, MockFilterChainStepBuilder.class.getName());
+
+        final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
+            Tools.stripKeyPrefix(Config.PREFIX, config)
+        );
+
+        // We're going to turn some events into JSON
+        final Gson gson = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd HH:mm:ss")
+            .create();
+
+        final Map<String,Object> data = new HashMap<>();
+        final TriggerEvent startTriggerEvent = new TriggerEvent(
+            SidelineType.START,
+            data,
+            new Date(),
+            CREATED_BY,
+            DESCRIPTION
+        );
+        final String id1 = "foo";
+        final String path1 = zkRoot + "/" + id1;
+
+        // Create a starting request
+        currator
+            .create()
+            .creatingParentsIfNeeded()
+            .forPath(zkRoot + "/" + id1, gson.toJson(startTriggerEvent).getBytes());
+
+        // Since this is an async operation, use await() to watch for when the nodes are created
+        await()
+            .until(() -> currator.checkExists().forPath(path1), notNullValue());
+
+        final Map<String,Object> stopData = new HashMap<>();
+        final TriggerEvent stopTriggerEvent = new TriggerEvent(
+            SidelineType.STOP,
+            stopData,
+            new Date(),
+            CREATED_BY,
+            DESCRIPTION
+        );
+        final String id2 = "bar";
+        final String path2 = zkRoot + "/" + id2;
+
+        // Create a stopping request
+        currator
+            .create()
+            .creatingParentsIfNeeded()
+            .forPath(path2, gson.toJson(stopTriggerEvent).getBytes());
+
+        await()
+            .until(() -> currator.checkExists().forPath(path2), notNullValue());
+
+        final SidelineSpoutHandler sidelineSpoutHandler = Mockito.mock(SidelineSpoutHandler.class);
+
+        final ZookeeperWatchTrigger trigger = new ZookeeperWatchTrigger();
+        trigger.setSidelineController(sidelineSpoutHandler);
+        trigger.open(config);
+
+        Mockito.verify(sidelineSpoutHandler).startSidelining(
+            new ArrayList<>(trigger.getSidelineRequests()).get(0)
+        );
+
+        Mockito.verify(sidelineSpoutHandler).stopSidelining(
+            new ArrayList<>(trigger.getSidelineRequests()).get(1)
+        );
+
+        // Clean it all up
+        trigger.close();
+        currator.close();
+    }
+
 
     private TestingServer getZkServer() {
         return sharedZookeeperTestResource.getZookeeperTestServer();
