@@ -156,20 +156,18 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                         .create()
                         .creatingParentsIfNeeded()
                         .forPath(root, "".getBytes());
+                } else {
+                    // Load the existing requests from it
+                    final List<String> sidelineRequests = curator.getChildren().forPath(root);
 
-                    continue;
-                }
+                    for (final String sidelineRequest : sidelineRequests) {
+                        final byte[] data = curator.getData().forPath(root + "/" + sidelineRequest);
+                        final TriggerEvent triggerEvent = getTriggerEvent(data);
 
-                // Load the existing requests from it
-                final List<String> sidelineRequests = curator.getChildren().forPath(root);
+                        logger.info("Loading existing TriggerEvent {}", triggerEvent);
 
-                for (final String sidelineRequest : sidelineRequests) {
-                    final byte[] data = curator.getData().forPath(root + "/" + sidelineRequest);
-                    final TriggerEvent triggerEvent = getTriggerEvent(data);
-
-                    logger.info("Loading existing TriggerEvent {}", triggerEvent);
-
-                    handleSidelining(triggerEvent);
+                        handleSidelining(triggerEvent);
+                    }
                 }
 
                 logger.info("Creating cache for {}", root);

@@ -115,7 +115,7 @@ public class ZookeeperWatchTriggerTest {
             CREATED_BY,
             DESCRIPTION
         );
-        final String id1 = "foo";
+        final String id1 = "foo" + System.currentTimeMillis();
         final String path1 = zkRoot + "/" + id1;
 
         // Create a starting request
@@ -140,7 +140,7 @@ public class ZookeeperWatchTriggerTest {
             CREATED_BY,
             DESCRIPTION
         );
-        final String id2 = "bar";
+        final String id2 = "bar" + System.currentTimeMillis();
         final String path2 = zkRoot + "/" + id2;
 
         // Create a stopping request
@@ -203,7 +203,7 @@ public class ZookeeperWatchTriggerTest {
             CREATED_BY,
             DESCRIPTION
         );
-        final String id1 = "foo";
+        final String id1 = "foo" + System.currentTimeMillis();
         final String path1 = zkRoot + "/" + id1;
 
         // Create a starting request
@@ -224,7 +224,7 @@ public class ZookeeperWatchTriggerTest {
             CREATED_BY,
             DESCRIPTION
         );
-        final String id2 = "bar";
+        final String id2 = "bar" + System.currentTimeMillis();
         final String path2 = zkRoot + "/" + id2;
 
         // Create a stopping request
