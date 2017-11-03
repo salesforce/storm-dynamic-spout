@@ -42,6 +42,10 @@ public class Config {
     /**
      * (String) Class name for the class of the {@link FilterChainStepBuilder} instance.
      */
+    @Documentation(
+        description = "Class name for the class of the FilterChainStepBuilder instance.",
+        type = String.class
+    )
     public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_cass";
 
     /**
@@ -58,13 +62,13 @@ public class Config {
     public static final String ZK_SERVERS = "sideline.zookeeper_watch_trigger.servers";
 
     /**
-     * (String) Defines the root path to persist state under.
+     * (String) Defines the root path to watch for events under.
      * Example: "/consumer-state"
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
     @Documentation(
-        description = "Defines the root path to persist state under. Example: \"/consumer-state\"",
+        description = "Defines the root path to watch for events under. Example: \"/sideline-trigger\"",
         type = String.class
     )
     public static final String ZK_ROOTS = "sideline.zookeeper_watch_trigger.roost";
