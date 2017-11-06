@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.junit.Test;

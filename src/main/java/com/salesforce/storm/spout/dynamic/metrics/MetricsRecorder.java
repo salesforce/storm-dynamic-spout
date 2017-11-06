@@ -115,7 +115,6 @@ public interface MetricsRecorder {
      * Stops and records a timer for the given sourceClass and metricName.
      * @param sourceClass class the metric originates from.
      * @param metricName name of the metric.
-     * @return The total time that was recorded for the timer, in milliseconds.
      */
     void stopTimer(final Class sourceClass, final String metricName);
 }

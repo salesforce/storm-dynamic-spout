@@ -27,11 +27,9 @@ package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import org.apache.storm.metric.api.AssignableMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
-import org.apache.storm.shade.org.apache.http.annotation.NotThreadSafe;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,8 +178,8 @@ public class StormRecorder implements MetricsRecorder {
         timers.scope(key).update(timeInMs);
 
         // Update total time value.  This tracks how much time in total has been
-        // spent in this area, in milliseconds
-        final String totalTimeKey = key + "_totalTimeMs";
+        // spent in this key, in milliseconds
+        final String totalTimeKey = metricName + "_totalTimeMs";
         count(sourceClass, totalTimeKey, timeInMs);
     }
 

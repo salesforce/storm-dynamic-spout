@@ -139,6 +139,7 @@ public class LogRecorder implements MetricsRecorder {
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
+            return;
         }
         timer(sourceClass, metricName, stopTime - startTime);
     }
