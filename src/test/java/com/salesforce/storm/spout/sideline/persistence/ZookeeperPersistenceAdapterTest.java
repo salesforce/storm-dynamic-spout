@@ -151,8 +151,8 @@ public class ZookeeperPersistenceAdapterTest {
 
         final String topicName = "MyTopic1";
         final String zkRootPath = configuredZkRoot + "/" + configuredConsumerPrefix;
-        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("test");
+        final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, null);
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
@@ -263,8 +263,8 @@ public class ZookeeperPersistenceAdapterTest {
         // Define our ZK Root Node
         final String zkRootNodePath = configuredZkRoot + "/" + configuredConsumerPrefix;
         final String zkRequestsRootNodePath = zkRootNodePath + "/requests";
-        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("test");
+        final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, null);
 
         // 1 - Connect to ZK directly
         ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
@@ -375,11 +375,18 @@ public class ZookeeperPersistenceAdapterTest {
         // Create our instance
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        final SidelineRequest sidelineRequest = new SidelineRequest(null);
+        final SidelineRequest sidelineRequest = new SidelineRequest(new SidelineRequestIdentifier("test"), null);
 
         // Call method and watch for exception
         expectedExceptionPersistSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, new SidelineRequestIdentifier(), sidelineRequest, 0, 1L, 2L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            new SidelineRequestIdentifier("test"),
+            sidelineRequest,
+            0,
+            1L,
+            2L
+        );
     }
 
     @Rule
@@ -395,7 +402,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier(), 0);
+        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier("test"), 0);
     }
 
     @Rule
@@ -411,7 +418,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedExceptionClearSidelineRequestBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier(), 0);
+        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier("test"), 0);
     }
 
     @Test
@@ -425,19 +432,19 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest1 = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("test1");
+        final SidelineRequest sidelineRequest1 = new SidelineRequest(sidelineRequestIdentifier1, null);
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest2 = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier("test2");
+        final SidelineRequest sidelineRequest2 = new SidelineRequest(sidelineRequestIdentifier2, null);
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest2, 0, 100L, 101L);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier3 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest3 = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier3 = new SidelineRequestIdentifier("test3");
+        final SidelineRequest sidelineRequest3 = new SidelineRequest(sidelineRequestIdentifier3, null);
 
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 0, 1000L, 1001L);
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 1, 1000L, 1001L);
@@ -469,11 +476,11 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest1 = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("test1");
+        final SidelineRequest sidelineRequest1 = new SidelineRequest(sidelineRequestIdentifier1, null);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier();
-        final SidelineRequest sidelineRequest2 = new SidelineRequest(null);
+        final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier("test2");
+        final SidelineRequest sidelineRequest2 = new SidelineRequest(sidelineRequestIdentifier2, null);
 
         // Two partitions for sideline request 1
         persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
@@ -509,7 +516,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
-        return createDefaultConfig(Lists.newArrayList(zkServers.split(",")), zkRootNode, consumerIdPrefix);
+        return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 
     /**

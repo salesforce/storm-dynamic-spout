@@ -129,12 +129,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private Iterator<ConsumerRecord<byte[], byte[]>> bufferIterator = null;
 
     /**
-     * Used to control how often we flush state using PersistenceAdapter.
-     */
-    private transient Clock clock = Clock.systemUTC();
-    private long lastFlushTime = 0;
-
-    /**
      * Default constructor.
      */
     public Consumer() {
@@ -187,8 +181,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         }
         isOpen = true;
 
-        // Build ConsumerConfig from spout Config
-        // Construct SidelineConsumerConfig based on topology config.
+        // Build KafkaConsumerConfig from spoutConfig
         final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
         final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
 
@@ -212,15 +205,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         consumerConfig.setIndexOfConsumer(
             consumerPeerContext.getInstanceNumber()
         );
-
-        // Optionally set state autocommit properties
-        if (spoutConfig.containsKey(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT)) {
-            consumerConfig.setConsumerStateAutoCommit((Boolean) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT));
-            consumerConfig.setConsumerStateAutoCommitIntervalMs(
-                (Long) spoutConfig.get(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS)
-            );
-        }
-
+        
         // Create deserializer.
         final Deserializer deserializer = FactoryManager.createNewInstance(
             (String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS)
@@ -302,8 +287,9 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Fill our buffer if its empty
         fillBuffer();
 
-        // Check our iterator for the next message
-        if (!bufferIterator.hasNext()) {
+        // Check our iterator for the next message, it's only null at this point if something bad is happening inside
+        // of the fileBuffer() method, like it bailed after too much recursion. There will be a lot for that scenario.
+        if (bufferIterator == null || !bufferIterator.hasNext()) {
             // Oh no!  No new msg found.
             logger.debug("Unable to fill buffer...nothing new!");
             return null;
@@ -351,9 +337,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     private void commitOffset(final ConsumerPartition consumerPartition, final long offset) {
         // Track internally which offsets we've marked completed
         partitionOffsetsManager.finishOffset(consumerPartition, offset);
-
-        // Occasionally flush
-        timedFlushConsumerState();
     }
 
     /**
@@ -364,36 +347,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      */
     public void commitOffset(final String namespace, final int partition, final long offset) {
         commitOffset(new ConsumerPartition(namespace, partition), offset);
-    }
-
-    /**
-     * Conditionally flushes the consumer state to the persistence layer based
-     * on a time-out condition.
-     *
-     * @return True if we flushed state, false if we didn't
-     */
-    protected boolean timedFlushConsumerState() {
-        // If we have auto commit off, don't commit
-        if (!getConsumerConfig().isConsumerStateAutoCommit()) {
-            return false;
-        }
-
-        // Get current system time.
-        final long now = getClock().millis();
-
-        // Set initial state if not defined
-        if (lastFlushTime == 0) {
-            lastFlushTime = now;
-            return false;
-        }
-
-        // Determine if we should flush.
-        if ((now - lastFlushTime) > getConsumerConfig().getConsumerStateAutoCommitIntervalMs()) {
-            flushConsumerState();
-            lastFlushTime = now;
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -424,9 +377,18 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
     /**
      * Internal method used to fill internal message buffer from kafka.
-     * Maybe this should be marked private.
      */
     private void fillBuffer() {
+        // First trip, here we go! (This method recurses and we only let it do that five times, so we start the counter here.)
+        fillBuffer(1);
+    }
+
+    /**
+     * Internal method used to fill internal message buffer from kafka.
+     *
+     * Limited by the number of trips made. This should only be called from {@link #fillBuffer()}.
+     */
+    private void fillBuffer(final int trips) {
         // If our buffer is null, or our iterator is at the end
         if (buffer == null || !bufferIterator.hasNext()) {
 
@@ -448,8 +410,17 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
                 buffer = null;
                 bufferIterator = null;
 
-                // TODO: heh... this should be bounded most likely...
-                fillBuffer();
+                // Why 5? Because it's less than 6.
+                if (trips >= 5) {
+                    logger.error(
+                        "Attempted to fill the buffer after an OffsetOutOfRangeException, but this was my fifth attempt so I'm bailing."
+                    );
+                    // nextRecord() will get called by the VirtualSpout instance soon so we're not giving up, just avoiding a StackOverflow
+                    // exception on this current run of checks.
+                    return;
+                }
+
+                fillBuffer(trips + 1);
                 return;
             }
 
@@ -645,21 +616,6 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      */
     String getConsumerId() {
         return getConsumerConfig().getConsumerId();
-    }
-
-    /**
-     * @return return our clock implementation.  Useful for testing.
-     */
-    protected Clock getClock() {
-        return clock;
-    }
-
-    /**
-     * For injecting a clock implementation.  Useful for testing.
-     * @param clock the clock implementation to use.
-     */
-    protected void setClock(Clock clock) {
-        this.clock = clock;
     }
 
     /**

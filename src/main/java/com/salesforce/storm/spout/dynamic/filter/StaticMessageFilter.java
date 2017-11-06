@@ -23,16 +23,55 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka.deserializer;
+package com.salesforce.storm.spout.dynamic.filter;
 
-import org.apache.storm.tuple.Values;
+import com.salesforce.storm.spout.dynamic.Message;
+
+import java.util.UUID;
 
 /**
- * Define a deserializer that always returns null.  Only used for testing purposes.
+ * We use this filter in tests because it allows us an easy way to define
+ * how a filter behaves.
  */
-public class NullDeserializer implements Deserializer {
+public class StaticMessageFilter implements FilterChainStep {
+
+    /**
+     * We need a way to make this instance unique from others, so we use a UUID.
+     */
+    private final UUID uniqueId;
+
+    public StaticMessageFilter() {
+        this.uniqueId = UUID.randomUUID();
+    }
+
     @Override
-    public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-        return null;
+    public boolean filter(Message message) {
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+
+        StaticMessageFilter that = (StaticMessageFilter) other;
+
+        return uniqueId.equals(that.uniqueId);
+    }
+
+    @Override
+    public int hashCode() {
+        return uniqueId.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "StaticMessageFilter{"
+            + "uniqueId=" + uniqueId
+            + '}';
     }
 }

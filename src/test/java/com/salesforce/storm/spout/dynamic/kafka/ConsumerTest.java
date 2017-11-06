@@ -51,6 +51,7 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
@@ -61,6 +62,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +70,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -239,164 +242,6 @@ public class ConsumerTest {
 
         // Call it
         consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(),mockPersistenceAdapter, null);
-    }
-
-    /**
-     * Tests that our logic for flushing consumer state works if auto commit is enabled.
-     * This is kind of a weak test for this.
-     *
-     * This test is disabled because we have no way exposed to set this property anymore.
-     */
-    @Test
-    public void testTimedFlushConsumerState() throws InterruptedException {
-        final String expectedConsumerId = "MyConsumerId";
-
-        // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
-
-        // Enable auto commit and Set timeout to 1 second.
-        config.put(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT, true);
-        config.put(KafkaConsumerConfig.CONSUMER_STATE_AUTOCOMMIT_INTERVAL_MS, 1000L);
-
-        // Create mock persistence manager so we can determine if it was called
-        final PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-
-        // Create a mock clock so we can control time (bwahaha)
-        Instant instant = Clock.systemUTC().instant();
-        Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
-
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
-
-        final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
-            new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0])
-        );
-        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
-
-        // Call constructor
-        final Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.setClock(mockClock);
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
-
-        // Call our method once
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Sleep for 1.5 seconds
-        Thread.sleep(1500);
-
-        // Call our method again
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Now lets adjust our mock clock up by 2 seconds.
-        instant = instant.plus(2000, ChronoUnit.MILLIS);
-        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
-        consumer.setClock(mockClock);
-
-        // Call our method again, it should have triggered this time.
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer WAS hit because we adjust our mock clock ahead 2 secs
-        verify(mockPersistenceAdapter, times(1)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyLong());
-
-        // Call our method again, it shouldn't fire.
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit again because we're using a mocked clock that has not changed since the last call :p
-        verify(mockPersistenceAdapter, times(1)).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Now lets adjust our mock clock up by 1.5 seconds.
-        instant = instant.plus(1500, ChronoUnit.MILLIS);
-        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
-        consumer.setClock(mockClock);
-
-        // Call our method again, it should have triggered this time.
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer WAS hit a 2nd time because we adjust our mock clock ahead
-        verify(mockPersistenceAdapter, times(2)).persistConsumerState(eq(expectedConsumerId), anyInt(), anyLong());
-    }
-
-    /**
-     * Tests that our logic for flushing consumer state is disabled if auto commit is disabled.
-     * This is kind of a weak test for this.
-     */
-    @Test
-    public void testTimedFlushConsumerStateWhenAutoCommitIsDisabled() throws InterruptedException {
-        // Create config
-        final Map<String, Object> config = getDefaultConfig(topicName);
-
-        // This is disabled by default... so this test should still run ok
-        // Disable and set interval to 1 second.
-        //config.setConsumerStateAutoCommit(false);
-        //config.setConsumerStateAutoCommitIntervalMs(1000);
-
-        // Create mock persistence manager so we can determine if it was called
-        final PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-
-        // Create a mock clock so we can control time (bwahaha)
-        Instant instant = Clock.systemUTC().instant();
-        Clock mockClock = Clock.fixed(instant, ZoneId.systemDefault());
-
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
-
-        final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
-            new PartitionInfo(topicName, 0, new Node(0, "localhost", 9092), new Node[0], new Node[0])
-        );
-        when(mockKafkaConsumer.partitionsFor(eq(topicName))).thenReturn(mockPartitionInfos);
-
-        // Call constructor
-        final Consumer consumer = new Consumer();
-        consumer.setClock(mockClock);
-
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, null);
-
-        // Call our method once
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Sleep for 1.5 seconds
-        Thread.sleep(1500);
-
-        // Call our method again
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit because we're using a mocked clock that has not changed :p
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Now lets adjust our mock clock up by 2 seconds.
-        instant = instant.plus(2000, ChronoUnit.MILLIS);
-        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
-        consumer.setClock(mockClock);
-
-        // Call our method again, it should have triggered this time.
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Call our method again, it shouldn't fire.
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
-
-        // Now lets adjust our mock clock up by 1.5 seconds.
-        instant = instant.plus(1500, ChronoUnit.MILLIS);
-        mockClock = Clock.fixed(instant, ZoneId.systemDefault());
-        consumer.setClock(mockClock);
-
-        // Call our method again, it should have triggered this time.
-        consumer.timedFlushConsumerState();
-
-        // Make sure persistence layer was not hit
-        verify(mockPersistenceAdapter, never()).persistConsumerState(anyString(), anyInt(), anyLong());
     }
 
     /**
@@ -2562,6 +2407,41 @@ public class ConsumerTest {
         );
 
         // Clean up
+        consumer.close();
+    }
+
+
+    /**
+     * Calling nextRecord calls fillBuffer() which has special handling for OutOfRangeExceptions.  There is some
+     * recursion in this method, but it should not go on forever and yield a StackOverflow exception.  This test verifies
+     * that when the KafkaConsumer is relentlessly throwing OutOfRangeExceptions that we stop trying to fill the buffer
+     * after five attempts and do not have any other errors.
+     */
+    @Test
+    public void testNextRecordWithRecursiveOutOfRangeException() {
+        final KafkaConsumer<byte[], byte[]> kafkaConsumer = Mockito.mock(KafkaConsumer.class);
+
+        Mockito.when(kafkaConsumer.assignment()).thenReturn(Sets.newHashSet(new TopicPartition("Foobar", 0)));
+        Mockito.when(kafkaConsumer.partitionsFor(topicName)).thenReturn(Arrays.asList(
+            new PartitionInfo(topicName, 0, null, null, null)
+        ));
+        Mockito.when(kafkaConsumer.poll(300)).thenThrow(
+            new OffsetOutOfRangeException(new HashMap<>())
+        );
+
+        final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
+        persistenceAdapter.open(Maps.newHashMap());
+
+        // Create our consumer
+        final Consumer consumer = new Consumer(kafkaConsumer);
+        consumer.open(getDefaultConfig(topicName), getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, null);
+
+        final Record record = consumer.nextRecord();
+
+        assertNull(record);
+
+        Mockito.verify(kafkaConsumer, Mockito.times(5)).poll(300);
+
         consumer.close();
     }
 

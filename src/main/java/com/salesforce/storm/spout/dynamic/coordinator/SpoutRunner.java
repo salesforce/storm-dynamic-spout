@@ -144,8 +144,8 @@ public class SpoutRunner implements Runnable {
                 if (message != null) {
                     try {
                         tupleQueue.put(message);
-                    } catch (InterruptedException ex) {
-                        logger.error("Shutting down due to interruption {}", ex);
+                    } catch (final InterruptedException interruptedException) {
+                        logger.error("Shutting down due to interruption {}", interruptedException.getMessage(), interruptedException);
                         spout.requestStop();
                     }
                 }
@@ -155,13 +155,13 @@ public class SpoutRunner implements Runnable {
 
                 // Ack anything that needs to be acked
                 while (!ackedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    MessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
+                    final MessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
                     spout.ack(id);
                 }
 
                 // Fail anything that needs to be failed
                 while (!failedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    MessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
+                    final MessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
                     spout.fail(id);
                 }
 
@@ -184,14 +184,12 @@ public class SpoutRunner implements Runnable {
             getTupleQueue().removeVirtualSpoutId(spout.getVirtualSpoutId());
             getAckedTupleQueue().remove(spout.getVirtualSpoutId());
             getFailedTupleQueue().remove(spout.getVirtualSpoutId());
-        } catch (Exception ex) {
-            // TODO: Should we restart the SpoutRunner?  I'd guess that SpoutMonitor should handle re-starting
-            logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex);
-            ex.printStackTrace();
+        } catch (final Exception ex) {
+            // We don't handle restarting this instance.  Instead its Spout Monitor which that ownership falls to.
+            // We'll log the error, and bubble up the exception.
+            logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex.getMessage(), ex);
 
-            // We re-throw the exception
-            // SpoutMonitor should detect this failed.
-            // TODO: Do we even want to bother catching this here?
+            // We re-throw the exception, SpoutMonitor will handle this.
             throw ex;
         }
     }

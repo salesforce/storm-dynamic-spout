@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.sideline.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 
 /**
  * A request to sideline.
@@ -49,15 +49,6 @@ public class SidelineRequest {
     public SidelineRequest(final SidelineRequestIdentifier id, final FilterChainStep step) {
         this.id = id;
         this.step = step;
-    }
-
-    /**
-     * A request to sideline.
-     * @param step filter chain step for this sideline.
-     */
-    @Deprecated
-    public SidelineRequest(final FilterChainStep step) {
-        this(new SidelineRequestIdentifier(), step);
     }
 
     @Override

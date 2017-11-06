@@ -25,30 +25,17 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
-import java.util.UUID;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStepIdentifier;
 
 /**
  * Identifies a sideline request, this should be unique to the request.
  */
-public class SidelineRequestIdentifier {
+public class SidelineRequestIdentifier implements FilterChainStepIdentifier {
 
     private String id;
 
     public SidelineRequestIdentifier(final String id) {
         this.id = id;
-    }
-
-    @Deprecated
-    public SidelineRequestIdentifier(final UUID id) {
-        this(id.toString());
-    }
-
-    /**
-     * Will generate a UUID, this is no longer recommended.
-     */
-    @Deprecated
-    public SidelineRequestIdentifier() {
-        this(UUID.randomUUID());
     }
 
     /**

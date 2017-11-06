@@ -40,11 +40,13 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Monitors and manages the lifecycle of virtual spouts.
@@ -71,23 +73,28 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * This buffer/queue holds tuples that are ready to be sent out to the topology.
-     * It is filled by VirtualSpout instances, and drained by SidelineSpout.
+     * It is filled by VirtualSpout instances, and drained by DynamicSpout.
      */
     private final MessageBuffer tupleOutputQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be acked by VirtualSpouts.
      * Its segmented by VirtualSpout ids => Queue of tuples to be acked.
-     * It is filled by SidelineSpout, and drained by VirtualSpout instances.
+     * It is filled by DynamicSpout, and drained by VirtualSpout instances.
      */
     private final Map<VirtualSpoutIdentifier,Queue<MessageId>> ackedTuplesQueue;
 
     /**
      * This buffer/queue holds tuples that are ready to be failed by VirtualSpouts.
      * Its segmented by VirtualSpout ids => Queue of tuples to be failed.
-     * It is filled by SidelineSpout, and drained by VirtualSpout instances.
+     * It is filled by DynamicSpout, and drained by VirtualSpout instances.
      */
     private final Map<VirtualSpoutIdentifier,Queue<MessageId>> failedTuplesQueue;
+
+    /**
+     * This buffer/queue holds errors that should be reported up to the topology.
+     */
+    private final Queue<Throwable> reportedErrorsQueue;
 
     /**
      * This latch allows the SpoutCoordinator to block on start up until its initial
@@ -109,14 +116,18 @@ public class SpoutMonitor implements Runnable {
      * Metrics Recorder implementation for collecting metrics.
      */
     private final MetricsRecorder metricsRecorder;
-    
+
+    /**
+     * Used to track metric for number of failed virtual spouts.
+     */
+    private final AtomicInteger failedTaskCounter = new AtomicInteger(0);
+
     /**
      * Calculates progress of {@link VirtualSpout} instances.
      */
     private SpoutPartitionProgressMonitor spoutPartitionProgressMonitor;
 
     private final Map<VirtualSpoutIdentifier, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
-    private final Map<VirtualSpoutIdentifier, CompletableFuture> spoutThreads = new ConcurrentHashMap<>();
 
     /**
      * Flag used to determine if we should stop running or not.
@@ -134,6 +145,7 @@ public class SpoutMonitor implements Runnable {
      * @param tupleOutputQueue Queue for pushing out Tuples to the topology.
      * @param ackedTuplesQueue Queue for incoming Tuples that need to be acked.
      * @param failedTuplesQueue Queue for incoming Tuples that need to be failed.
+     * @param reportedErrorsQueue Queue for any errors that should be reported to the topology.
      * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
@@ -144,6 +156,7 @@ public class SpoutMonitor implements Runnable {
         final MessageBuffer tupleOutputQueue,
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue,
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue,
+        final Queue<Throwable> reportedErrorsQueue,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig,
@@ -153,6 +166,7 @@ public class SpoutMonitor implements Runnable {
         this.tupleOutputQueue = tupleOutputQueue;
         this.ackedTuplesQueue = ackedTuplesQueue;
         this.failedTuplesQueue = failedTuplesQueue;
+        this.reportedErrorsQueue = reportedErrorsQueue;
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
@@ -183,16 +197,31 @@ public class SpoutMonitor implements Runnable {
      * @param virtualSpoutIdentifier Identifier of the spout we're looking for.
      * @return Whether or not a spout with that identifier exists.
      */
-    public boolean hasSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    public boolean hasVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         // Synchronized on new spout queue
         synchronized (newSpoutQueue) {
-            for (DelegateSpout spout : newSpoutQueue) {
+            for (final DelegateSpout spout : newSpoutQueue) {
                 if (spout.getVirtualSpoutId().equals(virtualSpoutIdentifier)) {
                     return true;
                 }
             }
             return spoutRunners.containsKey(virtualSpoutIdentifier);
         }
+    }
+
+    /**
+     * Signals to a VirtualSpout to stop, ultimately removing it from the monitor.
+     * @param virtualSpoutIdentifier identifier of the VirtualSpout instance to request stopped.
+     */
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
+            throw new IllegalArgumentException(
+                "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor."
+            );
+        }
+
+        // Request the spout stop
+        spoutRunners.get(virtualSpoutIdentifier).requestStop();
     }
 
     @Override
@@ -203,9 +232,6 @@ public class SpoutMonitor implements Runnable {
 
             // Start monitoring loop.
             while (keepRunning()) {
-                // Look for completed tasks
-                watchForCompletedTasks();
-
                 // Look for new VirtualSpouts that need to be started
                 startNewSpoutTasks();
 
@@ -215,15 +241,22 @@ public class SpoutMonitor implements Runnable {
                 // Pause for a period before checking for more spouts
                 try {
                     Thread.sleep(getMonitorThreadIntervalMs());
-                } catch (InterruptedException ex) {
+                } catch (final InterruptedException ex) {
                     logger.warn("Thread interrupted, shutting down...");
                     return;
                 }
             }
-            logger.warn("Spout coordinator is ceasing to run due to shutdown request...");
-        } catch (Exception ex) {
-            // TODO: Should we restart the monitor?
-            logger.error("!!!!!! SpoutMonitor threw an exception {}", ex);
+            logger.warn("Spout monitor is ceasing to run due to shutdown request...");
+        } catch (final Exception ex) {
+            // We handle restarting spout monitor in the coordinator, which is who monitors this thread.
+            // Lets report the error
+            reportError(ex);
+
+            // Log it.
+            logger.error("SpoutMonitor threw an exception {}", ex.getMessage(), ex);
+
+            // And bubble it up
+            throw ex;
         }
     }
 
@@ -249,47 +282,47 @@ public class SpoutMonitor implements Runnable {
                     getTopologyConfig()
                 );
 
+                // This maps VirtualSpout Ids to SpoutRunner Instances.
+                // Really we only use this to keep track of which VirtualSpoutIds we have running.
                 spoutRunners.put(spout.getVirtualSpoutId(), spoutRunner);
 
                 // Run as a CompletableFuture
-                final CompletableFuture completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
-                // If the spout runner throws an exception log some info about it so we can dig into handling it more appropriately
-                completableFuture.exceptionally((ex) -> {
-                    logger.error(
-                        "An exception has occurred in the SpoutRunner for {} {}",
-                        virtualSpoutIdentifier,
-                        ex
-                    );
+                final CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
+
+                // Handle when this spout completes.
+                // It can either complete successfully, or via some kind of error, we'll handle both here.
+                completableFuture.handle((final Void result, final Throwable exception) -> {
+                    // If we got passed an exception
+                    if (exception != null) {
+                        // We failed via some kind of error, lets report it
+                        if (exception instanceof CompletionException) {
+                            // CompletionException is a wrapper, lets report the cause.
+                            reportError(exception.getCause());
+                        } else {
+                            // I have a feeling all exceptions will be of type CompletionException.
+                            reportError(exception);
+                        }
+
+                        // Log error
+                        logger.error(
+                            "An exception has occurred in the SpoutRunner for {} {}",
+                            virtualSpoutIdentifier,
+                            exception
+                        );
+
+                        // Increment failed task counter
+                        incrementFailedTaskCounter();
+                    } else {
+                        // Log that we completed successfully.
+                        logger.info("{} seems to have finished, cleaning up", virtualSpoutIdentifier);
+                    }
+
+                    // And cleanup, Remove from spoutInstances
+                    spoutRunners.remove(virtualSpoutIdentifier);
+
+                    // We have no value to return
                     return null;
                 });
-                spoutThreads.put(spout.getVirtualSpoutId(), completableFuture);
-            }
-        }
-    }
-
-    /**
-     * Look for any tasks that have finished running and handle them appropriately.
-     */
-    private void watchForCompletedTasks() {
-        // Cleanup loop
-        for (Map.Entry<VirtualSpoutIdentifier, CompletableFuture> entry: spoutThreads.entrySet()) {
-            final VirtualSpoutIdentifier virtualSpoutId = entry.getKey();
-            final CompletableFuture future = entry.getValue();
-
-            if (future.isDone()) {
-                if (future.isCompletedExceptionally()) {
-                    // This threw an exception.  We need to handle the error case.
-                    // TODO: Handle errors here.
-                    logger.error("{} seems to have errored", virtualSpoutId);
-                } else {
-                    // Successfully finished?
-                    logger.info("{} seems to have finished, cleaning up", virtualSpoutId);
-                }
-
-                // Remove from spoutThreads?
-                // Remove from spoutInstances?
-                spoutRunners.remove(virtualSpoutId);
-                spoutThreads.remove(virtualSpoutId);
             }
         }
     }
@@ -316,20 +349,23 @@ public class SpoutMonitor implements Runnable {
         lastStatusReport = now;
 
         // Show a status report
-        logger.info("Active Tasks: {}, Queued Tasks: {}, ThreadPool Size: {}/{}, Completed Tasks: {}, Total Tasks Submitted: {}",
+        logger.info(
+            "Active Tasks: {}, Queued Tasks: {}, ThreadPool Size: {}/{}, Completed Tasks: {}, Errored Tasks: {}, Total Tasks Submitted: {}",
             executor.getActiveCount(),
             executor.getQueue().size(),
             executor.getPoolSize(),
             executor.getMaximumPoolSize(),
             executor.getCompletedTaskCount(),
+            getNumberOfFailedTasks(),
             executor.getTaskCount()
         );
-        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutThreads.keySet());
+        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutRunners.keySet());
 
         // Report to metrics record
         getMetricsRecorder().assignValue(getClass(), "bufferSize", tupleOutputQueue.size());
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
         getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
+        getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
         getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
         getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
 
@@ -357,8 +393,12 @@ public class SpoutMonitor implements Runnable {
                     spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied()
                 );
             }
-        } catch (Throwable t) {
-            logger.error("Caught exception during status checks {}", t.getMessage(), t);
+        } catch (final Throwable throwable) {
+            // report the error up.
+            reportError(throwable);
+
+            // Log the exception
+            logger.error("Caught exception during status checks {}", throwable.getMessage(), throwable);
             spoutPartitionProgressMonitor = null;
         }
     }
@@ -384,7 +424,7 @@ public class SpoutMonitor implements Runnable {
         }
 
         // Loop through our runners and request stop on each
-        for (SpoutRunner spoutRunner : spoutRunners.values()) {
+        for (final SpoutRunner spoutRunner : spoutRunners.values()) {
             spoutRunner.requestStop();
         }
 
@@ -392,8 +432,8 @@ public class SpoutMonitor implements Runnable {
         try {
             logger.info("Waiting a maximum of {} ms for thread pool to shutdown", getMaxTerminationWaitTimeMs());
             executor.awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            logger.error("Interrupted while stopping: {}", ex);
+        } catch (final InterruptedException ex) {
+            logger.error("Interrupted while stopping: {}", ex.getMessage(), ex);
         }
 
         // If we didn't shut down cleanly
@@ -405,12 +445,11 @@ public class SpoutMonitor implements Runnable {
 
         // Clear our our internal state.
         spoutRunners.clear();
-        spoutThreads.clear();
     }
 
     /**
      * @return - return the number of spout runner instances.
-     *           *note* - it doesn't mean all of these are actually running, some may be queued.
+     *           *note* it doesn't mean all of these are actually running, some may be queued.
      */
     public int getTotalSpouts() {
         return spoutRunners.size();
@@ -464,6 +503,22 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
+     * @return The Error Queue.
+     */
+    Queue<Throwable> getReportedErrorsQueue() {
+        return reportedErrorsQueue;
+    }
+
+    /**
+     * Adds an error to the reported errors queue.  These will get pushed up and reported
+     * to the topology.
+     * @param throwable The error to be reported.
+     */
+    private void reportError(final Throwable throwable) {
+        getReportedErrorsQueue().add(throwable);
+    }
+
+    /**
      * @return Spouts metrics recorder.
      */
     MetricsRecorder getMetricsRecorder() {
@@ -471,17 +526,32 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * @return - ThreadPoolExecutor Service that runs VirtualSpout instances.
+     * @return ThreadPoolExecutor Service that runs VirtualSpout instances.
      */
     ThreadPoolExecutor getExecutor() {
         return executor;
     }
 
     /**
-     * @return - The new spout queue.
+     * @return The new spout queue.
      */
     Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
+    }
+
+    /**
+     * @return How many VirtualSpout tasks have terminated abnormally.
+     */
+    int getNumberOfFailedTasks() {
+        return failedTaskCounter.get();
+    }
+
+    /**
+     * Increments the failed task counter metric.
+     * @return The new number of failed tasks.
+     */
+    private int incrementFailedTaskCounter() {
+        return failedTaskCounter.incrementAndGet();
     }
 
     /**

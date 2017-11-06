@@ -2,14 +2,44 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 0.9.0 (RELEASE DATE TBD)
+## 0.10.0 (RELEASE DATE TBD)
+### Improvements
+- [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method Deserializer.getOutputFields()
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Removed deprecated code.
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SpoutTriggerProxy` with `SidelineController` interface.
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Moved `FilterChain` back to the `dynamic` package. 
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps. 
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
+
+
+### Bug Fixes
+
+#### Sideline Spout
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) When deserializing an invalid FilterChainStep it would crash the spout instance. 
+
+#### Kafka Consumer
+- [PR-43](https://github.com/salesforce/storm-dynamic-spout/pull/43) Fixed unbounded recursion when calling fillBuffer() in the KafkaConsumer.
+
+## 0.9.0 (2017-10-26)
 ### Improvements
 - [PR-14](https://github.com/salesforce/storm-dynamic-spout/pull/14) Update Kafka dependencies to 0.11.0.1
 - [PR-15](https://github.com/salesforce/storm-dynamic-spout/pull/15) Update Storm dependencies to 1.1.1
+- [PR-24](https://github.com/salesforce/storm-dynamic-spout/pull/24) Add ability for errors to be reported up to the Storm web UI.
+- [PR-34](https://github.com/salesforce/storm-dynamic-spout/pull/34) Add removeVirtualSpout() method to DynamicSpout
+- [PR-35](https://github.com/salesforce/storm-dynamic-spout/pull/35/files) Output fields should now be declared as a List of String objects. In 0.10 we will drop the comma delimited strings, in the interim we are also now trimming whitespace off of the comma delimited version. 
 
 ### Bug Fixes
-- [PR-16](https://github.com/salesforce/storm-dynamic-spout/pull/16) *Kafka Consumer* Improved handling of Out Of Range exceptions
-- [PR-13](https://github.com/salesforce/storm-dynamic-spout/pull/13) *Sideline Spout* Fixed race condition on-redeploy of Spout when a sideline is active for firehose.
+##### Kafka Consumer
+- [PR-16](https://github.com/salesforce/storm-dynamic-spout/pull/16) Improved handling of Out Of Range exceptions
+##### Sideline Spout
+- [PR-13](https://github.com/salesforce/storm-dynamic-spout/pull/13) Fixed race condition on-redeploy of Spout when a 
+sideline is active for firehose.
+
+### Removed
+##### Kafka Consumer
+- [PR-31](https://github.com/salesforce/storm-dynamic-spout/pull/31) Removed configuration items: `spout.kafka
+.autocommit` and `spout.kafka.autocommit_interval_ms`.  This functionality is covered by configuration item `spout.coordinator.consumer_state_flush_interval_ms`
 
 ## 0.8.x
 - Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.

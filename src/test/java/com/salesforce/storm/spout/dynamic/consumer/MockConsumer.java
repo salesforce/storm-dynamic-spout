@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.consumer;
 
+import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
@@ -33,15 +34,22 @@ import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Mock consumer instance.
  */
 public class MockConsumer implements Consumer {
 
+    public static Map<VirtualSpoutIdentifier,BlockingQueue<Record>> records = Maps.newConcurrentMap();
+
     public static PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
     public static String topic = "MyTopic";
     public static List<Integer> partitions = Collections.singletonList(1);
+
+    private VirtualSpoutIdentifier activeVirtualSpoutIdentifier;
 
     @Override
     public void open(
@@ -51,17 +59,25 @@ public class MockConsumer implements Consumer {
         PersistenceAdapter persistenceAdapter,
         ConsumerState startingState
     ) {
+        this.activeVirtualSpoutIdentifier = virtualSpoutIdentifier;
 
+        records.put(virtualSpoutIdentifier, new LinkedBlockingQueue<>(10_000));
     }
 
     @Override
     public void close() {
+        records.remove(this.activeVirtualSpoutIdentifier);
 
+        this.activeVirtualSpoutIdentifier = null;
     }
 
     @Override
     public Record nextRecord() {
-        return null;
+        if (records.get(activeVirtualSpoutIdentifier).isEmpty()) {
+            return null;
+        }
+
+        return records.get(activeVirtualSpoutIdentifier).poll();
     }
 
     @Override

@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
 import com.google.common.base.Charsets;
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 
 /**
@@ -40,10 +39,5 @@ public class Utf8StringDeserializer implements Deserializer {
                 new String(key, Charsets.UTF_8),
                 new String(value, Charsets.UTF_8)
         );
-    }
-
-    @Override
-    public Fields getOutputFields() {
-        return new Fields("key", "value");
     }
 }

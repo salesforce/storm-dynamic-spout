@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
-import com.salesforce.storm.spout.dynamic.SpoutTriggerProxy;
+import com.salesforce.storm.spout.sideline.handler.SidelineController;
 
 import java.util.Map;
 
@@ -34,11 +34,14 @@ import java.util.Map;
  */
 public interface SidelineTrigger {
 
+
     /**
-     * Set the sideline spout trigger's proxy on the trigger.
-     * @param spout Sideline spout trigger's proxy
+     * Set the sideline controller instance.
+     * @param sidelineController sideline controller instance.
      */
-    void setSidelineSpout(SpoutTriggerProxy spout);
+    default void setSidelineController(SidelineController sidelineController) {
+        // TODO: Drop the default here when we're ready to switch over to this method.
+    }
 
     /**
      * Open the trigger.

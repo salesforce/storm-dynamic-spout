@@ -23,16 +23,19 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka.deserializer;
-
-import org.apache.storm.tuple.Values;
+package com.salesforce.storm.spout.dynamic.filter;
 
 /**
- * Define a deserializer that always returns null.  Only used for testing purposes.
+ * Thrown when a filter chain step cannot be serialized/unserialized correctly.
  */
-public class NullDeserializer implements Deserializer {
-    @Override
-    public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-        return null;
+public class InvalidFilterChainStepException extends RuntimeException {
+
+    /**
+     * Thrown when a filter chain step cannot be serialized/unserialized correctly.
+     * @param message message.
+     * @param cause underlying exception causing this one to be thrown.
+     */
+    public InvalidFilterChainStepException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

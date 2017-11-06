@@ -27,6 +27,9 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
+import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
+import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
+import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
@@ -34,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,6 +90,11 @@ public class SpoutCoordinator {
     private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
 
     /**
+     * Buffer for errors that need to be reported.
+     */
+    private final Queue<Throwable> reportedErrorsQueue = new ConcurrentLinkedQueue<>();
+
+    /**
      * For capturing metrics.
      */
     private final MetricsRecorder metricsRecorder;
@@ -94,6 +103,11 @@ public class SpoutCoordinator {
      * Thread Pool Executor.
      */
     private ExecutorService executor;
+
+    /**
+     * SpoutMonitorFactory for creating new SpoutMonitors.
+     */
+    private final SpoutMonitorFactory spoutMonitorFactory;
 
     /**
      * The spout monitor runnable, which handles spinning up threads for virtual spouts.
@@ -110,13 +124,29 @@ public class SpoutCoordinator {
      * @param metricsRecorder Recorder for capturing metrics
      * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
      */
-    public SpoutCoordinator(MetricsRecorder metricsRecorder, MessageBuffer messageBuffer) {
-        this.metricsRecorder = metricsRecorder;
-        this.messageBuffer = messageBuffer;
+    public SpoutCoordinator(final MetricsRecorder metricsRecorder, final MessageBuffer messageBuffer) {
+        this(metricsRecorder, messageBuffer, new SpoutMonitorFactory());
     }
 
     /**
-     * Add a new spout to the coordinator, this will get picked up by the coordinator's monitor, opened and
+     * Constructor used for injecting a mock SpoutMonitorFactory instance.
+     * @param metricsRecorder Recorder for capturing metrics
+     * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
+     * @param spoutMonitorFactory A Factory for creating SpoutMonitors.
+     */
+    SpoutCoordinator(
+        final MetricsRecorder metricsRecorder,
+        final MessageBuffer messageBuffer,
+        final SpoutMonitorFactory spoutMonitorFactory
+    ) {
+
+        this.metricsRecorder = metricsRecorder;
+        this.messageBuffer = messageBuffer;
+        this.spoutMonitorFactory = spoutMonitorFactory;
+    }
+
+    /**
+     * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
      */
@@ -131,6 +161,42 @@ public class SpoutCoordinator {
     }
 
     /**
+     * Remove a new VirtualSpout from the coordinator. This will signal to the monitor to request that the VirtualSpout
+     * be stopped and ultimately removed.
+     *
+     * This method will blocked until the VirtualSpout has completely stopped.
+     *
+     * @param virtualSpoutIdentifier identifier of the VirtualSpout to be removed.
+     */
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
+            throw new SpoutDoesNotExistException(
+                "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
+                virtualSpoutIdentifier
+            );
+        }
+
+        getSpoutMonitor().removeVirtualSpout(virtualSpoutIdentifier);
+
+        // Let's block until we no longer detect that the spout is in monitor.
+        while (getSpoutMonitor().hasVirtualSpout(virtualSpoutIdentifier)) {
+            logger.info("Checking for VirtualSpout {} to see if it has finished stopping.", virtualSpoutIdentifier);
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException ex) {
+                logger.error(
+                    "Something went wrong pausing between checking for VirtualSpout {} to stop. {}",
+                    virtualSpoutIdentifier,
+                    ex
+                );
+            }
+        }
+
+        logger.info("VirtualSpout {} is no longer running.", virtualSpoutIdentifier);
+    }
+
+    /**
      * Check if a given spout already exists in the spout coordinator.
      * @param spoutIdentifier spout identifier to check the coordinator for.
      * @return true when the spout exists, false when it does not.
@@ -139,21 +205,21 @@ public class SpoutCoordinator {
         if (!isOpen) {
             throw new IllegalStateException("You cannot check for a spout in the coordinator before it has been opened!");
         }
-        return spoutMonitor.hasSpout(spoutIdentifier);
+        return getSpoutMonitor().hasVirtualSpout(spoutIdentifier);
     }
 
     /**
      * Open the coordinator and begin spinning up virtual spout threads.
-     * @param topologyConfig topology configuration.
+     * @param config topology configuration.
      */
-    public void open(Map<String, Object> topologyConfig) {
+    public void open(final Map<String, Object> config) {
         if (isOpen) {
             logger.warn("SpoutCoordinator is already opened, refusing to open again!");
             return;
         }
 
         // Create copy of topology config
-        this.topologyConfig = Tools.immutableCopy(topologyConfig);
+        this.topologyConfig = Tools.immutableCopy(config);
 
         // Create a countdown latch
         // TODO I think this latch is now not needed, as at open time, nothing can be in the queue yet.
@@ -164,11 +230,12 @@ public class SpoutCoordinator {
         this.executor = Executors.newSingleThreadExecutor();
 
         // Create our spout monitor instance.
-        spoutMonitor = new SpoutMonitor(
+        spoutMonitor = getSpoutMonitorFactory().create(
             getNewSpoutQueue(),
             getMessageBuffer(),
             getAckedTuplesQueue(),
             getFailedTuplesQueue(),
+            getReportedErrorsQueue(),
             latch,
             getClock(),
             getTopologyConfig(),
@@ -183,19 +250,25 @@ public class SpoutCoordinator {
             latch.await();
 
             isOpen = true;
-        } catch (InterruptedException ex) {
-            logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex);
+        } catch (final InterruptedException ex) {
+            logger.error("Exception while waiting for the coordinator to open it's spouts {}", ex.getMessage(), ex);
         }
     }
 
+    /**
+     * This starts up the Spout Monitor thread.
+     * It also handles if it dies un-naturally and re-starts it.
+     */
     private void startSpoutMonitor() {
-        CompletableFuture.runAsync(spoutMonitor, getExecutor()).exceptionally((exception) -> {
+        CompletableFuture.runAsync(getSpoutMonitor(), getExecutor()).exceptionally((exception) -> {
+            // This fires if SpoutMonitor dies because it threw an unhandled exception.
+
             // On errors, we need to restart it.  We throttle restarts @ 10 seconds to prevent thrashing.
             logger.error("Spout monitor died unnaturally.  Will restart after 10 seconds. {}", exception.getMessage(), exception);
             try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                logger.error("Caught InterruptedException, Will not restart SpouMonitor.");
+                Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+            } catch (final InterruptedException interruptedException) {
+                logger.error("Caught InterruptedException, Will not restart Spout Monitor.");
                 return null;
             }
             logger.info("Restarting SpoutMonitor");
@@ -231,10 +304,18 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - Returns the next available Message to be emitted into the topology.
+     * @return Returns the next available Message to be emitted into the topology.
      */
     public Message nextMessage() {
         return getMessageBuffer().poll();
+    }
+
+    /**
+     * @return Returns any errors that should be reported up to the topology.
+     */
+    public Optional<Throwable> getErrors() {
+        // Poll is non-blocking.
+        return Optional.ofNullable(reportedErrorsQueue.poll());
     }
 
     /**
@@ -246,12 +327,14 @@ public class SpoutCoordinator {
             getExecutor().shutdown();
 
             // Call close on the spout monitor
-            spoutMonitor.close();
+            if (getSpoutMonitor() != null) {
+                getSpoutMonitor().close();
+            }
 
             // Wait for clean termination
             getExecutor().awaitTermination(getMaxTerminationWaitTimeMs(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            logger.error("Interrupted clean shutdown, forcing stop: {}", ex);
+        } catch (final InterruptedException interruptedException) {
+            logger.error("Interrupted clean shutdown, forcing stop: {}", interruptedException.getMessage(), interruptedException);
         }
 
         // If we haven't shut down yet..
@@ -266,7 +349,7 @@ public class SpoutCoordinator {
      * @return The total number of spouts the coordinator is running
      */
     int getTotalSpouts() {
-        return spoutMonitor.getTotalSpouts();
+        return getSpoutMonitor().getTotalSpouts();
     }
 
     /**
@@ -277,35 +360,42 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - The acked tuples queues.
+     * @return The acked tuples queues.
      */
     Map<VirtualSpoutIdentifier, Queue<MessageId>> getAckedTuplesQueue() {
         return ackedTuplesQueue;
     }
 
     /**
-     * @return - The failed tuples queues.
+     * @return The failed tuples queues.
      */
     Map<VirtualSpoutIdentifier, Queue<MessageId>> getFailedTuplesQueue() {
         return failedTuplesQueue;
     }
 
     /**
-     * @return - The new virtual spout instance queue.
+     * @return The new virtual spout instance queue.
      */
     Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
     }
 
     /**
-     * @return - Clock instance, used for get local system time.
+     * @return The reported errors queue.
+     */
+    Queue<Throwable> getReportedErrorsQueue() {
+        return reportedErrorsQueue;
+    }
+
+    /**
+     * @return Clock instance, used for get local system time.
      */
     Clock getClock() {
         return clock;
     }
 
     /**
-     * @return - The topology configuration map.
+     * @return The topology configuration map.
      */
     private Map<String, Object> getTopologyConfig() {
         return topologyConfig;
@@ -319,14 +409,28 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
+     * @return Factory for creating SpoutMonitors.
+     */
+    private SpoutMonitorFactory getSpoutMonitorFactory() {
+        return spoutMonitorFactory;
+    }
+
+    /**
+     * @return The spout monitor runnable, which handles spinning up threads for virtual spouts.
+     */
+    private SpoutMonitor getSpoutMonitor() {
+        return spoutMonitor;
+    }
+
+    /**
+     * @return The maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     private long getMaxTerminationWaitTimeMs() {
         return ((Number) getTopologyConfig().get(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**
-     * @return - our internal executor service.
+     * @return Our internal executor service.
      */
     ExecutorService getExecutor() {
         return executor;

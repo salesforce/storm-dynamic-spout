@@ -23,16 +23,48 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka.deserializer;
+package com.salesforce.storm.spout.dynamic.filter;
 
-import org.apache.storm.tuple.Values;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+
+import java.util.Objects;
 
 /**
- * Define a deserializer that always returns null.  Only used for testing purposes.
+ * Identifier for a FilterChainStep.
  */
-public class NullDeserializer implements Deserializer {
+public class DefaultFilterChainStepIdentifier implements FilterChainStepIdentifier {
+
+    private final String id;
+
+    /**
+     * Identifier for a FilterChainStep.
+     * @param id identifier.
+     */
+    public DefaultFilterChainStepIdentifier(final String id) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(id), "You must provide something in order to create an identifier!");
+        this.id = id;
+    }
+
     @Override
-    public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-        return null;
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        DefaultFilterChainStepIdentifier that = (DefaultFilterChainStepIdentifier) obj;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return id;
     }
 }

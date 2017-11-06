@@ -23,45 +23,17 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
-
-import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
+package com.salesforce.storm.spout.dynamic.exception;
 
 /**
- * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
- * starting and stopping a sideline is handled from without breaking every single trigger implementation.
+ * Spout has not yet been opened, but needed to be for the performed operation.
  */
-public class SpoutTriggerProxy {
+public class SpoutNotOpenedException extends RuntimeException {
 
     /**
-     * DynamicSpout SpoutHandler for sidelining.
+     * Spout has not yet been opened, but needed to be for the performed operation.
      */
-    private final SidelineSpoutHandler spoutHandler;
-
-    /**
-     * Create a new proxy.
-     * @param spoutHandler Sidelining SpoutHandler instance.
-     */
-    public SpoutTriggerProxy(final SidelineSpoutHandler spoutHandler) {
-        this.spoutHandler = spoutHandler;
-    }
-
-    /**
-     * Start sidelining.
-     * @param request Sideline request, container an id and a filter chain step.
-     * @return Identifier of the sideline request. You probably shouldn't count on this, it might go away.
-     */
-    public SidelineRequestIdentifier startSidelining(final SidelineRequest request) {
-        return this.spoutHandler.startSidelining(request);
-    }
-
-    /**
-     * Stop sidelining.
-     * @param request Sideline request, container an id and a filter chain step.
-     */
-    public void stopSidelining(final SidelineRequest request) {
-        this.spoutHandler.stopSidelining(request);
+    public SpoutNotOpenedException() {
+        super("Spout has not yet been opened!");
     }
 }
