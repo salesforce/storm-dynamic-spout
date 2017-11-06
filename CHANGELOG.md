@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps. 
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) MetricRecorder is now passed into Consumer interface via open() method.
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Added lag, currentOffset, endOffset metrics to Kafka Consumer.
 
+### Removed
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Removed getMaxLag() from Consumer interface.
 
 ### Bug Fixes
 
