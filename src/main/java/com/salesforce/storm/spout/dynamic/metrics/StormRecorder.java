@@ -192,7 +192,7 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public long stopTimer(final Class sourceClass, final String metricName) {
+    public void stopTimer(final Class sourceClass, final String metricName) {
         final long stopTime = Clock.systemUTC().millis();
 
         final String key = generateKey(sourceClass, metricName);
@@ -200,15 +200,10 @@ public class StormRecorder implements MetricsRecorder {
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
-            return -1;
         }
 
         // Calculate total time inbetween starting and stopping
-        final long totalTime = stopTime - startTime;
-
-        // Update averaged timer
-        timer(sourceClass, metricName, totalTime);
-        return totalTime;
+        timer(sourceClass, metricName, stopTime - startTime);
     }
 
     /**

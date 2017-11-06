@@ -117,5 +117,5 @@ public interface MetricsRecorder {
      * @param metricName name of the metric.
      * @return The total time that was recorded for the timer, in milliseconds.
      */
-    long stopTimer(final Class sourceClass, final String metricName);
+    void stopTimer(final Class sourceClass, final String metricName);
 }

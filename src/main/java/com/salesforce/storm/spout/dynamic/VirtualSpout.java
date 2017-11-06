@@ -357,7 +357,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // record total time and total calls
         getMetricsRecorder().stopTimer(getClass(),"nextTuple.entireMethod");
-        getMetricsRecorder().incrementAssignedValue(getClass(), "nextTuple.totalCalls", 1);
+        getMetricsRecorder().count(getClass(), "nextTuple.totalCalls");
 
         // Return it.
         return message;
