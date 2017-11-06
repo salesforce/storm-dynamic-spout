@@ -198,6 +198,7 @@ public class StormRecorder implements MetricsRecorder {
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
+            return;
         }
 
         // Calculate total time inbetween starting and stopping
