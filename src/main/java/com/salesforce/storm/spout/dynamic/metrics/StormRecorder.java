@@ -152,47 +152,6 @@ public class StormRecorder implements MetricsRecorder {
         assignedValues.scope(key).setValue(value);
     }
 
-    @Override
-    public long incrementAssignedValue(final Class sourceClass, final String metricName, final long incrementBy) {
-        final String key = generateKey(sourceClass, metricName);
-        return incrementAssignedValue(key, incrementBy);
-    }
-
-    /**
-     * Internal helper method to increment an assigned value.
-     *
-     * We attempt to make this thread safe by synchronizing on the underlying metric instance.
-     *
-     * @param key The key to increment.
-     * @param incrementBy How much to increment by.
-     * @return The new value.
-     */
-    private long incrementAssignedValue(final String key, final long incrementBy) {
-        // Grab existing value and increment
-        try {
-            // This logic isn't perfect as scope() internally is not necessarily thread safe
-            // and between concurrent threads its not a given that we'll get back the right instance so our
-            // synchronization may fail / we update the wrong instance in the block.
-            // I *think* worst case scenario here we lose a recorded metric or two, so not going to sweat it.
-            final AssignableMetric assignableMetric = assignedValues.scope(key);
-            synchronized (assignableMetric) {
-                // Internally this doesn't actually reset.
-                Long value = (Long) assignableMetric.getValueAndReset();
-
-                if (value == null) {
-                    value = incrementBy;
-                } else {
-                    value += incrementBy;
-                }
-                assignableMetric.setValue(value);
-                return value;
-            }
-        } catch (ClassCastException e) {
-            // Wrong type!  How should we handle this?
-            return -1;
-        }
-    }
-
     /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!).
      */
@@ -223,7 +182,7 @@ public class StormRecorder implements MetricsRecorder {
         // Update total time value.  This tracks how much time in total has been
         // spent in this area, in milliseconds
         final String totalTimeKey = key + "_totalTimeMs";
-        incrementAssignedValue(totalTimeKey, timeInMs);
+        count(sourceClass, totalTimeKey, timeInMs);
     }
 
     @Override

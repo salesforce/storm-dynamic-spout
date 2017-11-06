@@ -83,15 +83,6 @@ public interface MetricsRecorder {
     void assignValue(final Class sourceClass, final String metricName, final Object value);
 
     /**
-     * Increment an assigned value.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param incrementBy how much to increment by.
-     * @return the new assigned value.
-     */
-    long incrementAssignedValue(final Class sourceClass, final String metricName, final long incrementBy);
-
-    /**
      * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
      *
      * A scope is a secondary key space, so Foo.Bar as a metric name.

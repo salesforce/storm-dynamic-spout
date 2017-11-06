@@ -247,22 +247,4 @@ public class StormRecorderTest {
         assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
         assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
     }
-
-    /**
-     * Validates that increment assigned value works about as we'd expect.
-     */
-    @Test
-    public void testIncrementAssignedValue() {
-        // Create recorder and call open.
-        final StormRecorder recorder = new StormRecorder();
-        recorder.open(new HashMap<>(), new MockTopologyContext());
-
-        // Increment by 2
-        long result = recorder.incrementAssignedValue(getClass(), "myMetric", 2);
-        assertEquals("Should have value of 2", 2, result);
-
-        // Increment by 5
-        result = recorder.incrementAssignedValue(getClass(), "myMetric", 5);
-        assertEquals("Should have value of 7", 7, result);
-    }
 }

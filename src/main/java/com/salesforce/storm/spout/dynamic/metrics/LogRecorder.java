@@ -105,36 +105,6 @@ public class LogRecorder implements MetricsRecorder {
         logger.debug("[ASSIGNED] {} => {}", key, value);
     }
 
-    /**
-     * Synchronized to make thread safe.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param incrementBy how much to increment by.
-     * @return the new stored value.
-     */
-    @Override
-    public synchronized long incrementAssignedValue(final Class sourceClass, final String metricName, final long incrementBy) {
-        final String key = generateKey(sourceClass, metricName);
-        long value = 0;
-        try {
-            if (assignedValues.containsKey(key)) {
-                // We assume we have a long stored.
-                value = (long) assignedValues.get(key);
-            }
-            // Increment value
-            value += incrementBy;
-
-            // Assign new value
-            assignedValues.put(key, value);
-
-            // Return the new value
-            return value;
-        } catch (ClassCastException e) {
-            // Wrong type!  How should we handle this?
-            return -1;
-        }
-    }
-
     @Override
     public <T> T timer(Class sourceClass, String metricName, Callable<T> callable) throws Exception {
         // Wrap in timing
