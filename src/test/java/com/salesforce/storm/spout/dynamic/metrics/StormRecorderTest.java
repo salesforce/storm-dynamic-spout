@@ -26,11 +26,10 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,8 +48,6 @@ import static org.mockito.Mockito.when;
  * Test that {@link StormRecorder} captures metrics.
  */
 public class StormRecorderTest {
-    private static final Logger logger = LoggerFactory.getLogger(StormRecorderTest.class);
-
     private static final int defaultTimeWindow = 60;
 
     /**
@@ -249,5 +246,23 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
         assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
         assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
+    }
+
+    /**
+     * Validates that increment assigned value works about as we'd expect.
+     */
+    @Test
+    public void testIncrementAssignedValue() {
+        // Create recorder and call open.
+        final StormRecorder recorder = new StormRecorder();
+        recorder.open(new HashMap<>(), new MockTopologyContext());
+
+        // Increment by 2
+        long result = recorder.incrementAssignedValue(getClass(), "myMetric", 2);
+        assertEquals("Should have value of 2", 2, result);
+
+        // Increment by 5
+        result = recorder.incrementAssignedValue(getClass(), "myMetric", 5);
+        assertEquals("Should have value of 7", 7, result);
     }
 }

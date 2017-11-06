@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import org.apache.storm.metric.api.AssignableMetric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -160,27 +161,34 @@ public class StormRecorder implements MetricsRecorder {
     /**
      * Internal helper method to increment an assigned value.
      *
-     * !Important, this is synchronized to make it thread safe.
-     * Need to perf test this and see if its worth doing.
+     * We attempt to make this thread safe by synchronizing on the underlying metric instance.
      *
      * @param key The key to increment.
      * @param incrementBy How much to increment by.
      * @return The new value.
      */
-    private synchronized long incrementAssignedValue(final String key, final long incrementBy) {
+    private long incrementAssignedValue(final String key, final long incrementBy) {
         // Grab existing value and increment
         try {
-            Long value = (Long) assignedValues.scope(key).getValueAndReset();
+            // This logic isn't perfect as scope() internally is not necessarily thread safe
+            // and between concurrent threads its not a given that we'll get back the right instance so our
+            // synchronization may fail / we update the wrong instance in the block.
+            // I *think* worst case scenario here we lose a recorded metric or two, so not going to sweat it.
+            final AssignableMetric assignableMetric = assignedValues.scope(key);
+            synchronized (assignableMetric) {
+                // Internally this doesn't actually reset.
+                Long value = (Long) assignableMetric.getValueAndReset();
 
-            if (value == null) {
-                value = incrementBy;
-            } else {
-                value += incrementBy;
+                if (value == null) {
+                    value = incrementBy;
+                } else {
+                    value += incrementBy;
+                }
+                assignableMetric.setValue(value);
+                return value;
             }
-            assignedValues.scope(key).setValue(value);
-            return value;
         } catch (ClassCastException e) {
-            // Wrong type!  How should we hande this?
+            // Wrong type!  How should we handle this?
             return -1;
         }
     }
@@ -213,7 +221,7 @@ public class StormRecorder implements MetricsRecorder {
         timers.scope(key).update(timeInMs);
 
         // Update total time value.  This tracks how much time in total has been
-        // spent in this area, in MS
+        // spent in this area, in milliseconds
         final String totalTimeKey = key + "_totalTimeMs";
         incrementAssignedValue(totalTimeKey, timeInMs);
     }
