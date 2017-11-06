@@ -132,10 +132,6 @@ public class VirtualSpout implements DelegateSpout {
      */
     private VirtualSpoutHandler virtualSpoutHandler;
 
-    // TEMP
-    private final Map<String, Long> nextTupleTimeBuckets = Maps.newHashMap();
-    private final Map<String, Long> ackTimeBuckets = Maps.newHashMap();
-
     /**
      * Constructor.
      * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
@@ -229,24 +225,6 @@ public class VirtualSpout implements DelegateSpout {
         virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
         virtualSpoutHandler.open(spoutConfig);
         virtualSpoutHandler.onVirtualSpoutOpen(this);
-
-        // Temporary metric buckets.
-        // TODO - convert to using proper metrics recorder?
-        nextTupleTimeBuckets.put("failedRetry", 0L);
-        nextTupleTimeBuckets.put("isFiltered", 0L);
-        nextTupleTimeBuckets.put("nextRecord", 0L);
-        nextTupleTimeBuckets.put("messageId", 0L);
-        nextTupleTimeBuckets.put("doesExceedEndOffset", 0L);
-        nextTupleTimeBuckets.put("message", 0L);
-        nextTupleTimeBuckets.put("totalTime", 0L);
-        nextTupleTimeBuckets.put("totalCalls", 0L);
-
-        ackTimeBuckets.put("TotalTime", 0L);
-        ackTimeBuckets.put("TotalCalls", 0L);
-        ackTimeBuckets.put("FailedMsgAck", 0L);
-        ackTimeBuckets.put("RemoveTracked", 0L);
-        ackTimeBuckets.put("CommitOffset", 0L);
-        ackTimeBuckets.put("MessageId", 0L);
     }
 
     @Override
@@ -393,7 +371,7 @@ public class VirtualSpout implements DelegateSpout {
 
     @Override
     public void ack(Object msgId) {
-        final long totalTime = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "ack.entireMethod");
 
         if (msgId == null) {
             logger.warn("Null msg id passed, ignoring");
@@ -401,42 +379,33 @@ public class VirtualSpout implements DelegateSpout {
         }
 
         // Convert to MessageId
-        long start = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "ack.messageId");
         final MessageId messageId;
         try {
             messageId = (MessageId) msgId;
         } catch (ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
-        ackTimeBuckets.put("MessageId", ackTimeBuckets.get("MessageId") + (System.currentTimeMillis() - start));
+        getMetricsRecorder().stopTimer(getClass(), "ack.messageId");
 
         // Talk to sidelineConsumer and mark the offset completed.
-        start = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "ack.commitOffset");
         consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
-        ackTimeBuckets.put("CommitOffset", ackTimeBuckets.get("CommitOffset") + (System.currentTimeMillis() - start));
+        getMetricsRecorder().stopTimer(getClass(), "ack.commitOffset");
 
         // Remove this tuple from the spout where we track things in-case the tuple fails.
-        start = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "ack.removeTracked");
         trackedMessages.remove(messageId);
-        ackTimeBuckets.put("RemoveTracked", ackTimeBuckets.get("RemoveTracked") + (System.currentTimeMillis() - start));
+        getMetricsRecorder().stopTimer(getClass(), "ack.removeTracked");
 
         // Mark it as completed in the failed message handler if it exists.
-        start = System.currentTimeMillis();
+        getMetricsRecorder().startTimer(getClass(), "ack.failedMsgAck");
         retryManager.acked(messageId);
-        ackTimeBuckets.put("FailedMsgAck", ackTimeBuckets.get("FailedMsgAck") + (System.currentTimeMillis() - start));
+        getMetricsRecorder().stopTimer(getClass(), "ack.failedMsgAck");
 
         // Increment totals
-        ackTimeBuckets.put("TotalTime", ackTimeBuckets.get("TotalTime") + (System.currentTimeMillis() - totalTime));
-        ackTimeBuckets.put("TotalCalls", ackTimeBuckets.get("TotalCalls") + 1);
-
-        // TEMP Every so often display stats
-        if (ackTimeBuckets.get("TotalCalls") % 10_000_000 == 0) {
-            final long bucketTime = ackTimeBuckets.get("TotalTime");
-            logger.info("==== ack() Totals after {} calls ====", ackTimeBuckets.get("TotalCalls"));
-            for (Map.Entry<String, Long> entry : ackTimeBuckets.entrySet()) {
-                logger.info("ack() {} => {} ms ({}%)", entry.getKey(), entry.getValue(), ((float) entry.getValue() / bucketTime) * 100);
-            }
-        }
+        getMetricsRecorder().stopTimer(getClass(), "ack.entireMethod");
+        getMetricsRecorder().count(getClass(), "ack.totalCalls");
     }
 
     @Override
