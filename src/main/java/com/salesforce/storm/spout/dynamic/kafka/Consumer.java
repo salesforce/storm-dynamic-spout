@@ -365,6 +365,10 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
     /**
      * Reports kafka consumer statistics at an interval.
+     * Currently this reports
+     *   - "endOffset" or TAIL position of the kafka topic/partition.
+     *   - "currentOffset" or the position the consumer is currently per topic/partition.
+     *   - "lag" or difference between currentOffset and endOffset position.
      */
     private void reportStatus() {
         // If we've reported status more recently than 30 seconds we skip over this.
@@ -372,36 +376,52 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
             return;
         }
 
-        final Map<TopicPartition, Long> topicPartitions = getKafkaConsumer().endOffsets(
+        // Grab the TAIL offset positions for ONLY the topic partitions this consumer is managing.
+        final Map<TopicPartition, Long> endOffsetsMap = getKafkaConsumer().endOffsets(
             getKafkaConsumer().assignment()
         );
 
-        // Capture the ending offset for this topic/partition on the kafka topic
-        for (final Map.Entry<TopicPartition, Long> topicPartition : topicPartitions.entrySet()) {
+        // Grab the consumer's current state for the last offsets it considers completed.
+        final ConsumerState consumerState = getCurrentState();
+
+        // Loop through
+        for (final Map.Entry<TopicPartition, Long> entry : endOffsetsMap.entrySet()) {
+            final TopicPartition topicPartition = entry.getKey();
+            final long endOffset = entry.getValue();
+
+            // Assign the value for endOffset for this topic and partition.
             metricsRecorder.assignValue(
                 getClass(),
-                "endOffset.topic." + topicPartition.getKey().topic() + ".partition." + topicPartition.getKey().partition(),
-                topicPartition.getValue()
+                getTopicPartitionMetricKey(topicPartition.topic(), topicPartition.partition(), "endOffset"),
+                endOffset
             );
-        }
 
-        // Capture the difference, or the "lag" for this topic/partition on the kafka topic
-        for (final ConsumerPartition consumerPartition : getCurrentState().getConsumerPartitions()) {
-            final TopicPartition topicPartition = new TopicPartition(consumerPartition.namespace(), consumerPartition.partition());
+            // Grab the current offset this consumer is at within this topic and partition.
+            final Long currentOffset = consumerState
+                .getOffsetForNamespaceAndPartition(topicPartition.topic(), topicPartition.partition());
 
-            if (!topicPartitions.containsKey(topicPartition)) {
+            // Validate we got a non-null result.
+            if (currentOffset == null) {
+                // Skip invalid?
                 continue;
             }
 
-            final Long endOffset = topicPartitions.get(topicPartition);
-
+            // Current offset is the consumers current position.
             metricsRecorder.assignValue(
                 getClass(),
-                "lag.topic." + consumerPartition.namespace() + ".partition." + consumerPartition.partition(),
-                endOffset - getCurrentState().getOffsetForNamespaceAndPartition(consumerPartition)
+                getTopicPartitionMetricKey(topicPartition.topic(), topicPartition.partition(), "currentOffset"),
+                currentOffset
+            );
+
+            // Calculate "lag" based on (endOffset - currentOffset).
+            metricsRecorder.assignValue(
+                getClass(),
+                getTopicPartitionMetricKey(topicPartition.topic(), topicPartition.partition(), "lag"),
+                endOffset - currentOffset
             );
         }
 
+        // Update our last reported timestamp to now.
         lastReportedStatusMillis = clock.millis();
     }
 
@@ -750,5 +770,17 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
         // Return TopicPartitions for our assigned partitions
         return topicPartitions;
+    }
+
+    /**
+     * Utility method to reduce duplication around generating metric keyspaces for
+     * topic/partition metrics.
+     * @param topic Name of topic the metric belongs to.
+     * @param partition Partition the metric belongs to.
+     * @param metric Name of the metric.
+     * @return Properly formatted keyspace for metric.
+     */
+    private String getTopicPartitionMetricKey(final String topic, final int partition, final String metric) {
+        return "topic." + topic + ".partition." + partition + "." + metric;
     }
 }
