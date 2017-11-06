@@ -23,16 +23,14 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka.deserializer;
-
-import org.apache.storm.tuple.Values;
+package com.salesforce.storm.spout.dynamic.filter;
 
 /**
- * Define a deserializer that always returns null.  Only used for testing purposes.
+ * Identifier to a FilterChainStep.
+ *
+ * This object marks a given step as unique, and provides a way to identify it.  You can implement your FilterChainStep however
+ * you see fit, say a descriptive string of the filter or an md5 hash of it, etc.  It is important that you implement a toString()
+ * and equals() method and that these should be deterministic when identifying a FilterChainStep instance..
  */
-public class NullDeserializer implements Deserializer {
-    @Override
-    public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-        return null;
-    }
+public interface FilterChainStepIdentifier {
 }

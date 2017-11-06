@@ -31,8 +31,8 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.salesforce.storm</groupId>
     <artifactId>dynamic-spout</artifactId>
-    <!-- Last release was 0.8.0 on 2017-10-12 -->
-    <version>0.9-SNAPSHOT</version>
+    <!-- Last release was 0.9.0 on 2017-10-26 -->
+    <version>0.10-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>dynamic-spout</name>
     <description>A framework for building spouts for Apache Storm and a Kafka based spout for dynamically skipping messages to be processed later.</description>
@@ -350,6 +350,7 @@
                     <!-- ${argLine} gets defined by jacoco plugin -->
                     <argLine>${argLine} -Xmx1g</argLine>
                     <skipTests>${skipTests}</skipTests>
+                    <reportFormat>plain</reportFormat>
                 </configuration>
             </plugin>
 

@@ -23,23 +23,37 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.exception;
 
-import com.salesforce.storm.spout.dynamic.Message;
-
-import java.io.Serializable;
+import com.salesforce.storm.spout.dynamic.DelegateSpout;
 
 /**
- * A step in a chain for processing records, these steps must be serializable and should include
- * an equals() method.
+ * Thrown when attempting to add a spout to the coordinator and that spout already exists. This doesn't necessarily
+ * mean that the instance is the same, but that the identifier on the instance matches one that the coordinator was
+ * already running.
  */
-public interface FilterChainStep extends Serializable {
+public class SpoutAlreadyExistsException extends RuntimeException {
 
     /**
-     * Inputs an object, performs some business logic on it and then returns the result.
-     *
-     * @param message The filter to be processed by this step of the chain
-     * @return The resulting filter after being processed
+     * The spout with an identifier that already exists in the coordinator.
      */
-    boolean filter(Message message);
+    private final DelegateSpout spout;
+
+    /**
+     * Thrown when attempting to add a spout to the coordinator and that spout already exists.
+     * @param message specific message about the already existing spout.
+     * @param spout specific spout that appears to already exist in the coordinator.
+     */
+    public SpoutAlreadyExistsException(String message, DelegateSpout spout) {
+        super(message);
+        this.spout = spout;
+    }
+
+    /**
+     * Spout that caused this exception to be thrown.
+     * @return spout that caused this exception to be thrown.
+     */
+    public DelegateSpout getSpout() {
+        return spout;
+    }
 }

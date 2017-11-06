@@ -23,55 +23,23 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import com.salesforce.storm.spout.dynamic.Message;
 
-import java.util.UUID;
+import java.io.Serializable;
 
 /**
- * We use this filter in tests because it allows us an easy way to define
- * how a filter behaves.
+ * A step in a chain for processing records, these steps must be serializable and should include
+ * an equals() method.
  */
-public class StaticMessageFilter implements FilterChainStep {
+public interface FilterChainStep extends Serializable {
 
     /**
-     * We need a way to make this instance unique from others, so we use a UUID.
+     * Inputs an object, performs some business logic on it and then returns the result.
+     *
+     * @param message The filter to be processed by this step of the chain
+     * @return The resulting filter after being processed
      */
-    private final UUID uniqueId;
-
-    public StaticMessageFilter() {
-        this.uniqueId = UUID.randomUUID();
-    }
-
-    @Override
-    public boolean filter(Message message) {
-        return true;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        StaticMessageFilter that = (StaticMessageFilter) other;
-
-        return uniqueId.equals(that.uniqueId);
-    }
-
-    @Override
-    public int hashCode() {
-        return uniqueId.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return "StaticMessageFilter{"
-            + "uniqueId=" + uniqueId
-            + '}';
-    }
+    boolean filter(Message message);
 }

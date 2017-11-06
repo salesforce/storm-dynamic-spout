@@ -23,41 +23,35 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.exception;
 
-import com.salesforce.storm.spout.dynamic.Message;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 
 /**
- * Negates a {@link FilterChainStep} basically doing the opposite of the intended filtering.
+ * Thrown when attempting to remove a spout from the coordinator and that spout does not exist.
  */
-public class NegatingFilterChainStep implements FilterChainStep {
+public class SpoutDoesNotExistException extends RuntimeException {
 
-    private final FilterChainStep step;
+    /**
+     * Spout with this identifier does not exist in the coordinator.
+     */
+    private final VirtualSpoutIdentifier virtualSpoutIdentifier;
 
-    public NegatingFilterChainStep(FilterChainStep step) {
-        this.step = step;
+    /**
+     * Thrown when attempting to remove a spout from the coordinator and that spout does not exist.
+     * @param message specific message about the already existing spout.
+     * @param virtualSpoutIdentifier identifer of the virtual spout that does not exist
+     */
+    public SpoutDoesNotExistException(final String message, final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        super(message);
+        this.virtualSpoutIdentifier = virtualSpoutIdentifier;
     }
 
-    public boolean filter(Message message) {
-        return !this.step.filter(message);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        NegatingFilterChainStep that = (NegatingFilterChainStep) other;
-
-        return step != null ? step.equals(that.step) : that.step == null;
-    }
-
-    @Override
-    public int hashCode() {
-        return step != null ? step.hashCode() : 0;
+    /**
+     * Spout that caused this exception to be thrown.
+     * @return spout that caused this exception to be thrown.
+     */
+    public VirtualSpoutIdentifier getVirtualSpoutIdentifier() {
+        return virtualSpoutIdentifier;
     }
 }

@@ -29,9 +29,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -41,7 +41,9 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -82,11 +84,6 @@ public class DynamicSpout extends BaseRichSpout {
     private final FactoryManager factoryManager;
 
     /**
-     * Stores state from the spout.
-     */
-    private PersistenceAdapter persistenceAdapter;
-
-    /**
      * Handler for callbacks at various stages of a dynamic spout's lifecycle.
      */
     private SpoutHandler spoutHandler;
@@ -114,7 +111,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @param spoutConfig Our configuration.
      */
     public DynamicSpout(Map<String, Object> spoutConfig) {
-        // TODO: This method arguments may change to an actual SidelineSpoutConfig object instead of a generic map?
+        // TODO: Should this method change to a SpoutConfig instance?
         // Save off config, injecting appropriate default values for anything not explicitly configured.
         this.spoutConfig = Collections.unmodifiableMap(SpoutConfig.setDefaults(spoutConfig));
 
@@ -146,17 +143,13 @@ public class DynamicSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
         }
 
-        // We do not use the getters for things like the metricsRecorder, persistenceAdapter and coordinator here
+        // We do not use the getters for things like the metricsRecorder and coordinator here
         // because each of these getters perform a check to see if the spout is open, and it's not yet until we've
         // finished setting all of these things up.
 
         // Initialize Metrics Collection
         metricsRecorder = getFactoryManager().createNewMetricsRecorder();
         metricsRecorder.open(getSpoutConfig(), getTopologyContext());
-
-        // Create and open() persistence manager passing appropriate configuration.
-        persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
-        persistenceAdapter.open(getSpoutConfig());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
@@ -191,7 +184,12 @@ public class DynamicSpout extends BaseRichSpout {
      */
     @Override
     public void nextTuple() {
-         // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
+        // Report any errors
+        getCoordinator()
+            .getErrors()
+            .ifPresent(throwable -> getOutputCollector().reportError(throwable));
+
+        // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
         // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
         // Values for the tuple that should be emitted.
         final Message message = getCoordinator().nextMessage();
@@ -232,16 +230,24 @@ public class DynamicSpout extends BaseRichSpout {
      * @param declarer The output field declarer
      */
     @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    public void declareOutputFields(final OutputFieldsDeclarer declarer) {
         // Handles both explicitly defined and default stream definitions.
         final String streamId = getOutputStreamId();
 
         // Construct fields from config
         final Object fieldsCfgValue = getSpoutConfigItem(SpoutConfig.OUTPUT_FIELDS);
         final Fields fields;
-        if (fieldsCfgValue instanceof String) {
+        if (fieldsCfgValue instanceof List && !((List) fieldsCfgValue).isEmpty() && ((List) fieldsCfgValue).get(0) instanceof String) {
+            // List of String values.
+            fields = new Fields((List<String>) fieldsCfgValue);
+        } else if (fieldsCfgValue instanceof String) {
+            // Log deprecation warning.
+            logger.warn(
+                "Supplying configuration {} as a comma separated string is deprecated.  Please migrate your "
+                + "configuration to provide this option as a List.", SpoutConfig.OUTPUT_FIELDS
+            );
             // Comma separated
-            fields = new Fields(((String) fieldsCfgValue).split(","));
+            fields = new Fields(Tools.splitAndTrim((String) fieldsCfgValue));
         } else if (fieldsCfgValue instanceof Fields) {
             fields = (Fields) fieldsCfgValue;
         } else {
@@ -268,12 +274,6 @@ public class DynamicSpout extends BaseRichSpout {
         if (getCoordinator() != null) {
             getCoordinator().close();
             coordinator = null;
-        }
-
-        // Close persistence manager
-        if (getPersistenceAdapter() != null) {
-            getPersistenceAdapter().close();
-            persistenceAdapter = null;
         }
 
         // Close metrics recorder.
@@ -368,12 +368,21 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Add a delegate spout to the coordinator.
-     * @param spout Delegate spout to add
+     * Add a spout to the coordinator.
+     * @param spout spout to add
      */
     public void addVirtualSpout(final DelegateSpout spout) {
         checkSpoutOpened();
         getCoordinator().addVirtualSpout(spout);
+    }
+
+    /**
+     * Remove a spout from the coordinator by it's identifier.
+     * @param virtualSpoutIdentifier identifier of the spout to remove.
+     */
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        checkSpoutOpened();
+        getCoordinator().removeVirtualSpout(virtualSpoutIdentifier);
     }
 
     /**
@@ -417,20 +426,12 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The persistence manager.
-     */
-    public PersistenceAdapter getPersistenceAdapter() {
-        checkSpoutOpened();
-        return persistenceAdapter;
-    }
-
-    /**
      * @return The stream that tuples will be emitted out.
      */
     String getOutputStreamId() {
         if (outputStreamId == null) {
             if (spoutConfig == null) {
-                throw new IllegalStateException("Missing required configuration!  SidelineSpoutConfig not defined!");
+                throw new IllegalStateException("Missing required configuration! SpoutConfig not defined!");
             }
             outputStreamId = (String) getSpoutConfigItem(SpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {

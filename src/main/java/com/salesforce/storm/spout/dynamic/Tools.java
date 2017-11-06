@@ -25,6 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.map.UnmodifiableMap;
 
@@ -112,5 +114,25 @@ public class Tools {
             }
         }
         return clonedConfig;
+    }
+
+    /**
+     * Takes an input stream and splits on , returning an array of the values.  Each value is trim()'d
+     * and empty values are removed.
+     *
+     * @param input Input string to split.
+     * @return Array of trimmed values.
+     */
+    public static String[] splitAndTrim(final String input) {
+        // Validate non-null input.
+        Preconditions.checkNotNull(input);
+
+        // Split on , call trim(), filter empty values.
+        return Splitter.on(',')
+            .splitToList(input)
+            .stream()
+            .map(String::trim)
+            .filter((inputString) -> !inputString.isEmpty())
+            .toArray(String[]::new);
     }
 }

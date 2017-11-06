@@ -31,7 +31,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
-import com.salesforce.storm.spout.sideline.filter.FilterChain;
+import com.salesforce.storm.spout.dynamic.filter.FilterChain;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
@@ -133,9 +133,8 @@ public class VirtualSpout implements DelegateSpout {
     private VirtualSpoutHandler virtualSpoutHandler;
 
     /**
-     * Constructor.
-     * Use this constructor for your Sidelined instances.  IE an instance that has a specified starting and ending
-     * state.
+     * Create a new VirtualSpout instance.
+     *
      * @param virtualSpoutId Identifier for this VirtualSpout instance.
      * @param spoutConfig Our topology config
      * @param topologyContext Our topology context
@@ -187,7 +186,7 @@ public class VirtualSpout implements DelegateSpout {
             throw new IllegalStateException("Cannot call open more than once!");
         }
 
-        logger.info("Open has starting state {} and ending state {}", startingState, endingState);
+        logger.info("Open for VirtualSpout {} has starting state {} and ending state {}", getVirtualSpoutId(), startingState, endingState);
 
         // Create our failed msg retry manager & open
         retryManager = getFactoryManager().createNewFailedMsgRetryManagerInstance();
@@ -383,12 +382,12 @@ public class VirtualSpout implements DelegateSpout {
         final MessageId messageId;
         try {
             messageId = (MessageId) msgId;
-        } catch (ClassCastException e) {
+        } catch (final ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
         getMetricsRecorder().stopTimer(getClass(), "ack.messageId");
 
-        // Talk to sidelineConsumer and mark the offset completed.
+        // Talk to Consumer and mark the offset completed.
         getMetricsRecorder().startTimer(getClass(), "ack.commitOffset");
         consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
         getMetricsRecorder().stopTimer(getClass(), "ack.commitOffset");
@@ -419,7 +418,7 @@ public class VirtualSpout implements DelegateSpout {
         final MessageId messageId;
         try {
             messageId = (MessageId) msgId;
-        } catch (ClassCastException e) {
+        } catch (final ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
 

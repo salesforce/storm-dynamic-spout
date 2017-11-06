@@ -23,16 +23,35 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.kafka.deserializer;
+package com.salesforce.storm.spout.dynamic.filter;
 
-import org.apache.storm.tuple.Values;
+import com.salesforce.storm.spout.dynamic.Message;
 
-/**
- * Define a deserializer that always returns null.  Only used for testing purposes.
- */
-public class NullDeserializer implements Deserializer {
+class NumberFilter implements FilterChainStep {
+
+    private final int number;
+
+    NumberFilter(final int number) {
+        this.number = number;
+    }
+
+    /**
+     * Filter a message.
+     * @param message The filter to be processed by this step of the chain.
+     * @return true if the message should be filtered, false otherwise.
+     */
     @Override
-    public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
-        return null;
+    public boolean filter(Message message) {
+        Integer messageNumber = (Integer) message.getValues().get(0);
+        // Filter them if they don't match, in other words "not" equals
+        return messageNumber.equals(number);
+    }
+
+    /**
+     * Get the number used in the filter.
+     * @return number used in the filter.
+     */
+    int getNumber() {
+        return number;
     }
 }

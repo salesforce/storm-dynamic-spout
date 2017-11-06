@@ -23,35 +23,41 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
+package com.salesforce.storm.spout.sideline.handler;
+
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
- * Thrown when attempting to add a spout to the coordinator and that spout already exists. This doesn't necessarily
- * mean that the instance is the same, but that the identifier on the instance matches one that the coordinator was
- * already running.
+ * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
+ * starting and stopping a sideline is handled from without breaking every single trigger implementation. It also prevents
+ * other methods on the SpoutHandler from being accessible.
  */
-public class SpoutAlreadyExistsException extends RuntimeException {
+public interface SidelineController {
 
     /**
-     * The spout with an identifier that already exists in the coordinator.
+     * Does a sideline exist in the started state?
+     * @param sidelineRequest sideline request.
+     * @return true it does, false it does not.
      */
-    private final DelegateSpout spout;
+    boolean isSidelineStarted(SidelineRequest sidelineRequest);
 
     /**
-     * Thrown when attempting to add a spout to the coordinator and that spout already exists.
-     * @param message specific message about the already existing spout.
-     * @param spout specific spout that appears to already exist in the coordinator.
+     * Start sidelining.
+     * @param request Sideline request, container an id and a filter chain step.
      */
-    public SpoutAlreadyExistsException(String message, DelegateSpout spout) {
-        super(message);
-        this.spout = spout;
-    }
+    void startSidelining(final SidelineRequest request);
 
     /**
-     * Spout that caused this exception to be thrown.
-     * @return spout that caused this exception to be thrown.
+     * Does a sideline exist in the stopped state?
+     * @param sidelineRequest sideline request.
+     * @return true it has, false it has not.
      */
-    public DelegateSpout getSpout() {
-        return spout;
-    }
+    boolean isSidelineStopped(SidelineRequest sidelineRequest);
+
+    /**
+     * Stop sidelining.
+     * @param request Sideline request, container an id and a filter chain step.
+     */
+    void stopSidelining(final SidelineRequest request);
 }

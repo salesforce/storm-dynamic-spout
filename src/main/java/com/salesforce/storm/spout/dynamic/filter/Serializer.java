@@ -23,13 +23,14 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.filter;
+package com.salesforce.storm.spout.dynamic.filter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Base64;
@@ -46,7 +47,7 @@ public class Serializer {
      * @param value String representing a serialized FilterChainStep.
      * @return Hydrated/Deserialized FilterChainStep.
      */
-    public static FilterChainStep deserialize(final String value) {
+    public static FilterChainStep deserialize(final String value) throws InvalidFilterChainStepException {
         try {
             final byte[] data = Base64.getDecoder().decode(value);
             final ObjectInputStream objectInputStream = new ObjectInputStream(
@@ -55,10 +56,11 @@ public class Serializer {
             FilterChainStep step = (FilterChainStep) objectInputStream.readObject();
             objectInputStream.close();
             return step;
-        } catch (Exception ex) {
-            // IOException or ClassNotFoundException most likely
-            logger.error("{}", ex);
-            return null;
+        } catch (IllegalArgumentException | IOException | ClassNotFoundException ex) {
+            throw new InvalidFilterChainStepException(
+                "Unable to deserialize FilterChainStep",
+                ex
+            );
         }
     }
 
@@ -67,17 +69,18 @@ public class Serializer {
      * @param step FilterChainStep to serialize.
      * @return Serialized string representation of FilterChainStep.
      */
-    public static String serialize(FilterChainStep step) {
+    public static String serialize(FilterChainStep step) throws InvalidFilterChainStepException {
         try {
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             final ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
             objectOutputStream.writeObject(step);
             objectOutputStream.close();
             return Base64.getEncoder().encodeToString(byteArrayOutputStream.toByteArray());
-        } catch (Exception ex) {
-            // IOException most likely
-            logger.error("{}", ex);
-            return "";
+        } catch (IOException ex) {
+            throw new InvalidFilterChainStepException(
+                "Unable to serialize FilterChainStep " + step,
+                ex
+            );
         }
     }
 }

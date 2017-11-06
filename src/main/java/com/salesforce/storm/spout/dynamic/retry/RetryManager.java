@@ -31,7 +31,7 @@ import java.util.Map;
 
 /**
  * Interface for Tracking Failed messages.  By creating an implementation of this interface
- * you can control how SidelineSpout deals with tuples that have failed within the topology.
+ * you can control how the DynamicSpout deals with tuples that have failed within the topology.
  */
 public interface RetryManager {
 

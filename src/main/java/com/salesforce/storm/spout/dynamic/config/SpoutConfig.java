@@ -54,11 +54,15 @@ public class SpoutConfig {
     public static final String OUTPUT_STREAM_ID = "spout.output_stream_id";
 
     /**
-     * (String) Defines the fields for the output stream in a comma separated list.
+     * (List[String]) Defines the output fields that the spout will emit as a list of field names.
+     * Example: ["field1", "field2", ...]
+     *
+     * Also supported as a single string of comma separated values: "field1, field2, ..."
+     * Or as an explicitly defined Fields object.
      */
     @Documentation(
-        description = "Defines the output fields that the spout will emit in a comma separated list",
-        type = String.class
+        description = "Defines the output fields that the spout will emit as a list of field names.",
+        type = List.class
     )
     public static final String OUTPUT_FIELDS = "spout.output_fields";
 
