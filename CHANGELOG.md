@@ -9,22 +9,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Moved `FilterChain` back to the `dynamic` package.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
 
+#### Removed
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Removed getMaxLag() from Consumer interface.
+
 #### Improvements
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps.
 - [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) MetricRecorder is now passed into Consumer interface via open() method.
 
-#### Removed
-- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Removed getMaxLag() from Consumer interface.
 
 ### Sideline Framework
+#### Breaking Changes
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SpoutTriggerProxy` with `SidelineController` interface.
+
 #### Removed
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Removed deprecated code.
     - Remove deprecated constructor from SidelineRequest
     - Removed deprecated constructors from SidelineRequestIdentifier
     
-#### Breaking Changes
-- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SpoutTriggerProxy` with `SidelineController` interface.
-
 #### Improvements
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) When deserializing an invalid FilterChainStep it would crash the spout instance.
