@@ -340,7 +340,9 @@ SpoutMonitor | poolSize | Gauge | The max number of VirtualSpout instances that 
 SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
 SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
 SpoutMonitor | completed | Gauge | The number of completed VirtualSpout instances.
-
+Consumer | topic.`topic`.partition.`partition`.currentOffset | Gauge | Offset consumer has processed.
+Consumer | topic.`topic`.partition.`partition`.endOffset | Gauge | Offset for TAIL position in the partition.
+Consumer | topic.`topic`.partition.`partition`.lag | Gauge | Difference between endOffset and currentOffset metrics.
 
 # Sidelining
 
