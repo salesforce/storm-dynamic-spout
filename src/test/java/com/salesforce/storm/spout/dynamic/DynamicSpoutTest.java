@@ -364,7 +364,7 @@ public class DynamicSpoutTest {
         ackTuples(spout, spoutEmissions);
 
         // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertEquals("Should have a single VirtualSpout instance", 1, spout.getSpoutCoordinator().getTotalSpouts());
+        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -405,7 +405,7 @@ public class DynamicSpoutTest {
 
         // Validate that VirtualSpouts are NOT closed out, but still waiting for unacked tuples.
         // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
-        assertEquals("We should have 2 virtual spouts running", 2, spout.getSpoutCoordinator().getTotalSpouts());
+        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
 
         // Lets ack our messages.
         ackTuples(spout, spoutEmissions);
@@ -1022,8 +1022,8 @@ public class DynamicSpoutTest {
         final Throwable exception2 = new Exception("My Exception");
 
         // "Report" our exceptions
-        spout.getSpoutCoordinator().getReportedErrorsQueue().add(exception1);
-        spout.getSpoutCoordinator().getReportedErrorsQueue().add(exception2);
+        spout.getCoordinator().getReportedErrorsQueue().add(exception1);
+        spout.getCoordinator().getReportedErrorsQueue().add(exception2);
 
         // Call next tuple a couple times, validate errors get reported.
         await()
@@ -1223,7 +1223,7 @@ public class DynamicSpoutTest {
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the acked queue.
-                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getSpoutCoordinator().getAckedTuplesQueue();
+                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
                 for (VirtualSpoutIdentifier key : queueMap.keySet()) {
                     // If any queue has entries, return false
                     if (!queueMap.get(key).isEmpty()) {
@@ -1259,7 +1259,7 @@ public class DynamicSpoutTest {
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the fail queue.
-                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getSpoutCoordinator().getFailedTuplesQueue();
+                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
                 for (VirtualSpoutIdentifier key : queueMap.keySet()) {
                     // If any queue has entries, return false
                     if (!queueMap.get(key).isEmpty()) {
@@ -1389,11 +1389,11 @@ public class DynamicSpoutTest {
     private void waitForVirtualSpouts(DynamicSpout spout, int howManyVirtualSpoutsWeWantLeft) {
         await()
             .atMost(5, TimeUnit.SECONDS)
-            .until(() -> spout.getSpoutCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
+            .until(() -> spout.getCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
         assertEquals(
             "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
             howManyVirtualSpoutsWeWantLeft,
-            spout.getSpoutCoordinator().getTotalSpouts()
+            spout.getCoordinator().getTotalSpouts()
         );
     }
 

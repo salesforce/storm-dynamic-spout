@@ -72,12 +72,16 @@ public class DynamicSpout extends BaseRichSpout {
     private TopologyContext topologyContext;
 
     /**
+     * TODO REWRITE THIS.
      * Our internal SpoutCoordinator.  This manages all Virtual Spouts as well
      * as handles routing emitted, acked, and failed tuples between this Spout instance
      * and the appropriate Virtual Spouts.
      */
-    private SpoutCoordinator spoutCoordinator;
+    private SpoutCoordinator coordinator;
 
+    /**
+     * TODO FILL THIS OUT
+     */
     private SpoutMessageBus messageBus;
 
     /**
@@ -145,7 +149,7 @@ public class DynamicSpout extends BaseRichSpout {
             throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
         }
 
-        // We do not use the getters for things like the metricsRecorder and spoutCoordinator here
+        // We do not use the getters for things like the metricsRecorder and coordinator here
         // because each of these getters perform a check to see if the spout is open, and it's not yet until we've
         // finished setting all of these things up.
 
@@ -161,15 +165,15 @@ public class DynamicSpout extends BaseRichSpout {
         this.messageBus = new MessageBus(messageBuffer);
 
         // Create Spout SpoutCoordinator.
-        spoutCoordinator = new SpoutCoordinator(
+        coordinator = new SpoutCoordinator(
             // Our metrics recorder.
             metricsRecorder,
             // Pass message bus casted.
             (VirtualSpoutMessageBus) messageBus
         );
 
-        // Call open on spoutCoordinator, avoiding getter
-        spoutCoordinator.open(getSpoutConfig());
+        // Call open on coordinator, avoiding getter
+        coordinator.open(getSpoutConfig());
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
@@ -274,12 +278,12 @@ public class DynamicSpout extends BaseRichSpout {
             return;
         }
 
-        logger.info("Stopping the spoutCoordinator and closing all spouts");
+        logger.info("Stopping the coordinator and closing all spouts");
 
-        // Close spoutCoordinator
-        if (getSpoutCoordinator() != null) {
-            getSpoutCoordinator().close();
-            spoutCoordinator = null;
+        // Close coordinator
+        if (getCoordinator() != null) {
+            getCoordinator().close();
+            coordinator = null;
         }
 
         // Close metrics recorder.
@@ -298,7 +302,7 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Currently a no-op.  We could make this pause things in the spoutCoordinator.
+     * Currently a no-op.  We could make this pause things in the coordinator.
      */
     @Override
     public void activate() {
@@ -309,7 +313,7 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Currently a no-op.  We could make this un-pause things in the spoutCoordinator.
+     * Currently a no-op.  We could make this un-pause things in the coordinator.
      */
     @Override
     public void deactivate() {
@@ -328,7 +332,7 @@ public class DynamicSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final MessageId messageId = (MessageId) id;
 
-        // Ack the tuple via the spoutCoordinator
+        // Ack the tuple via the coordinator
         getMessageBus().ack(messageId);
 
         // Update ack count metric for VirtualSpout this tuple originated from
@@ -346,7 +350,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         logger.warn("Failed {}", messageId);
 
-        // Fail the tuple via the spoutCoordinator
+        // Fail the tuple via the coordinator
         getMessageBus().fail(messageId);
     }
 
@@ -374,30 +378,30 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Add a spout to the spoutCoordinator.
+     * Add a spout to the coordinator.
      * @param spout spout to add
      */
     public void addVirtualSpout(final DelegateSpout spout) {
         checkSpoutOpened();
-        getSpoutCoordinator().addVirtualSpout(spout);
+        getCoordinator().addVirtualSpout(spout);
     }
 
     /**
-     * Remove a spout from the spoutCoordinator by it's identifier.
+     * Remove a spout from the coordinator by it's identifier.
      * @param virtualSpoutIdentifier identifier of the spout to remove.
      */
     public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         checkSpoutOpened();
-        getSpoutCoordinator().removeVirtualSpout(virtualSpoutIdentifier);
+        getCoordinator().removeVirtualSpout(virtualSpoutIdentifier);
     }
 
     /**
-     * Check if a given spout already exists in the spout spoutCoordinator.
-     * @param spoutIdentifier spout identifier to check the spoutCoordinator for.
+     * Check if a given spout already exists in the spout coordinator.
+     * @param spoutIdentifier spout identifier to check the coordinator for.
      * @return true when the spout exists, false when it does not.
      */
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
-        return getSpoutCoordinator().hasVirtualSpout(spoutIdentifier);
+        return getCoordinator().hasVirtualSpout(spoutIdentifier);
     }
 
     /**
@@ -424,11 +428,11 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The virtual spout spoutCoordinator.
+     * @return The virtual spout coordinator.
      */
-    SpoutCoordinator getSpoutCoordinator() {
+    SpoutCoordinator getCoordinator() {
         checkSpoutOpened();
-        return spoutCoordinator;
+        return coordinator;
     }
 
     SpoutMessageBus getMessageBus() {
