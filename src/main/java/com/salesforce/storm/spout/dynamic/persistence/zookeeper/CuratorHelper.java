@@ -91,9 +91,6 @@ public class CuratorHelper {
             if (bytes == null) {
                 return null;
             }
-            final Gson gson = new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd HH:mm:ss")
-                .create();
             return (Map<K, V>) gson.fromJson(new String(bytes, Charsets.UTF_8), HashMap.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
