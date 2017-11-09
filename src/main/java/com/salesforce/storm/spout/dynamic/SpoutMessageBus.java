@@ -3,9 +3,8 @@ package com.salesforce.storm.spout.dynamic;
 import java.util.Optional;
 
 /**
- * Facade in front of SpoutCoordinator reducing available scope.
- *
- * These are all of the methods available to the Spout instance.
+ * Facade in front of MessageBus reducing available scope down to only the methods
+ * that should be available to the main Spout/DynamicSpout instance.
  */
 public interface SpoutMessageBus {
 

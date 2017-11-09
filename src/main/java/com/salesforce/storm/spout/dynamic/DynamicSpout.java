@@ -73,7 +73,7 @@ public class DynamicSpout extends BaseRichSpout {
 
     /**
      * TODO REWRITE THIS.
-     * Our internal SpoutCoordinator.  This manages all Virtual Spouts as well
+     * Our internal Coordinator.  This manages all Virtual Spouts as well
      * as handles routing emitted, acked, and failed tuples between this Spout instance
      * and the appropriate Virtual Spouts.
      */

@@ -289,7 +289,7 @@ public class SpoutConfig {
     public static final String METRICS_RECORDER_ENABLE_TASK_ID_PREFIX = "spout.metrics.enable_task_id_prefix";
 
 ///////////////////////////////////
-// Internal SpoutCoordinator Config
+// Internal Coordinator Config
 ///////////////////////////////////
 
     /**

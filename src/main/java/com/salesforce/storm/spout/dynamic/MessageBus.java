@@ -11,7 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
+ * Provides an abstraction for passing messages between the DynamicSpout instance
+ * and VirtualSpout instances.
  *
+ * Since these instances live across different threads internally we make use of
+ * thread safe concurrent data structures making this instance ThreadSafe.
  */
 public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
     private static final Logger logger = LoggerFactory.getLogger(MessageBus.class);
@@ -36,6 +40,10 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
      */
     private final Queue<Throwable> reportedErrorsQueue = new ConcurrentLinkedQueue<>();
 
+    /**
+     * Constructor.
+     * @param messageBuffer Provides the MessageBuffer implementation to use.
+     */
     public MessageBus(final MessageBuffer messageBuffer) {
         this.messageBuffer = messageBuffer;
     }
@@ -54,6 +62,7 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
 
     @Override
     public void ack(final MessageId id) {
+        // TODO this actually isn't thread safe :(
         if (!ackedTuplesQueue.containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
@@ -64,6 +73,7 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
 
     @Override
     public void fail(final MessageId id) {
+        // TODO this actually isn't thread safe :(
         if (!failedTuplesQueue.containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
