@@ -149,8 +149,10 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
      * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
+     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
-    public void addVirtualSpout(final DelegateSpout spout) {
+    @Override
+    public void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException  {
         if (hasVirtualSpout(spout.getVirtualSpoutId())) {
             throw new SpoutAlreadyExistsException(
                 "A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!",
@@ -167,8 +169,10 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
      * This method will blocked until the VirtualSpout has completely stopped.
      *
      * @param virtualSpoutIdentifier identifier of the VirtualSpout to be removed.
+     * @throws SpoutDoesNotExistException If no VirtualSpout exists with the VirtualSpoutIdentifier.
      */
-    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    @Override
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
         if (!hasVirtualSpout(virtualSpoutIdentifier)) {
             throw new SpoutDoesNotExistException(
                 "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
@@ -201,6 +205,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
      * @param spoutIdentifier spout identifier to check the coordinator for.
      * @return true when the spout exists, false when it does not.
      */
+    @Override
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
         if (!isOpen) {
             throw new IllegalStateException("You cannot check for a spout in the coordinator before it has been opened!");
@@ -212,6 +217,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
      * Open the coordinator and begin spinning up virtual spout threads.
      * @param config topology configuration.
      */
+    @Override
     public void open(final Map<String, Object> config) {
         if (isOpen) {
             logger.warn("Coordinator is already opened, refusing to open again!");
@@ -278,6 +284,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
      * Acks a tuple on the spout that it belongs to.
      * @param id Tuple message id to ack
      */
+    @Override
     public void ack(final MessageId id) {
         if (!getAckedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Acking tuple for unknown consumer");
@@ -291,6 +298,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
      * Fails a tuple on the spout that it belongs to.
      * @param id Tuple message id to fail
      */
+    @Override
     public void fail(final MessageId id) {
         if (!getFailedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Failing tuple for unknown consumer");
@@ -303,6 +311,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
     /**
      * @return Returns the next available Message to be emitted into the topology.
      */
+    @Override
     public Optional<Message> nextMessage() {
         return Optional.ofNullable(getMessageBuffer().poll());
     }
@@ -310,6 +319,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
     /**
      * @return Returns any errors that should be reported up to the topology.
      */
+    @Override
     public Optional<Throwable> getErrors() {
         // Poll is non-blocking.
         return Optional.ofNullable(reportedErrorsQueue.poll());
@@ -318,6 +328,7 @@ public class Coordinator implements SpoutCoordinator, VirtualSpoutCoordinator {
     /**
      * Stop managed spouts, calling this should shut down and finish the coordinator's spouts.
      */
+    @Override
     public void close() {
         try {
             // Call shutdown, which prevents the executor from starting any new tasks.
