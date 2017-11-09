@@ -3,23 +3,41 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.10.0 (RELEASE DATE TBD)
-### Improvements
-- [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method Deserializer.getOutputFields()
-- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Removed deprecated code.
-- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SpoutTriggerProxy` with `SidelineController` interface.
-- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Moved `FilterChain` back to the `dynamic` package. 
-- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps. 
+
+### DynamicSpout Framework
+#### Breaking Changes
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Moved `FilterChain` back to the `dynamic` package.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
+
+#### Removed
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Removed getMaxLag() from Consumer interface.
+
+#### Improvements
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps.
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) MetricRecorder is now passed into Consumer interface via open() method.
+
+
+### Sideline Framework
+#### Breaking Changes
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SpoutTriggerProxy` with `SidelineController` interface.
+
+#### Removed
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Removed deprecated code.
+    - Remove deprecated constructor from SidelineRequest
+    - Removed deprecated constructors from SidelineRequestIdentifier
+    
+#### Improvements
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
+- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) When deserializing an invalid FilterChainStep it would crash the spout instance.
 
+### Kafka Consumer
+#### Removed
+- [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method Deserializer.getOutputFields()
 
-### Bug Fixes
-
-#### Sideline Spout
-- [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) When deserializing an invalid FilterChainStep it would crash the spout instance. 
-
-#### Kafka Consumer
+#### Improvements
+- [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Added lag, currentOffset, endOffset metrics to Kafka Consumer.
 - [PR-43](https://github.com/salesforce/storm-dynamic-spout/pull/43) Fixed unbounded recursion when calling fillBuffer() in the KafkaConsumer.
+
 
 ## 0.9.0 (2017-10-26)
 ### Improvements
