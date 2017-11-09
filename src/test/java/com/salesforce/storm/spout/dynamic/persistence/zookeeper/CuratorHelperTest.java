@@ -26,8 +26,8 @@
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Charsets;
+import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.utils.SharedZookeeperTestResource;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.ClassRule;
 import org.junit.Test;
