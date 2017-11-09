@@ -30,7 +30,7 @@
             <AppenderRef ref="File"/>
         </Logger>
 
-        <!-- Relevant classes we want to see INFO logs on the Console -->
+        <!-- Relevant classes we want to see ERROR logs on the Console and capture INFO (and everything else) in our log file -->
         <Logger name="com.salesforce.storm.spout.dynamic">
             <AppenderRef ref="Console" level="ERROR"/>
             <AppenderRef ref="File" level="INFO"/>
