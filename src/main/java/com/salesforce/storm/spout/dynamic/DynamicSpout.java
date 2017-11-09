@@ -41,10 +41,10 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * DynamicSpout's contain other virtualized spouts, and provide mechanisms for interacting with the spout life cycle
@@ -156,7 +156,7 @@ public class DynamicSpout extends BaseRichSpout {
         messageBuffer.open(getSpoutConfig());
 
         // Create Spout Coordinator.
-        coordinator = new SpoutCoordinator(
+        coordinator = new Coordinator(
             // Our metrics recorder.
             metricsRecorder,
             // Our MessageBuffer/Queue Implementation.
@@ -189,14 +189,15 @@ public class DynamicSpout extends BaseRichSpout {
             .getErrors()
             .ifPresent(throwable -> getOutputCollector().reportError(throwable));
 
-        // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
+        // Ask the Coordinator for the next message that should be emitted. If it returns null, then there's
         // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
         // Values for the tuple that should be emitted.
-        final Message message = getCoordinator().nextMessage();
-        if (message == null) {
+        final Optional<Message> messageOptional = getCoordinator().nextMessage();
+        if (!messageOptional.isPresent()) {
             // Nothing new to emit!
             return;
         }
+        final Message message = messageOptional.get();
 
         // Emit tuple via the output collector.
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());

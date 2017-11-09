@@ -65,13 +65,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
+ * Test that {@link Coordinator} handles spinning up {@link DelegateSpout} instances.
  */
-public class SpoutCoordinatorTest {
-    private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
+public class CoordinatorTest {
+    private static final Logger logger = LoggerFactory.getLogger(CoordinatorTest.class);
 
     /**
-     * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
+     * Test that {@link Coordinator} handles spinning up {@link DelegateSpout} instances.
      */
     @Test
     public void testCoordinator() throws Exception {
@@ -106,7 +106,7 @@ public class SpoutCoordinatorTest {
         config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
 
         // Create coordinator
-        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, actual);
+        final Coordinator coordinator = new Coordinator(metricsRecorder, actual);
         coordinator.open(config);
 
         coordinator.addVirtualSpout(fireHoseSpout);
@@ -198,7 +198,7 @@ public class SpoutCoordinatorTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
-        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        final Coordinator coordinator = new Coordinator(metricsRecorder, messageBuffer);
 
         expectedExceptionAddingSpoutBeforeOpen.expect(IllegalStateException.class);
         expectedExceptionAddingSpoutBeforeOpen.expectMessage("before it has been opened");
@@ -223,7 +223,7 @@ public class SpoutCoordinatorTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
-        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        final Coordinator coordinator = new Coordinator(metricsRecorder, messageBuffer);
         coordinator.open(config);
 
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
@@ -252,7 +252,7 @@ public class SpoutCoordinatorTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
-        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        final Coordinator coordinator = new Coordinator(metricsRecorder, messageBuffer);
         coordinator.open(config);
 
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
@@ -269,7 +269,7 @@ public class SpoutCoordinatorTest {
     }
 
     /**
-     * Validates that SpoutCoordinator will restart SpoutRunner if it terminates abnormally.
+     * Validates that Coordinator will restart SpoutRunner if it terminates abnormally.
      */
     @Test
     public void testRestartsSpoutMonitorOnDeath() throws InterruptedException {
@@ -297,7 +297,7 @@ public class SpoutCoordinatorTest {
         final MessageBuffer messageBuffer = mock(MessageBuffer.class);
 
         // Create coordinator, injecting our mock SpoutMonitorFactory.
-        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer, spoutMonitorFactory);
+        final Coordinator coordinator = new Coordinator(metricsRecorder, messageBuffer, spoutMonitorFactory);
 
         // Build config
         final Map<String, Object> config = new HashMap<>();
@@ -338,7 +338,7 @@ public class SpoutCoordinatorTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Create coordinator
-        final SpoutCoordinator coordinator = new SpoutCoordinator(metricsRecorder, messageBuffer);
+        final Coordinator coordinator = new Coordinator(metricsRecorder, messageBuffer);
         coordinator.open(config);
 
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");

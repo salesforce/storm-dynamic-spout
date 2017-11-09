@@ -222,7 +222,7 @@ public class SidelineSpoutHandlerTest {
 
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
-        // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
+        // Normally the Coordinator calls this, but we don't have a Coordinator so we're doing it ourselves
         sidelineSpoutHandler.getFireHoseSpout().open();
 
         // Tell our mock consumer that these are the partitions we're working with
@@ -317,7 +317,7 @@ public class SidelineSpoutHandlerTest {
             null // ending offset
         );
 
-        // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
+        // Normally the Coordinator calls this, but we don't have a Coordinator so we're doing it ourselves
         sidelineSpoutHandler.getFireHoseSpout().open();
 
         // Stick the filter onto the fire hose, it should be removed when we stop the sideline request

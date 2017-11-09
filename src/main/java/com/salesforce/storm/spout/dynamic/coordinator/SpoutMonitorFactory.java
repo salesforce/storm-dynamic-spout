@@ -26,9 +26,7 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.MessageId;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 
 import java.time.Clock;
@@ -44,10 +42,7 @@ public class SpoutMonitorFactory {
     /**
      * Factory method.
      * @param newSpoutQueue Queue monitored for new Spouts that should be started.
-     * @param tupleOutputQueue Queue for pushing out Tuples to the topology.
-     * @param ackedTuplesQueue Queue for incoming Tuples that need to be acked.
-     * @param failedTuplesQueue Queue for incoming Tuples that need to be failed.
-     * @param reportedErrorsQueue Queue for any errors that should be reported to the topology.
+     * @param virtualSpoutCoordinator
      * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
@@ -56,10 +51,7 @@ public class SpoutMonitorFactory {
      */
     public SpoutMonitor create(
         final Queue<DelegateSpout> newSpoutQueue,
-        final MessageBuffer tupleOutputQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue,
-        final Queue<Throwable> reportedErrorsQueue,
+        final VirtualSpoutCoordinator virtualSpoutCoordinator,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig,
@@ -68,10 +60,7 @@ public class SpoutMonitorFactory {
         // Create instance.
         return new SpoutMonitor(
             newSpoutQueue,
-            tupleOutputQueue,
-            ackedTuplesQueue,
-            failedTuplesQueue,
-            reportedErrorsQueue,
+            virtualSpoutCoordinator,
             latch,
             clock,
             topologyConfig,

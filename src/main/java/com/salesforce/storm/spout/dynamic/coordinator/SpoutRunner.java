@@ -28,18 +28,17 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.MessageId;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -54,21 +53,6 @@ public class SpoutRunner implements Runnable {
      * This is the {@link com.salesforce.storm.spout.dynamic.VirtualSpout} instance we are going to be managing.
      */
     private final DelegateSpout spout;
-
-    /**
-     * This is the queue we put messages that need to be emitted out to the topology onto.
-     */
-    private final MessageBuffer tupleQueue;
-
-    /**
-     * This is the queue we read tuples that need to be acked off of.
-     */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTupleQueue;
-
-    /**
-     * This is the queue we read tuples that need to be failed off of.
-     */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTupleQueue;
 
     /**
      * For access to the system clock.
@@ -96,19 +80,17 @@ public class SpoutRunner implements Runnable {
      */
     private volatile boolean requestedStop = false;
 
+    private final VirtualSpoutCoordinator virtualSpoutCoordinator;
+
     SpoutRunner(
         final DelegateSpout spout,
-        final MessageBuffer tupleQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTupleQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTupleInputQueue,
+        final VirtualSpoutCoordinator virtualSpoutCoordinator,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
-        this.tupleQueue = tupleQueue;
-        this.ackedTupleQueue = ackedTupleQueue;
-        this.failedTupleQueue = failedTupleInputQueue;
+        this.virtualSpoutCoordinator = virtualSpoutCoordinator;
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
@@ -120,16 +102,16 @@ public class SpoutRunner implements Runnable {
     @Override
     public void run() {
         try {
-            // Rename thread to use the spout's consumer id
-            Thread.currentThread().setName(spout.getVirtualSpoutId().toString());
+            final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
 
-            logger.info("Opening {} spout", spout.getVirtualSpoutId());
+            // Rename thread to use the spout's consumer id
+            Thread.currentThread().setName(virtualSpoutId.toString());
+
+            logger.info("Opening {} spout", virtualSpoutId);
             spout.open();
 
             // Let all of our queues know about our new instance.
-            tupleQueue.addVirtualSpoutId(spout.getVirtualSpoutId());
-            ackedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
-            failedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
+            virtualSpoutCoordinator.registerVirtualSpout(virtualSpoutId);
 
             // Count down our latch for thread synchronization.
             latch.countDown();
@@ -143,7 +125,7 @@ public class SpoutRunner implements Runnable {
                 final Message message = spout.nextTuple();
                 if (message != null) {
                     try {
-                        tupleQueue.put(message);
+                        virtualSpoutCoordinator.publishMessage(message);
                     } catch (final InterruptedException interruptedException) {
                         logger.error("Shutting down due to interruption {}", interruptedException.getMessage(), interruptedException);
                         spout.requestStop();
@@ -154,21 +136,20 @@ public class SpoutRunner implements Runnable {
                 //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
                 // Ack anything that needs to be acked
-                while (!ackedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    final MessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
-                    spout.ack(id);
+                Optional<MessageId> messageId;
+                while ((messageId = virtualSpoutCoordinator.getAckedMessage(virtualSpoutId)).isPresent()) {
+                    spout.ack(messageId.get());
                 }
 
                 // Fail anything that needs to be failed
-                while (!failedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    final MessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
-                    spout.fail(id);
+                while ((messageId = virtualSpoutCoordinator.getFailedMessage(virtualSpoutId)).isPresent()) {
+                    spout.fail(messageId);
                 }
 
                 // Periodically we flush the state of the spout to capture progress
                 final long now = getClock().millis();
                 if ((lastFlush + getConsumerStateFlushIntervalMs()) < now) {
-                    logger.debug("Flushing state for spout {}", spout.getVirtualSpoutId());
+                    logger.debug("Flushing state for spout {}", virtualSpoutId);
                     spout.flushState();
                     lastFlush = now;
                 }
@@ -177,13 +158,11 @@ public class SpoutRunner implements Runnable {
             // Looks like someone requested that we stop this instance.
             // So we call close on it, and log our run time.
             final Duration runtime = Duration.ofMillis(getClock().millis() - getStartTime());
-            logger.info("Closing {} spout, total run time was {}", spout.getVirtualSpoutId(), Tools.prettyDuration(runtime));
+            logger.info("Closing {} spout, total run time was {}", virtualSpoutId, Tools.prettyDuration(runtime));
             spout.close();
 
             // Remove our entries from our queues.
-            getTupleQueue().removeVirtualSpoutId(spout.getVirtualSpoutId());
-            getAckedTupleQueue().remove(spout.getVirtualSpoutId());
-            getFailedTupleQueue().remove(spout.getVirtualSpoutId());
+            virtualSpoutCoordinator.unregisterVirtualSpout(virtualSpoutId);
         } catch (final Exception ex) {
             // We don't handle restarting this instance.  Instead its Spout Monitor which that ownership falls to.
             // We'll log the error, and bubble up the exception.
@@ -237,18 +216,6 @@ public class SpoutRunner implements Runnable {
 
     DelegateSpout getSpout() {
         return spout;
-    }
-
-    Map<VirtualSpoutIdentifier, Queue<MessageId>> getAckedTupleQueue() {
-        return ackedTupleQueue;
-    }
-
-    Map<VirtualSpoutIdentifier, Queue<MessageId>> getFailedTupleQueue() {
-        return failedTupleQueue;
-    }
-
-    MessageBuffer getTupleQueue() {
-        return tupleQueue;
     }
 
     CountDownLatch getLatch() {
