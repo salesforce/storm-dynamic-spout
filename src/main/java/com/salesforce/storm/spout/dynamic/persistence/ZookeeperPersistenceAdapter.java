@@ -42,7 +42,7 @@ import java.util.Map;
  * Persistence layer implemented using Zookeeper.
  * Why Zookeeper?  Because its easy, and you most likely have it around.
  */
-public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializable {
+public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
     /**
      * Logger for logging logs.
