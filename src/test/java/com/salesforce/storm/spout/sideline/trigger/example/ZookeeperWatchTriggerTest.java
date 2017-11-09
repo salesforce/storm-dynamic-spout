@@ -27,13 +27,13 @@ package com.salesforce.storm.spout.sideline.trigger.example;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
-import com.salesforce.storm.spout.dynamic.utils.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
