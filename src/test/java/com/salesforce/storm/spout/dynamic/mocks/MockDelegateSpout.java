@@ -127,11 +127,6 @@ public class MockDelegateSpout implements DelegateSpout {
     }
 
     @Override
-    public double getMaxLag() {
-        return 0;
-    }
-
-    @Override
     public int getNumberOfFiltersApplied() {
         return 0;
     }
