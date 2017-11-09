@@ -120,10 +120,14 @@ public class TriggerEvent {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TriggerEvent that = (TriggerEvent) o;
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        TriggerEvent that = (TriggerEvent) obj;
         return processed == that.processed
             && type == that.type
             && Objects.equals(data, that.data)

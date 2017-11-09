@@ -174,18 +174,12 @@ public class ZookeeperWatchTriggerTest {
 
         assertTrue(
             "Starting trigger has been processed",
-            curatorHelper.readJson(
-                path1,
-                TriggerEvent.class
-            ).isProcessed()
+            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed()
         );
 
         assertTrue(
             "Stopping trigger has been processed",
-            curatorHelper.readJson(
-                path2,
-                TriggerEvent.class
-            ).isProcessed()
+            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed()
         );
 
         // Clean it all up
@@ -299,18 +293,12 @@ public class ZookeeperWatchTriggerTest {
 
         assertTrue(
             "Starting trigger has been processed",
-            curatorHelper.readJson(
-                path1,
-                TriggerEvent.class
-            ).isProcessed()
+            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed()
         );
 
         assertTrue(
             "Stopping trigger has been processed",
-            curatorHelper.readJson(
-                path2,
-                TriggerEvent.class
-            ).isProcessed()
+            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed()
         );
 
         // Clean it all up
