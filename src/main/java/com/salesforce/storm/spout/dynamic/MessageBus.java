@@ -124,4 +124,21 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
         ackedTuplesQueue.remove(virtualSpoutIdentifier);
         failedTuplesQueue.remove(virtualSpoutIdentifier);
     }
+
+/////// Additional Helper methods not exposed via Interfaces.
+    public int ackSize() {
+        int size = 0;
+        for (final Queue queue: ackedTuplesQueue.values()) {
+            size += queue.size();
+        }
+        return size;
+    }
+
+    public int failSize() {
+        int size = 0;
+        for (final Queue queue: failedTuplesQueue.values()) {
+            size += queue.size();
+        }
+        return size;
+    }
 }

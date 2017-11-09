@@ -143,7 +143,7 @@ public class SpoutRunner implements Runnable {
 
                 // Fail anything that needs to be failed
                 while ((messageId = virtualSpoutMessageBus.getFailedMessage(virtualSpoutId)).isPresent()) {
-                    spout.fail(messageId);
+                    spout.fail(messageId.get());
                 }
 
                 // Periodically we flush the state of the spout to capture progress
@@ -222,6 +222,9 @@ public class SpoutRunner implements Runnable {
         return latch;
     }
 
+    /**
+     * @return Unixtimestamp (in milliseconds) of when the instance was created.
+     */
     long getStartTime() {
         return startTime;
     }

@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
+import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -110,10 +112,7 @@ public class SpoutMonitorTest {
     public void testConstructor() {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final MessageBuffer messageBuffer = new FifoBuffer();
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
-        final Queue<Throwable> errorQueue = Queues.newConcurrentLinkedQueue();
+        final MessageBus messageBus = new MessageBus(new FifoBuffer());
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -130,12 +129,9 @@ public class SpoutMonitorTest {
         metricsRecorder.open(topologyConfig, new MockTopologyContext());
 
         // Create instance.
-        SpoutMonitor spoutMonitor = new SpoutMonitor(
+        final SpoutMonitor spoutMonitor = new SpoutMonitor(
             newSpoutQueue,
-            messageBuffer,
-            ackQueue,
-            failQueue,
-            errorQueue,
+            messageBus,
             latch,
             clock,
             topologyConfig,
@@ -173,7 +169,7 @@ public class SpoutMonitorTest {
     @Test
     public void testStartAndCloseSmokeTest() throws InterruptedException, ExecutionException {
         // Create instance.
-        SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
@@ -209,7 +205,7 @@ public class SpoutMonitorTest {
     @Test
     public void testSubmittingNewSpout() throws InterruptedException, ExecutionException {
         // Create instance.
-        SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
@@ -227,7 +223,7 @@ public class SpoutMonitorTest {
         assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
 
         // Create a mock spout
-        DelegateSpout mockSpout = mock(DelegateSpout.class);
+        final DelegateSpout mockSpout = mock(DelegateSpout.class);
         when(mockSpout.getVirtualSpoutId()).thenReturn(new DefaultVirtualSpoutIdentifier("MySpoutId"));
 
         // Add it to our queue
@@ -280,7 +276,7 @@ public class SpoutMonitorTest {
     @Test
     public void testWhatHappensWhenSpoutClosesNormally() throws InterruptedException, ExecutionException {
         // Create instance.
-        SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
@@ -355,7 +351,7 @@ public class SpoutMonitorTest {
     @Test
     public void testQueuedSpoutInstancesAreNeverStarted() throws InterruptedException, ExecutionException {
         // Create instance.
-        SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
@@ -448,7 +444,7 @@ public class SpoutMonitorTest {
     @Test
     public void testQueuedSpoutInstancesAreStartedWhenAvailableThreads() throws InterruptedException, ExecutionException {
         // Create instance.
-        SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
         final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
@@ -554,8 +550,11 @@ public class SpoutMonitorTest {
      */
     @Test
     public void testWhatHappensWhenSpoutThrowsException() throws InterruptedException, ExecutionException {
+        // Create messageBus
+        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
+
         // Create instance.
-        SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance(messageBus);
 
         // Our new spout queue
         final Queue<DelegateSpout> newSpoutQueue = spoutMonitor.getNewSpoutQueue();
@@ -609,13 +608,12 @@ public class SpoutMonitorTest {
             .until(future::isDone, equalTo(true));
 
         // Verify that the exception error was reported.
-        assertEquals("Should have reported one error", 1, spoutMonitor.getReportedErrorsQueue().size());
-        assertTrue("Should be our reported error", spoutMonitor.getReportedErrorsQueue().contains(runtimeException));
+        final Optional<Throwable> throwableOptional = messageBus.getErrors();
+        assertTrue("Should have reported one error", throwableOptional.isPresent());
+        assertTrue("Should be our reported error", throwableOptional.get().equals(runtimeException));
 
-        // Verify closed was called on the spout instance?
-        //assertTrue("Close() should have been called", mockSpout.wasCloseCalled);
-
-        // Verify spout instance was re-started?
+        // Should have no other errors
+        assertFalse("Should have no other errors", messageBus.getErrors().isPresent());
 
         // Verify that executor service is terminated
         assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
@@ -631,13 +629,9 @@ public class SpoutMonitorTest {
         return topologyConfig;
     }
 
-    private SpoutMonitor getDefaultMonitorInstance() {
+    private SpoutMonitor getDefaultMonitorInstance(final MessageBus messageBus) {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final MessageBuffer messageBuffer = new FifoBuffer();
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
-        final Queue<Throwable> errorQueue = Queues.newConcurrentLinkedQueue();
         final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
@@ -649,12 +643,9 @@ public class SpoutMonitorTest {
         metricsRecorder.open(topologyConfig, new MockTopologyContext());
 
         // Create instance.
-        SpoutMonitor spoutMonitor = new SpoutMonitor(
+        final SpoutMonitor spoutMonitor = new SpoutMonitor(
             newSpoutQueue,
-            messageBuffer,
-            ackQueue,
-            failQueue,
-            errorQueue,
+            messageBus,
             latch,
             clock,
             topologyConfig,
@@ -662,6 +653,10 @@ public class SpoutMonitorTest {
         );
 
         return spoutMonitor;
+    }
+
+    private SpoutMonitor getDefaultMonitorInstance() {
+        return getDefaultMonitorInstance(new MessageBus(new FifoBuffer()));
     }
 
     private CompletableFuture startSpoutMonitor(SpoutMonitor spoutMonitor) {
