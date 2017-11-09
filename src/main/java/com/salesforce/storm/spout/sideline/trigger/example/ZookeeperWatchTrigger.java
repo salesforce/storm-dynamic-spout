@@ -52,6 +52,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,11 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      * Curator curator for Zookeeper.
      */
     private CuratorFramework curator;
+
+    /**
+     * Curator helper for Zookeeper.
+     */
+    private CuratorHelper curatorHelper;
 
     /**
      * Builder for taking data off of a {@link TriggerEvent} and turning it into a {@link FilterChainStep}.
@@ -135,6 +141,8 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             Tools.stripKeyPrefix(Config.PREFIX, config)
         );
 
+        curatorHelper = new CuratorHelper(curator);
+
         filterChainStepBuilder = FactoryManager.createNewInstance(
             (String) config.get(Config.FILTER_CHAIN_STEP_BUILDER_CLASS)
         );
@@ -166,13 +174,13 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
 
                         logger.info("Loading existing TriggerEvent {}", triggerEvent);
 
-                        handleSidelining(triggerEvent);
+                        handleSidelining(root + "/" + sidelineRequest, triggerEvent);
                     }
                 }
 
                 logger.info("Creating cache for {}", root);
 
-                final SidelineTriggerWatch watch = new SidelineTriggerWatch(root);
+                final SidelineTriggerWatch watch = new SidelineTriggerWatch();
 
                 // Now setup our watch so that we see future changes as they come through
                 final PathChildrenCache cache = new PathChildrenCache(curator, root, true);
@@ -212,6 +220,8 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         if (curator != null) {
             curator.close();
             curator = null;
+
+            curatorHelper = null;
         }
 
         isOpen = false;
@@ -221,9 +231,14 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      * Using a trigger event process a START/STOP sideline request.
      * @param triggerEvent trigger event.
      */
-    private void handleSidelining(final TriggerEvent triggerEvent) {
+    private void handleSidelining(final String path, final TriggerEvent triggerEvent) {
         if (triggerEvent == null) {
             logger.warn("Received a null TriggerEvent");
+            return;
+        }
+
+        if (triggerEvent.isProcessed()) {
+            logger.info("TriggerEvent has already been processed, skipping. {}", triggerEvent);
             return;
         }
 
@@ -248,6 +263,19 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             logger.info("Stopping sideline request {} from event {}", sidelineRequest, triggerEvent);
             sidelineController.stopSidelining(sidelineRequest);
         }
+
+        // Write the trigger event back to its path and flip the processed bit to true
+        curatorHelper.writeJson(path, new TriggerEvent(
+            triggerEvent.getType(),
+            triggerEvent.getData(),
+            triggerEvent.getCreatedAt(),
+            triggerEvent.getCreatedBy(),
+            triggerEvent.getDescription(),
+            // Explicit set this as processed
+            true,
+            // Update the updated at date to right now
+            new Date()
+        ));
     }
 
     /**
@@ -334,22 +362,9 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
     private class SidelineTriggerWatch implements PathChildrenCacheListener {
 
         /**
-         * Path that this watch was set for.
-         */
-        private final String path;
-
-        /**
          * Whether or not the initialization event has been received for this listener.
          */
         private boolean isInitialized = false;
-
-        /**
-         * Watch implementation for the sideline trigger node in Zookeeper.
-         * @param path path that this watch was set for.
-         */
-        private SidelineTriggerWatch(final String path) {
-            this.path = path;
-        }
 
         /**
          * Receives events for this node cache and handles them.
@@ -381,7 +396,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                         // Refresh the event from zookeeper, so we have the most current copy
                         final TriggerEvent triggerEvent = getTriggerEvent(event.getData().getData());
 
-                        handleSidelining(triggerEvent);
+                        handleSidelining(event.getData().getPath(), triggerEvent);
                     }
                     break;
                 case CHILD_REMOVED:

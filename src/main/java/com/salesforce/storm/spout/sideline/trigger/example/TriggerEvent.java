@@ -48,22 +48,33 @@ public class TriggerEvent {
 
     private String description;
 
+    private boolean processed;
+
+    private Date updatedAt;
+
     /**
      * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates whether or not a START or STOP
      * request should be processed.
+     *
+     * When you create a TriggerEvent in Zookeeper always set processed = false, the trigger implementation will flip this to true
+     * after it has been picked up and handled by the trigger. This allows you to distinguish an event that's been handled by the
+     * trigger and one that has not.
      *
      * @param type sideline type, either start of stop.
      * @param data data bag, key => values.
      * @param createdAt when the event was created.
      * @param createdBy who created the event.
      * @param description a description of the reason for the sideline request.
+     * @param processed whether or not the event (in its current state has been processed)
      */
     public TriggerEvent(
         final SidelineType type,
         final Map<String,Object> data,
         final Date createdAt,
         final String createdBy,
-        final String description
+        final String description,
+        final boolean processed,
+        final Date updatedAt
     ) {
         Preconditions.checkNotNull(type, "Type is required.");
         Preconditions.checkNotNull(data, "Data payload is required (But we do accept empty maps!).");
@@ -76,6 +87,8 @@ public class TriggerEvent {
         this.createdAt = createdAt;
         this.createdBy = createdBy;
         this.description = description;
+        this.processed = processed;
+        this.updatedAt = updatedAt;
     }
 
     public SidelineType getType() {
@@ -98,20 +111,26 @@ public class TriggerEvent {
         return description;
     }
 
+    public boolean isProcessed() {
+        return processed;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        TriggerEvent that = (TriggerEvent) obj;
-        return type == that.type
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TriggerEvent that = (TriggerEvent) o;
+        return processed == that.processed
+            && type == that.type
             && Objects.equals(data, that.data)
             && Objects.equals(createdAt, that.createdAt)
             && Objects.equals(createdBy, that.createdBy)
-            && Objects.equals(description, that.description);
+            && Objects.equals(description, that.description)
+            && Objects.equals(updatedAt, that.updatedAt);
     }
 
     @Override
@@ -127,6 +146,8 @@ public class TriggerEvent {
             + ", createdAt=" + createdAt
             + ", createdBy='" + createdBy + '\''
             + ", description='" + description + '\''
+            + ", processed=" + processed
+            + ", updatedAt=" + updatedAt
             + '}';
     }
 }

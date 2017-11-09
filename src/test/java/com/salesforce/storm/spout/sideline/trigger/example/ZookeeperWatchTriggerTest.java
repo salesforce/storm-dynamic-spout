@@ -34,6 +34,7 @@ import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
+import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
@@ -53,6 +54,7 @@ import java.util.Set;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test that the reference implementation for sideline triggers works correctly.
@@ -96,6 +98,7 @@ public class ZookeeperWatchTriggerTest {
         final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
             Tools.stripKeyPrefix(Config.PREFIX, config)
         );
+        final CuratorHelper curatorHelper = new CuratorHelper(currator);
 
         final SidelineSpoutHandler sidelineSpoutHandler = Mockito.mock(SidelineSpoutHandler.class);
 
@@ -115,7 +118,9 @@ public class ZookeeperWatchTriggerTest {
             startData,
             new Date(),
             CREATED_BY,
-            DESCRIPTION
+            DESCRIPTION,
+            false,
+            new Date()
         );
         final String id1 = "foo" + System.currentTimeMillis();
         final String path1 = zkRoot + "/" + id1;
@@ -144,7 +149,9 @@ public class ZookeeperWatchTriggerTest {
             stopData,
             new Date(),
             CREATED_BY,
-            DESCRIPTION
+            DESCRIPTION,
+            false,
+            new Date()
         );
         final String id2 = "bar" + System.currentTimeMillis();
         final String path2 = zkRoot + "/" + id2;
@@ -163,6 +170,22 @@ public class ZookeeperWatchTriggerTest {
 
         Mockito.verify(sidelineSpoutHandler).stopSidelining(
             findSidelineRequest("stop", trigger.getSidelineRequests())
+        );
+
+        assertTrue(
+            "Starting trigger has been processed",
+            curatorHelper.readJson(
+                path1,
+                TriggerEvent.class
+            ).isProcessed()
+        );
+
+        assertTrue(
+            "Stopping trigger has been processed",
+            curatorHelper.readJson(
+                path2,
+                TriggerEvent.class
+            ).isProcessed()
         );
 
         // Clean it all up
@@ -198,6 +221,7 @@ public class ZookeeperWatchTriggerTest {
         final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
             Tools.stripKeyPrefix(Config.PREFIX, config)
         );
+        final CuratorHelper curatorHelper = new CuratorHelper(currator);
 
         // We're going to turn some events into JSON
         final Gson gson = new GsonBuilder()
@@ -211,16 +235,19 @@ public class ZookeeperWatchTriggerTest {
             startData,
             new Date(),
             CREATED_BY,
-            DESCRIPTION
+            DESCRIPTION,
+            false,
+            new Date()
         );
         final String id1 = "foo" + System.currentTimeMillis();
         final String path1 = zkRoot + "/" + id1;
+        final String startTriggerEventJson = gson.toJson(startTriggerEvent);
 
         // Create a starting request
         currator
             .create()
             .creatingParentsIfNeeded()
-            .forPath(zkRoot + "/" + id1, gson.toJson(startTriggerEvent).getBytes());
+            .forPath(zkRoot + "/" + id1, startTriggerEventJson.getBytes());
 
         // Since this is an async operation, use await() to watch for when the nodes are created
         await()
@@ -233,16 +260,19 @@ public class ZookeeperWatchTriggerTest {
             stopData,
             new Date(),
             CREATED_BY,
-            DESCRIPTION
+            DESCRIPTION,
+            false,
+            new Date()
         );
         final String id2 = "bar" + System.currentTimeMillis();
         final String path2 = zkRoot + "/" + id2;
+        final String stopTriggerEventJson = gson.toJson(stopTriggerEvent);
 
         // Create a stopping request
         currator
             .create()
             .creatingParentsIfNeeded()
-            .forPath(path2, gson.toJson(stopTriggerEvent).getBytes());
+            .forPath(path2, stopTriggerEventJson.getBytes());
 
         await()
             .until(() -> currator.checkExists().forPath(path2), notNullValue());
@@ -265,6 +295,22 @@ public class ZookeeperWatchTriggerTest {
 
         Mockito.verify(sidelineSpoutHandler).stopSidelining(
             findSidelineRequest("stop", trigger.getSidelineRequests())
+        );
+
+        assertTrue(
+            "Starting trigger has been processed",
+            curatorHelper.readJson(
+                path1,
+                TriggerEvent.class
+            ).isProcessed()
+        );
+
+        assertTrue(
+            "Stopping trigger has been processed",
+            curatorHelper.readJson(
+                path2,
+                TriggerEvent.class
+            ).isProcessed()
         );
 
         // Clean it all up

@@ -57,7 +57,8 @@ public class CuratorHelper {
     /**
      * JSON parser.
      */
-    private final Gson gson = new GsonBuilder().create();
+    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
+
 
     /**
      * Helper methods for common tasks when working with Curator.
@@ -73,25 +74,42 @@ public class CuratorHelper {
      * @param path node to write the JSON data into.
      * @param data map representation of JSON data to write.
      */
-    public void writeJson(String path, Map data) {
+    public void writeJson(final String path, final Object data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
         writeBytes(path, gson.toJson(data).getBytes(Charsets.UTF_8));
     }
 
     /**
-     * Internal method for reading JSON from a zookeeper node.
+     * Read data from Zookeeper that has been stored as JSON.
+     *
+     * This method will return a HashMap from the JSON.  You should consider using {@link #readJson(String, Class)} instead as it
+     * will deserialize the JSON to a concrete class.
+     *
      * @param path node containing JSON to read from.
-     * @param <K> key of the json field.
+     * @param <K> key to the json field.
      * @param <V> value of the json field.
      * @return map representing the JSON stored within the zookeeper node.
      */
-    public <K, V> Map<K, V> readJson(String path) {
+    public <K, V> Map<K, V> readJson(final String path) {
+        return readJson(path, HashMap.class);
+    }
+
+    /**
+     * Read data from Zookeeper that has been stored as JSON.
+     *
+     * This method will return the JSON deserialized to the provided class.
+     *
+     * @param path node containing JSON to read from.
+     * @param clazz class of the object the JSON should be deserialized to.
+     * @return map representing the JSON stored within the zookeeper node.
+     */
+    public <T> T readJson(final String path, final Class<T> clazz) {
         try {
             byte[] bytes = readBytes(path);
             if (bytes == null) {
                 return null;
             }
-            return (Map<K, V>) gson.fromJson(new String(bytes, Charsets.UTF_8), HashMap.class);
+            return gson.fromJson(new String(bytes, Charsets.UTF_8), clazz);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
