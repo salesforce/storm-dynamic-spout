@@ -78,8 +78,6 @@ public class StaticMessageFilter implements FilterChainStep {
 
     @Override
     public String toString() {
-        return "StaticMessageFilter{"
-            + "id=" + id
-            + '}';
+        return id;
     }
 }
