@@ -233,7 +233,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
             // Resuming a stopped request means we spin up a new sideline spout
             if (payload.type.equals(SidelineType.STOP)) {
-                // This method will check to see that the VirtualSpout isn't already in the Coordinator before adding it
+                // This method will check to see that the VirtualSpout isn't already in the SpoutCoordinator before adding it
                 addSidelineVirtualSpout(
                     payload.id,
                     payload.request.step,

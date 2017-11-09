@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutCoordinator;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
@@ -71,12 +71,12 @@ public class SpoutMonitor implements Runnable {
     private final Queue<DelegateSpout> newSpoutQueue;
 
     /**
-     * Routes messages from VirtualSpouts to the Coordinator.
+     * Routes messages from VirtualSpouts to the SpoutCoordinator.
      */
-    private final VirtualSpoutCoordinator virtualSpoutCoordinator;
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     /**
-     * This latch allows the Coordinator to block on start up until its initial
+     * This latch allows the SpoutCoordinator to block on start up until its initial
      * set of VirtualSpout instances have started.
      */
     private final CountDownLatch latch;
@@ -128,14 +128,14 @@ public class SpoutMonitor implements Runnable {
      */
     public SpoutMonitor(
         final Queue<DelegateSpout> newSpoutQueue,
-        final VirtualSpoutCoordinator virtualSpoutCoordinator,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig,
         final MetricsRecorder metricsRecorder
     ) {
         this.newSpoutQueue = newSpoutQueue;
-        this.virtualSpoutCoordinator = virtualSpoutCoordinator;
+        this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
@@ -243,7 +243,7 @@ public class SpoutMonitor implements Runnable {
 
                 final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
-                    virtualSpoutCoordinator,
+                    virtualSpoutMessageBus,
                     latch,
                     getClock(),
                     getTopologyConfig()
@@ -326,10 +326,10 @@ public class SpoutMonitor implements Runnable {
             getNumberOfFailedTasks(),
             executor.getTaskCount()
         );
-        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", virtualSpoutCoordinator.messageSize(), spoutRunners.keySet());
+        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", virtualSpoutMessageBus.messageSize(), spoutRunners.keySet());
 
         // Report to metrics record
-        getMetricsRecorder().assignValue(getClass(), "bufferSize", virtualSpoutCoordinator.messageSize());
+        getMetricsRecorder().assignValue(getClass(), "bufferSize", virtualSpoutMessageBus.messageSize());
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
         getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
         getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
@@ -475,7 +475,7 @@ public class SpoutMonitor implements Runnable {
      * @param throwable The error to be reported.
      */
     private void reportError(final Throwable throwable) {
-        virtualSpoutCoordinator.publishError(throwable);
+        virtualSpoutMessageBus.publishError(throwable);
     }
 
     /**

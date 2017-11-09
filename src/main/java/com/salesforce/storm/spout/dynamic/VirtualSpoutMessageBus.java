@@ -3,11 +3,11 @@ package com.salesforce.storm.spout.dynamic;
 import java.util.Optional;
 
 /**
- * Facade in front of Coordinator reducing available scope.
+ * Facade in front of SpoutCoordinator reducing available scope.
  *
  * These are all of the methods available to virtual spouts.
  */
-public interface VirtualSpoutCoordinator {
+public interface VirtualSpoutMessageBus {
 
     /**
      * For registering new VirtualSpout.

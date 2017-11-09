@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutCoordinator;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 
 import java.time.Clock;
@@ -42,7 +42,7 @@ public class SpoutMonitorFactory {
     /**
      * Factory method.
      * @param newSpoutQueue Queue monitored for new Spouts that should be started.
-     * @param virtualSpoutCoordinator
+     * @param virtualSpoutMessageBus
      * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
@@ -51,7 +51,7 @@ public class SpoutMonitorFactory {
      */
     public SpoutMonitor create(
         final Queue<DelegateSpout> newSpoutQueue,
-        final VirtualSpoutCoordinator virtualSpoutCoordinator,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig,
@@ -60,7 +60,7 @@ public class SpoutMonitorFactory {
         // Create instance.
         return new SpoutMonitor(
             newSpoutQueue,
-            virtualSpoutCoordinator,
+            virtualSpoutMessageBus,
             latch,
             clock,
             topologyConfig,

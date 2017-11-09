@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.MessageId;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutCoordinator;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
@@ -80,17 +80,17 @@ public class SpoutRunner implements Runnable {
      */
     private volatile boolean requestedStop = false;
 
-    private final VirtualSpoutCoordinator virtualSpoutCoordinator;
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     SpoutRunner(
         final DelegateSpout spout,
-        final VirtualSpoutCoordinator virtualSpoutCoordinator,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
-        this.virtualSpoutCoordinator = virtualSpoutCoordinator;
+        this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
@@ -111,7 +111,7 @@ public class SpoutRunner implements Runnable {
             spout.open();
 
             // Let all of our queues know about our new instance.
-            virtualSpoutCoordinator.registerVirtualSpout(virtualSpoutId);
+            virtualSpoutMessageBus.registerVirtualSpout(virtualSpoutId);
 
             // Count down our latch for thread synchronization.
             latch.countDown();
@@ -125,7 +125,7 @@ public class SpoutRunner implements Runnable {
                 final Message message = spout.nextTuple();
                 if (message != null) {
                     try {
-                        virtualSpoutCoordinator.publishMessage(message);
+                        virtualSpoutMessageBus.publishMessage(message);
                     } catch (final InterruptedException interruptedException) {
                         logger.error("Shutting down due to interruption {}", interruptedException.getMessage(), interruptedException);
                         spout.requestStop();
@@ -137,12 +137,12 @@ public class SpoutRunner implements Runnable {
 
                 // Ack anything that needs to be acked
                 Optional<MessageId> messageId;
-                while ((messageId = virtualSpoutCoordinator.getAckedMessage(virtualSpoutId)).isPresent()) {
+                while ((messageId = virtualSpoutMessageBus.getAckedMessage(virtualSpoutId)).isPresent()) {
                     spout.ack(messageId.get());
                 }
 
                 // Fail anything that needs to be failed
-                while ((messageId = virtualSpoutCoordinator.getFailedMessage(virtualSpoutId)).isPresent()) {
+                while ((messageId = virtualSpoutMessageBus.getFailedMessage(virtualSpoutId)).isPresent()) {
                     spout.fail(messageId);
                 }
 
@@ -162,7 +162,7 @@ public class SpoutRunner implements Runnable {
             spout.close();
 
             // Remove our entries from our queues.
-            virtualSpoutCoordinator.unregisterVirtualSpout(virtualSpoutId);
+            virtualSpoutMessageBus.unregisterVirtualSpout(virtualSpoutId);
         } catch (final Exception ex) {
             // We don't handle restarting this instance.  Instead its Spout Monitor which that ownership falls to.
             // We'll log the error, and bubble up the exception.

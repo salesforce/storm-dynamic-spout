@@ -29,7 +29,7 @@ import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 
 /**
- * A virtualized spout that is run from within the DyanmicSpout by the Coordinator.
+ * A virtualized spout that is run from within the DyanmicSpout by the SpoutCoordinator.
  */
 public interface DelegateSpout {
 
