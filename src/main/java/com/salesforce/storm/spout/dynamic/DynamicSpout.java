@@ -72,15 +72,13 @@ public class DynamicSpout extends BaseRichSpout {
     private TopologyContext topologyContext;
 
     /**
-     * TODO REWRITE THIS.
-     * Our internal Coordinator.  This manages all Virtual Spouts as well
-     * as handles routing emitted, acked, and failed tuples between this Spout instance
-     * and the appropriate Virtual Spouts.
+     * Our internal Coordinator.  This manages all Virtual Spouts.
      */
     private SpoutCoordinator coordinator;
 
     /**
-     * TODO FILL THIS OUT
+     * ThreadSafe routing of emitted, acked, and failed tuples between this DynamicSpout instance
+     * and the appropriate Virtual Spouts.
      */
     private SpoutMessageBus messageBus;
 

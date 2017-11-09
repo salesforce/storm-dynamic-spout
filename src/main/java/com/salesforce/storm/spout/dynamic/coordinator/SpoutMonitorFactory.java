@@ -42,7 +42,7 @@ public class SpoutMonitorFactory {
     /**
      * Factory method.
      * @param newSpoutQueue Queue monitored for new Spouts that should be started.
-     * @param virtualSpoutMessageBus
+     * @param virtualSpoutMessageBus Message bus for passing messages FROM VirtualSpouts TO DynamicSpout.
      * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
