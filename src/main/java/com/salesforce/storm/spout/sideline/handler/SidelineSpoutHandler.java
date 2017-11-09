@@ -156,28 +156,32 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         createSidelineTriggers();
 
-        final long refreshIntervalSeconds;
+        Preconditions.checkArgument(
+            spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)
+            && spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS) != null,
+            "Refresh interval is required."
+        );
 
-        // This should be set by SidelineConfig.setDefaults(), but just in case we want to avoid the NullPointer
-        if (spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)) {
-            refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
-        } else {
-            refreshIntervalSeconds = 600;
-        }
+        final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
 
         final long refreshIntervalMillis = TimeUnit.SECONDS.toMillis(refreshIntervalSeconds);
+
+        // Why not just start the timer at 0? Because we want to block onSpoutOpen() until the first run of loadSidelines()
+        loadSidelines();
 
         // Repeat our sidelines check periodically
         final Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                loadSidelines();
+                // Catch this so that it doesn't kill the recurring task
+                try {
+                    loadSidelines();
+                } catch (Exception ex) {
+                    logger.error("Attempting to loadSidelines() failed {}", ex);
+                }
             }
         }, refreshIntervalMillis, refreshIntervalMillis);
-
-        // Why not just start the timer at 0? Because we want to block onSpoutOpen() until the first run of loadSidelines()
-        loadSidelines();
 
         for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
             sidelineTrigger.open(getSpoutConfig());
@@ -186,8 +190,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
     /**
      * Loads existing sideline requests that have been previously persisted and checks to make sure that they are running.
+     *
+     * This method is synchronized to avoid having overlap runs, which could cause odd state issues as the same operation
+     * is essentially being performed X times.
      */
-    void loadSidelines() {
+    synchronized void loadSidelines() {
         final VirtualSpoutIdentifier fireHoseIdentifier = getFireHoseSpoutIdentifier();
 
         // If we haven't spun up a VirtualSpout yet, we create it here.

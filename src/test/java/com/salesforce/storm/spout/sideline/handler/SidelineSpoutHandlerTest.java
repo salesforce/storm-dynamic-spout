@@ -579,7 +579,7 @@ public class SidelineSpoutHandlerTest {
     }
 
     private Map<String, Object> getConfig() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(new HashMap<>()));
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, CONSUMER_ID_PREFIX);
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
         config.put(
