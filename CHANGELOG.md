@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps. 
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
-
+- [PR-52](https://github.com/salesforce/storm-dynamic-spout/pull/52) Remove Kafka-Test-Server.  Replace with Kafka-JUnit external dependency.
 
 ### Bug Fixes
 
