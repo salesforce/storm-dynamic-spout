@@ -100,8 +100,8 @@ public class SpoutCoordinator {
 
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
-     * @param metricsRecorder Recorder for capturing metrics
-     * @param virtualSpoutMessageBus TODO FILL OUT
+     * @param metricsRecorder Recorder for capturing metrics.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between VirtualSpouts and DynamicSpout.
      */
     public SpoutCoordinator(final MetricsRecorder metricsRecorder, final VirtualSpoutMessageBus virtualSpoutMessageBus) {
         this(metricsRecorder, virtualSpoutMessageBus, new SpoutMonitorFactory());
@@ -109,8 +109,8 @@ public class SpoutCoordinator {
 
     /**
      * Constructor used for injecting a mock SpoutMonitorFactory instance.
-     * @param metricsRecorder Recorder for capturing metrics
-     * @param virtualSpoutMessageBus TODO FILL OUT
+     * @param metricsRecorder Recorder for capturing metrics.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between VirtualSpouts and DynamicSpout.
      * @param spoutMonitorFactory A Factory for creating SpoutMonitors.
      */
     SpoutCoordinator(
