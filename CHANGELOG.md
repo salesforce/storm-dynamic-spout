@@ -38,8 +38,7 @@ sideline is active for firehose.
 
 ### Removed
 ##### Kafka Consumer
-- [PR-31](https://github.com/salesforce/storm-dynamic-spout/pull/31) Removed configuration items: `spout.kafka
-.autocommit` and `spout.kafka.autocommit_interval_ms`.  This functionality is covered by configuration item `spout.spoutCoordinator.consumer_state_flush_interval_ms`
+- [PR-31](https://github.com/salesforce/storm-dynamic-spout/pull/31) Removed configuration items: `spout.kafka.autocommit` and `spout.kafka.autocommit_interval_ms`.  This functionality is covered by configuration item `spout.cordinator.consumer_state_flush_interval_ms`
 
 ## 0.8.x
 - Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.
