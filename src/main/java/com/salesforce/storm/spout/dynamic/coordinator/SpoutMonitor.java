@@ -32,6 +32,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
+import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,12 +182,15 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * Signals to a VirtualSpout to stop, ultimately removing it from the monitor.
+     * This call is Asynchronous and is non-blocking.
      * @param virtualSpoutIdentifier identifier of the VirtualSpout instance to request stopped.
+     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
     public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         if (!hasVirtualSpout(virtualSpoutIdentifier)) {
-            throw new IllegalArgumentException(
-                "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor."
+            throw new SpoutDoesNotExistException(
+                "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor.",
+                virtualSpoutIdentifier
             );
         }
 
@@ -215,12 +219,12 @@ public class SpoutMonitor implements Runnable {
 
     @Override
     public void run() {
-        try {
-            // Rename our thread.
-            Thread.currentThread().setName("SpoutMonitor");
+        // Rename our thread.
+        Thread.currentThread().setName("SpoutMonitor");
 
-            // Start monitoring loop.
-            while (keepRunning()) {
+        // Start monitoring loop.
+        while (keepRunning()) {
+            try {
                 // Look for new VirtualSpouts that need to be started
                 startNewSpoutTasks();
 
@@ -228,22 +232,22 @@ public class SpoutMonitor implements Runnable {
                 reportStatus();
 
                 // Pause for a period before checking for more spouts
-                try {
-                    Thread.sleep(getMonitorThreadIntervalMs());
-                } catch (final InterruptedException ex) {
-                    logger.warn("Thread interrupted, shutting down...");
-                    return;
-                }
-            }
-            logger.warn("Spout monitor is ceasing to run due to shutdown request...");
-        } catch (final Exception ex) {
-            // We handle restarting spout monitor in the coordinator, which is who monitors this thread.
-            // Lets report the error
-            reportError(ex);
+                Thread.sleep(getMonitorThreadIntervalMs());
+            } catch (final InterruptedException ex) {
+                // InterruptedExceptions mean we should stop processing and shut down.
+                logger.warn("Thread interrupted, shutting down...");
+                return;
+            } catch (final Exception ex) {
+                // We should report and log the error, then swallow it.
+                // We have no watch dog process watching us, so we should continue to run.
+                // Lets report the error
+                reportError(ex);
 
-            // Log it.
-            logger.error("SpoutMonitor threw an exception {}", ex.getMessage(), ex);
+                // and log it.
+                logger.error("SpoutMonitor threw an exception {}", ex.getMessage(), ex);
+            }
         }
+        logger.warn("Spout monitor is ceasing to run due to shutdown request...");
     }
 
     /**
