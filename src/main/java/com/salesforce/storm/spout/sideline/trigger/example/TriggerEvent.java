@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.sideline.trigger.example;
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -42,7 +42,7 @@ public class TriggerEvent {
 
     private Map<String,Object> data;
 
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     private String createdBy;
 
@@ -50,7 +50,7 @@ public class TriggerEvent {
 
     private boolean processed;
 
-    private Date updatedAt;
+    private LocalDateTime updatedAt;
 
     /**
      * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates whether or not a START or STOP
@@ -70,11 +70,11 @@ public class TriggerEvent {
     public TriggerEvent(
         final SidelineType type,
         final Map<String,Object> data,
-        final Date createdAt,
+        final LocalDateTime createdAt,
         final String createdBy,
         final String description,
         final boolean processed,
-        final Date updatedAt
+        final LocalDateTime updatedAt
     ) {
         Preconditions.checkNotNull(type, "Type is required.");
         Preconditions.checkNotNull(data, "Data payload is required (But we do accept empty maps!).");
@@ -99,7 +99,7 @@ public class TriggerEvent {
         return data;
     }
 
-    public Date getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
@@ -115,7 +115,7 @@ public class TriggerEvent {
         return processed;
     }
 
-    public Date getUpdatedAt() {
+    public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 

@@ -46,6 +46,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -116,11 +117,11 @@ public class ZookeeperWatchTriggerTest {
         final TriggerEvent startTriggerEvent = new TriggerEvent(
             SidelineType.START,
             startData,
-            new Date(),
+            LocalDateTime.now(),
             CREATED_BY,
             DESCRIPTION,
             false,
-            new Date()
+            LocalDateTime.now()
         );
         final String id1 = "foo" + System.currentTimeMillis();
         final String path1 = zkRoot + "/" + id1;
@@ -147,11 +148,11 @@ public class ZookeeperWatchTriggerTest {
         final TriggerEvent stopTriggerEvent = new TriggerEvent(
             SidelineType.STOP,
             stopData,
-            new Date(),
+            LocalDateTime.now(),
             CREATED_BY,
             DESCRIPTION,
             false,
-            new Date()
+            LocalDateTime.now()
         );
         final String id2 = "bar" + System.currentTimeMillis();
         final String path2 = zkRoot + "/" + id2;
@@ -227,11 +228,11 @@ public class ZookeeperWatchTriggerTest {
         final TriggerEvent startTriggerEvent = new TriggerEvent(
             SidelineType.START,
             startData,
-            new Date(),
+            LocalDateTime.now(),
             CREATED_BY,
             DESCRIPTION,
             false,
-            new Date()
+            LocalDateTime.now()
         );
         final String id1 = "foo" + System.currentTimeMillis();
         final String path1 = zkRoot + "/" + id1;
@@ -252,11 +253,11 @@ public class ZookeeperWatchTriggerTest {
         final TriggerEvent stopTriggerEvent = new TriggerEvent(
             SidelineType.STOP,
             stopData,
-            new Date(),
+            LocalDateTime.now(),
             CREATED_BY,
             DESCRIPTION,
             false,
-            new Date()
+            LocalDateTime.now()
         );
         final String id2 = "bar" + System.currentTimeMillis();
         final String path2 = zkRoot + "/" + id2;

@@ -51,8 +51,10 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -245,7 +247,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         final SidelineRequest sidelineRequest = buildSidelineRequest(triggerEvent);
 
         if (sidelineRequest == null) {
-            logger.warn("Unable to build SidelineRequest from TriggerEvent {}", triggerEvent);
+            logger.error("Unable to build SidelineRequest from TriggerEvent {}", triggerEvent);
             return;
         }
 
@@ -274,7 +276,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             // Explicit set this as processed
             true,
             // Update the updated at date to right now
-            new Date()
+            LocalDateTime.now()
         ));
     }
 
@@ -322,7 +324,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         if (triggerEvent.getCreatedAt() != null) {
             identifier.append("-");
             identifier.append(
-                triggerEvent.getCreatedAt().getTime()
+                triggerEvent.getCreatedAt().atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
             );
         }
 
