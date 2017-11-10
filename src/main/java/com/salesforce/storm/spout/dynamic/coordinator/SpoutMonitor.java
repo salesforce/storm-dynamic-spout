@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.coordinator;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -40,11 +41,14 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,11 +77,11 @@ public class SpoutMonitor implements Runnable {
     private final Queue<DelegateSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
-     * Internal map of VirtualSpoutIdentifiers and SpoutRunner instances.
+     * Internal map of VirtualSpoutIdentifiers and SpoutRunner/CompletableFuture instances.
      * As VirtualSpouts are removed from the newSpoutQueue and started, they are added onto
      * this map.
      */
-    private final Map<VirtualSpoutIdentifier, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, SpoutContext> runningSpouts = new ConcurrentHashMap<>();
 
 
     /**
@@ -129,12 +133,19 @@ public class SpoutMonitor implements Runnable {
      */
     public SpoutMonitor(
         final Map<String, Object> topologyConfig,
+        final String threadNamePrefix,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final MetricsRecorder metricsRecorder
     ) {
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
         this.metricsRecorder = metricsRecorder;
+
+        // Create new ThreadFactory
+        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setNameFormat("VirtualSpout Pool %d on " + threadNamePrefix + " ")
+            .setDaemon(false)
+            .build();
 
         /*
          * Create our executor service with a fixed thread size.
@@ -152,7 +163,9 @@ public class SpoutMonitor implements Runnable {
             // How long to keep idle threads around for before closing them
             1L, TimeUnit.MINUTES,
             // Task input queue
-            new LinkedBlockingQueue<>()
+            new LinkedBlockingQueue<>(),
+            // Pass in our custom thread factory.
+            threadFactory
         );
     }
 
@@ -169,31 +182,72 @@ public class SpoutMonitor implements Runnable {
                     return true;
                 }
             }
-            return spoutRunners.containsKey(virtualSpoutIdentifier);
+            return runningSpouts.containsKey(virtualSpoutIdentifier);
         }
     }
 
     /**
      * Signals to a VirtualSpout to stop, ultimately removing it from the monitor.
-     * This call is Asynchronous and is non-blocking.
+     * This call will block waiting for the VirtualSpout instance to shutdown.
+     *
      * @param virtualSpoutIdentifier identifier of the VirtualSpout instance to request stopped.
      * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
     public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
-        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
-            throw new SpoutDoesNotExistException(
-                "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor.",
-                virtualSpoutIdentifier
-            );
-        }
+        synchronized (newSpoutQueue) {
+            // So hasVirtualSpout() is interesting because it searches both the QUEUED
+            // and RUNNING virtualSpouts.
+            if (!hasVirtualSpout(virtualSpoutIdentifier)) {
+                throw new SpoutDoesNotExistException(
+                    "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor.",
+                    virtualSpoutIdentifier
+                );
+            }
 
-        // Request the spout stop
-        spoutRunners.get(virtualSpoutIdentifier).requestStop();
+            // So at this point we KNOW we have an instance, we just aren't sure if its running or not.
+            // First check the running spouts.
+            if (runningSpouts.containsKey(virtualSpoutIdentifier)) {
+                // Found it running! Grab the context from the map.
+                final SpoutContext spoutContext = runningSpouts.get(virtualSpoutIdentifier);
+
+                // Request a stop
+                spoutContext.getSpoutRunner().requestStop();
+
+                // Block until the CompletableFuture Completes.
+                // If it never ran, we need to know that
+                try {
+                    final long endTime = getClock().millis() + getMaxTerminationWaitTimeMs();
+                    do {
+                        Thread.sleep(500L);
+                        if (spoutContext.getCompletableFuture().isDone()) {
+                            // If its done, we're done!
+                            return;
+                        }
+                    }
+                    while (getClock().millis() <= endTime);
+
+                    // If we made it here, that means we exceeded our max wait time, just cancel it.
+                    spoutContext.getCompletableFuture().cancel(true);
+                } catch (final InterruptedException interruptedException) {
+                    // If we're interrupted then just cancel it.
+                    spoutContext.getCompletableFuture().cancel(true);
+                }
+                return;
+            }
+
+            // Otherwise it is queued and hasn't started yet.
+            // Loop through the queue, find it, and remove it.  No need to block on anything.
+            newSpoutQueue.removeIf(spout -> spout.getVirtualSpoutId().equals(virtualSpoutIdentifier));
+        }
     }
 
     /**
      * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
+     *
+     * This method is asynchronous.  After calling this method you simply know that the VirtualSpout has been
+     * queued to start.  There is no garuntee that it has actually started after calling this method.
+     *
      * @param spout New delegate spout
      * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
@@ -260,12 +314,15 @@ public class SpoutMonitor implements Runnable {
                     getTopologyConfig()
                 );
 
-                // This maps VirtualSpout Ids to SpoutRunner Instances.
-                // Really we only use this to keep track of which VirtualSpoutIds we have running.
-                spoutRunners.put(spout.getVirtualSpoutId(), spoutRunner);
-
                 // Run as a CompletableFuture
                 final CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(spoutRunner, getExecutor());
+
+                // Create SpoutContext
+                final SpoutContext spoutContext = new SpoutContext(spoutRunner, completableFuture);
+
+                // This maps VirtualSpout Ids to SpoutRunner Instances and their CompletableFutures.
+                // Really we only use this to keep track of which VirtualSpoutIds we have running.
+                runningSpouts.put(spout.getVirtualSpoutId(), spoutContext);
 
                 // Handle when this spout completes.
                 // It can either complete successfully, or via some kind of error, we'll handle both here.
@@ -296,7 +353,7 @@ public class SpoutMonitor implements Runnable {
                     }
 
                     // And cleanup, Remove from spoutInstances
-                    spoutRunners.remove(virtualSpoutIdentifier);
+                    runningSpouts.remove(virtualSpoutIdentifier);
 
                     // We have no value to return
                     return null;
@@ -338,7 +395,7 @@ public class SpoutMonitor implements Runnable {
             executor.getTaskCount()
         );
         logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}",
-            getVirtualSpoutMessageBus().messageSize(), spoutRunners.keySet());
+            getVirtualSpoutMessageBus().messageSize(), runningSpouts.keySet());
 
         // Report to metrics record
         getMetricsRecorder().assignValue(getClass(), "bufferSize", getVirtualSpoutMessageBus().messageSize());
@@ -351,8 +408,8 @@ public class SpoutMonitor implements Runnable {
         // Loop through spouts instances
         try {
             // Loop thru all of them to get virtualSpout Ids.
-            for (final SpoutRunner spoutRunner : spoutRunners.values()) {
-                final DelegateSpout spout = spoutRunner.getSpout();
+            for (final SpoutContext spoutContext : runningSpouts.values()) {
+                final DelegateSpout spout = spoutContext.getSpoutRunner().getSpout();
 
                 // This shouldn't be possible, but better safe then sorry!
                 if (spout == null) {
@@ -404,8 +461,8 @@ public class SpoutMonitor implements Runnable {
         }
 
         // Loop through our runners and request stop on each
-        for (final SpoutRunner spoutRunner : spoutRunners.values()) {
-            spoutRunner.requestStop();
+        for (final SpoutContext spoutContext : runningSpouts.values()) {
+            spoutContext.getSpoutRunner().requestStop();
         }
 
         // Wait for the executor to cleanly shut down
@@ -424,7 +481,7 @@ public class SpoutMonitor implements Runnable {
         }
 
         // Clear our our internal state.
-        spoutRunners.clear();
+        runningSpouts.clear();
     }
 
     /**
@@ -432,7 +489,7 @@ public class SpoutMonitor implements Runnable {
      *           *note* it doesn't mean all of these are actually running, some may be queued.
      */
     public int getTotalSpouts() {
-        return spoutRunners.size();
+        return runningSpouts.size();
     }
 
     /**

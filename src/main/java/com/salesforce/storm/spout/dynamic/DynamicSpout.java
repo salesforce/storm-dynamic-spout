@@ -406,35 +406,16 @@ public class DynamicSpout extends BaseRichSpout {
 
     /**
      * Remove a spout from the coordinator by it's identifier.
-     * Blocking operation.
+     * This method will block until the VirtualSpout has stopped.
+     *
      * @param virtualSpoutIdentifier identifier of the spout to remove.
+     * @throws SpoutDoesNotExistException If the VirtualSpoutIdentifier is not found.
      */
-    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
         checkSpoutOpened();
 
-        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
-            throw new SpoutDoesNotExistException(
-                "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
-                virtualSpoutIdentifier
-            );
-        }
-
+        // This method will block until the instance has stopped.
         getSpoutMonitor().removeVirtualSpout(virtualSpoutIdentifier);
-
-        // Let's block until we no longer detect that the spout is in monitor.
-        while (getSpoutMonitor().hasVirtualSpout(virtualSpoutIdentifier)) {
-            logger.info("Checking for VirtualSpout {} to see if it has finished stopping.", virtualSpoutIdentifier);
-
-            try {
-                Thread.sleep(1000L);
-            } catch (InterruptedException ex) {
-                logger.error(
-                    "Something went wrong pausing between checking for VirtualSpout {} to stop. {}",
-                    virtualSpoutIdentifier,
-                    ex
-                );
-            }
-        }
 
         logger.info("VirtualSpout {} is no longer running.", virtualSpoutIdentifier);
     }
@@ -445,6 +426,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return true when the spout exists, false when it does not.
      */
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
+        checkSpoutOpened();
         return getSpoutMonitor().hasVirtualSpout(spoutIdentifier);
     }
 
@@ -466,24 +448,23 @@ public class DynamicSpout extends BaseRichSpout {
             throw new IllegalStateException("Cannot create multiple spout monitor instances!");
         }
 
+        // Build base name for threads: TaskName (TaskIndex)
+        final String threadContextName =
+            topologyContext.getThisComponentId() + ":" + topologyContext.getThisTaskIndex();
+
         // Create instance.
         spoutMonitor = new SpoutMonitor(
             topologyConfig,
+            threadContextName,
             virtualSpoutMessageBus,
             metricsRecorder
         );
 
-        // Build name for thread: TaskName (TaskIndex) SpoutMonitor
-        final String threadName =
-            topologyContext.getThisComponentId()
-            + " (" + topologyContext.getThisTaskIndex() + ") "
-            + spoutMonitor.getClass().getSimpleName();
-
         // Create and name thread.
-        final Thread thread = new Thread(spoutMonitor, threadName);
+        final Thread thread = new Thread(spoutMonitor, "Spout Monitor on " + threadContextName);
 
-        // Mark as a Daemon thread instead of a user thread.
-        thread.setDaemon(true);
+        // Mark as a User thread.
+        thread.setDaemon(false);
 
         // Start it.  Its intended that this thread will loop forever
         // and as gracefully as possible handle any errors such that it never stops running

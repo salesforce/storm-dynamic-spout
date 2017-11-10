@@ -134,8 +134,8 @@ public class SpoutRunner implements Runnable {
         try {
             final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
 
-            // Rename thread to use the spout's consumer id
-            Thread.currentThread().setName(virtualSpoutId.toString());
+            // Append VirtualSpoutId to thread name
+            Thread.currentThread().setName(Thread.currentThread().getName() + virtualSpoutId.toString());
 
             logger.info("Opening {} spout", virtualSpoutId);
             spout.open();
@@ -210,7 +210,7 @@ public class SpoutRunner implements Runnable {
      * Synchronized because this can be called from multiple threads.
      */
     public void requestStop() {
-        logger.info("Requested stop");
+        logger.info("Requested stop on {}", spout.getVirtualSpoutId());
         requestedStop = true;
     }
 
