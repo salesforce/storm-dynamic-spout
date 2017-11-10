@@ -462,12 +462,12 @@ public class DynamicSpout extends BaseRichSpout {
         final MetricsRecorder metricsRecorder) {
 
         // Prevent more than one instance from being created.
-        if (getSpoutMonitor() != null) {
+        if (spoutMonitor != null) {
             throw new IllegalStateException("Cannot create multiple spout monitor instances!");
         }
 
         // Create instance.
-        this.spoutMonitor = new SpoutMonitor(
+        spoutMonitor = new SpoutMonitor(
             topologyConfig,
             virtualSpoutMessageBus,
             metricsRecorder
@@ -492,7 +492,7 @@ public class DynamicSpout extends BaseRichSpout {
         thread.start();
 
         // Save reference to thread.
-        this.spoutMonitorThread = thread;
+        spoutMonitorThread = thread;
     }
 
     /**

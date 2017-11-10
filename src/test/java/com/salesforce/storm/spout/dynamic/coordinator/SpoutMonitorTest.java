@@ -127,7 +127,6 @@ public class SpoutMonitorTest {
     public void testConstructor() {
         // Define inputs
         final MessageBus messageBus = new MessageBus(new FifoBuffer());
-        final Clock clock = Clock.systemUTC();
 
         // Define some config params
         final int maxConcurrentSpouts = 2;
@@ -143,14 +142,12 @@ public class SpoutMonitorTest {
 
         // Create instance.
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            messageBus,
-            clock,
             topologyConfig,
+            messageBus,
             metricsRecorder
         );
 
         // Call getters and validate!
-        assertEquals("Clock instance is what we expect", clock, spoutMonitor.getClock());
         assertEquals("TopologyConfig looks legit", topologyConfig, spoutMonitor.getTopologyConfig());
         assertEquals("getMonitorThreadIntervalMs() returns right value", monitorInterval, spoutMonitor.getMonitorThreadIntervalMs());
         assertEquals("getMaxTerminationWaitTimeMs() returns right value", maxShutdownTime, spoutMonitor.getMaxTerminationWaitTimeMs());
@@ -591,9 +588,8 @@ public class SpoutMonitorTest {
 
         // Create SpoutMonitor
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            messageBus,
-            Clock.systemUTC(),
             config,
+            messageBus,
             metricsRecorder
         );
 
@@ -689,9 +685,8 @@ public class SpoutMonitorTest {
 
         // Create SpoutMonitor
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            messageBus,
-            Clock.systemUTC(),
             config,
+            messageBus,
             metricsRecorder
         );
 
@@ -733,9 +728,8 @@ public class SpoutMonitorTest {
 
         // Create SpoutMonitor
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            messageBus,
-            Clock.systemUTC(),
             config,
+            messageBus,
             metricsRecorder
         );
 
@@ -779,9 +773,8 @@ public class SpoutMonitorTest {
 
         // Create SpoutMonitor
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            messageBus,
-            Clock.systemUTC(),
             config,
+            messageBus,
             metricsRecorder
         );
 
@@ -840,9 +833,8 @@ public class SpoutMonitorTest {
 
         // Create SpoutMonitor
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            messageBus,
-            Clock.systemUTC(),
             config,
+            messageBus,
             metricsRecorder
         );
 
@@ -918,9 +910,8 @@ public class SpoutMonitorTest {
 
         // Create instance.
         return new SpoutMonitor(
-            messageBus,
-            clock,
             topologyConfig,
+            messageBus,
             metricsRecorder
         );
     }
