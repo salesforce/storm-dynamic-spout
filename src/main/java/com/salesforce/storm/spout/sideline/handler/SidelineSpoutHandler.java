@@ -88,6 +88,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     private TopologyContext topologyContext;
 
     /**
+     * Timer for periodically checking the state of the VirtualSpouts being managed.
+     */
+    private final Timer timer = new Timer();
+
+    /**
      * Collection of sideline triggers to manage.
      */
     private final List<SidelineTrigger> sidelineTriggers = new ArrayList<>();
@@ -159,7 +164,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         Preconditions.checkArgument(
             spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)
             && spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS) != null,
-            "Refresh interval is required."
+            "Configuration value for " + SidelineConfig.REFRESH_INTERVAL_SECONDS + " is required."
         );
 
         final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
@@ -170,7 +175,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         loadSidelines();
 
         // Repeat our sidelines check periodically
-        final Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -287,6 +291,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void onSpoutClose(final DynamicSpout spout) {
+        timer.cancel();
+
         final ListIterator<SidelineTrigger> iter = sidelineTriggers.listIterator();
 
         while (iter.hasNext()) {
