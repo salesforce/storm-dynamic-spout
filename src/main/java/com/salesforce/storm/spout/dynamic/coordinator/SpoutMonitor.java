@@ -520,7 +520,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * @return The new spout queue.
      */
-    Queue<DelegateSpout> getNewSpoutQueue() {
+    private Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
     }
 
