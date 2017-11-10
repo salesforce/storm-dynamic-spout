@@ -315,7 +315,7 @@ Type | Description
 Average | Calculates average of all values submitted over a set time period.
 Counter | Keeps a running count that gets reset back to zero on deployment.
 Gauge | Reports the last value given for the metric.
-Timer | Calculates how long on average, in milliseconds, an event takes.
+Timer | Calculates how long on average, in milliseconds, an event takes.  These metrics also publish a related counter metric containing the total time measured, in milliseconds, for each entry.
 
 Below is a list of metrics that are collected with the metric type and description.
 
