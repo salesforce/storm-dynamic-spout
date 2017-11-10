@@ -63,321 +63,318 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
- */
 public class SpoutCoordinatorTest {
-    private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
-
-    /**
-     * Expect no exceptions by default.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    /**
-     * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
-     * TODO Is this test valid any longer?  What is it testing exactly?
-     */
-    @Test
-    public void testCoordinator() throws Exception {
-        // How often we want the monitor thread to run
-        final long internalOperationsIntervalMs = 2000;
-
-        // Define how long we'll wait for internal operations to complete
-        final long waitTime = internalOperationsIntervalMs * 4;
-
-        final List<Message> expected = Lists.newArrayList();
-
-        final MockDelegateSpout fireHoseSpout = new MockDelegateSpout();
-        final MockDelegateSpout sidelineSpout1 = new MockDelegateSpout();
-        final MockDelegateSpout sidelineSpout2 = new MockDelegateSpout();
-
-        // Note: I set the topic here to different things largely to aide debugging the message ids later on
-        final Message message1 = new Message(new MessageId("message1", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message1"));
-        final Message message2 = new Message(new MessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
-        final Message message3 = new Message(new MessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
-
-        final FifoBuffer buffer = FifoBuffer.createDefaultInstance();
-        final MessageBus messageBus = new MessageBus(buffer);
-
-        // Create noop metrics recorder
-        final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
-
-        // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
-
-        // Configure our internal operations to run frequently for our test case.
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
-        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
-
-        // Create spoutCoordinator
-        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
-        spoutCoordinator.open(config);
-
-        spoutCoordinator.addVirtualSpout(fireHoseSpout);
-
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> spoutCoordinator.getTotalSpouts(), equalTo(1));
-
-        spoutCoordinator.addVirtualSpout(sidelineSpout1);
-        spoutCoordinator.addVirtualSpout(sidelineSpout2);
-
-        logger.info("Waiting for SpoutCoordinator to detect and open() our spout instances");
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> spoutCoordinator.getTotalSpouts(), equalTo(3));
-        assertEquals(3, spoutCoordinator.getTotalSpouts());
-        logger.info("SpoutCoordinator now has {} spout instances", spoutCoordinator.getTotalSpouts());
-
-        // Add 1 message to each spout
-        fireHoseSpout.emitQueue.add(message1);
-        expected.add(message1);
-
-        sidelineSpout1.emitQueue.add(message2);
-        expected.add(message2);
-
-        fireHoseSpout.emitQueue.add(message3);
-        expected.add(message3);
-
-        // The SpoutRunner threads should pop these messages off.
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(messageBus::messageSize, equalTo(3));
-
-        // Ack the first two messages
-        messageBus.ack(message1.getMessageId());
-        messageBus.ack(message2.getMessageId());
-
-        // Fail the third
-        messageBus.fail(message3.getMessageId());
-
-        // Wait for those to come through to the correct VirtualSpouts.
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.ackedTupleIds.size(), equalTo(1));
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.failedTupleIds.size(), equalTo(1));
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.ackedTupleIds.size(), equalTo(1));
-
-        assertTrue(
-            message1.getMessageId().equals(fireHoseSpout.ackedTupleIds.toArray()[0])
-        );
-
-        assertTrue(
-            message3.getMessageId().equals(fireHoseSpout.failedTupleIds.toArray()[0])
-        );
-
-        assertTrue(
-            message2.getMessageId().equals(sidelineSpout1.ackedTupleIds.toArray()[0])
-        );
-
-        spoutCoordinator.close();
-
-        logger.info("Expected = " + expected);
-        logger.info("Actual = " + buffer);
-
-        for (Message a : expected) {
-            boolean found = false;
-
-            for (Message b : buffer.getUnderlyingQueue()) {
-                if (a.equals(b)) {
-                    found = true;
-                }
-            }
-
-            assertTrue("Did not find " + a, found);
-        }
-
-        assertEquals(0, spoutCoordinator.getTotalSpouts());
-
-        // Verify the executor is terminated, and has no active tasks
-        assertTrue("Executor is terminated", spoutCoordinator.getExecutor().isTerminated());
-    }
-
-    /**
-     * Test that if we try to add a spout before the coordinator is open it'll blow up.
-     */
-    @Test
-    public void testAddingSpoutBeforeOpen() {
-        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
-
-        final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
-
-        // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
-
-        // Create spoutCoordinator
-        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
-
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("before it has been opened");
-        spoutCoordinator.addVirtualSpout(new MockDelegateSpout());
-    }
-
-    /**
-     * Test that adding a spout with the same id will throw an exception.
-     */
-    @Test
-    public void testAddDuplicateSpout() {
-        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
-
-        final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
-
-        // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
-
-        // Create spoutCoordinator
-        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
-        spoutCoordinator.open(config);
-
-        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
-
-        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
-        final DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);
-
-        spoutCoordinator.addVirtualSpout(spout1);
-
-        try {
-            expectedException.expect(SpoutAlreadyExistsException.class);
-            spoutCoordinator.addVirtualSpout(spout2);
-        } catch (Exception exception) {
-            // Ensure we cleanup appropriately.
-            spoutCoordinator.close();
-            throw exception;
-        }
-    }
-
-    /**
-     * Test that we can check for the existence of a spout inside of the coordinator.
-     */
-    @Test
-    public void testHasVirtualSpout() {
-        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
-
-        final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
-
-        // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
-
-        // Create spoutCoordinator
-        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
-        spoutCoordinator.open(config);
-
-        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
-
-        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
-
-        spoutCoordinator.addVirtualSpout(spout1);
-
-        assertTrue("Spout is not in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
-
-        assertFalse("Spout should not be in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(
-            new DefaultVirtualSpoutIdentifier("made up spout that should not exist")
-        ));
-
-        // Close coordinator.
-        spoutCoordinator.close();
-    }
-
-    /**
-     * Validates that SpoutCoordinator will restart SpoutRunner if it terminates abnormally.
-     */
-    @Test
-    public void testRestartsSpoutMonitorOnDeath() throws InterruptedException {
-        // Create a mock spoutMonitor and spout monitor factory
-        final SpoutMonitor mockSpoutMonitor = mock(SpoutMonitor.class);
-
-        final AtomicInteger counter = new AtomicInteger(0);
-
-        // When we call run on SpoutMonitor
-        doAnswer(invocation -> {
-            // Increment counter
-            counter.incrementAndGet();
-
-            // Throw an exception
-            throw new RuntimeException("my exception");
-        }).when(mockSpoutMonitor).run();
-
-        final SpoutMonitorFactory spoutMonitorFactory = mock(SpoutMonitorFactory.class);
-        when(spoutMonitorFactory
-            .create(anyObject(), anyObject(), anyObject(), anyObject(), anyObject(), anyObject()))
-            .thenReturn(mockSpoutMonitor);
-
-        // Create other non-relevant mocks
-        final MetricsRecorder metricsRecorder = mock(MetricsRecorder.class);
-        final MessageBus messageBus = mock(MessageBus.class);
-
-        // Create spoutCoordinator, injecting our mock SpoutMonitorFactory.
-        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus, spoutMonitorFactory);
-
-        // Build config
-        final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, 10_000);
-
-        // Call open
-        spoutCoordinator.open(config);
-
-        // Wait until RUN has been called multiple times on the mock SpoutRunner
-        await()
-            .atMost(30, TimeUnit.SECONDS)
-            .until(() -> counter.get() > 1);
-
-        // Close spoutCoordinator
-        spoutCoordinator.close();
-
-        // Verify we got run multiple times.
-        verify(mockSpoutMonitor, atLeast(2)).run();
-
-        // Verify close got called
-        verify(mockSpoutMonitor, times(1)).close();
-
-        // Call close
-        spoutCoordinator.close();
-    }
-
-    /**
-     * Test that removing a virtual spout takes it out of the coordinator.
-     */
-    @Test
-    public void testAddAndRemoveVirtualSpout() {
-        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
-
-        final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
-
-        // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
-
-        // Create spoutCoordinator
-        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
-        spoutCoordinator.open(config);
-
-        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
-
-        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
-
-        assertFalse("Spout is already in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
-
-        spoutCoordinator.addVirtualSpout(spout1);
-
-        assertTrue("Spout is not in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
-
-        // Wait until this spout is moved into the monitor.
-        await().until(() -> spoutCoordinator.getNewSpoutQueue().contains(spout1), equalTo(false));
-
-        // Now that it's into the monitor, go ahead and remove it
-        // Note if we hadn't waited we would have gotten an exception
-        spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
-
-        assertFalse("Spout is still in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
-
-        try {
-            // We are going to try to remove it again, at this point it does not exist, so we expect to get an
-            // exception thrown at us indicating so
-            expectedException.expect(SpoutDoesNotExistException.class);
-            spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
-        } catch (Exception exception) {
-            // Make sure to close out SpoutCoordinator
-            spoutCoordinator.close();
-
-            throw exception;
-        }
-    }
+//    private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
+//
+//    /**
+//     * Expect no exceptions by default.
+//     */
+//    @Rule
+//    public ExpectedException expectedException = ExpectedException.none();
+//
+//    /**
+//     * Test that {@link SpoutCoordinator} handles spinning up {@link DelegateSpout} instances.
+//     * TODO Is this test valid any longer?  What is it testing exactly?
+//     */
+//    @Test
+//    public void testCoordinator() throws Exception {
+//        // How often we want the monitor thread to run
+//        final long internalOperationsIntervalMs = 2000;
+//
+//        // Define how long we'll wait for internal operations to complete
+//        final long waitTime = internalOperationsIntervalMs * 4;
+//
+//        final List<Message> expected = Lists.newArrayList();
+//
+//        final MockDelegateSpout fireHoseSpout = new MockDelegateSpout();
+//        final MockDelegateSpout sidelineSpout1 = new MockDelegateSpout();
+//        final MockDelegateSpout sidelineSpout2 = new MockDelegateSpout();
+//
+//        // Note: I set the topic here to different things largely to aide debugging the message ids later on
+//        final Message message1 = new Message(new MessageId("message1", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message1"));
+//        final Message message2 = new Message(new MessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
+//        final Message message3 = new Message(new MessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
+//
+//        final FifoBuffer buffer = FifoBuffer.createDefaultInstance();
+//        final MessageBus messageBus = new MessageBus(buffer);
+//
+//        // Create noop metrics recorder
+//        final MetricsRecorder metricsRecorder = new LogRecorder();
+//        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+//
+//        // Define our configuration
+//        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+//
+//        // Configure our internal operations to run frequently for our test case.
+//        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
+//        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
+//
+//        // Create spoutCoordinator
+//        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
+//        spoutCoordinator.open(config);
+//
+//        spoutCoordinator.addVirtualSpout(fireHoseSpout);
+//
+//        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> spoutCoordinator.getTotalSpouts(), equalTo(1));
+//
+//        spoutCoordinator.addVirtualSpout(sidelineSpout1);
+//        spoutCoordinator.addVirtualSpout(sidelineSpout2);
+//
+//        logger.info("Waiting for SpoutCoordinator to detect and open() our spout instances");
+//        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> spoutCoordinator.getTotalSpouts(), equalTo(3));
+//        assertEquals(3, spoutCoordinator.getTotalSpouts());
+//        logger.info("SpoutCoordinator now has {} spout instances", spoutCoordinator.getTotalSpouts());
+//
+//        // Add 1 message to each spout
+//        fireHoseSpout.emitQueue.add(message1);
+//        expected.add(message1);
+//
+//        sidelineSpout1.emitQueue.add(message2);
+//        expected.add(message2);
+//
+//        fireHoseSpout.emitQueue.add(message3);
+//        expected.add(message3);
+//
+//        // The SpoutRunner threads should pop these messages off.
+//        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(messageBus::messageSize, equalTo(3));
+//
+//        // Ack the first two messages
+//        messageBus.ack(message1.getMessageId());
+//        messageBus.ack(message2.getMessageId());
+//
+//        // Fail the third
+//        messageBus.fail(message3.getMessageId());
+//
+//        // Wait for those to come through to the correct VirtualSpouts.
+//        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.ackedTupleIds.size(), equalTo(1));
+//        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> fireHoseSpout.failedTupleIds.size(), equalTo(1));
+//        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(() -> sidelineSpout1.ackedTupleIds.size(), equalTo(1));
+//
+//        assertTrue(
+//            message1.getMessageId().equals(fireHoseSpout.ackedTupleIds.toArray()[0])
+//        );
+//
+//        assertTrue(
+//            message3.getMessageId().equals(fireHoseSpout.failedTupleIds.toArray()[0])
+//        );
+//
+//        assertTrue(
+//            message2.getMessageId().equals(sidelineSpout1.ackedTupleIds.toArray()[0])
+//        );
+//
+//        spoutCoordinator.close();
+//
+//        logger.info("Expected = " + expected);
+//        logger.info("Actual = " + buffer);
+//
+//        for (Message a : expected) {
+//            boolean found = false;
+//
+//            for (Message b : buffer.getUnderlyingQueue()) {
+//                if (a.equals(b)) {
+//                    found = true;
+//                }
+//            }
+//
+//            assertTrue("Did not find " + a, found);
+//        }
+//
+//        assertEquals(0, spoutCoordinator.getTotalSpouts());
+//
+//        // Verify the executor is terminated, and has no active tasks
+//        assertTrue("Executor is terminated", spoutCoordinator.getExecutor().isTerminated());
+//    }
+//
+//    /**
+//     * Test that if we try to add a spout before the coordinator is open it'll blow up.
+//     */
+//    @Test
+//    public void testAddingSpoutBeforeOpen() {
+//        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
+//
+//        final MetricsRecorder metricsRecorder = new LogRecorder();
+//        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+//
+//        // Define our configuration
+//        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+//
+//        // Create spoutCoordinator
+//        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
+//
+//        expectedException.expect(IllegalStateException.class);
+//        expectedException.expectMessage("before it has been opened");
+//        spoutCoordinator.addVirtualSpout(new MockDelegateSpout());
+//    }
+//
+//    /**
+//     * Test that adding a spout with the same id will throw an exception.
+//     */
+//    @Test
+//    public void testAddDuplicateSpout() {
+//        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
+//
+//        final MetricsRecorder metricsRecorder = new LogRecorder();
+//        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+//
+//        // Define our configuration
+//        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+//
+//        // Create spoutCoordinator
+//        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
+//        spoutCoordinator.open(config);
+//
+//        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
+//
+//        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+//        final DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);
+//
+//        spoutCoordinator.addVirtualSpout(spout1);
+//
+//        try {
+//            expectedException.expect(SpoutAlreadyExistsException.class);
+//            spoutCoordinator.addVirtualSpout(spout2);
+//        } catch (Exception exception) {
+//            // Ensure we cleanup appropriately.
+//            spoutCoordinator.close();
+//            throw exception;
+//        }
+//    }
+//
+//    /**
+//     * Test that we can check for the existence of a spout inside of the coordinator.
+//     */
+//    @Test
+//    public void testHasVirtualSpout() {
+//        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
+//
+//        final MetricsRecorder metricsRecorder = new LogRecorder();
+//        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+//
+//        // Define our configuration
+//        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+//
+//        // Create spoutCoordinator
+//        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
+//        spoutCoordinator.open(config);
+//
+//        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
+//
+//        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+//
+//        spoutCoordinator.addVirtualSpout(spout1);
+//
+//        assertTrue("Spout is not in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
+//
+//        assertFalse("Spout should not be in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(
+//            new DefaultVirtualSpoutIdentifier("made up spout that should not exist")
+//        ));
+//
+//        // Close coordinator.
+//        spoutCoordinator.close();
+//    }
+//
+//    /**
+//     * Validates that SpoutCoordinator will restart SpoutRunner if it terminates abnormally.
+//     */
+//    @Test
+//    public void testRestartsSpoutMonitorOnDeath() throws InterruptedException {
+//        // Create a mock spoutMonitor and spout monitor factory
+//        final SpoutMonitor mockSpoutMonitor = mock(SpoutMonitor.class);
+//
+//        final AtomicInteger counter = new AtomicInteger(0);
+//
+//        // When we call run on SpoutMonitor
+//        doAnswer(invocation -> {
+//            // Increment counter
+//            counter.incrementAndGet();
+//
+//            // Throw an exception
+//            throw new RuntimeException("my exception");
+//        }).when(mockSpoutMonitor).run();
+//
+//        final SpoutMonitorFactory spoutMonitorFactory = mock(SpoutMonitorFactory.class);
+//        when(spoutMonitorFactory
+//            .create(anyObject(), anyObject(), anyObject(), anyObject(), anyObject(), anyObject()))
+//            .thenReturn(mockSpoutMonitor);
+//
+//        // Create other non-relevant mocks
+//        final MetricsRecorder metricsRecorder = mock(MetricsRecorder.class);
+//        final MessageBus messageBus = mock(MessageBus.class);
+//
+//        // Create spoutCoordinator, injecting our mock SpoutMonitorFactory.
+//        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus, spoutMonitorFactory);
+//
+//        // Build config
+//        final Map<String, Object> config = new HashMap<>();
+//        config.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, 10_000);
+//
+//        // Call open
+//        spoutCoordinator.open(config);
+//
+//        // Wait until RUN has been called multiple times on the mock SpoutRunner
+//        await()
+//            .atMost(30, TimeUnit.SECONDS)
+//            .until(() -> counter.get() > 1);
+//
+//        // Close spoutCoordinator
+//        spoutCoordinator.close();
+//
+//        // Verify we got run multiple times.
+//        verify(mockSpoutMonitor, atLeast(2)).run();
+//
+//        // Verify close got called
+//        verify(mockSpoutMonitor, times(1)).close();
+//
+//        // Call close
+//        spoutCoordinator.close();
+//    }
+//
+//    /**
+//     * Test that removing a virtual spout takes it out of the coordinator.
+//     */
+//    @Test
+//    public void testAddAndRemoveVirtualSpout() {
+//        final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
+//
+//        final MetricsRecorder metricsRecorder = new LogRecorder();
+//        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+//
+//        // Define our configuration
+//        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+//
+//        // Create spoutCoordinator
+//        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(metricsRecorder, messageBus);
+//        spoutCoordinator.open(config);
+//
+//        final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
+//
+//        final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
+//
+//        assertFalse("Spout is already in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
+//
+//        spoutCoordinator.addVirtualSpout(spout1);
+//
+//        assertTrue("Spout is not in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
+//
+//        // Wait until this spout is moved into the monitor.
+//        await().until(() -> spoutCoordinator.getNewSpoutQueue().contains(spout1), equalTo(false));
+//
+//        // Now that it's into the monitor, go ahead and remove it
+//        // Note if we hadn't waited we would have gotten an exception
+//        spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
+//
+//        assertFalse("Spout is still in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
+//
+//        try {
+//            // We are going to try to remove it again, at this point it does not exist, so we expect to get an
+//            // exception thrown at us indicating so
+//            expectedException.expect(SpoutDoesNotExistException.class);
+//            spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
+//        } catch (Exception exception) {
+//            // Make sure to close out SpoutCoordinator
+//            spoutCoordinator.close();
+//
+//            throw exception;
+//        }
+//    }
 }

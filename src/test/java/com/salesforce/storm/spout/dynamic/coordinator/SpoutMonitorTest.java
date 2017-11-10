@@ -113,7 +113,6 @@ public class SpoutMonitorTest {
         // Define inputs
         final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
         final MessageBus messageBus = new MessageBus(new FifoBuffer());
-        final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
         // Define some config params
@@ -130,9 +129,7 @@ public class SpoutMonitorTest {
 
         // Create instance.
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            newSpoutQueue,
             messageBus,
-            latch,
             clock,
             topologyConfig,
             metricsRecorder
@@ -631,8 +628,6 @@ public class SpoutMonitorTest {
 
     private SpoutMonitor getDefaultMonitorInstance(final MessageBus messageBus) {
         // Define inputs
-        final Queue<DelegateSpout> newSpoutQueue = Queues.newConcurrentLinkedQueue();
-        final CountDownLatch latch = new CountDownLatch(0);
         final Clock clock = Clock.systemUTC();
 
         // Create config
@@ -644,9 +639,7 @@ public class SpoutMonitorTest {
 
         // Create instance.
         final SpoutMonitor spoutMonitor = new SpoutMonitor(
-            newSpoutQueue,
             messageBus,
-            latch,
             clock,
             topologyConfig,
             metricsRecorder

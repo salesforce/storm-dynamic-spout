@@ -31,6 +31,7 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
+import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -68,7 +70,7 @@ public class SpoutMonitor implements Runnable {
      * This Queue contains requests to our thread to fire up new VirtualSpouts.
      * Instances are taken off of this queue and put into the ExecutorService's task queue.
      */
-    private final Queue<DelegateSpout> newSpoutQueue;
+    private final Queue<DelegateSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
      * Routes messages in a ThreadSafe manner from VirtualSpouts to the SpoutCoordinator.
@@ -110,6 +112,7 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * Flag used to determine if we should stop running or not.
+     * TODO check if should be violitile
      */
     private boolean keepRunning = true;
 
@@ -120,27 +123,24 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * Constructor.
-     * @param newSpoutQueue Queue monitored for new Spouts that should be started.
      * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
-     * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
      * @param metricsRecorder MetricRecorder implementation for recording metrics.
      */
     public SpoutMonitor(
-        final Queue<DelegateSpout> newSpoutQueue,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig,
         final MetricsRecorder metricsRecorder
     ) {
-        this.newSpoutQueue = newSpoutQueue;
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
-        this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
         this.metricsRecorder = metricsRecorder;
+
+        // TODO remove this?
+        this.latch = new CountDownLatch(0);
 
         /*
          * Create our executor service with a fixed thread size.
@@ -194,6 +194,25 @@ public class SpoutMonitor implements Runnable {
         spoutRunners.get(virtualSpoutIdentifier).requestStop();
     }
 
+    /**
+     * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
+     * managed with teh other currently running spouts.
+     * @param spout New delegate spout
+     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
+     */
+    public void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException {
+        // Synchronized on new spout queue
+        synchronized (newSpoutQueue) {
+            if (hasVirtualSpout(spout.getVirtualSpoutId())) {
+                throw new SpoutAlreadyExistsException(
+                    "A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!",
+                    spout
+                );
+            }
+            getNewSpoutQueue().add(spout);
+        }
+    }
+
     @Override
     public void run() {
         try {
@@ -224,9 +243,6 @@ public class SpoutMonitor implements Runnable {
 
             // Log it.
             logger.error("SpoutMonitor threw an exception {}", ex.getMessage(), ex);
-
-            // And bubble it up
-            throw ex;
         }
     }
 

@@ -29,6 +29,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
+import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
+import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
+import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
@@ -72,9 +76,15 @@ public class DynamicSpout extends BaseRichSpout {
     private TopologyContext topologyContext;
 
     /**
-     * Our internal Coordinator.  This manages all Virtual Spouts.
+     * TODO Describe / Allow injecting.
      */
-    private SpoutCoordinator coordinator;
+    private SpoutMonitorFactory spoutMonitorFactory = new SpoutMonitorFactory();
+
+    /**
+     * TODO Describe.
+     * Our internal SpoutMonitor.  Maybe re-name to VSpoutMonitor?
+     */
+    private SpoutMonitor spoutMonitor;
 
     /**
      * ThreadSafe routing of emitted, acked, and failed tuples between this DynamicSpout instance
@@ -162,16 +172,13 @@ public class DynamicSpout extends BaseRichSpout {
         // Create MessageBus instance and store into SpoutMessageBus reference reducing accessible scope.
         this.messageBus = new MessageBus(messageBuffer);
 
-        // Create Spout SpoutCoordinator.
-        coordinator = new SpoutCoordinator(
-            // Our metrics recorder.
-            metricsRecorder,
-            // Pass message bus casted as a VirtualSpoutMessageBus.
-            (VirtualSpoutMessageBus) messageBus
-        );
-
-        // Call open on coordinator, avoiding getter
-        coordinator.open(getSpoutConfig());
+        // Create and Start Spout monitor thread.
+        spoutMonitor = new SpoutMonitorFactory()
+            .createAndStart(
+                (VirtualSpoutMessageBus) messageBus,
+                topologyConfig,
+                metricsRecorder
+            );
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
@@ -278,10 +285,12 @@ public class DynamicSpout extends BaseRichSpout {
 
         logger.info("Stopping the coordinator and closing all spouts");
 
-        // Close coordinator
-        if (getCoordinator() != null) {
-            getCoordinator().close();
-            coordinator = null;
+        // Close Spout Monitor
+        if (spoutMonitor != null) {
+            // TODO we really want to wait for the thread to join here
+            // Need to figure that out.
+            spoutMonitor.close();
+            spoutMonitor = null;
         }
 
         // Close metrics recorder.
@@ -376,21 +385,49 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Add a spout to the coordinator.
-     * @param spout spout to add
+     * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
+     * managed with teh other currently running spouts.
+     * @param spout New delegate spout
+     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
-    public void addVirtualSpout(final DelegateSpout spout) {
+    public void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException {
         checkSpoutOpened();
-        getCoordinator().addVirtualSpout(spout);
+        getSpoutMonitor().addVirtualSpout(spout);
     }
 
     /**
      * Remove a spout from the coordinator by it's identifier.
+     * Blocking operation.
      * @param virtualSpoutIdentifier identifier of the spout to remove.
      */
     public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         checkSpoutOpened();
-        getCoordinator().removeVirtualSpout(virtualSpoutIdentifier);
+
+        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
+            throw new SpoutDoesNotExistException(
+                "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
+                virtualSpoutIdentifier
+            );
+        }
+
+        getSpoutMonitor().removeVirtualSpout(virtualSpoutIdentifier);
+
+        // Let's block until we no longer detect that the spout is in monitor.
+        while (getSpoutMonitor().hasVirtualSpout(virtualSpoutIdentifier)) {
+            logger.info("Checking for VirtualSpout {} to see if it has finished stopping.", virtualSpoutIdentifier);
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException ex) {
+                logger.error(
+                    "Something went wrong pausing between checking for VirtualSpout {} to stop. {}",
+                    virtualSpoutIdentifier,
+                    ex
+                );
+            }
+        }
+
+        logger.info("VirtualSpout {} is no longer running.", virtualSpoutIdentifier);
     }
 
     /**
@@ -399,7 +436,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return true when the spout exists, false when it does not.
      */
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
-        return getCoordinator().hasVirtualSpout(spoutIdentifier);
+        return getSpoutMonitor().hasVirtualSpout(spoutIdentifier);
     }
 
     /**
@@ -428,9 +465,9 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The virtual spout coordinator.
      */
-    SpoutCoordinator getCoordinator() {
+    SpoutMonitor getSpoutMonitor() {
         checkSpoutOpened();
-        return coordinator;
+        return spoutMonitor;
     }
 
     /**

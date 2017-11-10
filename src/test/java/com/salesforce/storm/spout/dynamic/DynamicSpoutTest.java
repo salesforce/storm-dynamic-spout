@@ -363,7 +363,7 @@ public class DynamicSpoutTest {
         ackTuples(spout, spoutEmissions);
 
         // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
+        assertEquals("Should have a single VirtualSpout instance", 1, spout.getSpoutMonitor().getTotalSpouts());
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -404,7 +404,7 @@ public class DynamicSpoutTest {
 
         // Validate that VirtualSpouts are NOT closed out, but still waiting for unacked tuples.
         // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
-        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
+        assertEquals("We should have 2 virtual spouts running", 2, spout.getSpoutMonitor().getTotalSpouts());
 
         // Lets ack our messages.
         ackTuples(spout, spoutEmissions);
@@ -1378,11 +1378,11 @@ public class DynamicSpoutTest {
     private void waitForVirtualSpouts(DynamicSpout spout, int howManyVirtualSpoutsWeWantLeft) {
         await()
             .atMost(5, TimeUnit.SECONDS)
-            .until(() -> spout.getCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
+            .until(() -> spout.getSpoutMonitor().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
         assertEquals(
             "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
             howManyVirtualSpoutsWeWantLeft,
-            spout.getCoordinator().getTotalSpouts()
+            spout.getSpoutMonitor().getTotalSpouts()
         );
     }
 
