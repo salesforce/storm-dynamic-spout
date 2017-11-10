@@ -71,7 +71,7 @@ public class SpoutMonitor implements Runnable {
     private final Queue<DelegateSpout> newSpoutQueue;
 
     /**
-     * Routes messages from VirtualSpouts to the SpoutCoordinator.
+     * Routes messages in a ThreadSafe manner from VirtualSpouts to the SpoutCoordinator.
      */
     private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
@@ -121,6 +121,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * Constructor.
      * @param newSpoutQueue Queue monitored for new Spouts that should be started.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
@@ -243,7 +244,7 @@ public class SpoutMonitor implements Runnable {
 
                 final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
-                    virtualSpoutMessageBus,
+                    getVirtualSpoutMessageBus(),
                     latch,
                     getClock(),
                     getTopologyConfig()
@@ -326,10 +327,10 @@ public class SpoutMonitor implements Runnable {
             getNumberOfFailedTasks(),
             executor.getTaskCount()
         );
-        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", virtualSpoutMessageBus.messageSize(), spoutRunners.keySet());
+        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", getVirtualSpoutMessageBus().messageSize(), spoutRunners.keySet());
 
         // Report to metrics record
-        getMetricsRecorder().assignValue(getClass(), "bufferSize", virtualSpoutMessageBus.messageSize());
+        getMetricsRecorder().assignValue(getClass(), "bufferSize", getVirtualSpoutMessageBus().messageSize());
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
         getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
         getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
@@ -470,12 +471,19 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
+     * @return ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
+     */
+    private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
+        return virtualSpoutMessageBus;
+    }
+
+    /**
      * Adds an error to the reported errors queue.  These will get pushed up and reported
      * to the topology.
      * @param throwable The error to be reported.
      */
     private void reportError(final Throwable throwable) {
-        virtualSpoutMessageBus.publishError(throwable);
+        getVirtualSpoutMessageBus().publishError(throwable);
     }
 
     /**

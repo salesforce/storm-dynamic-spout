@@ -72,6 +72,11 @@ public class SpoutCoordinator {
     private final Queue<DelegateSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
+     * ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
+     */
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
+
+    /**
      * For capturing metrics.
      */
     private final MetricsRecorder metricsRecorder;
@@ -95,8 +100,6 @@ public class SpoutCoordinator {
      * Copy of the Storm topology configuration.
      */
     private Map<String, Object> topologyConfig;
-
-    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
@@ -212,7 +215,7 @@ public class SpoutCoordinator {
         // Create our spout monitor instance.
         spoutMonitor = getSpoutMonitorFactory().create(
             getNewSpoutQueue(),
-            virtualSpoutMessageBus,
+            getVirtualSpoutMessageBus(),
             latch,
             getClock(),
             getTopologyConfig(),
@@ -293,6 +296,13 @@ public class SpoutCoordinator {
      */
     Queue<DelegateSpout> getNewSpoutQueue() {
         return newSpoutQueue;
+    }
+
+    /**
+     * @return ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
+     */
+    private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
+        return virtualSpoutMessageBus;
     }
 
     /**

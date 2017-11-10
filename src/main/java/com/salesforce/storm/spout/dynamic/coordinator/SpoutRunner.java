@@ -55,6 +55,11 @@ public class SpoutRunner implements Runnable {
     private final DelegateSpout spout;
 
     /**
+     * ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
+     */
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
+
+    /**
      * For access to the system clock.
      */
     private final Clock clock;
@@ -79,8 +84,6 @@ public class SpoutRunner implements Runnable {
      * Marked as volatile because currently its accessed via multiple threads.
      */
     private volatile boolean requestedStop = false;
-
-    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     SpoutRunner(
         final DelegateSpout spout,
@@ -111,7 +114,7 @@ public class SpoutRunner implements Runnable {
             spout.open();
 
             // Let all of our queues know about our new instance.
-            virtualSpoutMessageBus.registerVirtualSpout(virtualSpoutId);
+            getVirtualSpoutMessageBus().registerVirtualSpout(virtualSpoutId);
 
             // Count down our latch for thread synchronization.
             latch.countDown();
@@ -125,7 +128,7 @@ public class SpoutRunner implements Runnable {
                 final Message message = spout.nextTuple();
                 if (message != null) {
                     try {
-                        virtualSpoutMessageBus.publishMessage(message);
+                        getVirtualSpoutMessageBus().publishMessage(message);
                     } catch (final InterruptedException interruptedException) {
                         logger.error("Shutting down due to interruption {}", interruptedException.getMessage(), interruptedException);
                         spout.requestStop();
@@ -137,12 +140,12 @@ public class SpoutRunner implements Runnable {
 
                 // Ack anything that needs to be acked
                 Optional<MessageId> messageId;
-                while ((messageId = virtualSpoutMessageBus.getAckedMessage(virtualSpoutId)).isPresent()) {
+                while ((messageId = getVirtualSpoutMessageBus().getAckedMessage(virtualSpoutId)).isPresent()) {
                     spout.ack(messageId.get());
                 }
 
                 // Fail anything that needs to be failed
-                while ((messageId = virtualSpoutMessageBus.getFailedMessage(virtualSpoutId)).isPresent()) {
+                while ((messageId = getVirtualSpoutMessageBus().getFailedMessage(virtualSpoutId)).isPresent()) {
                     spout.fail(messageId.get());
                 }
 
@@ -162,7 +165,7 @@ public class SpoutRunner implements Runnable {
             spout.close();
 
             // Remove our entries from our queues.
-            virtualSpoutMessageBus.unregisterVirtualSpout(virtualSpoutId);
+            getVirtualSpoutMessageBus().unregisterVirtualSpout(virtualSpoutId);
         } catch (final Exception ex) {
             // We don't handle restarting this instance.  Instead its Spout Monitor which that ownership falls to.
             // We'll log the error, and bubble up the exception.
@@ -205,6 +208,13 @@ public class SpoutRunner implements Runnable {
      */
     Map<String, Object> getTopologyConfig() {
         return topologyConfig;
+    }
+
+    /**
+     * @return ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
+     */
+    private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
+        return virtualSpoutMessageBus;
     }
 
     /**

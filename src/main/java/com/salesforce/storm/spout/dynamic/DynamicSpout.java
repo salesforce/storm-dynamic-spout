@@ -159,14 +159,14 @@ public class DynamicSpout extends BaseRichSpout {
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
         messageBuffer.open(getSpoutConfig());
 
-        // Create MessageBus
+        // Create MessageBus instance and store into SpoutMessageBus reference reducing accessible scope.
         this.messageBus = new MessageBus(messageBuffer);
 
         // Create Spout SpoutCoordinator.
         coordinator = new SpoutCoordinator(
             // Our metrics recorder.
             metricsRecorder,
-            // Pass message bus casted.
+            // Pass message bus casted as a VirtualSpoutMessageBus.
             (VirtualSpoutMessageBus) messageBus
         );
 
@@ -433,6 +433,9 @@ public class DynamicSpout extends BaseRichSpout {
         return coordinator;
     }
 
+    /**
+     * @return The MessageBus for communicating with VirtualSpouts.
+     */
     SpoutMessageBus getMessageBus() {
         checkSpoutOpened();
         return messageBus;
