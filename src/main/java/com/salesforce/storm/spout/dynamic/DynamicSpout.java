@@ -448,7 +448,7 @@ public class DynamicSpout extends BaseRichSpout {
             throw new IllegalStateException("Cannot create multiple spout monitor instances!");
         }
 
-        // Build base name for threads: TaskName (TaskIndex)
+        // Build base name for threads: SpoutId:TaskIndex
         final String threadContextName =
             topologyContext.getThisComponentId() + ":" + topologyContext.getThisTaskIndex();
 

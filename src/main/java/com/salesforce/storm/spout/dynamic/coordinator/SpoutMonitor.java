@@ -214,8 +214,9 @@ public class SpoutMonitor implements Runnable {
                 spoutContext.getSpoutRunner().requestStop();
 
                 // Block until the CompletableFuture Completes.
-                // If it never ran, we need to know that
+                // If it never ran, isDone() will never return true, we'll have to cancel it.
                 try {
+                    // Wait up to MaxTerminationTime for it to finish
                     final long endTime = getClock().millis() + getMaxTerminationWaitTimeMs();
                     do {
                         Thread.sleep(500L);
@@ -226,7 +227,7 @@ public class SpoutMonitor implements Runnable {
                     }
                     while (getClock().millis() <= endTime);
 
-                    // If we made it here, that means we exceeded our max wait time, just cancel it.
+                    // We exceeded our max wait time, just cancel it.
                     spoutContext.getCompletableFuture().cancel(true);
                 } catch (final InterruptedException interruptedException) {
                     // If we're interrupted then just cancel it.
@@ -235,8 +236,8 @@ public class SpoutMonitor implements Runnable {
                 return;
             }
 
-            // Otherwise it is queued and hasn't started yet.
-            // Loop through the queue, find it, and remove it.  No need to block on anything.
+            // Otherwise it is in the new spout queue.
+            // Loop through the queue, find it, and remove it.
             newSpoutQueue.removeIf(spout -> spout.getVirtualSpoutId().equals(virtualSpoutIdentifier));
         }
     }
