@@ -30,7 +30,6 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
-import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
@@ -76,15 +75,15 @@ public class DynamicSpout extends BaseRichSpout {
     private TopologyContext topologyContext;
 
     /**
-     * TODO Describe / Allow injecting.
-     */
-    private SpoutMonitorFactory spoutMonitorFactory = new SpoutMonitorFactory();
-
-    /**
-     * TODO Describe.
-     * Our internal SpoutMonitor.  Maybe re-name to VSpoutMonitor?
+     * SpoutMonitor is in charge of spinning up and monitor VirtualSpouts which
+     * runs as a long lived background thread. You can add/remove VirtualSpouts via it.
      */
     private SpoutMonitor spoutMonitor;
+
+    /**
+     * Reference to the thread that SpoutMonitor runs in.
+     */
+    private Thread spoutMonitorThread;
 
     /**
      * ThreadSafe routing of emitted, acked, and failed tuples between this DynamicSpout instance
@@ -173,12 +172,12 @@ public class DynamicSpout extends BaseRichSpout {
         this.messageBus = new MessageBus(messageBuffer);
 
         // Create and Start Spout monitor thread.
-        spoutMonitor = new SpoutMonitorFactory()
-            .createAndStart(
-                (VirtualSpoutMessageBus) messageBus,
-                topologyConfig,
-                metricsRecorder
-            );
+        startSpoutMonitor(
+            topologyConfig,
+            topologyContext,
+            (VirtualSpoutMessageBus) messageBus,
+            metricsRecorder
+        );
 
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
@@ -287,9 +286,19 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Close Spout Monitor
         if (spoutMonitor != null) {
-            // TODO we really want to wait for the thread to join here
-            // Need to figure that out.
+            // Call close on spout monitor.
             spoutMonitor.close();
+
+            // Interrupt spout monitor's thread and wait for it to close
+            try {
+                spoutMonitorThread.interrupt();
+                spoutMonitorThread.join(3000, 0);
+            } catch (InterruptedException e) {
+                // Ignore, already shutting down.
+            }
+
+            // Null references
+            spoutMonitorThread = null;
             spoutMonitor = null;
         }
 
@@ -437,6 +446,53 @@ public class DynamicSpout extends BaseRichSpout {
      */
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
         return getSpoutMonitor().hasVirtualSpout(spoutIdentifier);
+    }
+
+    /**
+     * Create and start the SpoutMonitor instance.
+     * @param topologyConfig Topology configuration.
+     * @param topologyContext Topology context information.
+     * @param virtualSpoutMessageBus ThreadSafe message bus.
+     * @param metricsRecorder Metric reporter.
+     */
+    private void startSpoutMonitor(
+        final Map<String, Object> topologyConfig,
+        final TopologyContext topologyContext,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
+        final MetricsRecorder metricsRecorder) {
+
+        // Prevent more than one instance from being created.
+        if (getSpoutMonitor() != null) {
+            throw new IllegalStateException("Cannot create multiple spout monitor instances!");
+        }
+
+        // Create instance.
+        this.spoutMonitor = new SpoutMonitor(
+            topologyConfig,
+            virtualSpoutMessageBus,
+            metricsRecorder
+        );
+
+        // Build name for thread: TaskName (TaskIndex) SpoutMonitor
+        final String threadName =
+            topologyContext.getThisComponentId()
+            + " (" + topologyContext.getThisTaskIndex() + ") "
+            + spoutMonitor.getClass().getSimpleName();
+
+        // Create and name thread.
+        final Thread thread = new Thread(spoutMonitor, threadName);
+
+        // Mark as a Daemon thread instead of a user thread.
+        thread.setDaemon(true);
+
+        // Start it.  Its intended that this thread will loop forever
+        // and as gracefully as possible handle any errors such that it never stops running
+        // unless its passed an interrupt signal or requested to stop.
+        // We have nothing watching this.
+        thread.start();
+
+        // Save reference to thread.
+        this.spoutMonitorThread = thread;
     }
 
     /**

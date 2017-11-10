@@ -48,6 +48,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -87,7 +88,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * Used to get the System time, allows easy mocking of System clock in tests.
      */
-    private final Clock clock;
+    private final Clock clock = Clock.systemUTC();
 
     /**
      * Storm topology configuration.
@@ -124,19 +125,16 @@ public class SpoutMonitor implements Runnable {
 
     /**
      * Constructor.
-     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
-     * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      * @param metricsRecorder MetricRecorder implementation for recording metrics.
      */
     public SpoutMonitor(
-        final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final Clock clock,
         final Map<String, Object> topologyConfig,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final MetricsRecorder metricsRecorder
     ) {
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
-        this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
         this.metricsRecorder = metricsRecorder;
 
@@ -219,9 +217,6 @@ public class SpoutMonitor implements Runnable {
 
     @Override
     public void run() {
-        // Rename our thread.
-        Thread.currentThread().setName("SpoutMonitor");
-
         // Start monitoring loop.
         while (keepRunning()) {
             try {
@@ -397,6 +392,7 @@ public class SpoutMonitor implements Runnable {
      * as finish running our monitor thread.
      */
     public void close() {
+        // Flip keepRunning flag to false to shutdown long lived thread.
         keepRunning = false;
 
         // Ask the executor to shut down, this will prevent it from
