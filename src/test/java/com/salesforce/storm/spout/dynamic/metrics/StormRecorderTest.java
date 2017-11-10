@@ -26,11 +26,11 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
+import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,8 +49,6 @@ import static org.mockito.Mockito.when;
  * Test that {@link StormRecorder} captures metrics.
  */
 public class StormRecorderTest {
-    private static final Logger logger = LoggerFactory.getLogger(StormRecorderTest.class);
-
     private static final int defaultTimeWindow = 60;
 
     /**
@@ -58,7 +56,6 @@ public class StormRecorderTest {
      */
     @Test
     public void testOpen_useDefaults() {
-
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
 
@@ -249,5 +246,47 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
         assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
         assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
+    }
+
+    /**
+     * Unfortunately this test kind of tests the implementation logic of start and stop timer to a degree.
+     * I'm less interested in knowing that MultiReducedMetric and AssignableMetric store values correctly,
+     * and more interested in know it updates the two metrics as it should.
+     */
+    @Test
+    public void testStartAndStopTimer() throws InterruptedException {
+        // Define inputs
+        final Class sourceClass = getClass();
+        final String metricName = "MyMetric";
+        final String expectedMetricName = sourceClass.getSimpleName() + "." + metricName;
+        final String expectedTotalTimeMetricName = expectedMetricName + "_totalTimeMs";
+
+        // Create empty config
+        final Map<String, Object> config = new HashMap<>();
+
+        // Create mock TopologyContet
+        final MockTopologyContext mockTopologyContext = new MockTopologyContext();
+
+        // Create recorder and call open.
+        final StormRecorder recorder = new StormRecorder();
+        recorder.open(config, mockTopologyContext);
+
+        // Lets capture the metrics
+        final MultiReducedMetric timerMetrics = (MultiReducedMetric) mockTopologyContext.getRegisteredMetricByName("TIMERS");
+        final MultiCountMetric counterMetrics = (MultiCountMetric) mockTopologyContext.getRegisteredMetricByName("COUNTERS");
+
+        // Lets time something.  It's ok if this ends up being 0.
+        recorder.startTimer(sourceClass, metricName);
+        recorder.stopTimer(sourceClass, metricName);
+
+        // Validate
+        final Map<String, Long> timerValues = (Map<String, Long>) timerMetrics.getValueAndReset();
+        assertEquals("Should have 1 value", 1, timerValues.size());
+        assertTrue("Should contain our key", timerValues.containsKey(expectedMetricName));
+
+        // Validate total timer got updated
+        final Map<String, Long> counterValues = (Map<String, Long>) counterMetrics.getValueAndReset();
+        assertEquals("Should have 1 value", 1, counterValues.size());
+        assertTrue("Should contain our key", counterValues.containsKey(expectedTotalTimeMetricName));
     }
 }

@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 
 import java.util.Map;
@@ -41,17 +42,19 @@ public interface Consumer {
     /**
      * This method is called once, after your implementation has been constructed.
      * This method should handle all setup and configuration.
-     * @param spoutConfig Configuration of Spout.
+     * @param spoutConfig spout configuration.
      * @param virtualSpoutIdentifier VirtualSpout running this consumer.
      * @param consumerPeerContext defines how many instances in total are running of this consumer.
-     * @param persistenceAdapter The persistence adapter used to manage any state.
-     * @param startingState (Optional) If not null, This defines the state at which the consumer should resume from.
+     * @param persistenceAdapter persistence adapter used to manage state.
+     * @param metricsRecorder metrics recorder for reporting metrics from the consumer.
+     * @param startingState (optional) if not null, this defines the state at which the consumer should resume from.
      */
     void open(
         final Map<String, Object> spoutConfig,
         final VirtualSpoutIdentifier virtualSpoutIdentifier,
         final ConsumerPeerContext consumerPeerContext,
         final PersistenceAdapter persistenceAdapter,
+        final MetricsRecorder metricsRecorder,
         final ConsumerState startingState
     );
 
@@ -85,12 +88,6 @@ public interface Consumer {
      * @return The Consumer's current state.
      */
     ConsumerState flushConsumerState();
-
-    /**
-     * This is likely to change in signature in the future to return some standardized object instead of a double.
-     * @return The consumer's maximum lag.
-     */
-    double getMaxLag();
 
     // The following methods are likely to be removed in future refactorings.
     void removeConsumerState();

@@ -211,30 +211,11 @@
             </exclusions>
         </dependency>
 
-        <!-- To stand up an internal zookeeper server within tests -->
+        <!-- Use Kafka-JUnit in tests for Embedded Kafka and Zookeeper servers -->
         <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-test</artifactId>
-            <version>${curatorTestVersion}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- To stand up an internal kafka cluster within tests -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.11</artifactId>
-            <version>${kafkaVersion}</version>
-            <exclusions>
-                <!-- Don't bring in kafka's logging framework -->
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.salesforce.kafka.test</groupId>
+            <artifactId>kafka-junit</artifactId>
+            <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

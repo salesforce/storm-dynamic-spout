@@ -176,6 +176,11 @@ public class StormRecorder implements MetricsRecorder {
     public void timer(final Class sourceClass, final String metricName, final long timeInMs) {
         final String key = generateKey(sourceClass, metricName);
         timers.scope(key).update(timeInMs);
+
+        // Update total time value.  This tracks how much time in total has been
+        // spent in this key, in milliseconds
+        final String totalTimeKey = metricName + "_totalTimeMs";
+        count(sourceClass, totalTimeKey, timeInMs);
     }
 
     @Override
@@ -195,6 +200,8 @@ public class StormRecorder implements MetricsRecorder {
             logger.warn("Could not find timer key {}", key);
             return;
         }
+
+        // Calculate total time inbetween starting and stopping
         timer(sourceClass, metricName, stopTime - startTime);
     }
 
