@@ -66,6 +66,13 @@ public class SpoutMonitorFactory {
         );
     }
 
+    /**
+     * Factory method and starts SpoutMonitor in long lived background thread.
+     * @param virtualSpoutMessageBus Message bus for passing messages FROM VirtualSpouts TO DynamicSpout.
+     * @param topologyConfig Storm topology config.
+     * @param metricsRecorder MetricRecorder implementation for recording metrics.
+     * @return new SpoutMonitor instance.
+     */
     public SpoutMonitor createAndStart(
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final Map<String, Object> topologyConfig,
