@@ -75,6 +75,14 @@ public class SpoutMonitor implements Runnable {
     private final Queue<DelegateSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
+     * Internal map of VirtualSpoutIdentifiers and SpoutRunner instances.
+     * As VirtualSpouts are removed from the newSpoutQueue and started, they are added onto
+     * this map.
+     */
+    private final Map<VirtualSpoutIdentifier, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
+
+
+    /**
      * Routes messages in a ThreadSafe manner from VirtualSpouts to the SpoutCoordinator.
      */
     private final VirtualSpoutMessageBus virtualSpoutMessageBus;
@@ -110,13 +118,11 @@ public class SpoutMonitor implements Runnable {
      */
     private SpoutPartitionProgressMonitor spoutPartitionProgressMonitor;
 
-    private final Map<VirtualSpoutIdentifier, SpoutRunner> spoutRunners = new ConcurrentHashMap<>();
-
     /**
      * Flag used to determine if we should stop running or not.
-     * TODO check if should be violitile
+     * Since this is read by one thread, and modified by another we mark it volatile.
      */
-    private boolean keepRunning = true;
+    private volatile boolean keepRunning = true;
 
     /**
      * The last timestamp of a status report.
