@@ -71,9 +71,6 @@ class SpoutPartitionProgressMonitor {
             return;
         }
 
-        // This value is not partition specific and represents the maximum possible lag from the consumer for ANY partition
-        final double maxLag = spout.getMaxLag();
-
         // We can only track progress for partitions the consumer is currently subscribed to, so let's loop
         // over those.  It's possible there were more partitions in startingState, but we can't deal with
         // those if we are not currently getting state reported for them.
@@ -145,10 +142,6 @@ class SpoutPartitionProgressMonitor {
                 metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".percentComplete", percentComplete);
             }
 
-            if (maxLag > 0L) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".maxLag", maxLag);
-            }
-
             if (startingOffset != null) {
                 metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".startingOffset", startingOffset);
             }
@@ -171,24 +164,12 @@ class SpoutPartitionProgressMonitor {
                 );
             } else {
                 // TODO: If we have no endingOffset and our totalProcessed = 0, should we even bother writing this log
-
-                // Only log lag when we actually have it, we occasionally get -1 numbers when there is no lag
-                if (maxLag > 0) {
-                    logger.info(
-                        "Progress for {} on partition {}: {} processed (max lag of {})",
-                        spout.getVirtualSpoutId(),
-                        consumerPartition,
-                        totalProcessed,
-                        maxLag
-                    );
-                } else {
-                    logger.info(
-                        "Progress for {} on partition {}: {} processed",
-                        spout.getVirtualSpoutId(),
-                        consumerPartition,
-                        totalProcessed
-                    );
-                }
+                logger.info(
+                    "Progress for {} on partition {}: {} processed",
+                    spout.getVirtualSpoutId(),
+                    consumerPartition,
+                    totalProcessed
+                );
             }
         }
     }

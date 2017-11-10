@@ -210,7 +210,7 @@ public class VirtualSpout implements DelegateSpout {
         );
 
         // Open consumer
-        consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, startingState);
+        consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, metricsRecorder, startingState);
 
         // This is an approximation, after the consumer has been opened since we were not provided with a starting state
         if (startingState == null) {
@@ -517,11 +517,6 @@ public class VirtualSpout implements DelegateSpout {
 
     public ConsumerState getEndingState() {
         return endingState;
-    }
-
-    @Override
-    public double getMaxLag() {
-        return consumer.getMaxLag();
     }
 
     @Override
