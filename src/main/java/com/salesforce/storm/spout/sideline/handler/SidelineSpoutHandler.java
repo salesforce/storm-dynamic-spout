@@ -58,6 +58,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Handler for managing sidelines on a DynamicSpout.
@@ -83,6 +86,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * The Topology Context object.
      */
     private TopologyContext topologyContext;
+
+    /**
+     * Timer for periodically checking the state of the VirtualSpouts being managed.
+     */
+    private final Timer timer = new Timer();
 
     /**
      * Collection of sideline triggers to manage.
@@ -153,7 +161,31 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         createSidelineTriggers();
 
+        Preconditions.checkArgument(
+            spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)
+            && spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS) != null,
+            "Configuration value for " + SidelineConfig.REFRESH_INTERVAL_SECONDS + " is required."
+        );
+
+        final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
+
+        final long refreshIntervalMillis = TimeUnit.SECONDS.toMillis(refreshIntervalSeconds);
+
+        // Why not just start the timer at 0? Because we want to block onSpoutOpen() until the first run of loadSidelines()
         loadSidelines();
+
+        // Repeat our sidelines check periodically
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                // Catch this so that it doesn't kill the recurring task
+                try {
+                    loadSidelines();
+                } catch (Exception ex) {
+                    logger.error("Attempting to loadSidelines() failed {}", ex);
+                }
+            }
+        }, refreshIntervalMillis, refreshIntervalMillis);
 
         for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
             sidelineTrigger.open(getSpoutConfig());
@@ -162,9 +194,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
     /**
      * Loads existing sideline requests that have been previously persisted and checks to make sure that they are running.
+     *
+     * This method is synchronized to avoid having overlap runs, which could cause odd state issues as the same operation
+     * is essentially being performed X times.
      */
-    private void loadSidelines() {
-        final VirtualSpoutIdentifier fireHoseIdentifier = new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID);
+    synchronized void loadSidelines() {
+        final VirtualSpoutIdentifier fireHoseIdentifier = getFireHoseSpoutIdentifier();
 
         // If we haven't spun up a VirtualSpout yet, we create it here.
         if (fireHoseSpout == null) {
@@ -256,6 +291,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void onSpoutClose(final DynamicSpout spout) {
+        timer.cancel();
+
         final ListIterator<SidelineTrigger> iter = sidelineTriggers.listIterator();
 
         while (iter.hasNext()) {
@@ -542,6 +579,14 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     VirtualSpout getFireHoseSpout() {
         return fireHoseSpout;
+    }
+
+    /**
+     * Get the firehose virtual spout identifier.
+     * @return firehose virtual spout identifier.
+     */
+    VirtualSpoutIdentifier getFireHoseSpoutIdentifier() {
+        return new DefaultVirtualSpoutIdentifier(getVirtualSpoutIdPrefix() + ":" + MAIN_ID);
     }
 
     /**

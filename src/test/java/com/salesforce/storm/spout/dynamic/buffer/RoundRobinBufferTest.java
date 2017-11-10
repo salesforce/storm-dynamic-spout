@@ -233,12 +233,10 @@ public class RoundRobinBufferTest {
 
         // Create new Thread
         final CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-            System.out.println("Creating new iterator");
             Iterator<String> keyIterator = Iterators.cycle(myMap.keySet());
             while (keyIterator.hasNext()) {
                 final String keyValue = keyIterator.next();
                 if (keyValue.equals("Key5")) {
-                    System.out.println("Found new key! " + keyValue);
                     return keyValue;
                 }
             }
@@ -277,7 +275,6 @@ public class RoundRobinBufferTest {
 
         // Create new Thread
         final CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
-            System.out.println("Creating new iterator");
             Iterator<String> keyIterator = Iterators.cycle(myMap.keySet());
             int lastFound = 0;
             while (keyIterator.hasNext()) {
@@ -289,7 +286,6 @@ public class RoundRobinBufferTest {
                 }
                 // If we haven't seen this key in awhile
                 if (lastFound >= 12) {
-                    System.out.println("Hey Key4 is missing!");
                     return true;
                 }
             }
@@ -330,7 +326,6 @@ public class RoundRobinBufferTest {
 
         // Create new Thread
         final CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
-            System.out.println("Creating new iterator");
             Iterator<String> keyIterator = Iterators.cycle(myMap.keySet());
             while (keyIterator.hasNext()) {
                 final String keyValue = keyIterator.next();

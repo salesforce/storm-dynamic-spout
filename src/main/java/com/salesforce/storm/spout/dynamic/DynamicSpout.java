@@ -395,6 +395,17 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
+     * Get the total number of virtual spouts in the coordinator.
+     *
+     * This method crosses the thread barrier to determine its value.
+     *
+     * @return total number of virtual spouts in the coordinator.
+     */
+    public int getTotalVirtualSpouts() {
+        return getCoordinator().getTotalSpouts();
+    }
+
+    /**
      * @return The spout's output collector.
      */
     private SpoutOutputCollector getOutputCollector() {

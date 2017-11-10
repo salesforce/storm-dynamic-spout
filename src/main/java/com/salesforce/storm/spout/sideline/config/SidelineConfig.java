@@ -51,6 +51,15 @@ public class SidelineConfig {
     public static final String TRIGGER_CLASS = "sideline.trigger_class";
 
     /**
+     * (Integer) Interval (in seconds) to check running sidelines and refresh them if necessary.
+     */
+    @Documentation(
+        description = "Interval (in seconds) to check running sidelines and refresh them if necessary. Defaults to 600.",
+        type = Integer.class
+    )
+    public static final String REFRESH_INTERVAL_SECONDS = "sideline.refresh_interval_seconds";
+
+    /**
      * (String) Defines which PersistenceAdapter implementation to use.
      * Should be a full classpath to a class that implements the PersistenceAdapter interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter"
@@ -172,6 +181,16 @@ public class SidelineConfig {
                 "Unspecified configuration value for {} using default value {}",
                 PERSISTENCE_ZK_RETRY_INTERVAL,
                 clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL)
+            );
+        }
+
+        if (!clonedConfig.containsKey(REFRESH_INTERVAL_SECONDS)) {
+            // Default to 10 minutes
+            clonedConfig.put(REFRESH_INTERVAL_SECONDS, 600);
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                REFRESH_INTERVAL_SECONDS,
+                clonedConfig.get(REFRESH_INTERVAL_SECONDS)
             );
         }
 

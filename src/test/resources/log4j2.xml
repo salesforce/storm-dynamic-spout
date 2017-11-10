@@ -10,14 +10,6 @@
         </File>
     </Appenders>
     <Loggers>
-        <!-- Relevant classes we want to see INFO logs on the Console -->
-        <Logger name="com.salesforce.storm.spout.dynamic" level="INFO">
-            <AppenderRef ref="Console"/>
-        </Logger>
-        <Logger name="com.salesforce.storm.spout.dynamic.config.SpoutConfig" level="WARN">
-            <AppenderRef ref="Console"/>
-        </Logger>
-
         <!-- Squelch noise from kafka -->
         <Logger name="kafka" level="WARN">
             <AppenderRef ref="File"/>
@@ -38,6 +30,14 @@
             <AppenderRef ref="File"/>
         </Logger>
 
+        <!-- Relevant classes we want to see ERROR logs on the Console and capture INFO (and everything else) in our log file -->
+        <Logger name="com.salesforce.storm.spout.dynamic">
+            <AppenderRef ref="Console" level="ERROR"/>
+            <AppenderRef ref="File" level="INFO"/>
+        </Logger>
+        <Logger name="com.salesforce.storm.spout.dynamic.config.SpoutConfig" level="WARN">
+            <AppenderRef ref="File"/>
+        </Logger>
 
         <!-- Define our loggers -->
         <Root level="INFO">
@@ -47,6 +47,5 @@
             <!-- Info level go to the log file -->
             <AppenderRef level="INFO" ref="File"/>
         </Root>
-
     </Loggers>
 </Configuration>

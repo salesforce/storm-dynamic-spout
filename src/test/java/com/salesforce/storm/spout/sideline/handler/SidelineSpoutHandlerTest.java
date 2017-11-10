@@ -44,6 +44,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
+import org.apache.storm.task.TopologyContext;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -51,7 +52,11 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -62,16 +67,14 @@ import static org.junit.Assert.assertTrue;
  */
 public class SidelineSpoutHandlerTest {
 
+    private static String CONSUMER_ID_PREFIX = "VirtualSpoutPrefix";
+
     /**
      * Test the open method properly stores the spout's config.
      */
     @Test
     public void testOpen() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
+        final Map<String, Object> config = getConfig();
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -87,12 +90,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOnSpoutOpenCreatesFirehose() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "VirtualSpoutPrefix");
+        final Map<String, Object> config = getConfig();
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
@@ -114,18 +112,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOnSpoutOpenResumesSidelines() {
-        final String consumerId = "VirtualSpoutPrefix";
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
-            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        final Map<String, Object> config = getConfig();
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -135,7 +122,7 @@ public class SidelineSpoutHandlerTest {
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
         final VirtualSpoutIdentifier virtualSpoutIdentifier2 = new SidelineVirtualSpoutIdentifier(
-            consumerId,
+            CONSUMER_ID_PREFIX,
             stopRequestId
         );
 
@@ -195,18 +182,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testStartSidelining() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
-        config.put(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
-            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        final Map<String, Object> config = getConfig();
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -270,19 +246,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testStopSidelining() {
-        final String consumerId = "VirtualSpoutPrefix";
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerId);
-        config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
-        config.put(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
-            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        final Map<String, Object> config = getConfig();
 
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
@@ -362,13 +326,7 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testOnSpoutClose() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "VirtualSpoutPrefix");
-        config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
+        final Map<String, Object> config = getConfig();
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(config);
@@ -397,12 +355,8 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testMisconfiguredCreateSidelineTriggers() {
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        // This class better not exist!
+        final Map<String, Object> config = getConfig();
+        // Override our trigger class with one that does not actually exist.
         config.put(SidelineConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -418,16 +372,10 @@ public class SidelineSpoutHandlerTest {
      */
     @Test
     public void testGenerateVirtualSpoutId() {
-        final String expectedPrefix = "VirtualSpoutPrefix";
         final SidelineRequestIdentifier expectedSidelineRequestIdentifier = new SidelineRequestIdentifier("SidelineRequestIdentifier");
 
         // Create our config, specify the consumer id because it will be used as a prefix
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            InMemoryPersistenceAdapter.class.getName()
-        );
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, expectedPrefix);
+        final Map<String, Object> config = getConfig();
 
         // Create a persistence adapter, this is called in the handler onSpoutOpen() method, we're just trying to avoid a NullPointer here
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -449,7 +397,202 @@ public class SidelineSpoutHandlerTest {
 
         final SidelineVirtualSpoutIdentifier sidelineVirtualSpoutIdentifier = (SidelineVirtualSpoutIdentifier) virtualSpoutIdentifier;
 
-        assertEquals(expectedPrefix, sidelineVirtualSpoutIdentifier.getConsumerId());
+        assertEquals(CONSUMER_ID_PREFIX, sidelineVirtualSpoutIdentifier.getConsumerId());
         assertEquals(expectedSidelineRequestIdentifier, sidelineVirtualSpoutIdentifier.getSidelineRequestIdentifier());
+    }
+
+    /**
+     * Test that periodically calling {@link SidelineSpoutHandler#loadSidelines()} will restore {@link VirtualSpout}'s and
+     * {@link com.salesforce.storm.spout.dynamic.filter.FilterChainStep}'s after calling
+     * {@link SidelineSpoutHandler#onSpoutOpen(DynamicSpout, Map, TopologyContext)}, and that when spouts and filters are removed
+     * they are properly restored back onto the spout.
+     */
+    @Test
+    public void testLoadSidelines() {
+        final Map<String, Object> config = getConfig();
+
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(null, null, null);
+
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
+
+        assertTrue(
+            "There should not be any filters on the firehose",
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().isEmpty()
+        );
+
+        // The firehose has to move from the queue to a SpoutRunner, and this happens in a separate thread so we wait a bit.
+        await()
+            .until(() -> spout.getTotalVirtualSpouts(), equalTo(1));
+
+        assertEquals("Only the firehose should be on the spout", 1, spout.getTotalVirtualSpouts());
+
+        final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
+        final StaticMessageFilter startFilter = new StaticMessageFilter();
+        final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
+
+        final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
+        final StaticMessageFilter stopFilter = new StaticMessageFilter();
+        final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
+
+        final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
+        // Make a starting request that we expect to be loaded
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            startRequestId,
+            startRequest,
+            0,
+            1L,
+            2L
+        );
+        // Make a stopping request that we expect to be loaded
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.STOP,
+            stopRequestId,
+            stopRequest,
+            1,
+            3L,
+            4L
+        );
+
+        final VirtualSpoutIdentifier startRequestVirtualSpoutIdentifier = new SidelineVirtualSpoutIdentifier(
+            CONSUMER_ID_PREFIX,
+            startRequestId
+        );
+
+        final VirtualSpoutIdentifier stopRequestVirtualSpoutIdentifier = new SidelineVirtualSpoutIdentifier(
+            CONSUMER_ID_PREFIX,
+            stopRequestId
+        );
+
+        // Reload the sidelines, this is normally done via a thread on an interval - we're going to validate it behaves correctly now
+        sidelineSpoutHandler.loadSidelines();
+
+        assertEquals(
+            "There should be a filter on the firehose for our start request",
+            1,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+        );
+
+        assertTrue(
+            "Start request should be on the filter chain",
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
+        );
+
+        assertFalse(
+            "Stop request should not be on the filter chain",
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(stopRequestId)
+        );
+
+        // A new sideline spout should be added for our stopped request
+        await()
+            .until(() -> spout.getTotalVirtualSpouts(), equalTo(2));
+
+        assertTrue(
+            "Spout should have a VirtualSpout for the stop request",
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+        );
+
+        assertFalse(
+            "Spout should not have a VirtualSpout for the start request",
+            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier)
+        );
+
+        // Call this again, basically we want to be able to call this without messing with state and nothing else should change,
+        // so we'll validate that number of vspouts stays the same and the filter chain stays the same too.
+        sidelineSpoutHandler.loadSidelines();
+
+        assertEquals(
+            "Spout should have two virtual spouts",
+            2,
+            spout.getTotalVirtualSpouts()
+        );
+
+        assertTrue(
+            "Spout should have the firehose VirtualSpout",
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+        );
+
+        assertTrue(
+            "Spout should have a VirtualSpout for the stop request",
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+        );
+
+        assertFalse(
+            "Spout should not have a VirtualSpout for the start request",
+            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier)
+        );
+
+        assertEquals(
+            "Firehose only has 1 filter",
+            1,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+        );
+
+        // Now we're going to mess with the state of the spout and filter chain and see if things reload properly
+        spout.removeVirtualSpout(stopRequestVirtualSpoutIdentifier);
+        spout.removeVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier());
+        sidelineSpoutHandler.getFireHoseSpout().getFilterChain().removeStep(startRequestId);
+
+        assertFalse(
+            "Spout should not have a VirtualSpout for the stop request",
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+        );
+
+        assertFalse(
+            "Spout should not have a VirtualSpout for the firehose",
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+        );
+
+        assertFalse(
+            "Start request should not be on the filter chain",
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
+        );
+
+        // The missing spout and filter chain step should be restored after this
+        sidelineSpoutHandler.loadSidelines();
+
+        assertTrue(
+            "Spout should have a VirtualSpout for the stop request",
+            // Note that this will be in the starting queue, not in the runners at this point and that's OK for this test
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+        );
+
+        assertTrue(
+            "Spout should have a VirtualSpout for the firehose",
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+        );
+
+        assertTrue(
+            "Start request should be on the filter chain",
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
+        );
+
+        // Note that I would love to mess with the filter chain on an existing VirtualSpout that isn't the FireHose, but there's no real way
+        // to get to the other spouts right now. This may not even be relevant either, because we never manipulate the sideline's filter
+        // chains after they've been opened (whereas we do with the firehose). In fact, it's not even possible to do because of the
+        // aforementioned lack of accessibility to non-firehose spouts.
+
+        spout.close();
+    }
+
+    private Map<String, Object> getConfig() {
+        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(new HashMap<>()));
+        config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, CONSUMER_ID_PREFIX);
+        config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
+        config.put(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
+        );
+        config.put(
+            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
+            InMemoryPersistenceAdapter.class.getName()
+        );
+        config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
+        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+
+        return config;
     }
 }
