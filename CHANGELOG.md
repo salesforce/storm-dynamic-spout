@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps. 
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
-
+- [PR-40](https://github.com/salesforce/storm-dynamic-spout/pull/40) Timer metrics will now publish a counter metric containing the total time spent within each metric key.  Start publishing developer performance metrics within VirtualSpout via MetricRecorder.
 
 ### Bug Fixes
 
