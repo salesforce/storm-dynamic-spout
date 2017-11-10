@@ -53,7 +53,7 @@ import java.util.Set;
  * Persistence layer implemented using Zookeeper.
  * Why Zookeeper?  Because its easy, and you most likely have it around.
  */
-public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializable {
+public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
     /**
      * Logger for logging logs.
@@ -164,6 +164,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         // Read!
         final String path = getZkRequestStatePathForPartition(id.toString(), partitionId);
+        // TODO: We should make a real object for this and update readJson() to support a class declaration
         Map<Object, Object> json = curatorHelper.readJson(path);
         logger.debug("Read request state from Zookeeper at {}: {}", path, json);
 
@@ -177,15 +178,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter, Serializ
 
         final FilterChainStep step = parseJsonToFilterChainSteps(json);
 
-        final Long startingOffset = (Long) json.get("startingOffset");
-        final Long endingOffset = (Long) json.get("endingOffset");
+        final Double startingOffset = (Double) json.get("startingOffset");
+        final Double endingOffset = (Double) json.get("endingOffset");
 
         return new SidelinePayload(
             type,
             id,
             new SidelineRequest(id, step),
-            startingOffset,
-            endingOffset
+            startingOffset != null ? startingOffset.longValue() : null,
+            endingOffset != null ? endingOffset.longValue() : null
         );
     }
 

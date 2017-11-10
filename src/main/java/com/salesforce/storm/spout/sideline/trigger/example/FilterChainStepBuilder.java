@@ -23,61 +23,21 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.filter;
+package com.salesforce.storm.spout.sideline.trigger.example;
 
-import com.salesforce.storm.spout.dynamic.Message;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 
-import java.util.UUID;
+import java.util.Map;
 
 /**
- * We use this filter in tests because it allows us an easy way to define
- * how a filter behaves.
+ * Given a map of a data from a {@link TriggerEvent} implementations of this generate {@link FilterChainStep} instances.
  */
-public class StaticMessageFilter implements FilterChainStep {
+public interface FilterChainStepBuilder {
 
     /**
-     * We need a way to make this instance unique from others, so we use a UUID.
+     * Given a map of a data from a {@link TriggerEvent} implementations of this generate {@link FilterChainStep} instances.
+     * @param data data from a trigger event.
+     * @return filter chain step.
      */
-    private final String id;
-
-    public StaticMessageFilter() {
-        this.id = UUID.randomUUID().toString();
-    }
-
-    public StaticMessageFilter(final String id) {
-        this.id = id;
-    }
-
-    @Override
-    public boolean filter(Message message) {
-        return true;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        StaticMessageFilter that = (StaticMessageFilter) other;
-
-        return id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return id;
-    }
+    FilterChainStep build(final Map<String,Object> data);
 }

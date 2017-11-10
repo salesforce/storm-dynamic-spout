@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -42,7 +43,6 @@ import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.json.simple.JSONValue;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -296,7 +296,7 @@ public class ZookeeperPersistenceAdapterTest {
         expectedJsonMap.put("filterChainStep", "rO0ABXA=");
         expectedJsonMap.put("type", SidelineType.START.toString());
 
-        final String expectedStoredState = JSONValue.toJSONString(expectedJsonMap);
+        final String expectedStoredState = new GsonBuilder().create().toJson(expectedJsonMap);
 
         logger.info("expectedStoredState = {}", expectedStoredState);
 

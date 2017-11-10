@@ -45,10 +45,10 @@ public class MockConsumer implements Consumer {
 
     public static Map<VirtualSpoutIdentifier,BlockingQueue<Record>> records = Maps.newConcurrentMap();
 
-    public static PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
     public static String topic = "MyTopic";
     public static List<Integer> partitions = Collections.singletonList(1);
 
+    private PersistenceAdapter persistenceAdapter;
     private VirtualSpoutIdentifier activeVirtualSpoutIdentifier;
 
     @Override
@@ -60,6 +60,7 @@ public class MockConsumer implements Consumer {
         MetricsRecorder metricsRecorder,
         ConsumerState startingState
     ) {
+        this.persistenceAdapter = persistenceAdapter;
         this.activeVirtualSpoutIdentifier = virtualSpoutIdentifier;
 
         records.put(virtualSpoutIdentifier, new LinkedBlockingQueue<>(10_000));
@@ -74,7 +75,7 @@ public class MockConsumer implements Consumer {
 
     @Override
     public Record nextRecord() {
-        if (records.get(activeVirtualSpoutIdentifier).isEmpty()) {
+        if (!records.containsKey(activeVirtualSpoutIdentifier) || records.get(activeVirtualSpoutIdentifier).isEmpty()) {
             return null;
         }
 
