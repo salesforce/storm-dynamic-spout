@@ -196,7 +196,7 @@ public class DynamicSpout extends BaseRichSpout {
             .getErrors()
             .ifPresent(throwable -> getOutputCollector().reportError(throwable));
 
-        // Ask the SpoutCoordinator for the next message that should be emitted. If it returns null, then there's
+        // Ask the MessageBus for the next message that should be emitted. If it returns null, then there's
         // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
         // Values for the tuple that should be emitted.
         final Optional<Message> messageOptional = getMessageBus().nextMessage();
@@ -330,7 +330,7 @@ public class DynamicSpout extends BaseRichSpout {
         // Cast to appropriate object type
         final MessageId messageId = (MessageId) id;
 
-        // Ack the tuple via the coordinator
+        // Ack the tuple via the Message Bus
         getMessageBus().ack(messageId);
 
         // Update ack count metric for VirtualSpout this tuple originated from
@@ -348,7 +348,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         logger.warn("Failed {}", messageId);
 
-        // Fail the tuple via the coordinator
+        // Fail the tuple via the MessageBus
         getMessageBus().fail(messageId);
     }
 
