@@ -85,6 +85,33 @@ public class SpoutRunner implements Runnable {
      */
     private volatile boolean requestedStop = false;
 
+    /**
+     * Constructor that does not make use of a count down latch.
+     *
+     * @param spout The VirtualSpout instance to run.
+     * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
+     * @param clock Clock instance.
+     * @param topologyConfig Topology configuration.
+     */
+    SpoutRunner(
+        final DelegateSpout spout,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
+        final Clock clock,
+        final Map<String, Object> topologyConfig
+    ) {
+        this(spout, virtualSpoutMessageBus, new CountDownLatch(0), clock, topologyConfig);
+    }
+
+    /**
+     * Constructor that makes use of a count down latch.
+     * Countdown latches are useful for orchestrating startup.
+     *
+     * @param spout The VirtualSpout instance to run.
+     * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
+     * @param latch Count down latch.
+     * @param clock Clock instance.
+     * @param topologyConfig Topology configuration.
+     */
     SpoutRunner(
         final DelegateSpout spout,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,

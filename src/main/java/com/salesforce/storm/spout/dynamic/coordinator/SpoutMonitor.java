@@ -48,7 +48,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -86,12 +85,6 @@ public class SpoutMonitor implements Runnable {
      * Routes messages in a ThreadSafe manner from VirtualSpouts to the SpoutCoordinator.
      */
     private final VirtualSpoutMessageBus virtualSpoutMessageBus;
-
-    /**
-     * This latch allows the SpoutCoordinator to block on start up until its initial
-     * set of VirtualSpout instances have started.
-     */
-    private final CountDownLatch latch;
 
     /**
      * Used to get the System time, allows easy mocking of System clock in tests.
@@ -143,9 +136,6 @@ public class SpoutMonitor implements Runnable {
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
         this.metricsRecorder = metricsRecorder;
-
-        // TODO remove this?
-        this.latch = new CountDownLatch(0);
 
         /*
          * Create our executor service with a fixed thread size.
@@ -263,10 +253,10 @@ public class SpoutMonitor implements Runnable {
 
                 final VirtualSpoutIdentifier virtualSpoutIdentifier = spout.getVirtualSpoutId();
 
+                // Create new spout runner instance.
                 final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
                     getVirtualSpoutMessageBus(),
-                    latch,
                     getClock(),
                     getTopologyConfig()
                 );
