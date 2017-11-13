@@ -81,11 +81,6 @@ public class DynamicSpout extends BaseRichSpout {
     private SpoutMonitor spoutMonitor;
 
     /**
-     * Reference to the thread that SpoutMonitor runs in.
-     */
-    private Thread spoutMonitorThread;
-
-    /**
      * ThreadSafe routing of emitted, acked, and failed tuples between this DynamicSpout instance
      * and the appropriate Virtual Spouts.
      */
@@ -289,16 +284,7 @@ public class DynamicSpout extends BaseRichSpout {
             // Call close on spout monitor.
             spoutMonitor.close();
 
-            // Interrupt spout monitor's thread and wait for it to close
-            try {
-                spoutMonitorThread.interrupt();
-                spoutMonitorThread.join(3000, 0);
-            } catch (InterruptedException e) {
-                // Ignore, already shutting down.
-            }
-
-            // Null references
-            spoutMonitorThread = null;
+            // Null reference
             spoutMonitor = null;
         }
 
@@ -471,9 +457,6 @@ public class DynamicSpout extends BaseRichSpout {
         // unless its passed an interrupt signal or requested to stop.
         // We have nothing watching this.
         thread.start();
-
-        // Save reference to thread.
-        spoutMonitorThread = thread;
     }
 
     /**
