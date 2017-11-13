@@ -206,9 +206,9 @@ public class SpoutCoordinator implements Runnable {
      * This call will block waiting for the VirtualSpout instance to shutdown.
      *
      * @param virtualSpoutIdentifier identifier of the VirtualSpout instance to request stopped.
-     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
+     * @throws SpoutDoesNotExistException if a spout does not exist with the VirtualSpoutIdentifier.
      */
-    public synchronized void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    public synchronized void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
         if (!hasVirtualSpout(virtualSpoutIdentifier)) {
             throw new SpoutDoesNotExistException(
                 "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutCoordinator.",

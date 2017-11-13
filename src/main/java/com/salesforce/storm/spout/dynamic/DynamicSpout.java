@@ -167,7 +167,7 @@ public class DynamicSpout extends BaseRichSpout {
         // Create MessageBus instance and store into SpoutMessageBus reference reducing accessible scope.
         this.messageBus = new MessageBus(messageBuffer);
 
-        // Define thread Context
+        // Define thread context, this allows us to use contextually relevant thread names.
         final ThreadContext threadContext = new ThreadContext(
             topologyContext.getThisComponentId(),
             topologyContext.getThisTaskIndex()
@@ -288,9 +288,9 @@ public class DynamicSpout extends BaseRichSpout {
         logger.info("Stopping the coordinator and closing all spouts");
 
         // Close Spout Monitor
-        if (spoutCoordinator != null) {
+        if (getSpoutCoordinator() != null) {
             // Call close on spout monitor.
-            spoutCoordinator.close();
+            getSpoutCoordinator().close();
 
             // Null reference
             spoutCoordinator = null;
