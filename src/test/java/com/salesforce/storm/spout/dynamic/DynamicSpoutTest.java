@@ -77,7 +77,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -364,7 +363,7 @@ public class DynamicSpoutTest {
         ackTuples(spout, spoutEmissions);
 
         // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertEquals("Should have a single VirtualSpout instance", 1, spout.getCoordinator().getTotalSpouts());
+        assertEquals("Should have a single VirtualSpout instance", 1, spout.getSpoutCoordinator().getTotalSpouts());
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -405,7 +404,7 @@ public class DynamicSpoutTest {
 
         // Validate that VirtualSpouts are NOT closed out, but still waiting for unacked tuples.
         // We should have 2 instances at this point, the firehose, and 1 sidelining instance.
-        assertEquals("We should have 2 virtual spouts running", 2, spout.getCoordinator().getTotalSpouts());
+        assertEquals("We should have 2 virtual spouts running", 2, spout.getSpoutCoordinator().getTotalSpouts());
 
         // Lets ack our messages.
         ackTuples(spout, spoutEmissions);
@@ -1002,10 +1001,10 @@ public class DynamicSpoutTest {
     @Test
     public void testReportErrors() {
         // Define config
-        //final Map<String, Object> config = getDefaultConfig("ConsumerIdPrefix", "StreamId");
-        final Map<String, Object> config = new HashMap<>();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "ConsumerIdPrefix");
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config = SpoutConfig.setDefaults(config);
 
         // Create mocks
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -1022,8 +1021,9 @@ public class DynamicSpoutTest {
         final Throwable exception2 = new Exception("My Exception");
 
         // "Report" our exceptions
-        spout.getCoordinator().getReportedErrorsQueue().add(exception1);
-        spout.getCoordinator().getReportedErrorsQueue().add(exception2);
+        final MessageBus messageBus = (MessageBus) spout.getMessageBus();
+        messageBus.publishError(exception1);
+        messageBus.publishError(exception2);
 
         // Call next tuple a couple times, validate errors get reported.
         await()
@@ -1217,22 +1217,17 @@ public class DynamicSpoutTest {
         for (SpoutEmission emission: spoutEmissions) {
             spout.ack(emission.getMessageId());
         }
+
+        // Grab reference to message bus.
+        final MessageBus messageBus = (MessageBus) spout.getMessageBus();
+
         // Acking tuples is an async process, so we need to make sure they get picked up
         // and processed before continuing.
         await()
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the acked queue.
-                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
-                for (VirtualSpoutIdentifier key : queueMap.keySet()) {
-                    // If any queue has entries, return false
-                    if (!queueMap.get(key).isEmpty()) {
-                        logger.debug("Ack queue {} has {}", key, queueMap.get(key).size());
-                        return false;
-                    }
-                }
-                // If all entries are empty, return true
-                return true;
+                return messageBus.ackSize() == 0;
             }, equalTo(true));
     }
 
@@ -1253,22 +1248,16 @@ public class DynamicSpoutTest {
             spout.fail(emission.getMessageId());
         }
 
+        // Grab reference to message bus.
+        final MessageBus messageBus = (MessageBus) spout.getMessageBus();
+
         // Failing tuples is an async process, so we need to make sure they get picked up
         // and processed before continuing.
         await()
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the fail queue.
-                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
-                for (VirtualSpoutIdentifier key : queueMap.keySet()) {
-                    // If any queue has entries, return false
-                    if (!queueMap.get(key).isEmpty()) {
-                        logger.debug("Fail queue {} has {}", key, queueMap.get(key).size());
-                        return false;
-                    }
-                }
-                // If all entries are empty, return true
-                return true;
+                return messageBus.failSize() == 0;
             }, equalTo(true));
     }
 
@@ -1389,11 +1378,11 @@ public class DynamicSpoutTest {
     private void waitForVirtualSpouts(DynamicSpout spout, int howManyVirtualSpoutsWeWantLeft) {
         await()
             .atMost(5, TimeUnit.SECONDS)
-            .until(() -> spout.getCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
+            .until(() -> spout.getSpoutCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
         assertEquals(
             "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
             howManyVirtualSpoutsWeWantLeft,
-            spout.getCoordinator().getTotalSpouts()
+            spout.getSpoutCoordinator().getTotalSpouts()
         );
     }
 
@@ -1441,7 +1430,7 @@ public class DynamicSpoutTest {
             com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
         );
 
-        // Configure SpoutMonitor thread to run every 1 second
+        // Configure SpoutCoordinator thread to run every 1 second
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second

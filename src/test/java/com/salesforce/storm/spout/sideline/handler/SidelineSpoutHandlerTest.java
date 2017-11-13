@@ -96,7 +96,7 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -127,7 +127,7 @@ public class SidelineSpoutHandlerTest {
         );
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -189,7 +189,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -253,7 +253,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -332,7 +332,7 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -382,7 +382,7 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         // Create our handler
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
