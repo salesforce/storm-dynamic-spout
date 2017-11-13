@@ -52,11 +52,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Monitors and manages the lifecycle of virtual spouts.
+ * Manages the lifecycle of virtual spouts.
  */
-public class SpoutMonitor implements Runnable {
+public class SpoutCoordinator implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(SpoutMonitor.class);
+    private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinator.class);
 
     /**
      * How often our monitor thread will output a status report, in milliseconds.
@@ -129,7 +129,7 @@ public class SpoutMonitor implements Runnable {
      * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      * @param metricsRecorder MetricRecorder implementation for recording metrics.
      */
-    public SpoutMonitor(
+    public SpoutCoordinator(
         final Map<String, Object> topologyConfig,
         final String threadNamePrefix,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
@@ -197,7 +197,7 @@ public class SpoutMonitor implements Runnable {
             // and RUNNING virtualSpouts.
             if (!hasVirtualSpout(virtualSpoutIdentifier)) {
                 throw new SpoutDoesNotExistException(
-                    "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutMonitor.",
+                    "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutCoordinator.",
                     virtualSpoutIdentifier
                 );
             }
@@ -287,7 +287,7 @@ public class SpoutMonitor implements Runnable {
                 reportError(ex);
 
                 // and log it.
-                logger.error("SpoutMonitor threw an exception {}", ex.getMessage(), ex);
+                logger.error("SpoutCoordinator threw an exception {}", ex.getMessage(), ex);
             }
         }
         logger.warn("Spout monitor is ceasing to run due to shutdown request...");

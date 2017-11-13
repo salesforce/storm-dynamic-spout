@@ -27,12 +27,10 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
@@ -42,9 +40,7 @@ import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.buffer.FifoBuffer;
-import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.apache.storm.tuple.Values;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,14 +48,10 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -81,11 +73,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- *  Test that the {@link SpoutMonitor} detects new spouts and manages {@link SpoutRunner} instances for them.
+ *  Test that the {@link SpoutCoordinator} detects new spouts and manages {@link SpoutRunner} instances for them.
  */
-public class SpoutMonitorTest {
+public class SpoutCoordinatorTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(SpoutMonitorTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(SpoutCoordinatorTest.class);
     private static final int maxWaitTime = 5;
 
     /**
@@ -141,7 +133,7 @@ public class SpoutMonitorTest {
         metricsRecorder.open(topologyConfig, new MockTopologyContext());
 
         // Create instance.
-        final SpoutMonitor spoutMonitor = new SpoutMonitor(
+        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             topologyConfig,
             "Test",
             messageBus,
@@ -149,28 +141,28 @@ public class SpoutMonitorTest {
         );
 
         // Call getters and validate!
-        assertEquals("TopologyConfig looks legit", topologyConfig, spoutMonitor.getTopologyConfig());
-        assertEquals("getMonitorThreadIntervalMs() returns right value", monitorInterval, spoutMonitor.getMonitorThreadIntervalMs());
-        assertEquals("getMaxTerminationWaitTimeMs() returns right value", maxShutdownTime, spoutMonitor.getMaxTerminationWaitTimeMs());
+        assertEquals("TopologyConfig looks legit", topologyConfig, spoutCoordinator.getTopologyConfig());
+        assertEquals("getMonitorThreadIntervalMs() returns right value", monitorInterval, spoutCoordinator.getMonitorThreadIntervalMs());
+        assertEquals("getMaxTerminationWaitTimeMs() returns right value", maxShutdownTime, spoutCoordinator.getMaxTerminationWaitTimeMs());
         assertEquals(
             "getMaxConcurrentVirtualSpouts() returns right value",
-            maxConcurrentSpouts, spoutMonitor.getMaxConcurrentVirtualSpouts()
+            maxConcurrentSpouts, spoutCoordinator.getMaxConcurrentVirtualSpouts()
         );
-        assertTrue("KeepRunning should default to true", spoutMonitor.keepRunning());
-        assertEquals("getMetricsRecorder returns right value", metricsRecorder, spoutMonitor.getMetricsRecorder());
+        assertTrue("KeepRunning should default to true", spoutCoordinator.keepRunning());
+        assertEquals("getMetricsRecorder returns right value", metricsRecorder, spoutCoordinator.getMetricsRecorder());
 
         // Validate executor
-        final ThreadPoolExecutor executor = spoutMonitor.getExecutor();
+        final ThreadPoolExecutor executor = spoutCoordinator.getExecutor();
         assertNotNull("Executor should be not null", executor);
         assertEquals("Should have max threads set", maxConcurrentSpouts, executor.getMaximumPoolSize());
 
         // Close up shop.
-        spoutMonitor.close();
+        spoutCoordinator.close();
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
-        assertFalse("Keep running should return false", spoutMonitor.keepRunning());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
+        assertFalse("Keep running should return false", spoutCoordinator.keepRunning());
     }
 
     /**
@@ -179,29 +171,29 @@ public class SpoutMonitorTest {
     @Test
     public void testStartAndCloseSmokeTest() throws InterruptedException, ExecutionException {
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
+        final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 2) + 10;
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
 
         // Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
 
         // validate the executor is running nothing
-        assertEquals("Should have 0 running task", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Should have 0 running task", 0, spoutCoordinator.getExecutor().getActiveCount());
 
         // Close spout monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
     }
 
     /**
@@ -210,34 +202,34 @@ public class SpoutMonitorTest {
     @Test
     public void testSubmittingNewSpout() throws InterruptedException, ExecutionException {
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 2) + 10;
+        final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 2) + 10;
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
 
         // Sanity test - Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
 
         // Create a mock spout
         final DelegateSpout mockSpout = mock(DelegateSpout.class);
         when(mockSpout.getVirtualSpoutId()).thenReturn(new DefaultVirtualSpoutIdentifier("MySpoutId"));
 
         // Add it to our queue
-        spoutMonitor.addVirtualSpout(mockSpout);
+        spoutCoordinator.addVirtualSpout(mockSpout);
 
         // Wait for spout count to increase
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(1));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(1));
 
         // validate the executor is running it
-        assertEquals("Should have 1 running task", 1, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Should have 1 running task", 1, spoutCoordinator.getExecutor().getActiveCount());
 
         // Now validate some calls onto the mock
         // Our spout should have been opened
@@ -250,14 +242,14 @@ public class SpoutMonitorTest {
         verify(mockSpout, atLeastOnce()).nextTuple();
 
         // Close the monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify close called on the mock spout
         verify(mockSpout, times(1)).close();
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
     }
 
     /**
@@ -267,37 +259,37 @@ public class SpoutMonitorTest {
     @Test
     public void testWhatHappensWhenSpoutClosesNormally() throws InterruptedException, ExecutionException {
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
+        final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
 
         // Sanity test - Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
 
         // Create a mock spout
         MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
         mockSpout.requestedStop = false;
 
         // Add it to our queue
-        spoutMonitor.addVirtualSpout(mockSpout);
+        spoutCoordinator.addVirtualSpout(mockSpout);
 
         // Wait for spout count to increase
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(1));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(1));
 
         // Verify open was called
         assertTrue("open() should have been called", mockSpout.wasOpenCalled);
 
         // validate the executor is running it
-        assertEquals("Should have 1 running task", 1, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Should have 1 running task", 1, spoutCoordinator.getExecutor().getActiveCount());
 
         // Make the mock spout stop.
         mockSpout.requestStop();
@@ -305,20 +297,20 @@ public class SpoutMonitorTest {
         // Wait for spout count to decrease
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(0));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(0));
 
         // validate the executor should no longer have any running tasks?
-        assertEquals("Should have no running tasks", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Should have no running tasks", 0, spoutCoordinator.getExecutor().getActiveCount());
 
         // Close the monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify closed was called
         assertTrue("Close() should have been called", mockSpout.wasCloseCalled);
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
     }
 
     /**
@@ -328,12 +320,12 @@ public class SpoutMonitorTest {
     @Test
     public void testQueuedSpoutInstancesAreNeverStarted() throws InterruptedException, ExecutionException {
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
+        final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConcurrentInstances = (int) spoutMonitor.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -342,29 +334,29 @@ public class SpoutMonitorTest {
         }
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
 
         // Sanity test - Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
 
         // Add all of our spouts to the queue.
-        mockSpouts.forEach(spoutMonitor::addVirtualSpout);
+        mockSpouts.forEach(spoutCoordinator::addVirtualSpout);
 
         // Wait for spout count to increase to the number of spout instances we submitted.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(mockSpouts.size()));
 
         // Now the executor should only run a certain number
-        assertEquals("Only configured max running concurrently", maxConcurrentInstances, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Only configured max running concurrently", maxConcurrentInstances, spoutCoordinator.getExecutor().getActiveCount());
 
         // The difference should be queued
         assertEquals(
             "Should have some queued instances",
-            (mockSpouts.size() - maxConcurrentInstances), spoutMonitor.getExecutor().getQueue().size()
+            (mockSpouts.size() - maxConcurrentInstances), spoutCoordinator.getExecutor().getQueue().size()
         );
 
         // Add additional sleep time, just so logs show up
@@ -380,7 +372,7 @@ public class SpoutMonitorTest {
         logger.info("Starting to close spout monitor...");
 
         // Close the monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify close was called on running spouts
         for (int x = 0; x < mockSpouts.size(); x++) {
@@ -396,8 +388,8 @@ public class SpoutMonitorTest {
         }
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
     }
 
     /**
@@ -407,12 +399,12 @@ public class SpoutMonitorTest {
     @Test
     public void testQueuedSpoutInstancesAreStartedWhenAvailableThreads() throws InterruptedException, ExecutionException {
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
+        final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConcurrentInstances = (int) spoutMonitor.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -421,29 +413,29 @@ public class SpoutMonitorTest {
         }
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
 
         // Sanity test - Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
 
         // Add all of our spouts to the queue.
-        mockSpouts.forEach(spoutMonitor::addVirtualSpout);
+        mockSpouts.forEach(spoutCoordinator::addVirtualSpout);
 
         // Wait for spout count to increase to the number of spout instances we submitted.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(mockSpouts.size()));
 
         // Now the executor should only run a certain number
-        assertEquals("Only configured max running concurrently", maxConcurrentInstances, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Only configured max running concurrently", maxConcurrentInstances, spoutCoordinator.getExecutor().getActiveCount());
 
         // The difference should be queued
         assertEquals(
             "Should have some queued instances",
-            (mockSpouts.size() - maxConcurrentInstances), spoutMonitor.getExecutor().getQueue().size()
+            (mockSpouts.size() - maxConcurrentInstances), spoutCoordinator.getExecutor().getQueue().size()
         );
 
         // Add additional sleep time, just so logs show up
@@ -475,7 +467,7 @@ public class SpoutMonitorTest {
         logger.info("Starting to close spout monitor...");
 
         // Close spout monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify close was called on all spouts
         for (MockDelegateSpout mockSpout : mockSpouts) {
@@ -483,8 +475,8 @@ public class SpoutMonitorTest {
         }
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
     }
 
     /**
@@ -494,23 +486,23 @@ public class SpoutMonitorTest {
     @Test
     public void testQueuedSpoutInstancesCanBeRemoved() throws InterruptedException, ExecutionException {
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance();
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
 
         // Define how long to wait for async operations
-        final long testWaitTime = (spoutMonitor.getMonitorThreadIntervalMs() * 10);
+        final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
         // Start the spout Monitor
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
 
         // Sanity test - Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
 
         // Determine how many concurrent instances we are configured to run at a time
         // If we submit more than this number of VirtualSpouts, they should get queued.
-        final int maxConcurrentInstances = (int) spoutMonitor.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -519,20 +511,20 @@ public class SpoutMonitorTest {
         }
 
         // Add all of our spouts to the queue.
-        mockSpouts.forEach(spoutMonitor::addVirtualSpout);
+        mockSpouts.forEach(spoutCoordinator::addVirtualSpout);
 
         // Wait for spout count to increase to the number of spout instances we submitted.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(mockSpouts.size()));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(mockSpouts.size()));
 
         // Now the executor should only run a certain number
-        assertEquals("Only configured max running concurrently", maxConcurrentInstances, spoutMonitor.getExecutor().getActiveCount());
+        assertEquals("Only configured max running concurrently", maxConcurrentInstances, spoutCoordinator.getExecutor().getActiveCount());
 
         // Should have no queued instances.
         assertEquals(
             "Should have no queued instances",
-            0, spoutMonitor.getExecutor().getQueue().size()
+            0, spoutCoordinator.getExecutor().getQueue().size()
         );
 
         // Add additional sleep time, just so logs show up
@@ -547,33 +539,33 @@ public class SpoutMonitorTest {
         // Now lets submit one more mock, and verify it gets queued
         final DefaultVirtualSpoutIdentifier queuedSpoutId = new DefaultVirtualSpoutIdentifier("Queued1");
         final MockDelegateSpout queuedSpout = new MockDelegateSpout(queuedSpoutId);
-        spoutMonitor.addVirtualSpout(queuedSpout);
+        spoutCoordinator.addVirtualSpout(queuedSpout);
 
         // Since adding is async, wait for it to show up as queued.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> spoutMonitor.getExecutor().getQueue().size(), equalTo(1));
+            .until(() -> spoutCoordinator.getExecutor().getQueue().size(), equalTo(1));
 
         // Should have 1 queued instance.
         assertEquals(
             "Should have 1 queued instance",
-            1, spoutMonitor.getExecutor().getQueue().size()
+            1, spoutCoordinator.getExecutor().getQueue().size()
         );
 
         // Now call close on it
-        spoutMonitor.removeVirtualSpout(queuedSpoutId);
+        spoutCoordinator.removeVirtualSpout(queuedSpoutId);
 
         // Wait for monitor to catch up.
         Thread.sleep(testWaitTime);
 
         // Validate we don't have the VirtualSpoutId anymore
-        assertFalse("Should not have VirtualSpoutId anymore", spoutMonitor.hasVirtualSpout(queuedSpoutId));
+        assertFalse("Should not have VirtualSpoutId anymore", spoutCoordinator.hasVirtualSpout(queuedSpoutId));
 
         // Validate we have two instances still running
-        assertEquals("Should have 2 running instances still",  maxConcurrentInstances, spoutMonitor.getTotalSpouts());
+        assertEquals("Should have 2 running instances still",  maxConcurrentInstances, spoutCoordinator.getTotalSpouts());
 
         // Close first instance
-        mockSpouts.forEach((spout) -> spoutMonitor.removeVirtualSpout(spout.getVirtualSpoutId()));
+        mockSpouts.forEach((spout) -> spoutCoordinator.removeVirtualSpout(spout.getVirtualSpoutId()));
 
         // Verify close was called on running spouts
         for (int x = 0; x < mockSpouts.size(); x++) {
@@ -589,19 +581,19 @@ public class SpoutMonitorTest {
         }
 
         // Validate everything is done
-        assertEquals("Should have no running", 0, spoutMonitor.getTotalSpouts());
-        assertEquals("Should have no running", 0, spoutMonitor.getExecutor().getActiveCount());
-        assertEquals("Should have no Queued", 0, spoutMonitor.getExecutor().getQueue().size());
+        assertEquals("Should have no running", 0, spoutCoordinator.getTotalSpouts());
+        assertEquals("Should have no running", 0, spoutCoordinator.getExecutor().getActiveCount());
+        assertEquals("Should have no Queued", 0, spoutCoordinator.getExecutor().getQueue().size());
 
         // Now call close on spout monitor
         logger.info("Starting to close spout monitor...");
 
         // Close the monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
 
         // Validate open was never called on our queued instance
         assertFalse("Never called open on our queued instance", queuedSpout.wasOpenCalled);
@@ -620,26 +612,26 @@ public class SpoutMonitorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         // Create instance.
-        final SpoutMonitor spoutMonitor = getDefaultMonitorInstance(messageBus);
+        final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance(messageBus);
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Sanity test - Now validate we have no spouts submitted
-        assertEquals("Should have no spouts", 0, spoutMonitor.getTotalSpouts());
-        assertEquals("Should have no failed tasks yet", 0, spoutMonitor.getNumberOfFailedTasks());
+        assertEquals("Should have no spouts", 0, spoutCoordinator.getTotalSpouts());
+        assertEquals("Should have no failed tasks yet", 0, spoutCoordinator.getNumberOfFailedTasks());
 
         // Create a mock spout
         MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
         mockSpout.requestedStop = false;
 
         // Add it to our queue
-        spoutMonitor.addVirtualSpout(mockSpout);
+        spoutCoordinator.addVirtualSpout(mockSpout);
 
         // Wait for spout count to increase
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(1));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(1));
 
         // Verify open was called
         assertTrue("open() should have been called", mockSpout.wasOpenCalled);
@@ -651,13 +643,13 @@ public class SpoutMonitorTest {
         // Wait for spout count to decrease
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(spoutMonitor::getTotalSpouts, equalTo(0));
+            .until(spoutCoordinator::getTotalSpouts, equalTo(0));
 
         // Validate that we incremented our failed task counter
-        assertEquals("Should have 1 failed task", 1, spoutMonitor.getNumberOfFailedTasks());
+        assertEquals("Should have 1 failed task", 1, spoutCoordinator.getNumberOfFailedTasks());
 
         // Close spout monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         // Verify that the exception error was reported.
         final Optional<Throwable> throwableOptional = messageBus.getErrors();
@@ -668,12 +660,12 @@ public class SpoutMonitorTest {
         assertFalse("Should have no other errors", messageBus.getErrors().isPresent());
 
         // Verify that executor service is terminated
-        assertTrue("Executor service is terminated", spoutMonitor.getExecutor().isTerminated());
-        assertEquals("ExecutorService has no running threads", 0, spoutMonitor.getExecutor().getActiveCount());
+        assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
+        assertEquals("ExecutorService has no running threads", 0, spoutCoordinator.getExecutor().getActiveCount());
     }
 
     /**
-     * End-to-end integration test over SpoutMonitor + MessageBus + VirtualSpouts.
+     * End-to-end integration test over SpoutCoordinator + MessageBus + VirtualSpouts.
      */
     @Test
     public void testIntegrationTest() throws Exception {
@@ -708,8 +700,8 @@ public class SpoutMonitorTest {
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
         config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
 
-        // Create SpoutMonitor
-        final SpoutMonitor spoutMonitor = new SpoutMonitor(
+        // Create SpoutCoordinator
+        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
             "Test",
             messageBus,
@@ -717,20 +709,20 @@ public class SpoutMonitorTest {
         );
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Add fire hose and wait for it to start.
-        spoutMonitor.addVirtualSpout(fireHoseSpout);
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(spoutMonitor::getTotalSpouts, equalTo(1));
+        spoutCoordinator.addVirtualSpout(fireHoseSpout);
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(spoutCoordinator::getTotalSpouts, equalTo(1));
 
         // Add Other VirtualSpouts
-        spoutMonitor.addVirtualSpout(sidelineSpout1);
-        spoutMonitor.addVirtualSpout(sidelineSpout2);
+        spoutCoordinator.addVirtualSpout(sidelineSpout1);
+        spoutCoordinator.addVirtualSpout(sidelineSpout2);
 
-        logger.info("Waiting for SpoutMonitor to detect and open() our spout instances");
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(spoutMonitor::getTotalSpouts, equalTo(3));
-        assertEquals("Should have 3 spouts running", 3, spoutMonitor.getTotalSpouts());
-        logger.info("SpoutMonitor now has {} spout instances", spoutMonitor.getTotalSpouts());
+        logger.info("Waiting for SpoutCoordinator to detect and open() our spout instances");
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(spoutCoordinator::getTotalSpouts, equalTo(3));
+        assertEquals("Should have 3 spouts running", 3, spoutCoordinator.getTotalSpouts());
+        logger.info("SpoutCoordinator now has {} spout instances", spoutCoordinator.getTotalSpouts());
 
         // Add 1 message to each spout
         fireHoseSpout.emitQueue.add(message1);
@@ -770,7 +762,7 @@ public class SpoutMonitorTest {
         );
 
         // Close spout monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
 
         logger.info("Expected = " + expected);
         logger.info("Actual = " + buffer);
@@ -787,10 +779,10 @@ public class SpoutMonitorTest {
             assertTrue("Did not find " + a, found);
         }
 
-        assertEquals(0, spoutMonitor.getTotalSpouts());
+        assertEquals(0, spoutCoordinator.getTotalSpouts());
 
         // Verify the executor is terminated, and has no active tasks
-        assertTrue("Executor is terminated", spoutMonitor.getExecutor().isTerminated());
+        assertTrue("Executor is terminated", spoutCoordinator.getExecutor().isTerminated());
     }
 
     /**
@@ -806,8 +798,8 @@ public class SpoutMonitorTest {
         // Define our configuration
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
-        // Create SpoutMonitor
-        final SpoutMonitor spoutMonitor = new SpoutMonitor(
+        // Create SpoutCoordinator
+        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
             "Test",
             messageBus,
@@ -815,21 +807,21 @@ public class SpoutMonitorTest {
         );
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
 
         final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
         final DelegateSpout spout2 = new MockDelegateSpout(virtualSpoutIdentifier);
 
-        spoutMonitor.addVirtualSpout(spout1);
+        spoutCoordinator.addVirtualSpout(spout1);
 
         try {
             expectedException.expect(SpoutAlreadyExistsException.class);
-            spoutMonitor.addVirtualSpout(spout2);
+            spoutCoordinator.addVirtualSpout(spout2);
         } catch (Exception exception) {
             // Ensure we cleanup appropriately.
-            shutdownSpoutMonitor(spoutMonitor, future);
+            shutdownSpoutMonitor(spoutCoordinator, future);
 
             // Re-throw the expected exception so the test passes.
             throw exception;
@@ -850,8 +842,8 @@ public class SpoutMonitorTest {
         // Define our configuration
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
-        // Create SpoutMonitor
-        final SpoutMonitor spoutMonitor = new SpoutMonitor(
+        // Create SpoutCoordinator
+        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
             "Test",
             messageBus,
@@ -859,28 +851,28 @@ public class SpoutMonitorTest {
         );
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
 
         final DelegateSpout spout1 = new MockDelegateSpout(virtualSpoutIdentifier);
 
-        spoutMonitor.addVirtualSpout(spout1);
+        spoutCoordinator.addVirtualSpout(spout1);
 
-        assertTrue("Spout is not in the spoutCoordinator", spoutMonitor.hasVirtualSpout(virtualSpoutIdentifier));
+        assertTrue("Spout is not in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
-        assertFalse("Spout should not be in the spoutCoordinator", spoutMonitor.hasVirtualSpout(
+        assertFalse("Spout should not be in the spoutCoordinator", spoutCoordinator.hasVirtualSpout(
             new DefaultVirtualSpoutIdentifier("made up spout that should not exist")
         ));
 
         // Close monitor.
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
     }
 
     /**
      * Validates that SpoutRunner does not die if it catches an exception.
      * How we setup this test is pretty nasty.  Basically we submit a mock VirtualSpout
-     * configured to toss an exception when SpoutMonitor pulls it from the queue BEFORE
+     * configured to toss an exception when SpoutCoordinator pulls it from the queue BEFORE
      * it gets pushed into its own thread and started.
      *
      * We trigger this multiple times to ensure the loop keeps on trucking.
@@ -896,8 +888,8 @@ public class SpoutMonitorTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
 
-        // Create SpoutMonitor
-        final SpoutMonitor spoutMonitor = new SpoutMonitor(
+        // Create SpoutCoordinator
+        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
             "Test",
             messageBus,
@@ -905,14 +897,14 @@ public class SpoutMonitorTest {
         );
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         final AtomicInteger counter = new AtomicInteger(0);
 
         // Create a mock VirtualSpout
         final DelegateSpout mockSpout = mock(DelegateSpout.class);
 
-        // When we call getVirtualSpout on SpoutMonitor
+        // When we call getVirtualSpout on SpoutCoordinator
         doAnswer(invocation -> {
             // Increment counter
             final int count = counter.incrementAndGet();
@@ -922,7 +914,7 @@ public class SpoutMonitorTest {
             // Super hacky/ugly
             if (count % 2 == 0) {
                 // Kind of evil, re-submit ourselves. so we can trigger this multiple times.
-                spoutMonitor.addVirtualSpout(mockSpout);
+                spoutCoordinator.addVirtualSpout(mockSpout);
 
                 // Throw an exception
                 logger.info("About to throw an exception teehee!");
@@ -932,7 +924,7 @@ public class SpoutMonitorTest {
             }
         }).when(mockSpout).getVirtualSpoutId();
 
-        spoutMonitor.addVirtualSpout(mockSpout);
+        spoutCoordinator.addVirtualSpout(mockSpout);
 
         // Wait until RUN has been called multiple times on the mock SpoutRunner
         await()
@@ -940,7 +932,7 @@ public class SpoutMonitorTest {
             .until(() -> counter.get() > 12);
 
         // close spout monitor
-        shutdownSpoutMonitor(spoutMonitor, future);
+        shutdownSpoutMonitor(spoutCoordinator, future);
     }
 
     /**
@@ -957,8 +949,8 @@ public class SpoutMonitorTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
 
-        // Create SpoutMonitor
-        final SpoutMonitor spoutMonitor = new SpoutMonitor(
+        // Create SpoutCoordinator
+        final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
             "Test",
             messageBus,
@@ -966,7 +958,7 @@ public class SpoutMonitorTest {
         );
 
         // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutMonitor);
+        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Create a mock spout
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
@@ -980,35 +972,35 @@ public class SpoutMonitorTest {
             return null;
         }).when(mockSpout).open();
 
-        // Sanity test, should not be in SpoutMonitor yet.
-        assertFalse("Spout should not already be in the SpoutMonitor!", spoutMonitor.hasVirtualSpout(virtualSpoutIdentifier));
+        // Sanity test, should not be in SpoutCoordinator yet.
+        assertFalse("Spout should not already be in the SpoutCoordinator!", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
         // Add it.
-        spoutMonitor.addVirtualSpout(mockSpout);
+        spoutCoordinator.addVirtualSpout(mockSpout);
 
         // Sanity test, should be in monitor now
-        assertTrue("Spout is not in the SpoutMonitor, but should be!", spoutMonitor.hasVirtualSpout(virtualSpoutIdentifier));
+        assertTrue("Spout is not in the SpoutCoordinator, but should be!", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
         // Wait until this spout is running.
         await().until(isOpenCounter::get, equalTo(1));
 
         // Now that it's into the monitor, go ahead and remove it
         // Note if we hadn't waited we would have gotten an exception
-        spoutMonitor.removeVirtualSpout(virtualSpoutIdentifier);
+        spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
 
         // Need to wait for this to complete!
-        await().until(() -> spoutMonitor.getExecutor().getActiveCount(), equalTo(0));
+        await().until(() -> spoutCoordinator.getExecutor().getActiveCount(), equalTo(0));
 
-        assertFalse("Spout is still in the SpoutMonitor", spoutMonitor.hasVirtualSpout(virtualSpoutIdentifier));
+        assertFalse("Spout is still in the SpoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
         try {
             // We are going to try to remove it again, at this point it does not exist, so we expect to get an
             // exception thrown at us indicating so
             expectedException.expect(SpoutDoesNotExistException.class);
-            spoutMonitor.removeVirtualSpout(virtualSpoutIdentifier);
+            spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
         } catch (Exception exception) {
             // Make sure to close out SpoutCoordinator
-            shutdownSpoutMonitor(spoutMonitor, future);
+            shutdownSpoutMonitor(spoutCoordinator, future);
 
             // Rethrow expected exception.
             throw exception;
@@ -1024,7 +1016,7 @@ public class SpoutMonitorTest {
         return topologyConfig;
     }
 
-    private SpoutMonitor getDefaultMonitorInstance(final MessageBus messageBus) {
+    private SpoutCoordinator getDefaultMonitorInstance(final MessageBus messageBus) {
         // Create config
         final Map<String, Object> topologyConfig = getDefaultConfig(2, 2000L, 100L);
 
@@ -1033,7 +1025,7 @@ public class SpoutMonitorTest {
         metricsRecorder.open(topologyConfig, new MockTopologyContext());
 
         // Create instance.
-        return new SpoutMonitor(
+        return new SpoutCoordinator(
             topologyConfig,
             "Test",
             messageBus,
@@ -1041,11 +1033,11 @@ public class SpoutMonitorTest {
         );
     }
 
-    private SpoutMonitor getDefaultMonitorInstance() {
+    private SpoutCoordinator getDefaultMonitorInstance() {
         return getDefaultMonitorInstance(new MessageBus(new FifoBuffer()));
     }
 
-    private CompletableFuture startSpoutMonitor(SpoutMonitor spoutMonitor) {
+    private CompletableFuture startSpoutMonitor(SpoutCoordinator spoutCoordinator) {
         if (executorService == null) {
             executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
         }
@@ -1054,7 +1046,7 @@ public class SpoutMonitorTest {
         assertEquals("Executor service should be empty", 0, executorService.getActiveCount());
 
         // Submit task to start
-        CompletableFuture future = CompletableFuture.runAsync(spoutMonitor, executorService);
+        CompletableFuture future = CompletableFuture.runAsync(spoutCoordinator, executorService);
 
         // Wait until it actually starts.
         await()
@@ -1065,10 +1057,10 @@ public class SpoutMonitorTest {
         return future;
     }
 
-    private void shutdownSpoutMonitor(final SpoutMonitor spoutMonitor, CompletableFuture asyncFuture) {
+    private void shutdownSpoutMonitor(final SpoutCoordinator spoutCoordinator, CompletableFuture asyncFuture) {
         // Call close on spout monitor
-        spoutMonitor.close();
-        assertFalse("Keep running should return false", spoutMonitor.keepRunning());
+        spoutCoordinator.close();
+        assertFalse("Keep running should return false", spoutCoordinator.keepRunning());
 
         // Wait for it to stop running.
         await()

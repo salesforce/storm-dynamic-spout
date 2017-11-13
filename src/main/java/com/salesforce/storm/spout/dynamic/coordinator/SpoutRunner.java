@@ -198,7 +198,7 @@ public class SpoutRunner implements Runnable {
             // We'll log the error, and bubble up the exception.
             logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex.getMessage(), ex);
 
-            // We re-throw the exception, SpoutMonitor will handle this.
+            // We re-throw the exception, SpoutCoordinator will handle this.
             throw ex;
         }
     }

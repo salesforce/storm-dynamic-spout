@@ -29,7 +29,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitor;
+import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
@@ -75,10 +75,10 @@ public class DynamicSpout extends BaseRichSpout {
     private TopologyContext topologyContext;
 
     /**
-     * SpoutMonitor is in charge of spinning up and monitor VirtualSpouts which
+     * SpoutCoordinator is in charge of spinning up and monitor VirtualSpouts which
      * runs as a long lived background thread. You can add/remove VirtualSpouts via it.
      */
-    private SpoutMonitor spoutMonitor;
+    private SpoutCoordinator spoutCoordinator;
 
     /**
      * ThreadSafe routing of emitted, acked, and failed tuples between this DynamicSpout instance
@@ -280,12 +280,12 @@ public class DynamicSpout extends BaseRichSpout {
         logger.info("Stopping the coordinator and closing all spouts");
 
         // Close Spout Monitor
-        if (spoutMonitor != null) {
+        if (spoutCoordinator != null) {
             // Call close on spout monitor.
-            spoutMonitor.close();
+            spoutCoordinator.close();
 
             // Null reference
-            spoutMonitor = null;
+            spoutCoordinator = null;
         }
 
         // Close metrics recorder.
@@ -387,7 +387,7 @@ public class DynamicSpout extends BaseRichSpout {
      */
     public void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException {
         checkSpoutOpened();
-        getSpoutMonitor().addVirtualSpout(spout);
+        getSpoutCoordinator().addVirtualSpout(spout);
     }
 
     /**
@@ -401,7 +401,7 @@ public class DynamicSpout extends BaseRichSpout {
         checkSpoutOpened();
 
         // This method will block until the instance has stopped.
-        getSpoutMonitor().removeVirtualSpout(virtualSpoutIdentifier);
+        getSpoutCoordinator().removeVirtualSpout(virtualSpoutIdentifier);
 
         logger.info("VirtualSpout {} is no longer running.", virtualSpoutIdentifier);
     }
@@ -413,11 +413,11 @@ public class DynamicSpout extends BaseRichSpout {
      */
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
         checkSpoutOpened();
-        return getSpoutMonitor().hasVirtualSpout(spoutIdentifier);
+        return getSpoutCoordinator().hasVirtualSpout(spoutIdentifier);
     }
 
     /**
-     * Create and start the SpoutMonitor instance.
+     * Create and start the SpoutCoordinator instance.
      * @param topologyConfig Topology configuration.
      * @param topologyContext Topology context information.
      * @param virtualSpoutMessageBus ThreadSafe message bus.
@@ -430,7 +430,7 @@ public class DynamicSpout extends BaseRichSpout {
         final MetricsRecorder metricsRecorder) {
 
         // Prevent more than one instance from being created.
-        if (spoutMonitor != null) {
+        if (spoutCoordinator != null) {
             throw new IllegalStateException("Cannot create multiple spout monitor instances!");
         }
 
@@ -439,7 +439,7 @@ public class DynamicSpout extends BaseRichSpout {
             topologyContext.getThisComponentId() + ":" + topologyContext.getThisTaskIndex();
 
         // Create instance.
-        spoutMonitor = new SpoutMonitor(
+        spoutCoordinator = new SpoutCoordinator(
             topologyConfig,
             threadContextName,
             virtualSpoutMessageBus,
@@ -447,7 +447,7 @@ public class DynamicSpout extends BaseRichSpout {
         );
 
         // Create and name thread.
-        final Thread thread = new Thread(spoutMonitor, "Spout Monitor on " + threadContextName);
+        final Thread thread = new Thread(spoutCoordinator, "Spout Monitor on " + threadContextName);
 
         // Mark as a User thread.
         thread.setDaemon(false);
@@ -485,9 +485,9 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The virtual spout coordinator.
      */
-    SpoutMonitor getSpoutMonitor() {
+    SpoutCoordinator getSpoutCoordinator() {
         checkSpoutOpened();
-        return spoutMonitor;
+        return spoutCoordinator;
     }
 
     /**
