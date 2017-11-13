@@ -39,13 +39,12 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Manages running a VirtualSpout instance.
  * It handles all of the cross-thread communication via its Concurrent Queues data structures.
  */
-public class SpoutRunner implements Runnable {
+class SpoutRunner implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
@@ -65,11 +64,6 @@ public class SpoutRunner implements Runnable {
     private final Clock clock;
 
     /**
-     * For thread synchronization.
-     */
-    private final CountDownLatch latch;
-
-    /**
      * Storm topology configuration.
      */
     private final Map<String, Object> topologyConfig;
@@ -85,16 +79,23 @@ public class SpoutRunner implements Runnable {
      */
     private volatile boolean requestedStop = false;
 
+    /**
+     * Constructor that makes use of a count down latch.
+     * Countdown latches are useful for orchestrating startup.
+     *
+     * @param spout The VirtualSpout instance to run.
+     * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
+     * @param clock Clock instance.
+     * @param topologyConfig Topology configuration.
+     */
     SpoutRunner(
         final DelegateSpout spout,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
-        this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
@@ -107,17 +108,14 @@ public class SpoutRunner implements Runnable {
         try {
             final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
 
-            // Rename thread to use the spout's consumer id
-            Thread.currentThread().setName(virtualSpoutId.toString());
+            // Append VirtualSpoutId to thread name
+            Thread.currentThread().setName(Thread.currentThread().getName() + virtualSpoutId.toString());
 
             logger.info("Opening {} spout", virtualSpoutId);
             spout.open();
 
             // Let all of our queues know about our new instance.
             getVirtualSpoutMessageBus().registerVirtualSpout(virtualSpoutId);
-
-            // Count down our latch for thread synchronization.
-            latch.countDown();
 
             // Record the last time we flushed.
             long lastFlush = getClock().millis();
@@ -171,7 +169,7 @@ public class SpoutRunner implements Runnable {
             // We'll log the error, and bubble up the exception.
             logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex.getMessage(), ex);
 
-            // We re-throw the exception, SpoutMonitor will handle this.
+            // We re-throw the exception, SpoutCoordinator will handle this.
             throw ex;
         }
     }
@@ -179,11 +177,9 @@ public class SpoutRunner implements Runnable {
     /**
      * Call this method to request this SpoutRunner instance
      * to cleanly stop.
-     *
-     * Synchronized because this can be called from multiple threads.
      */
-    public void requestStop() {
-        logger.info("Requested stop");
+    void requestStop() {
+        logger.info("Requested stop on {}", spout.getVirtualSpoutId());
         requestedStop = true;
     }
 
@@ -192,7 +188,7 @@ public class SpoutRunner implements Runnable {
      *
      * @return - true if so, false if not.
      */
-    public boolean isStopRequested() {
+    private boolean isStopRequested() {
         return requestedStop;
     }
 
@@ -228,12 +224,8 @@ public class SpoutRunner implements Runnable {
         return spout;
     }
 
-    CountDownLatch getLatch() {
-        return latch;
-    }
-
     /**
-     * @return Unixtimestamp (in milliseconds) of when the instance was created.
+     * @return Unix timestamp (in milliseconds) of when the instance was created.
      */
     long getStartTime() {
         return startTime;

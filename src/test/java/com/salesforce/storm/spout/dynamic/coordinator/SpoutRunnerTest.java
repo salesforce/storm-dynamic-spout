@@ -116,7 +116,6 @@ public class SpoutRunnerTest {
         final MessageBus messageBus = new MessageBus(new FifoBuffer());
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
         final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
-        final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
 
         // Define some config params
@@ -132,7 +131,6 @@ public class SpoutRunnerTest {
         SpoutRunner spoutRunner = new SpoutRunner(
             spout,
             messageBus,
-            latch,
             clock,
             topologyConfig
         );
@@ -146,7 +144,6 @@ public class SpoutRunnerTest {
             spoutRunner.getConsumerStateFlushIntervalMs()
         );
 
-        assertEquals("Latch got set", latch, spoutRunner.getLatch());
         assertNotNull("StartTime is null", spoutRunner.getStartTime());
         assertNotEquals("StartTime is not zero", 0, spoutRunner.getStartTime());
         assertEquals("Spout delegate got set", spout, spoutRunner.getSpout());
@@ -164,7 +161,6 @@ public class SpoutRunnerTest {
     @UseDataProvider("provideTrueAndFalse")
     public void testOpenandCloseOnSpoutIsCalled(final boolean shutdownViaSpout) throws InterruptedException {
         // Define inputs
-        final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
         final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
@@ -186,24 +182,17 @@ public class SpoutRunnerTest {
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
-            latch,
             clock,
             topologyConfig
         );
 
-        // Sanity test
-        assertEquals("Latch has value of 1", 1, latch.getCount());
-
         // Start in a separate thread.
         final CompletableFuture future = startSpoutRunner(spoutRunner);
 
-        // Wait for latch to count down to 0
+        // Wait for open to be called since it runs async.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> latch.getCount() == 0, equalTo(true));
-
-        // sanity test
-        assertEquals("Latch has value of 0", 0, latch.getCount());
+            .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // Verify open was called once, but not close
         assertTrue("Open was called on our mock spout", mockSpout.wasOpenCalled);
@@ -257,7 +246,6 @@ public class SpoutRunnerTest {
     @Test
     public void testMessageBufferGetsFilled() {
         // Define inputs
-        final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
         final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
@@ -277,26 +265,19 @@ public class SpoutRunnerTest {
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
-            latch,
             clock,
             topologyConfig
         );
 
-        // Sanity test
-        assertEquals("Latch has value of 1", 1, latch.getCount());
-
         // Start in a separate thread.
         final CompletableFuture future = startSpoutRunner(spoutRunner);
 
-        // Wait for latch to count down to 0
+        // Wait for open to be called since it runs async.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> {
-                return latch.getCount() == 0;
-            }, equalTo(true));
+            .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // sanity test
-        assertEquals("Latch has value of 0", 0, latch.getCount());
         assertEquals("MessageBuffer should be empty", 0, messageBus.messageSize());
 
         // Now Add some messages to our mock spout
@@ -336,7 +317,6 @@ public class SpoutRunnerTest {
     @Test
     public void testFailsGetSentToSpout() {
         // Define inputs
-        final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
         final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
@@ -360,24 +340,19 @@ public class SpoutRunnerTest {
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
-            latch,
             clock,
             topologyConfig
         );
 
-        // Sanity test
-        assertEquals("Latch has value of 1", 1, latch.getCount());
-
         // Start in a separate thread.
         final CompletableFuture future = startSpoutRunner(spoutRunner);
 
-        // Wait for latch to count down to 0
+        // Wait for open to be called since it runs async.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> latch.getCount() == 0, equalTo(true));
+            .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // sanity test
-        assertEquals("Latch has value of 0", 0, latch.getCount());
         assertEquals("MessageBuffer should be empty", 0, messageBus.messageSize());
         assertEquals("Ack Queue should be empty", 0, messageBus.ackSize());
         assertEquals("fail Queue should be empty", 0, messageBus.failSize());
@@ -447,7 +422,6 @@ public class SpoutRunnerTest {
     @Test
     public void testAcksGetSentToSpout() {
         // Define inputs
-        final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
         final VirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
@@ -471,26 +445,19 @@ public class SpoutRunnerTest {
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
-            latch,
             clock,
             topologyConfig
         );
 
-        // Sanity test
-        assertEquals("Latch has value of 1", 1, latch.getCount());
-
         // Start in a separate thread.
         final CompletableFuture future = startSpoutRunner(spoutRunner);
 
-        // Wait for latch to count down to 0
+        // Wait for open to be called on the spout since it happens async.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> {
-                return latch.getCount() == 0;
-            }, equalTo(true));
+            .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // sanity test
-        assertEquals("Latch has value of 0", 0, latch.getCount());
         assertEquals("MessageBuffer should be empty", 0, messageBus.messageSize());
         assertEquals("Ack Queue should be empty", 0, messageBus.ackSize());
         assertEquals("fail Queue should be empty", 0, messageBus.failSize());
@@ -562,7 +529,6 @@ public class SpoutRunnerTest {
     @Test
     public void testFlushStateGetsCalled() {
         // Define inputs
-        final CountDownLatch latch = new CountDownLatch(1);
         final Clock clock = Clock.systemUTC();
         final DefaultVirtualSpoutIdentifier virtualSpoutId = new DefaultVirtualSpoutIdentifier("MyVirtualSpoutId");
 
@@ -586,21 +552,17 @@ public class SpoutRunnerTest {
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
-            latch,
             clock,
             topologyConfig
         );
 
-        // Sanity test
-        assertEquals("Latch has value of 1", 1, latch.getCount());
-
         // Start in a separate thread.
         final CompletableFuture future = startSpoutRunner(spoutRunner);
 
-        // Wait for latch to count down to 0
+        // Wait for open to be called since it runs async.
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> latch.getCount() == 0, equalTo(true));
+            .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // Wait for flush state to get called
         await()

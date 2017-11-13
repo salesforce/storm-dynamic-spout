@@ -32,7 +32,7 @@
 - [Sidelining](#sidelining)
   - [Getting Started](#getting-started-1)
   - [Starting Sideline Request](#starting-sideline-request)
-  - [Stoping Sideline Request](#stoping-sideline-request)
+  - [Stopping Sideline Request](#stopping-sideline-request)
   - [Dependencies](#dependencies-1)
   - [Components](#components-1)
   - [Example Trigger Implementation](#example-trigger-implementation)
@@ -193,8 +193,6 @@ As `fail()` is called on `DynamicSpout`, the `SpoutCoordinator` determines which
 As `ack()` is called on `DynamicSpout`, the `SpoutCoordinator` determines which `VirtualSpout` instance the acked tuple originated from and passes it to the correct instance's `ack()` method.
 
 [SpoutRunner](src/main/java/com/salesforce/storm/spout/dynamic/coordinator/SpoutRunner.java) - `VirtualSpout` instances are always run within their own processing thread. `SpoutRunner` encapsulates `VirtualSpout` and manages/monitors the thead it runs within.
-
-[SpoutMonitor](src/main/java/com/salesforce/storm/spout/dynamic/coordinator/SpoutMonitor.java) - Monitors new `VirtualSpout` instances that are created when ensures that a `SpoutRunner` is created to for it.
 
 [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) - This provides a persistence layer for storing various metadata.  It stores consumer state, typically the offsets of te data source, that a given `VirtualSpout`'s `Consumer` has consumed. Currently we have three implementations bundled with the spout which should cover most standard use cases.
 
@@ -362,13 +360,13 @@ Your implemented [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/si
 will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
 your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
 
-## Stoping Sideline Request
-Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that it would like to stop a sideline request.  The `SidelineSpout` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/dynamic/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutMonitor` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
+## Stopping Sideline Request
+Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that it would like to stop a sideline request.  The `SidelineSpout` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/dynamic/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutCoordinator` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
 
 
 ## Dependencies
 - DynamicSpout framework (which is an Apache Storm specific implementation)
-- [Apache Kafka 0.10.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
+- [Apache Kafka 0.11.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
 
 
 ## Components

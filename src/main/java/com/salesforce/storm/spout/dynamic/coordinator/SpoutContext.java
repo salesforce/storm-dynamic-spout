@@ -25,46 +25,30 @@
 
 package com.salesforce.storm.spout.dynamic.coordinator;
 
-import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
-import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-
-import java.time.Clock;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Used to create instances of SpoutMonitor.
+ * Contains a reference to a SpoutRunner and its associated CompletableFuture.
  */
-public class SpoutMonitorFactory {
+class SpoutContext {
+    private final SpoutRunner spoutRunner;
+    private final CompletableFuture<Void> completableFuture;
 
     /**
-     * Factory method.
-     * @param newSpoutQueue Queue monitored for new Spouts that should be started.
-     * @param virtualSpoutMessageBus Message bus for passing messages FROM VirtualSpouts TO DynamicSpout.
-     * @param latch Latch to allow startup synchronization.
-     * @param clock Which clock instance to use, allows injecting a mock clock.
-     * @param topologyConfig Storm topology config.
-     * @param metricsRecorder MetricRecorder implementation for recording metrics.
-     * @return new SpoutMonitor instance.
+     * Constructor.
+     * @param spoutRunner SpoutRunner instance.
+     * @param completableFuture CompletableFuture instance.
      */
-    public SpoutMonitor create(
-        final Queue<DelegateSpout> newSpoutQueue,
-        final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final CountDownLatch latch,
-        final Clock clock,
-        final Map<String, Object> topologyConfig,
-        final MetricsRecorder metricsRecorder) {
+    SpoutContext(final SpoutRunner spoutRunner, final CompletableFuture<Void> completableFuture) {
+        this.spoutRunner = spoutRunner;
+        this.completableFuture = completableFuture;
+    }
 
-        // Create instance.
-        return new SpoutMonitor(
-            newSpoutQueue,
-            virtualSpoutMessageBus,
-            latch,
-            clock,
-            topologyConfig,
-            metricsRecorder
-        );
+    SpoutRunner getSpoutRunner() {
+        return spoutRunner;
+    }
+
+    CompletableFuture getCompletableFuture() {
+        return completableFuture;
     }
 }
