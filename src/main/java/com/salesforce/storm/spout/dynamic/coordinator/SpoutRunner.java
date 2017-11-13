@@ -178,8 +178,6 @@ public class SpoutRunner implements Runnable {
     /**
      * Call this method to request this SpoutRunner instance
      * to cleanly stop.
-     *
-     * Synchronized because this can be called from multiple threads.
      */
     public void requestStop() {
         logger.info("Requested stop on {}", spout.getVirtualSpoutId());
