@@ -39,13 +39,12 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Manages running a VirtualSpout instance.
  * It handles all of the cross-thread communication via its Concurrent Queues data structures.
  */
-public class SpoutRunner implements Runnable {
+class SpoutRunner implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
@@ -179,7 +178,7 @@ public class SpoutRunner implements Runnable {
      * Call this method to request this SpoutRunner instance
      * to cleanly stop.
      */
-    public void requestStop() {
+    void requestStop() {
         logger.info("Requested stop on {}", spout.getVirtualSpoutId());
         requestedStop = true;
     }
@@ -189,7 +188,7 @@ public class SpoutRunner implements Runnable {
      *
      * @return - true if so, false if not.
      */
-    public boolean isStopRequested() {
+    private boolean isStopRequested() {
         return requestedStop;
     }
 
@@ -226,7 +225,7 @@ public class SpoutRunner implements Runnable {
     }
 
     /**
-     * @return Unixtimestamp (in milliseconds) of when the instance was created.
+     * @return Unix timestamp (in milliseconds) of when the instance was created.
      */
     long getStartTime() {
         return startTime;
