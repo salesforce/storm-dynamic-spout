@@ -26,12 +26,14 @@
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -83,6 +85,13 @@ public class CuratorFactory {
             .collect(Collectors.joining(","));
 
         try {
+            // Create new ThreadFactory with named threads.
+            // TODO allow pushing in better naming.
+            final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("[DynamicSpout:PersistenceAdapter] Curator Pool %d")
+                .setDaemon(false)
+                .build();
+
             // Use builder to create new curator
             final CuratorFramework curator = CuratorFrameworkFactory
                 .builder()
@@ -90,6 +99,7 @@ public class CuratorFactory {
                 .connectionTimeoutMs(getConnectionTimeoutMs(config))
                 .sessionTimeoutMs(getSessionTimeoutMs(config))
                 .retryPolicy(new RetryNTimes(getRetryAttempts(config), getRetryIntervalMs(config)))
+                .threadFactory(threadFactory)
                 .build();
 
             // Call start
