@@ -90,7 +90,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * Timer for periodically checking the state of the VirtualSpouts being managed.
      */
-    private final Timer timer = new Timer();
+    private Timer timer;
 
     /**
      * Collection of sideline triggers to manage.
@@ -138,9 +138,21 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void close() {
-        persistenceAdapter.close();
+        cancelTimer();
+
+        if (persistenceAdapter != null) {
+            persistenceAdapter.close();
+        }
 
         isOpen = false;
+    }
+
+    private void cancelTimer() {
+        if (timer != null) {
+            // Cancel timer background thread.
+            timer.cancel();
+            timer = null;
+        }
     }
 
     /**
@@ -175,6 +187,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         loadSidelines();
 
         // Repeat our sidelines check periodically
+        timer = new Timer("[DynamicSpout:SidelineSpoutHandler] Timer on " + topologyContext.getThisComponentId() + ":" + topologyContext.getThisTaskIndex());
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -291,7 +304,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void onSpoutClose(final DynamicSpout spout) {
-        timer.cancel();
+        cancelTimer();
 
         final ListIterator<SidelineTrigger> iter = sidelineTriggers.listIterator();
 
