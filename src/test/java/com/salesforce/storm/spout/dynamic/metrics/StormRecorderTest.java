@@ -256,9 +256,8 @@ public class StormRecorderTest {
     @Test
     public void testStartAndStopTimer() throws InterruptedException {
         // Define inputs
-        final Class sourceClass = getClass();
-        final String metricName = "MyMetric";
-        final String expectedMetricName = sourceClass.getSimpleName() + "." + metricName;
+        final CustomMetricDefinition metricDefinition = new CustomMetricDefinition("MyContext", "MyMetric");
+        final String expectedMetricName = "MyContext.MyMetric";
         final String expectedTotalTimeMetricName = expectedMetricName + "_totalTimeMs";
 
         // Create empty config
@@ -276,8 +275,8 @@ public class StormRecorderTest {
         final MultiCountMetric counterMetrics = (MultiCountMetric) mockTopologyContext.getRegisteredMetricByName("COUNTERS");
 
         // Lets time something.  It's ok if this ends up being 0.
-        recorder.startTimer(sourceClass, metricName);
-        recorder.stopTimer(sourceClass, metricName);
+        recorder.startTimer(metricDefinition);
+        recorder.stopTimer(metricDefinition);
 
         // Validate
         final Map<String, Long> timerValues = (Map<String, Long>) timerMetrics.getValueAndReset();

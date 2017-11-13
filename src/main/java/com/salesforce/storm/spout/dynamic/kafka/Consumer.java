@@ -37,6 +37,7 @@ import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.PartitionOffsetsManager;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -391,9 +392,9 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
             // Assign the value for endOffset for this topic and partition.
             metricsRecorder.assignValue(
-                getClass(),
-                getTopicPartitionMetricKey(topicPartition.topic(), topicPartition.partition(), "endOffset"),
-                endOffset
+                Metrics.kafkaConsumer_endOffset,
+                endOffset,
+                topicPartition.topic(), topicPartition.partition()
             );
 
             // Grab the current offset this consumer is at within this topic and partition.
@@ -408,16 +409,16 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
             // Current offset is the consumers current position.
             metricsRecorder.assignValue(
-                getClass(),
-                getTopicPartitionMetricKey(topicPartition.topic(), topicPartition.partition(), "currentOffset"),
-                currentOffset
+                Metrics.kafkaConsumer_currentOffset,
+                currentOffset,
+                topicPartition.topic(), topicPartition.partition()
             );
 
             // Calculate "lag" based on (endOffset - currentOffset).
             metricsRecorder.assignValue(
-                getClass(),
-                getTopicPartitionMetricKey(topicPartition.topic(), topicPartition.partition(), "lag"),
-                endOffset - currentOffset
+                Metrics.kafkaConsumer_lag,
+                (endOffset - currentOffset),
+                topicPartition.topic(), topicPartition.partition()
             );
         }
 

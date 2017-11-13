@@ -32,6 +32,7 @@ import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
+import com.salesforce.storm.spout.dynamic.metrics.CustomMetricDefinition;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -69,6 +70,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutHandler.class);
+
+    private static final CustomMetricDefinition startMetric =
+        new CustomMetricDefinition("SidelineSpoutHandler", "start-sideline");
+
+    private static final CustomMetricDefinition stopMetric =
+        new CustomMetricDefinition("SidelineSpoutHandler", "stop-sideline");
 
     /**
      * Identifier for the firehose, or 'main' VirtualSpout instance.
@@ -358,7 +365,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         fireHoseSpout.getFilterChain().addStep(sidelineRequest.id, sidelineRequest.step);
 
         // Update start count metric
-        spout.getMetricsRecorder().count(getClass(), "start-sideline", 1L);
+        spout.getMetricsRecorder().count(startMetric, 1L);
     }
 
     /**
@@ -443,7 +450,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         );
 
         // Update stop count metric
-        spout.getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
+        spout.getMetricsRecorder().count(stopMetric, 1L);
     }
 
     /**

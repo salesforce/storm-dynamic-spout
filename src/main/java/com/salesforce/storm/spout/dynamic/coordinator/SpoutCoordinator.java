@@ -34,8 +34,12 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
+<<<<<<< HEAD:src/main/java/com/salesforce/storm/spout/dynamic/coordinator/SpoutCoordinator.java
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
+=======
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
+>>>>>>> First attempt at enumerating metrics, this api is pretty nasty tho:src/main/java/com/salesforce/storm/spout/dynamic/coordinator/SpoutMonitor.java
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -406,12 +410,12 @@ public class SpoutCoordinator implements Runnable {
         );
 
         // Report to metrics record
-        getMetricsRecorder().assignValue(getClass(), "bufferSize", getVirtualSpoutMessageBus().messageSize());
-        getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
-        getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
-        getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
-        getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
-        getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
+        getMetricsRecorder().assignValue(Metrics.spoutMonitor_bufferSize, getVirtualSpoutMessageBus().messageSize());
+        getMetricsRecorder().assignValue(Metrics.spoutMonitor_running, executor.getActiveCount());
+        getMetricsRecorder().assignValue(Metrics.spoutMonitor_queued, executor.getQueue().size());
+        getMetricsRecorder().assignValue(Metrics.spoutMonitor_errored, getNumberOfFailedTasks());
+        getMetricsRecorder().assignValue(Metrics.spoutMonitor_completed, executor.getCompletedTaskCount());
+        getMetricsRecorder().assignValue(Metrics.spoutMonitor_poolSize, executor.getPoolSize());
 
         // Loop through spouts instances
         try {
@@ -433,8 +437,9 @@ public class SpoutCoordinator implements Runnable {
 
                 // Report how many filters are applied on this virtual spout.
                 getMetricsRecorder().assignValue(
-                    VirtualSpout.class,
-                    spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied()
+                    Metrics.virtualSpout_numberFiltersApplied,
+                    spout.getNumberOfFiltersApplied(),
+                    spout.getVirtualSpoutId().toString()
                 );
             }
         } catch (final Throwable throwable) {

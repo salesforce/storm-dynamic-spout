@@ -28,7 +28,6 @@ package com.salesforce.storm.spout.dynamic.metrics;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * Any implementation of this should be written to be thread safe.  This instance
@@ -52,69 +51,66 @@ public interface MetricsRecorder {
 
     /**
      * Count a metric, given a name, increments it by 1.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
+     *
+     *                   TODO fix javadoc
      */
-    void count(final Class sourceClass, final String metricName);
+    void count(final MetricDefinition metric);
+
+    /**
+     * Count a metric, given a name, increments it by 1.
+     *
+     *                   TODO fix javadoc
+     */
+    void count(final MetricDefinition metric, final Object... metricParameters);
 
     /**
      * Count a metric, given a name, increments it by value.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
      * @param incrementBy amount to increment the metric by.
+     *
+     *                    TODO fix javadoc
      */
-    void count(final Class sourceClass, final String metricName, final long incrementBy);
-
+    void count(final MetricDefinition metric, final long incrementBy);
 
     /**
-     * Gauge a metric, given a name, by a specify value.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param value value of the metric.
+     * Count a metric, given a name, increments it by value.
+     * @param incrementBy amount to increment the metric by.
+     *
+     *                    TODO fix javadoc
      */
-    void averageValue(final Class sourceClass, final String metricName, final Object value);
+    void count(final MetricDefinition metric, final long incrementBy, final Object... metricParameters);
 
     /**
      * Assign a value to metric.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
      * @param value value of the metric.
+     *              TODO fix javadoc
      */
-    void assignValue(final Class sourceClass, final String metricName, final Object value);
+    void assignValue(final MetricDefinition metric, final Object value, final Object... metricParameters);
 
-    /**
-     * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
-     *
-     * A scope is a secondary key space, so Foo.Bar as a metric name.
-     *
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param callable Some code that you want to time when it runs
-     * @param <T> return type of the callable.
-     * @return The result of the Callable, whatever they might be
-     * @throws Exception Hopefully whatever went wrong in your callable
-     */
-    <T> T timer(final Class sourceClass, final String metricName, final Callable<T> callable) throws Exception;
-
-    /**
-     * Record the execution time, given a name and scope.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param timeInMs time to capture for the metric.
-     */
-    void timer(final Class sourceClass, final String metricName, final long timeInMs);
+    void assignValue(final MetricDefinition metric, final Object value);
 
     /**
      * Starts a timer for the given sourceClass and metricName.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
+     *                   TODO fix javadoc
      */
-    void startTimer(final Class sourceClass, final String metricName);
+    void startTimer(final MetricDefinition metric, final Object... metricParameters);
+
+    /**
+     * Starts a timer for the given sourceClass and metricName.
+     *                   TODO fix javadoc
+     */
+    void startTimer(final MetricDefinition metric);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
+     *
+     *                   TODO fix javadoc
      */
-    void stopTimer(final Class sourceClass, final String metricName);
+    void stopTimer(final MetricDefinition metric, final Object... metricParameters);
+
+    /**
+     * Stops and records a timer for the given sourceClass and metricName.
+     *
+     *                   TODO fix javadoc
+     */
+    void stopTimer(final MetricDefinition metric);
 }
