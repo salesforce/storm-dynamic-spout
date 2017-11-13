@@ -23,48 +23,35 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.coordinator;
+package com.salesforce.storm.spout.dynamic;
 
-import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
-import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-
-import java.time.Clock;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
+import java.util.Optional;
 
 /**
- * Used to create instances of SpoutMonitor.
+ * Facade in front of MessageBus reducing available scope down to only the methods
+ * that should be available to the main Spout/DynamicSpout instance.
  */
-public class SpoutMonitorFactory {
+public interface SpoutMessageBus {
 
     /**
-     * Factory method.
-     * @param newSpoutQueue Queue monitored for new Spouts that should be started.
-     * @param virtualSpoutMessageBus Message bus for passing messages FROM VirtualSpouts TO DynamicSpout.
-     * @param latch Latch to allow startup synchronization.
-     * @param clock Which clock instance to use, allows injecting a mock clock.
-     * @param topologyConfig Storm topology config.
-     * @param metricsRecorder MetricRecorder implementation for recording metrics.
-     * @return new SpoutMonitor instance.
+     * @return Returns any errors that should be reported up to the topology.
      */
-    public SpoutMonitor create(
-        final Queue<DelegateSpout> newSpoutQueue,
-        final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final CountDownLatch latch,
-        final Clock clock,
-        final Map<String, Object> topologyConfig,
-        final MetricsRecorder metricsRecorder) {
+    Optional<Throwable> getErrors();
 
-        // Create instance.
-        return new SpoutMonitor(
-            newSpoutQueue,
-            virtualSpoutMessageBus,
-            latch,
-            clock,
-            topologyConfig,
-            metricsRecorder
-        );
-    }
+    /**
+     * @return Returns the next available Message to be emitted into the topology.
+     */
+    Optional<Message> nextMessage();
+
+    /**
+     * Acks a tuple on the spout that it belongs to.
+     * @param id Tuple message id to ack
+     */
+    void ack(final MessageId id);
+
+    /**
+     * Fails a tuple on the spout that it belongs to.
+     * @param id Tuple message id to fail
+     */
+    void fail(final MessageId id);
 }

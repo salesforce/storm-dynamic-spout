@@ -77,7 +77,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -1022,8 +1021,9 @@ public class DynamicSpoutTest {
         final Throwable exception2 = new Exception("My Exception");
 
         // "Report" our exceptions
-        spout.getCoordinator().getReportedErrorsQueue().add(exception1);
-        spout.getCoordinator().getReportedErrorsQueue().add(exception2);
+        final MessageBus messageBus = (MessageBus) spout.getMessageBus();
+        messageBus.publishError(exception1);
+        messageBus.publishError(exception2);
 
         // Call next tuple a couple times, validate errors get reported.
         await()
@@ -1217,22 +1217,17 @@ public class DynamicSpoutTest {
         for (SpoutEmission emission: spoutEmissions) {
             spout.ack(emission.getMessageId());
         }
+
+        // Grab reference to message bus.
+        final MessageBus messageBus = (MessageBus) spout.getMessageBus();
+
         // Acking tuples is an async process, so we need to make sure they get picked up
         // and processed before continuing.
         await()
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the acked queue.
-                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getAckedTuplesQueue();
-                for (VirtualSpoutIdentifier key : queueMap.keySet()) {
-                    // If any queue has entries, return false
-                    if (!queueMap.get(key).isEmpty()) {
-                        logger.debug("Ack queue {} has {}", key, queueMap.get(key).size());
-                        return false;
-                    }
-                }
-                // If all entries are empty, return true
-                return true;
+                return messageBus.ackSize() == 0;
             }, equalTo(true));
     }
 
@@ -1253,22 +1248,16 @@ public class DynamicSpoutTest {
             spout.fail(emission.getMessageId());
         }
 
+        // Grab reference to message bus.
+        final MessageBus messageBus = (MessageBus) spout.getMessageBus();
+
         // Failing tuples is an async process, so we need to make sure they get picked up
         // and processed before continuing.
         await()
             .atMost(6500, TimeUnit.MILLISECONDS)
             .until(() -> {
                 // Wait for our tuples to get popped off the fail queue.
-                Map<VirtualSpoutIdentifier, Queue<MessageId>> queueMap = spout.getCoordinator().getFailedTuplesQueue();
-                for (VirtualSpoutIdentifier key : queueMap.keySet()) {
-                    // If any queue has entries, return false
-                    if (!queueMap.get(key).isEmpty()) {
-                        logger.debug("Fail queue {} has {}", key, queueMap.get(key).size());
-                        return false;
-                    }
-                }
-                // If all entries are empty, return true
-                return true;
+                return messageBus.failSize() == 0;
             }, equalTo(true));
     }
 

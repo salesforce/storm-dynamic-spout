@@ -26,13 +26,12 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.MessageId;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,29 +71,9 @@ public class SpoutMonitor implements Runnable {
     private final Queue<DelegateSpout> newSpoutQueue;
 
     /**
-     * This buffer/queue holds tuples that are ready to be sent out to the topology.
-     * It is filled by VirtualSpout instances, and drained by DynamicSpout.
+     * Routes messages in a ThreadSafe manner from VirtualSpouts to the SpoutCoordinator.
      */
-    private final MessageBuffer tupleOutputQueue;
-
-    /**
-     * This buffer/queue holds tuples that are ready to be acked by VirtualSpouts.
-     * Its segmented by VirtualSpout ids => Queue of tuples to be acked.
-     * It is filled by DynamicSpout, and drained by VirtualSpout instances.
-     */
-    private final Map<VirtualSpoutIdentifier,Queue<MessageId>> ackedTuplesQueue;
-
-    /**
-     * This buffer/queue holds tuples that are ready to be failed by VirtualSpouts.
-     * Its segmented by VirtualSpout ids => Queue of tuples to be failed.
-     * It is filled by DynamicSpout, and drained by VirtualSpout instances.
-     */
-    private final Map<VirtualSpoutIdentifier,Queue<MessageId>> failedTuplesQueue;
-
-    /**
-     * This buffer/queue holds errors that should be reported up to the topology.
-     */
-    private final Queue<Throwable> reportedErrorsQueue;
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     /**
      * This latch allows the SpoutCoordinator to block on start up until its initial
@@ -142,10 +121,7 @@ public class SpoutMonitor implements Runnable {
     /**
      * Constructor.
      * @param newSpoutQueue Queue monitored for new Spouts that should be started.
-     * @param tupleOutputQueue Queue for pushing out Tuples to the topology.
-     * @param ackedTuplesQueue Queue for incoming Tuples that need to be acked.
-     * @param failedTuplesQueue Queue for incoming Tuples that need to be failed.
-     * @param reportedErrorsQueue Queue for any errors that should be reported to the topology.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      * @param latch Latch to allow startup synchronization.
      * @param clock Which clock instance to use, allows injecting a mock clock.
      * @param topologyConfig Storm topology config.
@@ -153,20 +129,14 @@ public class SpoutMonitor implements Runnable {
      */
     public SpoutMonitor(
         final Queue<DelegateSpout> newSpoutQueue,
-        final MessageBuffer tupleOutputQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue,
-        final Queue<Throwable> reportedErrorsQueue,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig,
         final MetricsRecorder metricsRecorder
     ) {
         this.newSpoutQueue = newSpoutQueue;
-        this.tupleOutputQueue = tupleOutputQueue;
-        this.ackedTuplesQueue = ackedTuplesQueue;
-        this.failedTuplesQueue = failedTuplesQueue;
-        this.reportedErrorsQueue = reportedErrorsQueue;
+        this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
@@ -274,9 +244,7 @@ public class SpoutMonitor implements Runnable {
 
                 final SpoutRunner spoutRunner = new SpoutRunner(
                     spout,
-                    tupleOutputQueue,
-                    ackedTuplesQueue,
-                    failedTuplesQueue,
+                    getVirtualSpoutMessageBus(),
                     latch,
                     getClock(),
                     getTopologyConfig()
@@ -359,10 +327,11 @@ public class SpoutMonitor implements Runnable {
             getNumberOfFailedTasks(),
             executor.getTaskCount()
         );
-        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}", tupleOutputQueue.size(), spoutRunners.keySet());
+        logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}",
+            getVirtualSpoutMessageBus().messageSize(), spoutRunners.keySet());
 
         // Report to metrics record
-        getMetricsRecorder().assignValue(getClass(), "bufferSize", tupleOutputQueue.size());
+        getMetricsRecorder().assignValue(getClass(), "bufferSize", getVirtualSpoutMessageBus().messageSize());
         getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
         getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
         getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
@@ -503,10 +472,10 @@ public class SpoutMonitor implements Runnable {
     }
 
     /**
-     * @return The Error Queue.
+     * @return ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      */
-    Queue<Throwable> getReportedErrorsQueue() {
-        return reportedErrorsQueue;
+    private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
+        return virtualSpoutMessageBus;
     }
 
     /**
@@ -515,7 +484,7 @@ public class SpoutMonitor implements Runnable {
      * @param throwable The error to be reported.
      */
     private void reportError(final Throwable throwable) {
-        getReportedErrorsQueue().add(throwable);
+        getVirtualSpoutMessageBus().publishError(throwable);
     }
 
     /**

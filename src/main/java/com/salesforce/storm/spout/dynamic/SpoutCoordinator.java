@@ -31,16 +31,13 @@ import com.salesforce.storm.spout.dynamic.coordinator.SpoutMonitorFactory;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -75,24 +72,9 @@ public class SpoutCoordinator {
     private final Queue<DelegateSpout> newSpoutQueue = new ConcurrentLinkedQueue<>();
 
     /**
-     * Queue for tuples that are ready to be emitted out into the topology.
+     * ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
      */
-    private final MessageBuffer messageBuffer;
-
-    /**
-     * Buffer by spout consumer id of messages that have been acked.
-     */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
-
-    /**
-     * Buffer by spout consumer id of messages that have been failed.
-     */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
-
-    /**
-     * Buffer for errors that need to be reported.
-     */
-    private final Queue<Throwable> reportedErrorsQueue = new ConcurrentLinkedQueue<>();
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     /**
      * For capturing metrics.
@@ -121,27 +103,26 @@ public class SpoutCoordinator {
 
     /**
      * Create a new coordinator, supplying the 'fire hose' or the starting spouts.
-     * @param metricsRecorder Recorder for capturing metrics
-     * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
+     * @param metricsRecorder Recorder for capturing metrics.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between VirtualSpouts and DynamicSpout.
      */
-    public SpoutCoordinator(final MetricsRecorder metricsRecorder, final MessageBuffer messageBuffer) {
-        this(metricsRecorder, messageBuffer, new SpoutMonitorFactory());
+    public SpoutCoordinator(final MetricsRecorder metricsRecorder, final VirtualSpoutMessageBus virtualSpoutMessageBus) {
+        this(metricsRecorder, virtualSpoutMessageBus, new SpoutMonitorFactory());
     }
 
     /**
      * Constructor used for injecting a mock SpoutMonitorFactory instance.
-     * @param metricsRecorder Recorder for capturing metrics
-     * @param messageBuffer Buffer for messages from consumers on the various virtual spouts
+     * @param metricsRecorder Recorder for capturing metrics.
+     * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between VirtualSpouts and DynamicSpout.
      * @param spoutMonitorFactory A Factory for creating SpoutMonitors.
      */
     SpoutCoordinator(
         final MetricsRecorder metricsRecorder,
-        final MessageBuffer messageBuffer,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final SpoutMonitorFactory spoutMonitorFactory
     ) {
-
+        this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.metricsRecorder = metricsRecorder;
-        this.messageBuffer = messageBuffer;
         this.spoutMonitorFactory = spoutMonitorFactory;
     }
 
@@ -149,8 +130,9 @@ public class SpoutCoordinator {
      * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
      * @param spout New delegate spout
+     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
-    public void addVirtualSpout(final DelegateSpout spout) {
+    public void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException  {
         if (hasVirtualSpout(spout.getVirtualSpoutId())) {
             throw new SpoutAlreadyExistsException(
                 "A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!",
@@ -167,8 +149,9 @@ public class SpoutCoordinator {
      * This method will blocked until the VirtualSpout has completely stopped.
      *
      * @param virtualSpoutIdentifier identifier of the VirtualSpout to be removed.
+     * @throws SpoutDoesNotExistException If no VirtualSpout exists with the VirtualSpoutIdentifier.
      */
-    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
         if (!hasVirtualSpout(virtualSpoutIdentifier)) {
             throw new SpoutDoesNotExistException(
                 "A spout with id " + virtualSpoutIdentifier + " does not exist in the spout coordinator!",
@@ -232,10 +215,7 @@ public class SpoutCoordinator {
         // Create our spout monitor instance.
         spoutMonitor = getSpoutMonitorFactory().create(
             getNewSpoutQueue(),
-            getMessageBuffer(),
-            getAckedTuplesQueue(),
-            getFailedTuplesQueue(),
-            getReportedErrorsQueue(),
+            getVirtualSpoutMessageBus(),
             latch,
             getClock(),
             getTopologyConfig(),
@@ -278,47 +258,6 @@ public class SpoutCoordinator {
     }
 
     /**
-     * Acks a tuple on the spout that it belongs to.
-     * @param id Tuple message id to ack
-     */
-    public void ack(final MessageId id) {
-        if (!getAckedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
-            logger.warn("Acking tuple for unknown consumer");
-            return;
-        }
-
-        getAckedTuplesQueue().get(id.getSrcVirtualSpoutId()).add(id);
-    }
-
-    /**
-     * Fails a tuple on the spout that it belongs to.
-     * @param id Tuple message id to fail
-     */
-    public void fail(final MessageId id) {
-        if (!getFailedTuplesQueue().containsKey(id.getSrcVirtualSpoutId())) {
-            logger.warn("Failing tuple for unknown consumer");
-            return;
-        }
-
-        getFailedTuplesQueue().get(id.getSrcVirtualSpoutId()).add(id);
-    }
-
-    /**
-     * @return Returns the next available Message to be emitted into the topology.
-     */
-    public Message nextMessage() {
-        return getMessageBuffer().poll();
-    }
-
-    /**
-     * @return Returns any errors that should be reported up to the topology.
-     */
-    public Optional<Throwable> getErrors() {
-        // Poll is non-blocking.
-        return Optional.ofNullable(reportedErrorsQueue.poll());
-    }
-
-    /**
      * Stop managed spouts, calling this should shut down and finish the coordinator's spouts.
      */
     public void close() {
@@ -353,27 +292,6 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return MessageBuffer instance.
-     */
-    MessageBuffer getMessageBuffer() {
-        return messageBuffer;
-    }
-
-    /**
-     * @return The acked tuples queues.
-     */
-    Map<VirtualSpoutIdentifier, Queue<MessageId>> getAckedTuplesQueue() {
-        return ackedTuplesQueue;
-    }
-
-    /**
-     * @return The failed tuples queues.
-     */
-    Map<VirtualSpoutIdentifier, Queue<MessageId>> getFailedTuplesQueue() {
-        return failedTuplesQueue;
-    }
-
-    /**
      * @return The new virtual spout instance queue.
      */
     Queue<DelegateSpout> getNewSpoutQueue() {
@@ -381,10 +299,10 @@ public class SpoutCoordinator {
     }
 
     /**
-     * @return The reported errors queue.
+     * @return ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
      */
-    Queue<Throwable> getReportedErrorsQueue() {
-        return reportedErrorsQueue;
+    private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
+        return virtualSpoutMessageBus;
     }
 
     /**
