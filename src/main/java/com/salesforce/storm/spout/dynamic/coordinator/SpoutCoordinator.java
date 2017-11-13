@@ -233,7 +233,11 @@ public class SpoutCoordinator implements Runnable {
         spoutContext.getSpoutRunner().requestStop();
 
         // Block until the CompletableFuture Completes.
-        // If it never ran, isDone() will never return true, we'll have to cancel it.
+        // This is tricky because if the executorService queued the instance, but never actually
+        // started it, isDone() will never return true until its actually started by the service.
+        // executorService provides no way (that I've been able to find) to determine if this instance
+        // is within its queue or not.  So we'll poll isDone() for a configured period of time and if
+        // it's still not 'done', we'll cancel it.
         try {
             // Wait up to MaxTerminationTime for it to finish
             final long endTime = getClock().millis() + getMaxTerminationWaitTimeMs();

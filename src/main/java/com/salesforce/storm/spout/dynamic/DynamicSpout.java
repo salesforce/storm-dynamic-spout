@@ -76,8 +76,8 @@ public class DynamicSpout extends BaseRichSpout {
     private TopologyContext topologyContext;
 
     /**
-     * SpoutCoordinator is in charge of starting, stopping, and monitoring VirtualSpouts which
-     * runs as a long lived background thread.
+     * SpoutCoordinator is in charge of starting, stopping, and monitoring VirtualSpouts.
+     * Its monitoring thread lives as a long running process.
      */
     private SpoutCoordinator spoutCoordinator;
 

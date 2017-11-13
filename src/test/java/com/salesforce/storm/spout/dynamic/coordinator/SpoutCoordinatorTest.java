@@ -135,7 +135,7 @@ public class SpoutCoordinatorTest {
         // Create instance.
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             topologyConfig,
-            "Test",
+            new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
@@ -172,12 +172,10 @@ public class SpoutCoordinatorTest {
     public void testStartAndCloseSmokeTest() throws InterruptedException, ExecutionException {
         // Create instance.
         final SpoutCoordinator spoutCoordinator = getDefaultMonitorInstance();
+        spoutCoordinator.open();
 
         // Define how long to wait for async operations
         final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 2) + 10;
-
-        // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
 
         // Wait for it to fire up
         Thread.sleep(testWaitTime);
@@ -189,7 +187,7 @@ public class SpoutCoordinatorTest {
         assertEquals("Should have 0 running task", 0, spoutCoordinator.getExecutor().getActiveCount());
 
         // Close spout monitor
-        shutdownSpoutMonitor(spoutCoordinator, future);
+        spoutCoordinator.close();
 
         // Verify that executor service is terminated
         assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());
@@ -221,7 +219,7 @@ public class SpoutCoordinatorTest {
         assertEquals("Should have 1 running task", 1, spoutCoordinator.getExecutor().getActiveCount());
 
         // Open is async, lets wait briefly.
-        Thread.sleep(maxWaitTime);
+        Thread.sleep(testWaitTime);
 
         // Now validate some calls onto the mock
         // Our spout should have been opened
@@ -665,7 +663,7 @@ public class SpoutCoordinatorTest {
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
-            "Test",
+            new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
@@ -760,7 +758,7 @@ public class SpoutCoordinatorTest {
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
-            "Test",
+            new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
@@ -801,7 +799,7 @@ public class SpoutCoordinatorTest {
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
-            "Test",
+            new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
@@ -839,13 +837,13 @@ public class SpoutCoordinatorTest {
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
             config,
-            "Test",
+            new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
 
-        // call run in async thread.
-        final CompletableFuture future = startSpoutMonitor(spoutCoordinator);
+        // call open
+        spoutCoordinator.open();
 
         // Create a mock spout
         final DefaultVirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Foobar");
@@ -914,7 +912,7 @@ public class SpoutCoordinatorTest {
         // Create instance.
         return new SpoutCoordinator(
             topologyConfig,
-            "Test",
+            new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
@@ -922,36 +920,5 @@ public class SpoutCoordinatorTest {
 
     private SpoutCoordinator getDefaultMonitorInstance() {
         return getDefaultMonitorInstance(new MessageBus(new FifoBuffer()));
-    }
-
-    private CompletableFuture startSpoutMonitor(SpoutCoordinator spoutCoordinator) {
-        if (executorService == null) {
-            executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-        }
-
-        // Sanity check
-        assertEquals("Executor service should be empty", 0, executorService.getActiveCount());
-
-        // Submit task to start
-        CompletableFuture future = CompletableFuture.runAsync(spoutCoordinator, executorService);
-
-        // Wait until it actually starts.
-        await()
-            .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> executorService.getActiveCount() == 1, equalTo(true));
-
-        // return the future
-        return future;
-    }
-
-    private void shutdownSpoutMonitor(final SpoutCoordinator spoutCoordinator, CompletableFuture asyncFuture) {
-        // Call close on spout monitor
-        spoutCoordinator.close();
-        assertFalse("Keep running should return false", spoutCoordinator.keepRunning());
-
-        // Wait for it to stop running.
-        await()
-            .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(asyncFuture::isDone, equalTo(true));
     }
 }
