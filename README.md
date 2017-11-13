@@ -366,7 +366,7 @@ Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sid
 
 ## Dependencies
 - DynamicSpout framework (which is an Apache Storm specific implementation)
-- [Apache Kafka 0.10.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
+- [Apache Kafka 0.11.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
 
 
 ## Components
