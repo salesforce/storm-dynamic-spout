@@ -187,7 +187,10 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         loadSidelines();
 
         // Repeat our sidelines check periodically
-        timer = new Timer("[DynamicSpout:SidelineSpoutHandler] Timer on " + topologyContext.getThisComponentId() + ":" + topologyContext.getThisTaskIndex());
+        final String threadName = "[DynamicSpout:SidelineSpoutHandler] Timer on "
+            + topologyContext.getThisComponentId() + ":" + topologyContext.getThisTaskIndex();
+
+        timer = new Timer(threadName);
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
