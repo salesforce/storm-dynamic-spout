@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
-import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -52,7 +51,6 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -83,6 +81,9 @@ public class SidelineSpoutHandlerTest {
             config,
             sidelineSpoutHandler.getSpoutConfig()
         );
+
+        // close things out.
+        sidelineSpoutHandler.close();
     }
 
     /**
@@ -103,6 +104,10 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
+
+        // close things out.
+        sidelineSpoutHandler.close();
+        spout.close();
     }
 
     /**
@@ -175,6 +180,10 @@ public class SidelineSpoutHandlerTest {
             "The stop request should have created a new VirtualSpout instance",
             spout.hasVirtualSpout(virtualSpoutIdentifier2)
         );
+
+        // close things out.
+        sidelineSpoutHandler.close();
+        spout.close();
     }
 
     /**
@@ -238,6 +247,10 @@ public class SidelineSpoutHandlerTest {
         assertEquals(startRequest, partition5.request);
         assertEquals(Long.valueOf(1L), partition5.startingOffset);
         assertNull(partition5.endingOffset);
+
+        // close things out.
+        sidelineSpoutHandler.close();
+        spout.close();
     }
 
     /**
@@ -319,6 +332,10 @@ public class SidelineSpoutHandlerTest {
         assertEquals(new NegatingFilterChainStep(stopRequest.step), partition5.request.step);
         assertEquals(Long.valueOf(3L), partition5.startingOffset);
         assertEquals(Long.valueOf(1L), partition5.endingOffset);
+
+        // close things out.
+        sidelineSpoutHandler.close();
+        spout.close();
     }
 
     /**
@@ -345,6 +362,10 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.onSpoutClose(spout);
 
         assertEquals(0, sidelineSpoutHandler.getSidelineTriggers().size());
+
+        // close things out.
+        sidelineSpoutHandler.close();
+        spout.close();
     }
 
     @Rule
@@ -365,6 +386,9 @@ public class SidelineSpoutHandlerTest {
         expectedExceptionMisconfiguredCreateStartingTrigger.expect(RuntimeException.class);
 
         sidelineSpoutHandler.createSidelineTriggers();
+
+        // close things out.
+        sidelineSpoutHandler.close();
     }
 
     /**
@@ -399,6 +423,10 @@ public class SidelineSpoutHandlerTest {
 
         assertEquals(CONSUMER_ID_PREFIX, sidelineVirtualSpoutIdentifier.getConsumerId());
         assertEquals(expectedSidelineRequestIdentifier, sidelineVirtualSpoutIdentifier.getSidelineRequestIdentifier());
+
+        // close things out.
+        sidelineSpoutHandler.close();
+        spout.close();
     }
 
     /**
@@ -574,7 +602,7 @@ public class SidelineSpoutHandlerTest {
         // to get to the other spouts right now. This may not even be relevant either, because we never manipulate the sideline's filter
         // chains after they've been opened (whereas we do with the firehose). In fact, it's not even possible to do because of the
         // aforementioned lack of accessibility to non-firehose spouts.
-
+        sidelineSpoutHandler.close();
         spout.close();
     }
 
