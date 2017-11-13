@@ -65,11 +65,6 @@ public class SpoutRunner implements Runnable {
     private final Clock clock;
 
     /**
-     * For thread synchronization.
-     */
-    private final CountDownLatch latch;
-
-    /**
      * Storm topology configuration.
      */
     private final Map<String, Object> topologyConfig;
@@ -86,42 +81,22 @@ public class SpoutRunner implements Runnable {
     private volatile boolean requestedStop = false;
 
     /**
-     * Constructor that does not make use of a count down latch.
-     *
-     * @param spout The VirtualSpout instance to run.
-     * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
-     * @param clock Clock instance.
-     * @param topologyConfig Topology configuration.
-     */
-    SpoutRunner(
-        final DelegateSpout spout,
-        final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final Clock clock,
-        final Map<String, Object> topologyConfig
-    ) {
-        this(spout, virtualSpoutMessageBus, new CountDownLatch(0), clock, topologyConfig);
-    }
-
-    /**
      * Constructor that makes use of a count down latch.
      * Countdown latches are useful for orchestrating startup.
      *
      * @param spout The VirtualSpout instance to run.
      * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
-     * @param latch Count down latch.
      * @param clock Clock instance.
      * @param topologyConfig Topology configuration.
      */
     SpoutRunner(
         final DelegateSpout spout,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
-        final CountDownLatch latch,
         final Clock clock,
         final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
-        this.latch = latch;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
@@ -142,9 +117,6 @@ public class SpoutRunner implements Runnable {
 
             // Let all of our queues know about our new instance.
             getVirtualSpoutMessageBus().registerVirtualSpout(virtualSpoutId);
-
-            // Count down our latch for thread synchronization.
-            latch.countDown();
 
             // Record the last time we flushed.
             long lastFlush = getClock().millis();
@@ -253,10 +225,6 @@ public class SpoutRunner implements Runnable {
 
     DelegateSpout getSpout() {
         return spout;
-    }
-
-    CountDownLatch getLatch() {
-        return latch;
     }
 
     /**
