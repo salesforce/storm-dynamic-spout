@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing FilterChainSteps.
 - [PR-40](https://github.com/salesforce/storm-dynamic-spout/pull/40) Timer metrics will now publish a counter metric containing the total time spent within each metric key.  Start publishing developer performance metrics within VirtualSpout via MetricRecorder.
 - [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) MetricRecorder is now passed into Consumer interface via open() method.
-
+- [PR-55](https://github.com/salesforce/storm-dynamic-spout/pull/55) Refactored how DynamicSpout coordinates with VirtualSpouts internally.
 
 ### Sideline Framework
 #### Breaking Changes
@@ -69,8 +69,7 @@ sideline is active for firehose.
 
 ### Removed
 ##### Kafka Consumer
-- [PR-31](https://github.com/salesforce/storm-dynamic-spout/pull/31) Removed configuration items: `spout.kafka
-.autocommit` and `spout.kafka.autocommit_interval_ms`.  This functionality is covered by configuration item `spout.coordinator.consumer_state_flush_interval_ms`
+- [PR-31](https://github.com/salesforce/storm-dynamic-spout/pull/31) Removed configuration items: `spout.kafka.autocommit` and `spout.kafka.autocommit_interval_ms`.  This functionality is covered by configuration item `spout.cordinator.consumer_state_flush_interval_ms`
 
 ## 0.8.x
 - Split the dynamic spout framework into `com.salesforce.storm.spout.dynamic`.

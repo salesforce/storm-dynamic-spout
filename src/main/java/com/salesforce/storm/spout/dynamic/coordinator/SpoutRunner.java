@@ -28,25 +28,23 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.MessageId;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
+import java.util.Optional;
 
 /**
  * Manages running a VirtualSpout instance.
  * It handles all of the cross-thread communication via its Concurrent Queues data structures.
  */
-public class SpoutRunner implements Runnable {
+class SpoutRunner implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunner.class);
 
@@ -56,29 +54,14 @@ public class SpoutRunner implements Runnable {
     private final DelegateSpout spout;
 
     /**
-     * This is the queue we put messages that need to be emitted out to the topology onto.
+     * ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
      */
-    private final MessageBuffer tupleQueue;
-
-    /**
-     * This is the queue we read tuples that need to be acked off of.
-     */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTupleQueue;
-
-    /**
-     * This is the queue we read tuples that need to be failed off of.
-     */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTupleQueue;
+    private final VirtualSpoutMessageBus virtualSpoutMessageBus;
 
     /**
      * For access to the system clock.
      */
     private final Clock clock;
-
-    /**
-     * For thread synchronization.
-     */
-    private final CountDownLatch latch;
 
     /**
      * Storm topology configuration.
@@ -96,20 +79,23 @@ public class SpoutRunner implements Runnable {
      */
     private volatile boolean requestedStop = false;
 
+    /**
+     * Constructor that makes use of a count down latch.
+     * Countdown latches are useful for orchestrating startup.
+     *
+     * @param spout The VirtualSpout instance to run.
+     * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
+     * @param clock Clock instance.
+     * @param topologyConfig Topology configuration.
+     */
     SpoutRunner(
         final DelegateSpout spout,
-        final MessageBuffer tupleQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTupleQueue,
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTupleInputQueue,
-        final CountDownLatch latch,
+        final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final Clock clock,
         final Map<String, Object> topologyConfig
     ) {
         this.spout = spout;
-        this.tupleQueue = tupleQueue;
-        this.ackedTupleQueue = ackedTupleQueue;
-        this.failedTupleQueue = failedTupleInputQueue;
-        this.latch = latch;
+        this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.clock = clock;
         this.topologyConfig = Tools.immutableCopy(topologyConfig);
 
@@ -120,19 +106,16 @@ public class SpoutRunner implements Runnable {
     @Override
     public void run() {
         try {
-            // Rename thread to use the spout's consumer id
-            Thread.currentThread().setName(spout.getVirtualSpoutId().toString());
+            final VirtualSpoutIdentifier virtualSpoutId = spout.getVirtualSpoutId();
 
-            logger.info("Opening {} spout", spout.getVirtualSpoutId());
+            // Append VirtualSpoutId to thread name
+            Thread.currentThread().setName(Thread.currentThread().getName() + virtualSpoutId.toString());
+
+            logger.info("Opening {} spout", virtualSpoutId);
             spout.open();
 
             // Let all of our queues know about our new instance.
-            tupleQueue.addVirtualSpoutId(spout.getVirtualSpoutId());
-            ackedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
-            failedTupleQueue.put(spout.getVirtualSpoutId(), new ConcurrentLinkedQueue<>());
-
-            // Count down our latch for thread synchronization.
-            latch.countDown();
+            getVirtualSpoutMessageBus().registerVirtualSpout(virtualSpoutId);
 
             // Record the last time we flushed.
             long lastFlush = getClock().millis();
@@ -143,7 +126,7 @@ public class SpoutRunner implements Runnable {
                 final Message message = spout.nextTuple();
                 if (message != null) {
                     try {
-                        tupleQueue.put(message);
+                        getVirtualSpoutMessageBus().publishMessage(message);
                     } catch (final InterruptedException interruptedException) {
                         logger.error("Shutting down due to interruption {}", interruptedException.getMessage(), interruptedException);
                         spout.requestStop();
@@ -153,22 +136,29 @@ public class SpoutRunner implements Runnable {
                 // Lemon's note: Should we ack and then remove from the queue? What happens in the event
                 //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
-                // Ack anything that needs to be acked
-                while (!ackedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    final MessageId id = ackedTupleQueue.get(spout.getVirtualSpoutId()).poll();
-                    spout.ack(id);
+                // Ack everything that needs to be acked
+                MessageId messageId;
+                do {
+                    messageId = getVirtualSpoutMessageBus().getAckedMessage(virtualSpoutId);
+                    if (messageId != null) {
+                        spout.ack(messageId);
+                    }
                 }
+                while (messageId != null);
 
-                // Fail anything that needs to be failed
-                while (!failedTupleQueue.get(spout.getVirtualSpoutId()).isEmpty()) {
-                    final MessageId id = failedTupleQueue.get(spout.getVirtualSpoutId()).poll();
-                    spout.fail(id);
+                // Fail everything that needs to be failed
+                do {
+                    messageId = getVirtualSpoutMessageBus().getFailedMessage(virtualSpoutId);
+                    if (messageId != null) {
+                        spout.fail(messageId);
+                    }
                 }
+                while (messageId != null);
 
                 // Periodically we flush the state of the spout to capture progress
                 final long now = getClock().millis();
                 if ((lastFlush + getConsumerStateFlushIntervalMs()) < now) {
-                    logger.debug("Flushing state for spout {}", spout.getVirtualSpoutId());
+                    logger.debug("Flushing state for spout {}", virtualSpoutId);
                     spout.flushState();
                     lastFlush = now;
                 }
@@ -177,19 +167,17 @@ public class SpoutRunner implements Runnable {
             // Looks like someone requested that we stop this instance.
             // So we call close on it, and log our run time.
             final Duration runtime = Duration.ofMillis(getClock().millis() - getStartTime());
-            logger.info("Closing {} spout, total run time was {}", spout.getVirtualSpoutId(), Tools.prettyDuration(runtime));
+            logger.info("Closing {} spout, total run time was {}", virtualSpoutId, Tools.prettyDuration(runtime));
             spout.close();
 
             // Remove our entries from our queues.
-            getTupleQueue().removeVirtualSpoutId(spout.getVirtualSpoutId());
-            getAckedTupleQueue().remove(spout.getVirtualSpoutId());
-            getFailedTupleQueue().remove(spout.getVirtualSpoutId());
+            getVirtualSpoutMessageBus().unregisterVirtualSpout(virtualSpoutId);
         } catch (final Exception ex) {
             // We don't handle restarting this instance.  Instead its Spout Monitor which that ownership falls to.
             // We'll log the error, and bubble up the exception.
             logger.error("SpoutRunner for {} threw an exception {}", spout.getVirtualSpoutId(), ex.getMessage(), ex);
 
-            // We re-throw the exception, SpoutMonitor will handle this.
+            // We re-throw the exception, SpoutCoordinator will handle this.
             throw ex;
         }
     }
@@ -197,11 +185,9 @@ public class SpoutRunner implements Runnable {
     /**
      * Call this method to request this SpoutRunner instance
      * to cleanly stop.
-     *
-     * Synchronized because this can be called from multiple threads.
      */
-    public void requestStop() {
-        logger.info("Requested stop");
+    void requestStop() {
+        logger.info("Requested stop on {}", spout.getVirtualSpoutId());
         requestedStop = true;
     }
 
@@ -210,7 +196,7 @@ public class SpoutRunner implements Runnable {
      *
      * @return - true if so, false if not.
      */
-    public boolean isStopRequested() {
+    private boolean isStopRequested() {
         return requestedStop;
     }
 
@@ -229,6 +215,13 @@ public class SpoutRunner implements Runnable {
     }
 
     /**
+     * @return ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
+     */
+    private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
+        return virtualSpoutMessageBus;
+    }
+
+    /**
      * @return - How frequently, in milliseconds, we should flush consumer state.
      */
     long getConsumerStateFlushIntervalMs() {
@@ -239,22 +232,9 @@ public class SpoutRunner implements Runnable {
         return spout;
     }
 
-    Map<VirtualSpoutIdentifier, Queue<MessageId>> getAckedTupleQueue() {
-        return ackedTupleQueue;
-    }
-
-    Map<VirtualSpoutIdentifier, Queue<MessageId>> getFailedTupleQueue() {
-        return failedTupleQueue;
-    }
-
-    MessageBuffer getTupleQueue() {
-        return tupleQueue;
-    }
-
-    CountDownLatch getLatch() {
-        return latch;
-    }
-
+    /**
+     * @return Unix timestamp (in milliseconds) of when the instance was created.
+     */
     long getStartTime() {
         return startTime;
     }
