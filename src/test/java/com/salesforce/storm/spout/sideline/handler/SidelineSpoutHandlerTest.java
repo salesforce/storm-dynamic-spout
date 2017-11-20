@@ -453,7 +453,7 @@ public class SidelineSpoutHandlerTest {
 
         // The firehose has to move from the queue to a SpoutRunner, and this happens in a separate thread so we wait a bit.
         await()
-            .until(() -> spout.getTotalVirtualSpouts(), equalTo(1));
+            .until(spout::getTotalVirtualSpouts, equalTo(1));
 
         assertEquals("Only the firehose should be on the spout", 1, spout.getTotalVirtualSpouts());
 
@@ -516,7 +516,7 @@ public class SidelineSpoutHandlerTest {
 
         // A new sideline spout should be added for our stopped request
         await()
-            .until(() -> spout.getTotalVirtualSpouts(), equalTo(2));
+            .until(spout::getTotalVirtualSpouts, equalTo(2));
 
         assertTrue(
             "Spout should have a VirtualSpout for the stop request",
