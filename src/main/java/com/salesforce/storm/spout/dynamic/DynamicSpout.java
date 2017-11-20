@@ -433,7 +433,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @return total number of virtual spouts in the coordinator.
      */
     public int getTotalVirtualSpouts() {
-        return getCoordinator().getTotalSpouts();
+        return getSpoutCoordinator().getTotalSpouts();
     }
 
     /**
