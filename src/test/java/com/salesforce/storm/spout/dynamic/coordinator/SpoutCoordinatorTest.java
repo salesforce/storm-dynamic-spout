@@ -63,6 +63,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -612,12 +613,12 @@ public class SpoutCoordinatorTest {
         spoutCoordinator.close();
 
         // Verify that the exception error was reported.
-        final Optional<Throwable> throwableOptional = messageBus.getErrors();
-        assertTrue("Should have reported one error", throwableOptional.isPresent());
-        assertTrue("Should be our reported error", throwableOptional.get().equals(runtimeException));
+        final Throwable reportedError = messageBus.nextReportedError();
+        assertNotNull("Should have reported one error", reportedError);
+        assertTrue("Should be our reported error", reportedError.equals(runtimeException));
 
         // Should have no other errors
-        assertFalse("Should have no other errors", messageBus.getErrors().isPresent());
+        assertNull("Should have no other errors", messageBus.nextReportedError());
 
         // Verify that executor service is terminated
         assertTrue("Executor service is terminated", spoutCoordinator.getExecutor().isTerminated());

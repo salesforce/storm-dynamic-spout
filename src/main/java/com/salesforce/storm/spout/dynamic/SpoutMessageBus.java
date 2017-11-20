@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import java.util.Optional;
-
 /**
  * Facade in front of MessageBus reducing available scope down to only the methods
  * that should be available to the main Spout/DynamicSpout instance.
@@ -34,14 +32,14 @@ import java.util.Optional;
 public interface SpoutMessageBus {
 
     /**
-     * @return Returns any errors that should be reported up to the topology.
+     * @return Returns any errors that should be reported up to the topology, or NULL if none exists.
      */
-    Optional<Throwable> getErrors();
+    Throwable nextReportedError();
 
     /**
-     * @return Returns the next available Message to be emitted into the topology.
+     * @return Returns the next available Message to be emitted into the topology, or NULL if none exists.
      */
-    Optional<Message> nextMessage();
+    Message nextMessage();
 
     /**
      * Acks a tuple on the spout that it belongs to.

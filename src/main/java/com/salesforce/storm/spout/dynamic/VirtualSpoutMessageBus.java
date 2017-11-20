@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import java.util.Optional;
-
 /**
  * Facade in front of MessageBus reducing available scope down to only the methods
  * that should be available to virtual spouts.
@@ -60,21 +58,21 @@ public interface VirtualSpoutMessageBus {
 
     /**
      * Get next acked messageId for the given VirtualSpout.
-     * This method should never block, but instead return an empty optional if none exists.
+     * This method should never block, but instead return NULL if none exists.
      *
      * @param virtualSpoutIdentifier Identifier to retrieve the next messageId for.
-     * @return The next available MessageId, or empty Optional.
+     * @return The next available MessageId, or NULL.
      */
-    Optional<MessageId> getAckedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier);
+    MessageId getAckedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier);
 
     /**
      * Get next failed messageId for the given VirtualSpout.
-     * This method should never block, but instead return an empty optional if none exists.
+     * This method should never block, but instead return a NULL if none exists.
      *
      * @param virtualSpoutIdentifier Identifier to retrieve the next messageId for.
-     * @return The next available MessageId, or empty Optional.
+     * @return The next available MessageId, or NULL.
      */
-    Optional<MessageId> getFailedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier);
+    MessageId getFailedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier);
 
     /**
      * Called to unregister a VirtualSpout.

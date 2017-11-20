@@ -267,7 +267,6 @@ public class SpoutCoordinator implements Runnable {
      * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
     public synchronized void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException {
-
         if (hasVirtualSpout(spout.getVirtualSpoutId())) {
             throw new SpoutAlreadyExistsException(
                 "A spout with id " + spout.getVirtualSpoutId() + " already exists in the spout coordinator!",
@@ -398,7 +397,8 @@ public class SpoutCoordinator implements Runnable {
             executor.getTaskCount()
         );
         logger.info("MessageBuffer size: {}, Running VirtualSpoutIds: {}",
-            getVirtualSpoutMessageBus().messageSize(), runningSpouts.keySet());
+            getVirtualSpoutMessageBus().messageSize(), runningSpouts.keySet()
+        );
 
         // Report to metrics record
         getMetricsRecorder().assignValue(getClass(), "bufferSize", getVirtualSpoutMessageBus().messageSize());

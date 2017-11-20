@@ -1001,10 +1001,9 @@ public class DynamicSpoutTest {
     @Test
     public void testReportErrors() {
         // Define config
-        Map<String, Object> config = new HashMap<>();
+        Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "ConsumerIdPrefix");
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
-        config = SpoutConfig.setDefaults(config);
 
         // Create mocks
         final TopologyContext topologyContext = new MockTopologyContext();

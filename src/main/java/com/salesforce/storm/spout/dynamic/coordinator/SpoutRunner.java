@@ -136,16 +136,24 @@ class SpoutRunner implements Runnable {
                 // Lemon's note: Should we ack and then remove from the queue? What happens in the event
                 //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
-                // Ack anything that needs to be acked
-                Optional<MessageId> messageId;
-                while ((messageId = getVirtualSpoutMessageBus().getAckedMessage(virtualSpoutId)).isPresent()) {
-                    spout.ack(messageId.get());
+                // Ack everything that needs to be acked
+                MessageId messageId;
+                do {
+                    messageId = getVirtualSpoutMessageBus().getAckedMessage(virtualSpoutId);
+                    if (messageId != null) {
+                        spout.ack(messageId);
+                    }
                 }
+                while (messageId != null);
 
-                // Fail anything that needs to be failed
-                while ((messageId = getVirtualSpoutMessageBus().getFailedMessage(virtualSpoutId)).isPresent()) {
-                    spout.fail(messageId.get());
+                // Fail everything that needs to be failed
+                do {
+                    messageId = getVirtualSpoutMessageBus().getFailedMessage(virtualSpoutId);
+                    if (messageId != null) {
+                        spout.fail(messageId);
+                    }
                 }
+                while (messageId != null);
 
                 // Periodically we flush the state of the spout to capture progress
                 final long now = getClock().millis();

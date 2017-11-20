@@ -202,19 +202,19 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void nextTuple() {
         // Report any errors
-        getMessageBus()
-            .getErrors()
-            .ifPresent(throwable -> getOutputCollector().reportError(throwable));
+        final Throwable reportedError = getMessageBus().nextReportedError();
+        if (reportedError != null) {
+            getOutputCollector().reportError(reportedError);
+        }
 
         // Ask the MessageBus for the next message that should be emitted. If it returns null, then there's
         // nothing new to emit! If a Message object is returned, it contains the appropriately mapped MessageId and
         // Values for the tuple that should be emitted.
-        final Optional<Message> messageOptional = getMessageBus().nextMessage();
-        if (!messageOptional.isPresent()) {
+        final Message message = getMessageBus().nextMessage();
+        if (message == null) {
             // Nothing new to emit!
             return;
         }
-        final Message message = messageOptional.get();
 
         // Emit tuple via the output collector.
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());

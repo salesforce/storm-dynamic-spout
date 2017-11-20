@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -53,17 +52,17 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
     /**
      * Buffer by spout consumer id of messages that have been acked.
      */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuplesQueue = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackedTuples = new ConcurrentHashMap<>();
 
     /**
      * Buffer by spout consumer id of messages that have been failed.
      */
-    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuplesQueue = new ConcurrentHashMap<>();
+    private final Map<VirtualSpoutIdentifier, Queue<MessageId>> failedTuples = new ConcurrentHashMap<>();
 
     /**
      * Buffer for errors that need to be reported.
      */
-    private final Queue<Throwable> reportedErrorsQueue = new ConcurrentLinkedQueue<>();
+    private final Queue<Throwable> reportedErrors = new ConcurrentLinkedQueue<>();
 
     /**
      * Constructor.
@@ -73,48 +72,44 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
         this.messageBuffer = messageBuffer;
     }
 
-    // SpoutMessageBus Interface methods.
-
     @Override
-    public Optional<Throwable> getErrors() {
+    public Throwable nextReportedError() {
         // Poll is non-blocking.
-        return Optional.ofNullable(reportedErrorsQueue.poll());
+        return reportedErrors.poll();
     }
 
     @Override
-    public Optional<Message> nextMessage() {
-        return Optional.ofNullable(messageBuffer.poll());
+    public Message nextMessage() {
+        return messageBuffer.poll();
     }
 
     @Override
     public void ack(final MessageId id) {
         // TODO this actually isn't thread safe :(
-        if (!ackedTuplesQueue.containsKey(id.getSrcVirtualSpoutId())) {
+        if (!ackedTuples.containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Acking tuple for unknown consumer");
             return;
         }
 
-        ackedTuplesQueue.get(id.getSrcVirtualSpoutId()).add(id);
+        ackedTuples.get(id.getSrcVirtualSpoutId()).add(id);
     }
 
     @Override
     public void fail(final MessageId id) {
         // TODO this actually isn't thread safe :(
-        if (!failedTuplesQueue.containsKey(id.getSrcVirtualSpoutId())) {
+        if (!failedTuples.containsKey(id.getSrcVirtualSpoutId())) {
             logger.warn("Failing tuple for unknown consumer");
             return;
         }
 
-        failedTuplesQueue.get(id.getSrcVirtualSpoutId()).add(id);
+        failedTuples.get(id.getSrcVirtualSpoutId()).add(id);
     }
-
-    // VirtualSpoutMessageBus interface methods.
 
     @Override
     public void registerVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         messageBuffer.addVirtualSpoutId(virtualSpoutIdentifier);
-        ackedTuplesQueue.put(virtualSpoutIdentifier, new ConcurrentLinkedQueue<>());
-        failedTuplesQueue.put(virtualSpoutIdentifier, new ConcurrentLinkedQueue<>());
+        ackedTuples.put(virtualSpoutIdentifier, new ConcurrentLinkedQueue<>());
+        failedTuples.put(virtualSpoutIdentifier, new ConcurrentLinkedQueue<>());
     }
 
     @Override
@@ -129,36 +124,32 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
 
     @Override
     public void publishError(final Throwable throwable) {
-        reportedErrorsQueue.add(throwable);
+        reportedErrors.add(throwable);
     }
 
     @Override
-    public Optional<MessageId> getAckedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
-        final MessageId id = ackedTuplesQueue.get(virtualSpoutIdentifier).poll();
-        return Optional.ofNullable(id);
+    public MessageId getAckedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        return ackedTuples.get(virtualSpoutIdentifier).poll();
     }
 
     @Override
-    public Optional<MessageId> getFailedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
-        final MessageId id = failedTuplesQueue.get(virtualSpoutIdentifier).poll();
-        return Optional.ofNullable(id);
+    public MessageId getFailedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        return failedTuples.get(virtualSpoutIdentifier).poll();
     }
 
     @Override
     public void unregisterVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         messageBuffer.removeVirtualSpoutId(virtualSpoutIdentifier);
-        ackedTuplesQueue.remove(virtualSpoutIdentifier);
-        failedTuplesQueue.remove(virtualSpoutIdentifier);
+        ackedTuples.remove(virtualSpoutIdentifier);
+        failedTuples.remove(virtualSpoutIdentifier);
     }
-
-    // Additional Helper methods not exposed via interfaces.
 
     /**
      * @return Count of acked messageIds that exist within the bus.
      */
     public int ackSize() {
         int size = 0;
-        for (final Queue queue: ackedTuplesQueue.values()) {
+        for (final Queue queue: ackedTuples.values()) {
             size += queue.size();
         }
         return size;
@@ -169,7 +160,7 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
      */
     public int failSize() {
         int size = 0;
-        for (final Queue queue: failedTuplesQueue.values()) {
+        for (final Queue queue: failedTuples.values()) {
             size += queue.size();
         }
         return size;

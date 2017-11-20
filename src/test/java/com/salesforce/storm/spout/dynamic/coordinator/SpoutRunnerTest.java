@@ -64,6 +64,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
@@ -172,8 +173,8 @@ public class SpoutRunnerTest {
 
         // Setup mock MessageBus
         final VirtualSpoutMessageBus messageBus = mock(VirtualSpoutMessageBus.class);
-        when(messageBus.getAckedMessage(eq(virtualSpoutId))).thenReturn(Optional.empty());
-        when(messageBus.getFailedMessage(eq(virtualSpoutId))).thenReturn(Optional.empty());
+        when(messageBus.getAckedMessage(eq(virtualSpoutId))).thenReturn(null);
+        when(messageBus.getFailedMessage(eq(virtualSpoutId))).thenReturn(null);
 
         // Create config
         final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
@@ -392,7 +393,7 @@ public class SpoutRunnerTest {
 
         // Calling getFailedMessage with our VirtualSpoutId should return empty optionals
         for (int loopCount = 0; loopCount < 10; loopCount++) {
-            assertFalse("Should be empty", messageBus.getFailedMessage(virtualSpoutId).isPresent());
+            assertNull("Should be empty/null", messageBus.getFailedMessage(virtualSpoutId));
         }
 
         // Other virtualspout id queue should still be populated
@@ -499,7 +500,7 @@ public class SpoutRunnerTest {
 
         // Calling getAckedMessage with our VirtualSpoutId should return empty optionals
         for (int loopCount = 0; loopCount < 10; loopCount++) {
-            assertFalse("Should be empty", messageBus.getAckedMessage(virtualSpoutId).isPresent());
+            assertNull("Should be empty/null", messageBus.getAckedMessage(virtualSpoutId));
         }
 
         // Other virtualspout id queue should still be populated

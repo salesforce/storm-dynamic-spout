@@ -29,15 +29,12 @@ import com.salesforce.storm.spout.dynamic.buffer.FifoBuffer;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -88,7 +85,10 @@ public class MessageBusTest {
         // retrieve em
         final List<Throwable> foundThrowables = new ArrayList<>();
         for (int counter = 0; counter < totalExceptions + 75; counter++) {
-            messageBus.getErrors().ifPresent(foundThrowables::add);
+            final Throwable nextError = messageBus.nextReportedError();
+            if (nextError != null) {
+                foundThrowables.add(nextError);
+            }
         }
 
         // Validate
@@ -137,14 +137,15 @@ public class MessageBusTest {
         // Validate
         final Map<VirtualSpoutIdentifier, Set<Long>> vSpoutToOffset = new HashMap<>();
         for (int counter = 0; counter < totalMessages + 25; counter++) {
-            final Optional<Message> messageOptional = messageBus.nextMessage();
-            if (messageOptional.isPresent()) {
-                VirtualSpoutIdentifier identifier = messageOptional.get().getMessageId().getSrcVirtualSpoutId();
-                if (!vSpoutToOffset.containsKey(identifier)) {
-                    vSpoutToOffset.put(identifier, new HashSet<>());
-                }
-                vSpoutToOffset.get(identifier).add(messageOptional.get().getMessageId().getOffset());
+            final Message message = messageBus.nextMessage();
+            if (message == null) {
+                continue;
             }
+            VirtualSpoutIdentifier identifier = message.getMessageId().getSrcVirtualSpoutId();
+            if (!vSpoutToOffset.containsKey(identifier)) {
+                vSpoutToOffset.put(identifier, new HashSet<>());
+            }
+            vSpoutToOffset.get(identifier).add(message.getMessageId().getOffset());
         }
 
         assertEquals("Should have 5 vspoutIds", numThreads, vSpoutToOffset.size());
@@ -198,7 +199,11 @@ public class MessageBusTest {
                 final Set<Long> offsets = new HashSet<>();
                 latch.countDown();
                 do {
-                    messageBus.getAckedMessage(vspoutId).ifPresent((message) -> offsets.add(message.getOffset()));
+                    final MessageId messageId = messageBus.getAckedMessage(vspoutId);
+                    if (messageId == null) {
+                        continue;
+                    }
+                    offsets.add(messageId.getOffset());
                 }
                 while (offsets.size() < numAcksPerThread);
                 resultMap.put(vspoutId, offsets);
@@ -264,7 +269,11 @@ public class MessageBusTest {
                 final Set<Long> offsets = new HashSet<>();
                 latch.countDown();
                 do {
-                    messageBus.getFailedMessage(vspoutId).ifPresent((message) -> offsets.add(message.getOffset()));
+                    final MessageId messageId = messageBus.getFailedMessage(vspoutId);
+                    if (messageId == null) {
+                        continue;
+                    }
+                    offsets.add(messageId.getOffset());
                 }
                 while (offsets.size() < numFailsPerThread);
                 resultMap.put(vspoutId, offsets);
