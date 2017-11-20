@@ -293,10 +293,7 @@ public class SidelineSpoutHandlerTest {
             3L, // starting offset
             null // ending offset
         );
-
-        // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
-        sidelineSpoutHandler.getFireHoseSpout().open();
-
+        
         // Stick the filter onto the fire hose, it should be removed when we stop the sideline request
         sidelineSpoutHandler.getFireHoseSpout().getFilterChain().addStep(stopRequestId, stopFilter);
 
@@ -440,7 +437,7 @@ public class SidelineSpoutHandlerTest {
         final Map<String, Object> config = getConfig();
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(config, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
