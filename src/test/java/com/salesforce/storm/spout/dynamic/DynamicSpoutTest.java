@@ -61,6 +61,7 @@ import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -564,9 +565,6 @@ public class DynamicSpoutTest {
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
-
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
 
         // Create our spout, add references to our static trigger, and call open().
         DynamicSpout spout = new SidelineSpout(config);

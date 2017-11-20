@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -68,13 +69,15 @@ public class CuratorFactory {
      */
     private static final String CONFIG_RETRY_INTERVAL = "retry_interval";
 
+    private static final AtomicInteger counter = new AtomicInteger(0);
+
     /**
      * Create new curator instance based upon the provided config.
      *
      * @param config configuration object.
      * @return curator instance.
      */
-    public static CuratorFramework createNewCuratorInstance(final Map<String, Object> config) {
+    public static CuratorFramework createNewCuratorInstance(final Map<String, Object> config, final String context) {
         // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
         final List<String> zkServers = (List<String>) config.get(CONFIG_SERVERS);
 
@@ -88,7 +91,7 @@ public class CuratorFactory {
             // Create new ThreadFactory with named threads.
             // TODO allow pushing in better naming.
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("[DynamicSpout:PersistenceAdapter] Curator Pool %d")
+                .setNameFormat("[DynamicSpout:" + context + ":" + counter.incrementAndGet() + "] Curator Pool %d")
                 .setDaemon(false)
                 .build();
 

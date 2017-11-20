@@ -146,7 +146,7 @@ public class SpoutCoordinator implements Runnable {
 
         // Create new ThreadFactory
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-            .setNameFormat("[DynamicSpout] Pool %d on " + threadContext.toString() + " ")
+            .setNameFormat("[DynamicSpout:Coordinator] Pool %d on " + threadContext.toString() + " ")
             .setDaemon(false)
             .build();
 

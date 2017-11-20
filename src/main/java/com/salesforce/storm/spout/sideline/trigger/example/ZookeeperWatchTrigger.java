@@ -52,7 +52,6 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -140,7 +139,8 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         );
 
         curator = CuratorFactory.createNewCuratorInstance(
-            Tools.stripKeyPrefix(Config.PREFIX, config)
+            Tools.stripKeyPrefix(Config.PREFIX, config),
+            "ZookeeperWatchTrigger"
         );
 
         curatorHelper = new CuratorHelper(curator);
@@ -222,7 +222,6 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         if (curator != null) {
             curator.close();
             curator = null;
-
             curatorHelper = null;
         }
 

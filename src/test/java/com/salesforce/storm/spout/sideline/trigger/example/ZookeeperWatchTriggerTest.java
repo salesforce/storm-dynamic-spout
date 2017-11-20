@@ -97,7 +97,8 @@ public class ZookeeperWatchTriggerTest {
         config.put(Config.FILTER_CHAIN_STEP_BUILDER_CLASS, MockFilterChainStepBuilder.class.getName());
 
         final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
-            Tools.stripKeyPrefix(Config.PREFIX, config)
+            Tools.stripKeyPrefix(Config.PREFIX, config),
+            getClass().getSimpleName()
         );
         final CuratorHelper curatorHelper = new CuratorHelper(currator);
 
@@ -214,7 +215,8 @@ public class ZookeeperWatchTriggerTest {
         config.put(Config.FILTER_CHAIN_STEP_BUILDER_CLASS, MockFilterChainStepBuilder.class.getName());
 
         final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
-            Tools.stripKeyPrefix(Config.PREFIX, config)
+            Tools.stripKeyPrefix(Config.PREFIX, config),
+            getClass().getSimpleName()
         );
         final CuratorHelper curatorHelper = new CuratorHelper(currator);
 

@@ -142,6 +142,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         if (persistenceAdapter != null) {
             persistenceAdapter.close();
+            persistenceAdapter = null;
         }
 
         isOpen = false;
