@@ -147,7 +147,7 @@ public class SpoutCoordinator implements Runnable {
 
         // Create new ThreadFactory
         final String threadName = "[" + DynamicSpout.class.getSimpleName() + ":" + getClass().getSimpleName() + "] "
-            + "VirtualSpout Pool %d on " + threadContext.toString() + " ";
+            + VirtualSpout.class.getSimpleName() + " Pool %d on " + threadContext.toString() + " ";
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
             .setNameFormat(threadName)
             .setDaemon(false)
