@@ -176,7 +176,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Create Coordinator instance and call open.
         spoutCoordinator = new SpoutCoordinator(
-            topologyConfig,
+            getSpoutConfig(),
             threadContext,
             messageBus,
             metricsRecorder
