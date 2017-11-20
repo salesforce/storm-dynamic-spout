@@ -484,9 +484,7 @@ public class SpoutRunnerTest {
         // Now wait for them to show up in our spout instance
         await()
             .atMost(maxWaitTime, TimeUnit.SECONDS)
-            .until(() -> {
-                return mockSpout.ackedTupleIds.size() == 3;
-            }, equalTo(true));
+            .until(() -> mockSpout.ackedTupleIds.size() == 3, equalTo(true));
 
         // Sanity test
         assertEquals("ackQueue should now have 3 entries (for other vspoutId)", 3, messageBus.ackSize());
