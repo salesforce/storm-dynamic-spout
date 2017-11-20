@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -145,8 +146,10 @@ public class SpoutCoordinator implements Runnable {
         this.threadContext = threadContext;
 
         // Create new ThreadFactory
+        final String threadName = "[" + DynamicSpout.class.getSimpleName() + ":" + getClass().getSimpleName() + "] "
+            + VirtualSpout.class.getSimpleName() + " Pool %d on " + threadContext.toString() + " ";
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-            .setNameFormat("[DynamicSpout] Pool %d on " + threadContext.toString() + " ")
+            .setNameFormat(threadName)
             .setDaemon(false)
             .build();
 
@@ -180,7 +183,9 @@ public class SpoutCoordinator implements Runnable {
         isOpen = true;
 
         // Create and name thread.
-        final Thread thread = new Thread(this, "[DynamicSpout] SpoutCoordinator on " + threadContext.toString());
+        final String threadName = "[" + DynamicSpout.class.getSimpleName() + ":" + getClass().getSimpleName() + "] "
+            + "Monitor for " + threadContext.toString();
+        final Thread thread = new Thread(this, threadName);
 
         // Mark as a User thread.
         thread.setDaemon(false);

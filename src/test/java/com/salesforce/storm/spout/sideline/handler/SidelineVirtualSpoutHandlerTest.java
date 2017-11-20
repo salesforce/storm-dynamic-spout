@@ -104,5 +104,8 @@ public class SidelineVirtualSpoutHandlerTest {
             .retrieveSidelineRequest(sidelineRequestIdentifier, 5);
 
         assertNull(partition5);
+
+        // Call close
+        sidelineVirtualSpoutHandler.close();
     }
 }

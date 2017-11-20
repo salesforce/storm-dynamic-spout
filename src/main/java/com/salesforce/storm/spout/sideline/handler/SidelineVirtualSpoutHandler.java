@@ -93,6 +93,17 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
     }
 
     /**
+     * Close the handler.
+     */
+    @Override
+    public void close() {
+        if (getPersistenceAdapter() != null) {
+            getPersistenceAdapter().close();
+        }
+        persistenceAdapter = null;
+    }
+
+    /**
      * Get the persistence adapter, only use this for tests!
      * @return persistence adapter.
      */

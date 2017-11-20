@@ -117,6 +117,6 @@ public class CuratorHelperTest {
         final Map<String, Object> config = new HashMap<>();
         config.put("servers", serverList);
 
-        return CuratorFactory.createNewCuratorInstance(config);
+        return CuratorFactory.createNewCuratorInstance(config, getClass().getSimpleName());
     }
 }

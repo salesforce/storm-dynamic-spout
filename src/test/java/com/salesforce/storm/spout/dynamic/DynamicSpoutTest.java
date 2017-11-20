@@ -565,9 +565,6 @@ public class DynamicSpoutTest {
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
-        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
-
         // Create our spout, add references to our static trigger, and call open().
         DynamicSpout spout = new SidelineSpout(config);
 
