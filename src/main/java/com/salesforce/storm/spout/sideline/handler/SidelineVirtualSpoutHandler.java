@@ -110,5 +110,4 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
     PersistenceAdapter getPersistenceAdapter() {
         return persistenceAdapter;
     }
-
 }
