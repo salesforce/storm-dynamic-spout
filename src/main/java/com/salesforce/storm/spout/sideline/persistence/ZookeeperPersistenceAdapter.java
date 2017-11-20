@@ -33,6 +33,7 @@ import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
+import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.Serializer;
@@ -101,7 +102,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         this.curator = CuratorFactory.createNewCuratorInstance(
             // Take out sideline persistence config and strip the key from it for our factory.
             Tools.stripKeyPrefix("sideline.persistence.zookeeper.", spoutConfig),
-            "Sideline" + getClass().getSimpleName()
+            SidelineSpout.class.getSimpleName() + ":" + getClass().getSimpleName()
         );
 
         this.curatorHelper = new CuratorHelper(curator);
