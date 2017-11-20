@@ -97,7 +97,7 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(config, new MockTopologyContext(), null);
+        spout.open(null, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -132,7 +132,7 @@ public class SidelineSpoutHandlerTest {
         );
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(config, new MockTopologyContext(), null);
+        spout.open(null, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -198,7 +198,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(config, new MockTopologyContext(), null);
+        spout.open(null, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -206,9 +206,6 @@ public class SidelineSpoutHandlerTest {
         final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
 
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
-
-        // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
-        sidelineSpoutHandler.getFireHoseSpout().open();
 
         // Tell our mock consumer that these are the partitions we're working with
         MockConsumer.partitions = Arrays.asList(0, 5);
@@ -266,7 +263,7 @@ public class SidelineSpoutHandlerTest {
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(config, new MockTopologyContext(), null);
+        spout.open(null, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -293,9 +290,6 @@ public class SidelineSpoutHandlerTest {
             3L, // starting offset
             null // ending offset
         );
-
-        // Normally the SpoutCoordinator calls this, but we don't have a SpoutCoordinator so we're doing it ourselves
-        sidelineSpoutHandler.getFireHoseSpout().open();
 
         // Stick the filter onto the fire hose, it should be removed when we stop the sideline request
         sidelineSpoutHandler.getFireHoseSpout().getFilterChain().addStep(stopRequestId, stopFilter);
@@ -349,7 +343,7 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(config, new MockTopologyContext(), null);
+        spout.open(null, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
@@ -406,7 +400,7 @@ public class SidelineSpoutHandlerTest {
         persistenceAdapter.open(config);
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(config, new MockTopologyContext(), null);
+        spout.open(null, new MockTopologyContext(), null);
 
         // Create our handler
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -440,7 +434,7 @@ public class SidelineSpoutHandlerTest {
         final Map<String, Object> config = getConfig();
 
         final DynamicSpout spout = new DynamicSpout(config);
-        spout.open(null, null, null);
+        spout.open(null, new MockTopologyContext(), null);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config);
