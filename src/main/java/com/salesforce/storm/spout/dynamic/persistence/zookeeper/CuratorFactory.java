@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -69,8 +68,6 @@ public class CuratorFactory {
      */
     private static final String CONFIG_RETRY_INTERVAL = "retry_interval";
 
-    private static final AtomicInteger counter = new AtomicInteger(0);
-
     /**
      * Create new curator instance based upon the provided config.
      *
@@ -91,7 +88,7 @@ public class CuratorFactory {
             // Create new ThreadFactory with named threads.
             // TODO allow pushing in better naming.
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("[DynamicSpout:" + context + ":" + counter.incrementAndGet() + "] Curator Pool %d")
+                .setNameFormat("[DynamicSpout:" + context + "] Curator Pool %d")
                 .setDaemon(false)
                 .build();
 
