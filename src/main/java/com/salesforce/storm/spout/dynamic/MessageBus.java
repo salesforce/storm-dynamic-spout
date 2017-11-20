@@ -85,20 +85,29 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
 
     @Override
     public void ack(final MessageId id) {
-        // TODO this actually isn't thread safe :(
-        if (!ackedTuples.containsKey(id.getSrcVirtualSpoutId())) {
-            logger.warn("Acking tuple for unknown consumer");
+        // Attempt to get queue for the appropriate VirtualSpout
+        final Queue<MessageId> queue = ackedTuples.get(id.getSrcVirtualSpoutId());
+
+        // If no such queue exists
+        if (queue == null) {
+            // Log a warning and return.
+            logger.warn("Acking tuple for unknown virtual spout id:" + id.getSrcVirtualSpoutId());
             return;
         }
 
-        ackedTuples.get(id.getSrcVirtualSpoutId()).add(id);
+        // Otherwise we have a queue, so push onto it.
+        queue.add(id);
     }
 
     @Override
     public void fail(final MessageId id) {
-        // TODO this actually isn't thread safe :(
-        if (!failedTuples.containsKey(id.getSrcVirtualSpoutId())) {
-            logger.warn("Failing tuple for unknown consumer");
+        // Attempt to get queue for the appropriate VirtualSpout
+        final Queue<MessageId> queue = failedTuples.get(id.getSrcVirtualSpoutId());
+
+        // If no such queue exists
+        if (queue == null) {
+            // Log a warning and return.
+            logger.warn("Failing tuple for unknown virtual spout id:" + id.getSrcVirtualSpoutId());
             return;
         }
 

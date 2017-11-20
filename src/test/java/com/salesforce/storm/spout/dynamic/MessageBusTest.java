@@ -312,4 +312,48 @@ public class MessageBusTest {
         messageBus.unregisterVirtualSpout(vspoutId);
         verify(mockBuffer, times(1)).removeVirtualSpoutId(vspoutId);
     }
+
+    /**
+     * Validates nothing bad happens when we attempt to ack a messageId for an unregistered VirtualSpoutId.
+     */
+    @Test
+    public void testAckWithUnknownVirtualSpoutId() {
+        final MessageBuffer mockBuffer = mock(MessageBuffer.class);
+        final MessageBus messageBus = new MessageBus(mockBuffer);
+
+        final VirtualSpoutIdentifier vspoutId = new DefaultVirtualSpoutIdentifier("id");
+        final MessageId messageId = new MessageId("Topic", 1, 123L, vspoutId);
+
+        // Call ack when our VSpout hasn't been registered.
+        messageBus.ack(messageId);
+    }
+
+    /**
+     * Validates nothing bad happens when we attempt to fail a messageId for an unregistered VirtualSpoutId.
+     */
+    @Test
+    public void testFailWithUnknownVirtualSpoutId() {
+        final MessageBuffer mockBuffer = mock(MessageBuffer.class);
+        final MessageBus messageBus = new MessageBus(mockBuffer);
+
+        final VirtualSpoutIdentifier vspoutId = new DefaultVirtualSpoutIdentifier("id");
+        final MessageId messageId = new MessageId("Topic", 1, 123L, vspoutId);
+
+        // Call fail when our VSpout hasn't been registered.
+        messageBus.fail(messageId);
+    }
+
+    /**
+     * Validates nothing bad happens when we attempt to fail a messageId for an unregistered VirtualSpoutId.
+     */
+    @Test
+    public void testUnregisterWithUnknownVirtualSpoutId() {
+        final MessageBuffer mockBuffer = mock(MessageBuffer.class);
+        final MessageBus messageBus = new MessageBus(mockBuffer);
+
+        final VirtualSpoutIdentifier vspoutId = new DefaultVirtualSpoutIdentifier("id");
+
+        // Call unregister when our VSpout hasn't been registered.
+        messageBus.unregisterVirtualSpout(vspoutId);
+    }
 }
