@@ -90,7 +90,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         this.curator = CuratorFactory.createNewCuratorInstance(
             // Take out spout persistence config and strip the key from it for our factory.
             Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig),
-            "PersistenceAdapter"
+            getClass().getSimpleName()
         );
 
         this.curatorHelper = new CuratorHelper(curator);

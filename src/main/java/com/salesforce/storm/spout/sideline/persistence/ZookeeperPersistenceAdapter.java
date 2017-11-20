@@ -101,7 +101,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         this.curator = CuratorFactory.createNewCuratorInstance(
             // Take out sideline persistence config and strip the key from it for our factory.
             Tools.stripKeyPrefix("sideline.persistence.zookeeper.", spoutConfig),
-            "SidelinePersistenceAdapter"
+            "Sideline" + getClass().getSimpleName()
         );
 
         this.curatorHelper = new CuratorHelper(curator);

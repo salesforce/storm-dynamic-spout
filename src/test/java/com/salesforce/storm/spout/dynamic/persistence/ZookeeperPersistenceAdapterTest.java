@@ -71,6 +71,9 @@ public class ZookeeperPersistenceAdapterTest {
     @ClassRule
     public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
+    /**
+     * By default no expected exceptions.
+     */
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -79,7 +82,7 @@ public class ZookeeperPersistenceAdapterTest {
      * an IllegalStateException.
      */
     @Test
-    public void testOpenMissingConfigForZkRootNode() throws InterruptedException {
+    public void testOpenMissingConfigForZkRootNode() {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
