@@ -180,7 +180,7 @@ public class SpoutCoordinator implements Runnable {
         isOpen = true;
 
         // Create and name thread.
-        final Thread thread = new Thread(this, "[DynamicSpout:SpoutCoordinator] for " + threadContext.toString());
+        final Thread thread = new Thread(this, "[DynamicSpout:Coordinator] Monitor for " + threadContext.toString());
 
         // Mark as a User thread.
         thread.setDaemon(false);

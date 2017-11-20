@@ -72,6 +72,7 @@ public class CuratorFactory {
      * Create new curator instance based upon the provided config.
      *
      * @param config configuration object.
+     * @param context context about who is creating the instance.
      * @return curator instance.
      */
     public static CuratorFramework createNewCuratorInstance(final Map<String, Object> config, final String context) {

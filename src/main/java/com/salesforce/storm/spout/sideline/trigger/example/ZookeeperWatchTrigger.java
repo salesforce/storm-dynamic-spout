@@ -140,7 +140,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
 
         curator = CuratorFactory.createNewCuratorInstance(
             Tools.stripKeyPrefix(Config.PREFIX, config),
-            "ZookeeperWatchTrigger"
+            getClass().getSimpleName()
         );
 
         curatorHelper = new CuratorHelper(curator);
