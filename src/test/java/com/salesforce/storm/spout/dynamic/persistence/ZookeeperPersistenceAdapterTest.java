@@ -72,14 +72,14 @@ public class ZookeeperPersistenceAdapterTest {
     public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
     @Rule
-    public ExpectedException expectedExceptionOpenMissingConfigForZkRootNode = ExpectedException.none();
+    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Tests that if you're missing the configuration item for ZkRootNode it will throw
      * an IllegalStateException.
      */
     @Test
-    public void testOpenMissingConfigForZkRootNode() {
+    public void testOpenMissingConfigForZkRootNode() throws InterruptedException {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
@@ -88,7 +88,8 @@ public class ZookeeperPersistenceAdapterTest {
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        expectedExceptionOpenMissingConfigForZkRootNode.expect(IllegalArgumentException.class);
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("root is required");
         persistenceAdapter.open(topologyConfig);
     }
 
@@ -98,17 +99,14 @@ public class ZookeeperPersistenceAdapterTest {
     @Test
     public void testOpen() {
         final int partitionId = 1;
-        final String expectedZkConnectionString = "localhost:2181,localhost2:2183";
-        final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
         final String expectedZkRoot = configuredZkRoot + "/" + configuredConsumerPrefix;
         final String expectedConsumerId = configuredConsumerPrefix + ":MyConsumerId";
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId + "/" + String.valueOf(partitionId);
-        final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId + "/" + String.valueOf(partitionId);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(inputHosts, configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();

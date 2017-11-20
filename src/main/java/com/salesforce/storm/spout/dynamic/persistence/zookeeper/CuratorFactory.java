@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
@@ -89,7 +90,7 @@ public class CuratorFactory {
             // Create new ThreadFactory with named threads.
             // TODO allow pushing in better naming.
             final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("[DynamicSpout:" + context + "] Curator Pool %d")
+                .setNameFormat("[" + DynamicSpout.class.getSimpleName() + ":" + context + "] Curator Pool %d")
                 .setDaemon(false)
                 .build();
 
