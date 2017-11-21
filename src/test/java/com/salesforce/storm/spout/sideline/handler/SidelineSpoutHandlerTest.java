@@ -34,7 +34,7 @@ import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
+import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;

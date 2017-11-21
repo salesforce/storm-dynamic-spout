@@ -23,15 +23,20 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.consumer;
+package com.salesforce.storm.spout.dynamic.mocks;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.consumer.Consumer;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
+import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
-import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +47,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Mock consumer instance.
  */
 public class MockConsumer implements Consumer {
-
-    public static Map<VirtualSpoutIdentifier,BlockingQueue<Record>> records = Maps.newConcurrentMap();
+    private static final Map<VirtualSpoutIdentifier,BlockingQueue<Record>> recordHolder = Maps.newConcurrentMap();
+    private static final Map<VirtualSpoutIdentifier, List<CommittedState>> committedStateHolder = Maps.newConcurrentMap();
 
     public static String topic = "MyTopic";
     public static List<Integer> partitions = Collections.singletonList(1);
@@ -63,28 +68,37 @@ public class MockConsumer implements Consumer {
         this.persistenceAdapter = persistenceAdapter;
         this.activeVirtualSpoutIdentifier = virtualSpoutIdentifier;
 
-        records.put(virtualSpoutIdentifier, new LinkedBlockingQueue<>(10_000));
+        // Create empty queue.
+        injectRecords(virtualSpoutIdentifier, new ArrayList<>());
     }
 
     @Override
     public void close() {
-        records.remove(this.activeVirtualSpoutIdentifier);
+        synchronized (MockConsumer.class) {
+            recordHolder.remove(this.activeVirtualSpoutIdentifier);
+            committedStateHolder.remove(this.activeVirtualSpoutIdentifier);
+        }
 
         this.activeVirtualSpoutIdentifier = null;
     }
 
     @Override
     public Record nextRecord() {
-        if (!records.containsKey(activeVirtualSpoutIdentifier) || records.get(activeVirtualSpoutIdentifier).isEmpty()) {
-            return null;
-        }
+        synchronized (MockConsumer.class) {
+            if (!recordHolder.containsKey(activeVirtualSpoutIdentifier) || recordHolder.get(activeVirtualSpoutIdentifier).isEmpty()) {
+                return null;
+            }
 
-        return records.get(activeVirtualSpoutIdentifier).poll();
+            return recordHolder.get(activeVirtualSpoutIdentifier).poll();
+        }
     }
 
     @Override
     public void commitOffset(String namespace, int partition, long offset) {
-
+        final CommittedState committedState = new CommittedState(namespace, partition, offset);
+        synchronized (MockConsumer.class) {
+            committedStateHolder.get(this.activeVirtualSpoutIdentifier).add(committedState);
+        }
     }
 
     @Override
@@ -125,5 +139,77 @@ public class MockConsumer implements Consumer {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Quick and easy way to reset state.
+     */
+    public static void reset() {
+        synchronized (MockConsumer.class) {
+            recordHolder.clear();
+            committedStateHolder.clear();
+        }
+    }
+
+    /**
+     * Allows for injecting recordHolder into the MockConsumer.
+     * @param virtualSpoutIdentifier Identifier to inject recordHolder for.
+     * @param injectedRecords Records to inject.
+     */
+    public static void injectRecords(
+        final VirtualSpoutIdentifier virtualSpoutIdentifier,
+        final Collection<Record> injectedRecords) {
+        synchronized (MockConsumer.class) {
+            if (!recordHolder.containsKey(virtualSpoutIdentifier)) {
+                recordHolder.put(virtualSpoutIdentifier, new LinkedBlockingQueue<>(10_000));
+            }
+            recordHolder.get(virtualSpoutIdentifier).addAll(injectedRecords);
+
+            if (!committedStateHolder.containsKey(virtualSpoutIdentifier)) {
+                committedStateHolder.put(virtualSpoutIdentifier, new ArrayList<>());
+            }
+        }
+    }
+
+    public static List<CommittedState> getCommitted(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        synchronized (MockConsumer.class) {
+            if (!committedStateHolder.containsKey(virtualSpoutIdentifier)) {
+                return new ArrayList<>();
+            }
+            return Collections.unmodifiableList(committedStateHolder.get(virtualSpoutIdentifier));
+        }
+    }
+
+    public static class CommittedState {
+        private final String namespace;
+        private final int partition;
+        private final long offset;
+
+        private CommittedState(final String namespace, final int partition, final long offset) {
+            this.namespace = namespace;
+            this.partition = partition;
+            this.offset = offset;
+        }
+
+        public String getNamespace() {
+            return namespace;
+        }
+
+        public int getPartition() {
+            return partition;
+        }
+
+        public long getOffset() {
+            return offset;
+        }
+
+        @Override
+        public String toString() {
+            return "CommittedState{"
+                + "namespace='" + namespace + '\''
+                + ", partition=" + partition
+                + ", offset=" + offset
+                + '}';
+        }
     }
 }
