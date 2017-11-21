@@ -136,6 +136,99 @@ public class DynamicSpoutTest {
     }
 
     /**
+     * Test you cannot open DynamicSpout multiple times.
+     */
+    @Test
+    public void testCannotOpenMultipleTimes() throws InterruptedException {
+        // Define our ConsumerId prefix
+        final String consumerIdPrefix = "TestDynamicSpout";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, null);
+
+        // Some mock storm topology stuff to get going
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        try {
+            expectedException.expect(IllegalStateException.class);
+            expectedException.expectMessage("opened");
+            spout.open(config, topologyContext, spoutOutputCollector);
+        } finally {
+            // Cleanup.
+            spout.close();
+        }
+    }
+
+    /**
+     * Test adding a VirtualSpout, verifying that the spout exists, and then removing it.
+     */
+    @Test
+    public void testAddRemoveHasSpout() {
+        // Define our ConsumerId prefix
+        final String consumerIdPrefix = "TestDynamicSpout";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, null);
+
+        // Some mock storm topology stuff to get going
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // Create new unique VSpoutId
+        final VirtualSpoutIdentifier virtualSpoutIdentifier =
+            new DefaultVirtualSpoutIdentifier("MyVSpoutId" + System.currentTimeMillis());
+
+        // Create new unique VSpoutId
+        final VirtualSpoutIdentifier fakeSpoutIdentifier =
+            new DefaultVirtualSpoutIdentifier("Fake" + System.currentTimeMillis());
+
+        // We shouldn't have the spout yet
+        assertFalse("Should not have spout yet", spout.hasVirtualSpout(virtualSpoutIdentifier));
+        assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
+
+        // Add a VirtualSpout.
+        final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutIdentifier,
+            config,
+            topologyContext,
+            new FactoryManager(config),
+            new LogRecorder(),
+            null,
+            null
+        );
+        spout.addVirtualSpout(virtualSpout);
+
+        // Wait for VirtualSpout to start
+        waitForVirtualSpouts(spout, 1);
+
+        // We should have the spout now
+        assertTrue("Should have spout", spout.hasVirtualSpout(virtualSpoutIdentifier));
+        assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
+
+        // Now lets remove it
+        spout.removeVirtualSpout(virtualSpoutIdentifier);
+
+        // Wait for VirtualSpout to start
+        waitForVirtualSpouts(spout, 0);
+
+        // We should no longer have the spout
+        assertFalse("Should not have spout", spout.hasVirtualSpout(virtualSpoutIdentifier));
+        assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
+
+        // Cleanup.
+        spout.close();
+    }
+
+    /**
      * Our most simple end-2-end test.
      * This test stands up our spout and we add a single VirtualSpout using a "Mock Consumer."
      * We instruct the "Mock Consumer" to "produce" some Records, and validate that when we call nextTuple() on

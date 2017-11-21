@@ -140,12 +140,12 @@ public class DynamicSpout extends BaseRichSpout {
      * @param topologyConfig The Storm Topology configuration.
      * @param topologyContext The Storm Topology context.
      * @param spoutOutputCollector The output collector to emit tuples via.
+     * @throws IllegalStateException if you attempt to open the spout multiple times.
      */
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         if (isOpen) {
-            logger.warn("This spout has already been opened, cowardly refusing to open it again!");
-            return;
+            throw new IllegalStateException("This spout has already been opened.");
         }
 
         // Save references.
@@ -405,6 +405,9 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
+     *
+     * This method is blocking.
+     *
      * @param spout New delegate spout
      * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
