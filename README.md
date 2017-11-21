@@ -111,7 +111,7 @@ When your topology is deployed with a `DynamicSpout` and it starts up, the `Dyna
 ## Configuration
 All of these options can be found inside of [SidelineSpoutConfig](src/main/java/com/salesforce/storm/spout/dynamic/config/SidelineSpoutConfig.java).
 
-[//]: <> (CONFIGURATION_BEGIN_DELIMITER)
+[//]: <> (DYNAMIC_SPOUT_CONFIGURATION_BEGIN_DELIMITER)
 
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
@@ -162,6 +162,9 @@ spout.kafka.deserializer.class | String |  | Defines which Deserializer (Schema?
 spout.kafka.topic | String |  | Defines which Kafka topic we will consume messages from. | 
 
 
+[//]: <> (DYNAMIC_SPOUT_CONFIGURATION_END_DELIMITER)
+
+[//]: <> (SIDELINE_CONFIGURATION_BEGIN_DELIMITER)
 
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
@@ -176,7 +179,8 @@ sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check 
 sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
 
 
-[//]: <> (CONFIGURATION_END_DELIMITER)
+[//]: <> (SIDELINE_CONFIGURATION_END_DELIMITER)
+
 
 ## Components
 [DynamicSpout](src/main/java/com/salesforce/storm/spout/dynamic/DynamicSpout.java) - Implements Storm's spout interface.  Everything starts and stops here.
