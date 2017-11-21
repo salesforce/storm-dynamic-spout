@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
+import com.salesforce.storm.spout.documentation.Documentation;
 import com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;

@@ -25,8 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.kafka;
 
+import com.salesforce.storm.spout.documentation.Documentation;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.util.List;

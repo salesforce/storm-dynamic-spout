@@ -23,85 +23,81 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.config;
+package com.salesforce.storm.spout.documentation;
 
-import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
 import com.google.common.base.Preconditions;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
-import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * When executed, this class will update the Configuration section of README.md file.
- * The old file will be saved as README.md.bak.
+ * Utility to generate documentation from Annotations.
  */
-public class ConfigPrinter {
+public class DocGenerator {
 
     private static String DELIMITER = " | ";
-    private static final String CONFIGURATION_BEGIN_DELIMITER = "[//]: <> (CONFIGURATION_BEGIN_DELIMITER)";
-    private static final String CONFIGURATION_END_DELIMITER = "[//]: <> (CONFIGURATION_END_DELIMITER)";
+
+    private final Path inputPath;
+    private final String delimiterStopTag;
+    private final String delimiterStartTag;
+    private final List<ClassSpec> classSpecs;
 
     /**
-     * Main method for generating the README.
-     * @param args Not used.
-     * @throws Exception on error.
+     * Constructor.
+     * @param inputPath Path to input file to inject configuration documentation into.
+     * @param delimiterTag What tag to inject into.
+     * @param classSpecs What classes and defaults to generate and inject.
      */
-    public static void main(String[] args) throws Exception {
-        // Assume folders and files are relative to the project root
-        Path readmePath = Paths.get("README.md");
-        Path readmeTempOutPath = Paths.get("target/README.md");
+    public DocGenerator(final Path inputPath, final String delimiterTag, final List<ClassSpec> classSpecs) {
+        this.inputPath = inputPath;
+        this.delimiterStartTag =  "[//]: <> (" + delimiterTag + "_BEGIN_DELIMITER)";
+        this.delimiterStopTag = "[//]: <> (" + delimiterTag + "_END_DELIMITER)";
+        this.classSpecs = classSpecs;
+    }
 
-        // Optionally backup the existing README file (will not override the previous backup) or
-        // delete this section if backup is not desired (that's what we have github for, right?)
-        Path readmeBackupPath = Paths.get("README.md.bak");
-        final File readmeBackupFile = readmeBackupPath.toFile();
-
-        if (readmeBackupFile.exists()) {
-            System.out.println("The backup file exists and cannot be overwtitten.");
-            System.out.println("Manually delete it first: " + readmeBackupFile.getAbsolutePath());
-            return;
-        }
-
-        Files.copy(readmePath, readmeBackupPath);
-
-        final File readmeFile = readmePath.toFile();
+    /**
+     * Generate the documentation.
+     * @throws IOException on IO errors.
+     */
+    public void generate() throws IOException {
+        // Validate we have an input file
         Preconditions.checkArgument(
-            readmeFile.exists() && readmeFile.isFile(),
-            "README.md file must exist: %s", readmeFile.getAbsolutePath()
+            inputPath.toFile().exists() && inputPath.toFile().isFile(),
+            "file must exist: %s", inputPath.toAbsolutePath()
         );
 
-        try (BufferedReader readmeReader = Files.newBufferedReader(readmePath, StandardCharsets.UTF_8);
-            PrintWriter readmePrintWriter = new PrintWriter(Files.newBufferedWriter(readmeTempOutPath, StandardCharsets.UTF_8))) {
+        // Copy to a temp file
+        final Path tempOutPath = Paths.get(inputPath.toAbsolutePath().toString() + ".tmp");
+        Files.deleteIfExists(tempOutPath);
+        Files.copy(inputPath, tempOutPath);
+
+        try (BufferedReader readmeReader = Files.newBufferedReader(inputPath, StandardCharsets.UTF_8);
+            PrintWriter readmePrintWriter = new PrintWriter(Files.newBufferedWriter(tempOutPath, StandardCharsets.UTF_8))) {
             String line;
             boolean insideConfigurationSection = false;
             boolean configurationSectionFound = false;
 
             while ((line = readmeReader.readLine()) != null) {
-                if (CONFIGURATION_BEGIN_DELIMITER.equals(line)) {
+                if (delimiterStartTag.equals(line)) {
                     insideConfigurationSection = true;
                     configurationSectionFound = true;
                     readmePrintWriter.println(line);
-                } else if (CONFIGURATION_END_DELIMITER.equals(line)) {
-                    mergeConfigSection(SpoutConfig.class, SpoutConfig.setDefaults(Maps.newHashMap()), readmePrintWriter);
-                    mergeConfigSection(KafkaConsumerConfig.class, Maps.newHashMap(), readmePrintWriter);
-                    mergeConfigSection(SidelineConfig.class, Maps.newHashMap(), readmePrintWriter);
+                } else if (delimiterStopTag.equals(line)) {
+                    for (final ClassSpec classSpec : classSpecs) {
+                        mergeConfigSection(classSpec.getClazz(), classSpec.getDefaults(), readmePrintWriter);
+                    }
                     insideConfigurationSection = false;
                     readmePrintWriter.println(line);
                 } else if (!insideConfigurationSection) {
@@ -111,15 +107,22 @@ public class ConfigPrinter {
 
             Preconditions.checkState(
                 configurationSectionFound,
-                "README.md did not have configuration section delimiters: %s", readmeFile.getAbsolutePath()
+                "%s did not have configuration section delimiters: %s",
+                inputPath.toAbsolutePath(),
+                delimiterStartTag
             );
             Preconditions.checkState(
                 !insideConfigurationSection,
-                "README.md did not have closing configuration section delimiter: %s", readmeFile.getAbsolutePath()
+                "%s did not have closing configuration section delimiter: %s",
+                inputPath.toAbsolutePath(),
+                delimiterStopTag
             );
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
-        Files.copy(readmeTempOutPath, readmePath, StandardCopyOption.REPLACE_EXISTING);
-        System.out.println("Updated README file: " + readmeFile.getAbsolutePath());
+        Files.copy(tempOutPath, inputPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.deleteIfExists(tempOutPath);
+        System.out.println("Updated README file: " + inputPath.toAbsolutePath());
     }
 
     /**
@@ -127,16 +130,18 @@ public class ConfigPrinter {
      * @throws IllegalAccessException on error
      * @throws NoSuchFieldException on error
      */
-    private static void mergeConfigSection(
+    private void mergeConfigSection(
         final Class configClass,
         final Map<String, Object> defaults,
         final PrintWriter readmePrintWriter
     ) throws IllegalAccessException, NoSuchFieldException {
+        System.out.println("Processing " + configClass.getName());
+
         readmePrintWriter.println();
 
-        Map<Documentation.Category, List<String>> lines = new TreeMap<>();
+        final Map<Documentation.Category, List<String>> lines = new TreeMap<>();
 
-        Field[] fields = configClass.getDeclaredFields();
+        final Field[] fields = configClass.getDeclaredFields();
 
         for (Field field : fields) {
             // Presumably our configuration field...
@@ -148,13 +153,11 @@ public class ConfigPrinter {
 
                 final String configParam = (String) configClass.getField(field.getName()).get(configClass);
 
-                Documentation documentation = field.getAnnotation(Documentation.class);
+                final Documentation documentation = field.getAnnotation(Documentation.class);
 
-                StringBuilder builder = new StringBuilder();
+                final StringBuilder builder = new StringBuilder();
 
-                if (lines.get(documentation.category()) == null) {
-                    lines.put(documentation.category(), new ArrayList<>());
-                }
+                lines.computeIfAbsent(documentation.category(), k -> new ArrayList<>());
 
                 final String description = documentation.description();
                 final String type = documentation.type().getSimpleName();
@@ -186,7 +189,6 @@ public class ConfigPrinter {
             for (String line : lines.get(category)) {
                 readmePrintWriter.println(line);
             }
-
             readmePrintWriter.println();
         }
 

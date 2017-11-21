@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger.example;
 
-import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
+import com.salesforce.storm.spout.documentation.Documentation;
 
 import java.util.List;
 

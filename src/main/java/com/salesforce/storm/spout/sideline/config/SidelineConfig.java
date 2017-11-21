@@ -26,8 +26,7 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
+import com.salesforce.storm.spout.documentation.Documentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

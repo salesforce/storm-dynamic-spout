@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.config.annotation;
+package com.salesforce.storm.spout.documentation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
