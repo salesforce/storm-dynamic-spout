@@ -335,7 +335,11 @@ public class ZookeeperPersistenceAdapterTest {
 
         final Map<String,Object> requestMap = new HashMap<>();
         requestMap.put("id", idMap);
-        requestMap.put("step", "rO0ABXNyAD1jb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5keW5hbWljLmZpbHRlci5TdGF0aWNNZXNzYWdlRmlsdGVy3eauq5nDVrUCAAFMAAJpZHQAEkxqYXZhL2xhbmcvU3RyaW5nO3hwdAAEdGVzdA==");
+        requestMap.put(
+            "step",
+            "rO0ABXNyAD1jb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5keW5hbWljLmZpbHRlci5TdGF0aWNNZXN"
+            + "zYWdlRmlsdGVy3eauq5nDVrUCAAFMAAJpZHQAEkxqYXZhL2xhbmcvU3RyaW5nO3hwdAAEdGVzdA=="
+        );
 
         final Map<String,Object> expectedJsonMap = Maps.newHashMap();
         expectedJsonMap.put("request", requestMap);
