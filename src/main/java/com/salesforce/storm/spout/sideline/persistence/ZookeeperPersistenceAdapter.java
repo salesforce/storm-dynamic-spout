@@ -198,8 +198,11 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
         // Attempt to delete the parent path.
         // This is a noop if the parent path is not empty.
-        final String parentPath = path.substring(0, path.lastIndexOf('/'));
-        curatorHelper.deleteNodeIfNoChildren(parentPath);
+        final String topicPath = path.substring(0, path.lastIndexOf('/'));
+        curatorHelper.deleteNodeIfNoChildren(topicPath);
+
+        final String sidelineRequestPath = topicPath.substring(0, topicPath.lastIndexOf('/'));
+        curatorHelper.deleteNodeIfNoChildren(sidelineRequestPath);
     }
 
     /**
@@ -238,27 +241,33 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
-        final Set<ConsumerPartition> partitions = Sets.newHashSet();
+        final Set<ConsumerPartition> consumerPartitions = Sets.newHashSet();
 
         try {
             final String path = getZkRequestStatePath(id.toString());
 
             if (curator.checkExists().forPath(path) == null) {
-                return partitions;
+                return consumerPartitions;
             }
 
-            final List<String> partitionNodes = curator.getChildren().forPath(path);
+            final List<String> namespaces = curator.getChildren().forPath(path);
 
-            for (String partition : partitionNodes) {
-                partitions.add(new ConsumerPartition(null, Integer.valueOf(partition)));
+            for (final String namespace : namespaces) {
+                final List<String> partitions = curator.getChildren().forPath(path + "/" + namespace);
+
+                for (final String partition : partitions) {
+                    consumerPartitions.add(
+                        new ConsumerPartition(namespace, Integer.valueOf(partition))
+                    );
+                }
             }
 
-            logger.debug("Partitions for sideline request {} = {}", id, partitions);
+            logger.debug("Partitions for sideline request {} = {}", id, consumerPartitions);
         } catch (Exception ex) {
             logger.error("{}", ex);
         }
 
-        return Collections.unmodifiableSet(partitions);
+        return Collections.unmodifiableSet(consumerPartitions);
     }
 
     private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {

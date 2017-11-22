@@ -115,7 +115,8 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
         final String expectedZkRoot = configuredZkRoot + "/" + configuredConsumerPrefix;
         final String expectedConsumerId = configuredConsumerPrefix + ":MyConsumerId";
-        final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId + "/" + String.valueOf(partitionId);
+        final String expectedZkRequestStatePath = expectedZkRoot + "/requests/" + expectedConsumerId + "/" + namespace + "/"
+            + String.valueOf(partitionId);
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
@@ -366,7 +367,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // 5. Grab the value and validate it
         final byte[] storedDataBytes = zookeeperClient.getData(
-            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + 0,
+            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + topicName + "/" + 0,
             false,
             null
         );
@@ -384,7 +385,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Validate in the Zk Client.
         doesNodeExist = zookeeperClient.exists(
-            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + 0,
+            zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString() + "/" + topicName + "/" + 0,
             false
         );
 
@@ -593,11 +594,17 @@ public class ZookeeperPersistenceAdapterTest {
 
         Set<ConsumerPartition> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
 
-        assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0, 1)), partitionsForSidelineRequest1);
+        assertEquals(
+            Sets.newHashSet(new ConsumerPartition(topicName, 0), new ConsumerPartition(topicName, 1)),
+            partitionsForSidelineRequest1
+        );
 
         Set<ConsumerPartition> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
 
-        assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0)), partitionsForSidelineRequest2);
+        assertEquals(
+            Sets.newHashSet(new ConsumerPartition(topicName, 0)),
+            partitionsForSidelineRequest2
+        );
 
         // Close adapter
         persistenceAdapter.close();

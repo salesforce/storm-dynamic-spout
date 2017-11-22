@@ -55,7 +55,7 @@ public class SidelineVirtualSpoutHandlerTest {
     @Test
     public void testOnVirtualSpoutCompletion() {
         final String prefix = "MyVirtualSpout";
-        final String namespace = "Test";
+        final String namespace = MockConsumer.topic;
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("SidelineRequest");
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, new StaticMessageFilter());
 
