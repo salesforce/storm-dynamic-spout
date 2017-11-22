@@ -38,10 +38,9 @@ public class StaticMessageFilter implements FilterChainStep {
     /**
      * We need a way to make this instance unique from others, so we use a UUID.
      */
-    private final String id;
+    private String id = UUID.randomUUID().toString();
 
     public StaticMessageFilter() {
-        this.id = UUID.randomUUID().toString();
     }
 
     public StaticMessageFilter(final String id) {

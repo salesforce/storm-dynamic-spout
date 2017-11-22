@@ -27,17 +27,15 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
+import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
-import com.salesforce.storm.spout.dynamic.filter.Serializer;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -105,7 +103,13 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
             SidelineSpout.class.getSimpleName() + ":" + getClass().getSimpleName()
         );
 
-        this.curatorHelper = new CuratorHelper(curator);
+        this.curatorHelper = new CuratorHelper(
+            curator,
+            new GsonBuilder()
+                .setDateFormat("yyyy-MM-dd HH:mm:ss")
+                .registerTypeAdapterFactory(new FilterChainStepTypeAdapterFactory())
+                .create()
+        );
     }
 
     /**
@@ -137,16 +141,15 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
         Preconditions.checkNotNull(request, "SidelineRequest is required.");
 
-        Map<String, Object> data = Maps.newHashMap();
-        data.put("type", type.toString());
-        data.put("startingOffset", startingOffset);
-        if (endingOffset != null) { // Optional
-            data.put("endingOffset", endingOffset);
-        }
-        data.put("filterChainStep", Serializer.serialize(request.step));
+        final SidelinePayload sidelinePayload = new SidelinePayload(
+            type,
+            id,
+            request,
+            startingOffset,
+            endingOffset
+        );
 
-        // Persist!
-        curatorHelper.writeJson(getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition), data);
+        curatorHelper.writeJson(getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition), sidelinePayload);
     }
 
     @Override
@@ -157,31 +160,13 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Read!
-        final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
-        // TODO: We should make a real object for this and update readJson() to support a class declaration
-        Map<Object, Object> json = curatorHelper.readJson(path);
-        logger.debug("Read request state from Zookeeper at {}: {}", path, json);
+       final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
 
-        if (json == null) {
-            return null;
-        }
+        final SidelinePayload sidelinePayload = curatorHelper.readJson(path, SidelinePayload.class);
 
-        final String typeString = (String) json.get("type");
+        logger.debug("Read request state from Zookeeper at {}: {}", path, sidelinePayload);
 
-        final SidelineType type = typeString.equals(SidelineType.STOP.toString()) ? SidelineType.STOP : SidelineType.START;
-
-        final FilterChainStep step = parseJsonToFilterChainSteps(json);
-
-        final Double startingOffset = (Double) json.get("startingOffset");
-        final Double endingOffset = (Double) json.get("endingOffset");
-
-        return new SidelinePayload(
-            type,
-            id,
-            new SidelineRequest(id, step),
-            startingOffset != null ? startingOffset.longValue() : null,
-            endingOffset != null ? endingOffset.longValue() : null
-        );
+        return sidelinePayload;
     }
 
     @Override
@@ -268,16 +253,6 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         }
 
         return Collections.unmodifiableSet(consumerPartitions);
-    }
-
-    private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
-        if (json == null) {
-            return null;
-        }
-
-        final String chainStepData = (String) json.get("filterChainStep");
-
-        return Serializer.deserialize(chainStepData);
     }
 
     /**

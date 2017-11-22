@@ -29,12 +29,15 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
@@ -52,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -154,7 +158,8 @@ public class ZookeeperPersistenceAdapterTest {
         final String topicName = "MyTopic1";
         final String zkRootPath = configuredZkRoot + "/" + configuredConsumerPrefix;
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("test");
-        final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, null);
+        final FilterChainStep filterChainStep =  new StaticMessageFilter();
+        final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // Create our config
         final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
@@ -296,7 +301,8 @@ public class ZookeeperPersistenceAdapterTest {
         final String zkRootNodePath = configuredZkRoot + "/" + configuredConsumerPrefix;
         final String zkRequestsRootNodePath = zkRootNodePath + "/requests";
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("test");
-        final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, null);
+        final FilterChainStep filterChainStep = new StaticMessageFilter("test");
+        final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // 1 - Connect to ZK directly
         ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
@@ -324,13 +330,22 @@ public class ZookeeperPersistenceAdapterTest {
         final String topicName = "MyTopic";
 
         // Define our expected result that will be stored in zookeeper
+        final Map<String,String> idMap = new HashMap<>();
+        idMap.put("id", "test");
+
+        final Map<String,Object> requestMap = new HashMap<>();
+        requestMap.put("id", idMap);
+        requestMap.put("step", "rO0ABXNyAD1jb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5keW5hbWljLmZpbHRlci5TdGF0aWNNZXNzYWdlRmlsdGVy3eauq5nDVrUCAAFMAAJpZHQAEkxqYXZhL2xhbmcvU3RyaW5nO3hwdAAEdGVzdA==");
+
         final Map<String,Object> expectedJsonMap = Maps.newHashMap();
+        expectedJsonMap.put("request", requestMap);
+        expectedJsonMap.put("type", SidelineType.START.toString());
+        expectedJsonMap.put("id", idMap);
         expectedJsonMap.put("startingOffset", 1L);
         expectedJsonMap.put("endingOffset", 2L);
-        expectedJsonMap.put("filterChainStep", "rO0ABXA=");
-        expectedJsonMap.put("type", SidelineType.START.toString());
 
-        final String expectedStoredState = new GsonBuilder().create().toJson(expectedJsonMap);
+        Gson gson = new GsonBuilder().create();
+        final String expectedStoredState = gson.toJson(expectedJsonMap);
 
         logger.info("expectedStoredState = {}", expectedStoredState);
 
@@ -378,7 +393,24 @@ public class ZookeeperPersistenceAdapterTest {
         final String storedDataStr = new String(storedDataBytes, Charsets.UTF_8);
         logger.info("Stored data string {}", storedDataStr);
         assertNotNull("Stored data string should be non-null", storedDataStr);
-        assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
+
+        Map expectedMap = gson.fromJson(expectedStoredState, HashMap.class);
+        Map actualMap = gson.fromJson(storedDataStr, HashMap.class);
+
+        assertEquals(expectedMap, actualMap);
+
+        assertEquals(expectedMap.get("id"), actualMap.get("id"));
+        assertEquals(expectedMap.get("type"), actualMap.get("type"));
+        assertEquals(expectedMap.get("startingOffset"), actualMap.get("startingOffset"));
+        assertEquals(expectedMap.get("endingOffset"), actualMap.get("endingOffset"));
+        assertEquals(
+            ((Map<String,Object>) expectedMap.get("request")).get("id"),
+            ((Map<String,Object>) actualMap.get("request")).get("id")
+        );
+        assertEquals(
+            ((Map<String,Object>) expectedMap.get("request")).get("step"),
+            ((Map<String,Object>) actualMap.get("request")).get("step")
+        );
 
         // Now test clearing
         persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 0));
