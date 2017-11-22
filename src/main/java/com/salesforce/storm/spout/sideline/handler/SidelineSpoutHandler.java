@@ -444,7 +444,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         );
 
         // Update stop countBy metric
-        spout.getMetricsRecorder().countBy(SidelineMetrics.STOP, 1L);
+        spout.getMetricsRecorder().count(SidelineMetrics.STOP);
     }
 
     /**

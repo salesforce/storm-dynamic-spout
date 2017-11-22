@@ -327,7 +327,7 @@ public class DynamicSpout extends BaseRichSpout {
         // Ack the tuple via the Message Bus
         getMessageBus().ack(messageId);
 
-        // Update ack countBy metric for VirtualSpout this tuple originated from
+        // Update ack count metric for VirtualSpout this tuple originated from
         getMetricsRecorder().count(Metrics.VIRTUAL_SPOUT_ACK, messageId.getSrcVirtualSpoutId());
     }
 

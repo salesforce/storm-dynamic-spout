@@ -51,64 +51,73 @@ public interface MetricsRecorder {
 
     /**
      * Count a metric, given a name, increments it by 1.
-     *
-     *                   TODO fix javadoc
+     * @param metric metric definition.
      */
     void count(final MetricDefinition metric);
 
     /**
      * Count a metric, given a name, increments it by 1.
-     *
-     *                   TODO fix javadoc
+     * @param metric metric definition.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
     void count(final MetricDefinition metric, final Object... metricParameters);
 
     /**
      * Count a metric, given a name, increments it by value.
      * @param incrementBy amount to increment the metric by.
-     *
-     *                    TODO fix javadoc
      */
     void countBy(final MetricDefinition metric, final long incrementBy);
 
     /**
      * Count a metric, given a name and increments by a specific amount.
      * @param incrementBy amount to increment the metric by.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
     void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters);
 
     /**
      * Assign a value to metric.
-     * @param value value of the metric.
-     *              TODO fix javadoc
+     * @param metric metric definition.
+     * @param value value to be assigned.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
     void assignValue(final MetricDefinition metric, final Object value, final Object... metricParameters);
 
+    /**
+     * Assign a value to metric.
+     * @param metric metric definition.
+     * @param value value to be assigned.
+     */
     void assignValue(final MetricDefinition metric, final Object value);
 
     /**
      * Starts a timer for the given sourceClass and metricName.
-     *                   TODO fix javadoc
+     * @param metric metric definition.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
     void startTimer(final MetricDefinition metric, final Object... metricParameters);
 
     /**
      * Starts a timer for the given sourceClass and metricName.
-     *                   TODO fix javadoc
+     * @param metric metric definition.
      */
     void startTimer(final MetricDefinition metric);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
-     *
-     *                   TODO fix javadoc
+     * @param metric metric definition.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
     void stopTimer(final MetricDefinition metric, final Object... metricParameters);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
-     *
-     *                   TODO fix javadoc
+     * @param metric metric definition.
      */
     void stopTimer(final MetricDefinition metric);
 }
