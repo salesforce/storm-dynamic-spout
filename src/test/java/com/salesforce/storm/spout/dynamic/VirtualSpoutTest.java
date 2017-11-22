@@ -31,6 +31,7 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
+import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
@@ -202,11 +203,21 @@ public class VirtualSpoutTest {
     }
 
     /**
-     * Test setter and getter.
+     * Test that a {@link VirtualSpout} completes and is marked so.
      */
     @Test
-    public void testSetAndGetStopRequested() {
+    public void testAttemptToComplete() {
         final Map<String, Object> config = getDefaultConfig();
+
+        // Our starting state
+        final ConsumerState startingState = ConsumerState.builder()
+            .withPartition(new ConsumerPartition(MockConsumer.topic, 1), 1L)
+            .build();
+        // Our ending state, the same as the starting state so this should complete the first time we flush state
+        final ConsumerState endingState = ConsumerState.builder()
+            .withPartition(new ConsumerPartition(MockConsumer.topic, 1), 1L)
+            .build();
+
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
@@ -214,16 +225,21 @@ public class VirtualSpoutTest {
             new MockTopologyContext(),
             new FactoryManager(config),
             new LogRecorder(),
-            null,
-            null
+            startingState,
+            endingState
         );
+        // Open it, this will setup the consumer (which is our mock)
+        virtualSpout.open();
 
-        // Should default to false
-        assertFalse("Should default to false", virtualSpout.isStopRequested());
+        // Should default to false, we haven't attempt completing yet
+        assertFalse("Should default to false", virtualSpout.isCompleted());
 
-        // Set to true
-        virtualSpout.requestStop();
-        assertTrue("Should be true", virtualSpout.isStopRequested());
+        // Flushing state will attempt to complete the VirtualSpout, because our starting and offstate are the same
+        // and we only have one partition this should call setCompleted() right away
+        virtualSpout.flushState();
+
+        // Our spout is now complete
+        assertTrue("Should be true", virtualSpout.isCompleted());
     }
 
     @Rule
@@ -1763,12 +1779,12 @@ public class VirtualSpoutTest {
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         // DynamicSpout config items
+        defaultConfig.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
         defaultConfig.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
         );
-
         defaultConfig.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);

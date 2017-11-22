@@ -244,8 +244,7 @@ public class SpoutCoordinatorTest {
     }
 
     /**
-     * Test what happens when a running spout instance finishes "normally" by
-     * requesting it to stop.
+     * Test what happens when a running spout instance finishes "normally".
      */
     @Test
     public void testWhatHappensWhenSpoutClosesNormally() throws InterruptedException, ExecutionException {
@@ -257,7 +256,6 @@ public class SpoutCoordinatorTest {
 
         // Create a mock spout
         MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
-        mockSpout.requestedStop = false;
 
         // Add it to our queue
         spoutCoordinator.addVirtualSpout(mockSpout);
@@ -276,8 +274,8 @@ public class SpoutCoordinatorTest {
         // validate the executor is running it
         assertEquals("Should have 1 running task", 1, spoutCoordinator.getExecutor().getActiveCount());
 
-        // Make the mock spout stop.
-        mockSpout.requestStop();
+        // Mark the spout as completed, the coordinator will see this and should shut it down
+        mockSpout.completed = true;
 
         // Wait for spout count to decrease
         await()
@@ -423,8 +421,8 @@ public class SpoutCoordinatorTest {
         final MockDelegateSpout notStartedSpout = mockSpouts.get(mockSpouts.size() - 1);
         assertFalse("Should not have called open on our spout thats not running", notStartedSpout.wasOpenCalled);
 
-        // Now stop the first instance
-        mockSpouts.get(0).requestStop();
+        // Now stop the first instance by setting completed = true
+        mockSpouts.get(0).completed = true;
 
         // Wait for it to be closed
         await()
@@ -584,7 +582,6 @@ public class SpoutCoordinatorTest {
 
         // Create a mock spout
         MockDelegateSpout mockSpout = new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("MySpoutId"));
-        mockSpout.requestedStop = false;
 
         // Add it to our queue
         spoutCoordinator.addVirtualSpout(mockSpout);

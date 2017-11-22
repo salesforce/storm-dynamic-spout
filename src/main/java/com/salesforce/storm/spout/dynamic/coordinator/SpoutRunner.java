@@ -120,8 +120,11 @@ class SpoutRunner implements Runnable {
             // Record the last time we flushed.
             long lastFlush = getClock().millis();
 
-            // Loop forever until someone requests the spout to stop
-            while (!isStopRequested() && !spout.isStopRequested() && !Thread.interrupted()) {
+            // Loop forever until one of the following is true:
+            // 1 - someone requests the spout to stop,
+            // 2 - the spout is marked as completed,
+            // 3 - Our thread gets interrupted.
+            while (!isStopRequested() && !spout.isCompleted() && !Thread.currentThread().isInterrupted()) {
                 // First look for any new tuples to be emitted.
                 final Message message = spout.nextTuple();
                 if (message != null) {
@@ -129,12 +132,9 @@ class SpoutRunner implements Runnable {
                         getVirtualSpoutMessageBus().publishMessage(message);
                     } catch (final InterruptedException interruptedException) {
                         logger.error("Shutting down due to interruption {}", interruptedException.getMessage(), interruptedException);
-                        spout.requestStop();
+                        break;
                     }
                 }
-
-                // Lemon's note: Should we ack and then remove from the queue? What happens in the event
-                //  of a failure in ack(), the tuple will be removed from the queue despite a failed ack
 
                 // Ack everything that needs to be acked
                 MessageId messageId;

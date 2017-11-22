@@ -207,8 +207,8 @@ public class SpoutRunnerTest {
 
         // Shut down
         if (shutdownViaSpout) {
-            logger.info("Requesting stop via Spout.requestStop()");
-            mockSpout.requestStop();
+            logger.info("Requesting stop via Spout.isCompleted()");
+            mockSpout.completed = true;
         } else {
             logger.info("Requesting stop via SpoutRunner.requestStop()");
             spoutRunner.requestStop();

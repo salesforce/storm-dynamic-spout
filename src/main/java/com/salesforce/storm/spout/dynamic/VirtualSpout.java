@@ -104,12 +104,6 @@ public class VirtualSpout implements DelegateSpout {
     private boolean isOpened = false;
 
     /**
-     * This flag is used to signal for this instance to cleanly stop.
-     * Marked as volatile because currently its accessed via multiple threads.
-     */
-    private volatile boolean requestedStop = false;
-
-    /**
      * This flag represents when we have finished consuming all that needs to be consumed.
      */
     private boolean isCompleted = false;
@@ -445,35 +439,13 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Call this method to request this {@link VirtualSpout} instance
-     * to cleanly stop.
+     * Whether or not this {@link VirtualSpout} has completed it's processing, which typically means that the data from {@link Consumer},
+     * specifically {@link #getCurrentState()} is now at or beyond {@link #getEndingState()}.
      *
-     * Synchronized because this can be called from multiple threads.
+     * @return true is the spout is finished processing, false if it is not.
      */
-    public void requestStop() {
-        synchronized (this) {
-            requestedStop = true;
-        }
-    }
-
-    /**
-     * Determine if anyone has requested stop on this instance.
-     * Synchronized because this can be called from multiple threads.
-     *
-     * @return - true if so, false if not.
-     */
-    public boolean isStopRequested() {
-        synchronized (this) {
-            return requestedStop || Thread.interrupted();
-        }
-    }
-
-    /**
-     * This this method to determine if the spout was marked as 'completed'.
-     * We define 'completed' meaning it reached its ending state.
-     * @return - True if 'completed', false if not.
-     */
-    private boolean isCompleted() {
+    @Override
+    public boolean isCompleted() {
         return isCompleted;
     }
 
@@ -640,9 +612,5 @@ public class VirtualSpout implements DelegateSpout {
         // Lets flip our flag to true.
         logger.info("Looks like all partitions are complete!  Lets wrap this up.");
         setCompleted();
-
-        // Cleanup consumerState.
-        // Request that we stop.
-        requestStop();
     }
 }

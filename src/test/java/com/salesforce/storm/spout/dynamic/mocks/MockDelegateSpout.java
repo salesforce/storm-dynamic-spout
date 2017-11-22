@@ -46,14 +46,13 @@ import java.util.UUID;
 public class MockDelegateSpout implements DelegateSpout {
     private final VirtualSpoutIdentifier virtualSpoutId;
     private final FilterChain filterChain = new FilterChain();
-    public volatile boolean requestedStop = false;
+    public volatile boolean completed = false;
     public volatile boolean wasOpenCalled = false;
     public volatile boolean wasCloseCalled = false;
     public volatile boolean flushStateCalled = false;
     public volatile RuntimeException exceptionToThrow = null;
     public volatile Set<MessageId> failedTupleIds = Sets.newConcurrentHashSet();
     public volatile Set<MessageId> ackedTupleIds = Sets.newConcurrentHashSet();
-
     public volatile Queue<Message> emitQueue = Queues.newConcurrentLinkedQueue();
 
     public MockDelegateSpout() {
@@ -103,16 +102,6 @@ public class MockDelegateSpout implements DelegateSpout {
     }
 
     @Override
-    public synchronized void requestStop() {
-        requestedStop = true;
-    }
-
-    @Override
-    public synchronized boolean isStopRequested() {
-        return requestedStop;
-    }
-
-    @Override
     public ConsumerState getCurrentState() {
         return getConsumer().getCurrentState();
     }
@@ -145,5 +134,10 @@ public class MockDelegateSpout implements DelegateSpout {
     @Override
     public FilterChain getFilterChain() {
         return filterChain;
+    }
+
+    @Override
+    public boolean isCompleted() {
+        return completed;
     }
 }
