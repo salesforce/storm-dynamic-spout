@@ -25,6 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.handler;
 
+import com.salesforce.storm.spout.dynamic.DelegateSpout;
+import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import org.apache.storm.task.TopologyContext;
 
@@ -39,8 +41,9 @@ public interface SpoutHandler {
     /**
      * Open the handler.
      * @param spoutConfig Spout configuration.
+     * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
      */
-    default void open(Map<String, Object> spoutConfig) {
+    default void open(Map<String, Object> spoutConfig, DelegateSpoutFactory delegateSpoutFactory) {
 
     }
 

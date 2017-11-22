@@ -29,6 +29,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.DelegateSpout;
+import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
@@ -97,9 +99,20 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     private final List<SidelineTrigger> sidelineTriggers = new ArrayList<>();
 
+    /**
+     * {@link DynamicSpout} instance that has this handler attached to it.
+     */
     private DynamicSpout spout;
 
+    /**
+     * Persistence layer for storing sideline state.
+     */
     private PersistenceAdapter persistenceAdapter;
+
+    /**
+     * Factory for creating {@link com.salesforce.storm.spout.dynamic.DelegateSpout} instac.es
+     */
+    private DelegateSpoutFactory delegateSpoutFactory;
 
     /**
      * This is our main Virtual Spout instance which consumes from the configured namespace.
@@ -109,9 +122,10 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * When this handler is opened this method stores spout config for use by the instance.
      * @param spoutConfig Spout configuration.
+     * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
      */
     @Override
-    public void open(final Map<String, Object> spoutConfig) {
+    public void open(final Map<String, Object> spoutConfig, final DelegateSpoutFactory delegateSpoutFactory) {
         if (isOpen) {
             throw new RuntimeException("SidelineSpoutHandler is already opened!");
         }
@@ -221,17 +235,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         // If we haven't spun up a VirtualSpout yet, we create it here.
         if (fireHoseSpout == null) {
             // Create the main spout for the namespace, we'll dub it the 'firehose'
-            fireHoseSpout = new VirtualSpout(
-                // We use a normal virtual spout identifier here rather than the sideline one because this is NOT a sideline,
-                // it's our firehose.
-                fireHoseIdentifier,
-                getSpoutConfig(),
-                topologyContext,
-                spout.getFactoryManager(),
-                spout.getMetricsRecorder(),
-                null,
-                null
-            );
+            fireHoseSpout = delegateSpoutFactory.create(fireHoseIdentifier);
         }
 
         final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
@@ -511,15 +515,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutId,
-            getSpoutConfig(),
-            topologyContext,
-            spout.getFactoryManager(),
-            spout.getMetricsRecorder(),
-            startingState,
-            endingState
-        );
+        final VirtualSpout virtualSpout = delegateSpoutFactory.create(virtualSpoutId, startingState, endingState);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         virtualSpout.getFilterChain().addStep(id, step);
