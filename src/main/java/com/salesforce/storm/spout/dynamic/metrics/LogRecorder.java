@@ -61,22 +61,22 @@ public class LogRecorder implements MetricsRecorder {
 
     @Override
     public void count(final MetricDefinition metric) {
-        count(metric, 1L, new Object[0]);
+        countBy(metric, 1L, new Object[0]);
     }
 
     @Override
     public void count(final MetricDefinition metric, final Object... metricParameters) {
-        count(metric, 1L, metricParameters);
+        countBy(metric, 1L, metricParameters);
 
     }
 
     @Override
-    public void count(final MetricDefinition metric, final long incrementBy) {
-        count(metric, incrementBy, new Object[0]);
+    public void countBy(final MetricDefinition metric, final long incrementBy) {
+        countBy(metric, incrementBy, new Object[0]);
     }
 
     @Override
-    public void count(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
+    public void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
         final String key = generateKey(metric, metricParameters);
         synchronized (counters) {
             final long newValue = counters.getOrDefault(key, 0L) + incrementBy;
@@ -127,10 +127,7 @@ public class LogRecorder implements MetricsRecorder {
         stopTimer(metric, new Object[0]);
     }
 
-    // TODO refactor?
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {
-        return metric.getContext()
-            + '.'
-            + MessageFormatter.format(metric.getKey(), parameters).getMessage();
+        return MessageFormatter.format(metric.getKey(), parameters).getMessage();
     }
 }

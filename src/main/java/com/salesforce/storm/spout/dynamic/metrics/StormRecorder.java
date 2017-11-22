@@ -27,7 +27,6 @@ package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import org.apache.kafka.common.Metric;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -38,7 +37,6 @@ import org.slf4j.helpers.MessageFormatter;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * A wrapper for recording metrics in Storm
@@ -122,21 +120,21 @@ public class StormRecorder implements MetricsRecorder {
 
     @Override
     public void count(final MetricDefinition metric) {
-        count(metric, 1L, new Object[0]);
+        countBy(metric, 1L, new Object[0]);
     }
 
     @Override
     public void count(final MetricDefinition metric, final Object... metricParameters) {
-        count(metric, 1L, metricParameters);
+        countBy(metric, 1L, metricParameters);
     }
 
     @Override
-    public void count(final MetricDefinition metric, final long incrementBy) {
-        count(metric, incrementBy, new Object[0]);
+    public void countBy(final MetricDefinition metric, final long incrementBy) {
+        countBy(metric, incrementBy, new Object[0]);
     }
 
     @Override
-    public void count(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
+    public void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
         final String key = generateKey(metric, metricParameters);
         counters.scope(key).incrBy(incrementBy);
     }

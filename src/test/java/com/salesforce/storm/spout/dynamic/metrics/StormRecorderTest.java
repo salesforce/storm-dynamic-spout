@@ -256,7 +256,7 @@ public class StormRecorderTest {
     @Test
     public void testStartAndStopTimer() throws InterruptedException {
         // Define inputs
-        final CustomMetric metricDefinition = new CustomMetric("MyContext", "MyMetric");
+        final CustomMetric metricDefinition = new CustomMetric("MyContext.MyMetric");
         final String expectedMetricName = "MyContext.MyMetric";
         final String expectedTotalTimeMetricName = expectedMetricName + "_totalTimeMs";
 

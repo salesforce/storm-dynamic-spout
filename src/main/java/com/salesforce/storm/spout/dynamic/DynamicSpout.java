@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * DynamicSpout's contain other virtualized spouts, and provide mechanisms for interacting with the spout life cycle
@@ -328,8 +327,8 @@ public class DynamicSpout extends BaseRichSpout {
         // Ack the tuple via the Message Bus
         getMessageBus().ack(messageId);
 
-        // Update ack count metric for VirtualSpout this tuple originated from
-        getMetricsRecorder().count(Metrics.VIRTUAL_SPOUT_ACK, 1, messageId.getSrcVirtualSpoutId());
+        // Update ack countBy metric for VirtualSpout this tuple originated from
+        getMetricsRecorder().count(Metrics.VIRTUAL_SPOUT_ACK, messageId.getSrcVirtualSpoutId());
     }
 
     /**

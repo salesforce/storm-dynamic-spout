@@ -69,15 +69,13 @@ public interface MetricsRecorder {
      *
      *                    TODO fix javadoc
      */
-    void count(final MetricDefinition metric, final long incrementBy);
+    void countBy(final MetricDefinition metric, final long incrementBy);
 
     /**
-     * Count a metric, given a name, increments it by value.
+     * Count a metric, given a name and increments by a specific amount.
      * @param incrementBy amount to increment the metric by.
-     *
-     *                    TODO fix javadoc
      */
-    void count(final MetricDefinition metric, final long incrementBy, final Object... metricParameters);
+    void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters);
 
     /**
      * Assign a value to metric.

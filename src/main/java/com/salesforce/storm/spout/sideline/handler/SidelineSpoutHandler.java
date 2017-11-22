@@ -32,7 +32,6 @@ import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
-import com.salesforce.storm.spout.dynamic.metrics.CustomMetric;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -43,6 +42,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.InvalidFilterChainStepException;
 import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
+import com.salesforce.storm.spout.sideline.metrics.SidelineMetrics;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -70,12 +70,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutHandler.class);
-
-    private static final CustomMetric startMetric =
-        new CustomMetric("SidelineSpoutHandler", "start-sideline");
-
-    private static final CustomMetric stopMetric =
-        new CustomMetric("SidelineSpoutHandler", "stop-sideline");
 
     /**
      * Identifier for the firehose, or 'main' VirtualSpout instance.
@@ -364,8 +358,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         // Add our new filter steps
         fireHoseSpout.getFilterChain().addStep(sidelineRequest.id, sidelineRequest.step);
 
-        // Update start count metric
-        spout.getMetricsRecorder().count(startMetric, 1L);
+        // Update start countBy metric
+        spout.getMetricsRecorder().count(SidelineMetrics.START);
     }
 
     /**
@@ -449,8 +443,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             endingState
         );
 
-        // Update stop count metric
-        spout.getMetricsRecorder().count(stopMetric, 1L);
+        // Update stop countBy metric
+        spout.getMetricsRecorder().countBy(SidelineMetrics.STOP, 1L);
     }
 
     /**
