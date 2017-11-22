@@ -219,7 +219,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         final VirtualSpoutIdentifier fireHoseIdentifier = getFireHoseSpoutIdentifier();
 
         // If we haven't spun up a VirtualSpout yet, we create it here.
-        if (fireHoseSpout == null) {
+        if (!spout.hasVirtualSpout(fireHoseIdentifier)) {
             // Create the main spout for the namespace, we'll dub it the 'firehose'
             fireHoseSpout = new VirtualSpout(
                 // We use a normal virtual spout identifier here rather than the sideline one because this is NOT a sideline,
@@ -232,6 +232,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 null,
                 null
             );
+
+            // After altering the filter chain is complete, lets NOW start the fire hose
+            // This keeps a race condition where the fire hose could start consuming before filter chain
+            // steps get added.
+            spout.addVirtualSpout(fireHoseSpout);
         }
 
         final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
@@ -293,13 +298,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                     endingStateStateBuilder.build()
                 );
             }
-        }
-
-        // After altering the filter chain is complete, lets NOW start the fire hose
-        // This keeps a race condition where the fire hose could start consuming before filter chain
-        // steps get added.
-        if (!spout.hasVirtualSpout(fireHoseIdentifier)) {
-            spout.addVirtualSpout(fireHoseSpout);
         }
     }
 
