@@ -196,7 +196,7 @@ public class SidelineSpoutHandlerTest {
     public void testStartSidelining() {
         final Map<String, Object> config = getConfig();
 
-        final String namespace = "Test";
+        final String namespace = MockConsumer.topic;
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -263,7 +263,7 @@ public class SidelineSpoutHandlerTest {
     public void testStopSidelining() {
         final Map<String, Object> config = getConfig();
 
-        final String namespace = "Test";
+        final String namespace = MockConsumer.topic;
 
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
