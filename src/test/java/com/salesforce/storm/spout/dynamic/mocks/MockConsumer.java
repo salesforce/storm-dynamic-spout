@@ -44,7 +44,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * Mock consumer instance.
+ * Mock consumer implementation, used within tests.
  */
 public class MockConsumer implements Consumer {
     private static final Map<VirtualSpoutIdentifier,BlockingQueue<Record>> recordHolder = Maps.newConcurrentMap();
@@ -131,7 +131,7 @@ public class MockConsumer implements Consumer {
      * @param partitions list of partition ids.
      * @return consumer state instance for the provided partition ids.
      */
-    public static ConsumerState buildConsumerState(List<Integer> partitions) {
+    static ConsumerState buildConsumerState(List<Integer> partitions) {
         ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
 
         for (Integer partition : partitions) {
@@ -171,6 +171,11 @@ public class MockConsumer implements Consumer {
         }
     }
 
+    /**
+     * Return all Namespace/Offsets that have been committed for a given VirtualSpoutIdentifier.
+     * @param virtualSpoutIdentifier The VirtualSpout to get committed offsets for.
+     * @return List of Committed Offsets.
+     */
     public static List<CommittedState> getCommitted(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
         synchronized (MockConsumer.class) {
             if (!committedStateHolder.containsKey(virtualSpoutIdentifier)) {
@@ -180,6 +185,9 @@ public class MockConsumer implements Consumer {
         }
     }
 
+    /**
+     * Value object containing information about Committed Offsets.
+     */
     public static class CommittedState {
         private final String namespace;
         private final int partition;

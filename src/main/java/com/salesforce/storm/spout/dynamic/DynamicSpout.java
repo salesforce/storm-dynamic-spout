@@ -317,9 +317,9 @@ public class DynamicSpout extends BaseRichSpout {
             metricsRecorder = null;
         }
 
-        if (spoutHandler != null) {
-            spoutHandler.onSpoutClose(this);
-            spoutHandler.close();
+        if (getSpoutHandler() != null) {
+            getSpoutHandler().onSpoutClose(this);
+            getSpoutHandler().close();
             spoutHandler = null;
         }
 
@@ -332,8 +332,8 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void activate() {
         logger.debug("Activating spout");
-        if (spoutHandler != null) {
-            spoutHandler.onSpoutActivate(this);
+        if (getSpoutHandler() != null) {
+            getSpoutHandler().onSpoutActivate(this);
         }
     }
 
@@ -343,8 +343,8 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void deactivate() {
         logger.debug("Deactivate spout");
-        if (spoutHandler != null) {
-            spoutHandler.onSpoutDeactivate(this);
+        if (getSpoutHandler() != null) {
+            getSpoutHandler().onSpoutDeactivate(this);
         }
     }
 
@@ -490,6 +490,14 @@ public class DynamicSpout extends BaseRichSpout {
     SpoutMessageBus getMessageBus() {
         checkSpoutOpened();
         return messageBus;
+    }
+
+    /**
+     * @return The SpoutHandler implementation.
+     */
+    SpoutHandler getSpoutHandler() {
+        checkSpoutOpened();
+        return spoutHandler;
     }
 
     /**

@@ -30,6 +30,7 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
+import com.salesforce.storm.spout.dynamic.mocks.MockSpoutHandler;
 import com.salesforce.storm.spout.dynamic.retry.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.sideline.SidelineSpout;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
@@ -761,23 +762,63 @@ public class DynamicSpoutTest {
     }
 
     /**
-     * Noop, just doing coverage!  These methods don't actually
-     * do anything right now anyways.
+     * Smoke test to ensure that SpoutHandler hooks get called at the appropriate times.
      */
     @Test
-    public void testActivate() {
-        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
-        spout.activate();
-    }
+    public void testSpoutHandlerHooks() {
+        final Map<String, Object> spoutConfig = getDefaultConfig("MyPrefix", "default");
+        spoutConfig.put(SpoutConfig.SPOUT_HANDLER_CLASS, MockSpoutHandler.class.getName());
 
-    /**
-     * Noop, just doing coverage!  These methods don't actually
-     * do anything right now anyways.
-     */
-    @Test
-    public void testDeactivate() {
-        final SidelineSpout spout = new SidelineSpout(Maps.newHashMap());
+        // Create mocks
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector mockSpoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
+
+        // Call open
+        final Map topologyConfig = new HashMap();
+        topologyConfig.put("Test", "Value");
+        spout.open(topologyConfig, topologyContext, mockSpoutOutputCollector);
+
+        // Grab our SpoutHandler
+        final MockSpoutHandler mockSpoutHandler = (MockSpoutHandler) spout.getSpoutHandler();
+        assertNotNull("Should have created SpoutHandler", mockSpoutHandler);
+
+        // Ensure that open() hook was called with appropriate config
+        assertTrue("Should have called open() hook", mockSpoutHandler.isHasCalledOpen());
+        assertEquals("Appropriate SpoutConfig passed", spoutConfig, mockSpoutHandler.getSpoutConfig());
+
+        // Validate onSpoutOpen() hook was called
+        assertEquals("Should have been called once", 1, mockSpoutHandler.getOpenedSpouts().size());
+        final MockSpoutHandler.OpenedSpoutParams parameters = mockSpoutHandler.getOpenedSpouts().get(0);
+        assertEquals("Got called with right spout", spout, parameters.getSpout());
+        assertEquals("Got called with right topology config", topologyConfig, parameters.getConfig());
+        assertEquals("Got called with right topology context", topologyContext, parameters.getTopologyContext());
+
+        // Call activate on spout
+        assertEquals("Never called", 0, mockSpoutHandler.getActivatedSpouts().size());
+        spout.activate();
+
+        // Ensure activate hook called.
+        assertEquals("Activated Spout called once", 1, mockSpoutHandler.getActivatedSpouts().size());
+        assertEquals("Called with appropriate argument", spout, mockSpoutHandler.getActivatedSpouts().get(0));
+
+        // Call deactivate on spout
+        assertEquals("Never called deactivate hook", 0, mockSpoutHandler.getDeactivatedSpouts().size());
         spout.deactivate();
+
+        // Ensure deactivate hook called.
+        assertEquals("Deactivated Spout called once", 1, mockSpoutHandler.getDeactivatedSpouts().size());
+        assertEquals("Called with appropriate argument", spout, mockSpoutHandler.getDeactivatedSpouts().get(0));
+
+        // Call close
+        assertFalse("Should not have called close yet", mockSpoutHandler.isHasCalledClosed());
+        spout.close();
+
+        // Ensure close hook called.
+        assertTrue("Close hook called", mockSpoutHandler.isHasCalledClosed());
+        assertEquals("Called with appropriate argument", spout, mockSpoutHandler.getClosedSpouts().get(0));
     }
 
     // Helper methods
