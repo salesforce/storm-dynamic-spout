@@ -32,8 +32,6 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.dynamic.mocks.MockSpoutHandler;
 import com.salesforce.storm.spout.dynamic.retry.FailedTuplesFirstRetryManager;
-import com.salesforce.storm.spout.sideline.SidelineSpout;
-import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
@@ -674,14 +672,14 @@ public class DynamicSpoutTest {
     }
 
     /**
-     * Verifies that you do not define an output stream via the SidelineSpoutConfig
+     * Verifies that you do not define an output stream via the SpoutConfig
      * declareOutputFields() method with default to using 'default' stream.
      */
     @Test
     @UseDataProvider("provideOutputFields")
     public void testDeclareOutputFields_without_stream(final Object inputFields, final String[] expectedFields) {
         // Create config with null stream id config option.
-        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", null);
+        final Map<String,Object> config = getDefaultConfig("DynamicSpout-", null);
 
         // Define our output fields as key and value.
         config.put(SpoutConfig.OUTPUT_FIELDS, inputFields);
@@ -689,7 +687,7 @@ public class DynamicSpoutTest {
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but don't call open
-        final SidelineSpout spout = new SidelineSpout(config);
+        final DynamicSpout spout = new DynamicSpout(config);
 
         // call declareOutputFields
         spout.declareOutputFields(declarer);
@@ -707,14 +705,14 @@ public class DynamicSpoutTest {
     }
 
     /**
-     * Verifies that you can define an output stream via the SidelineSpoutConfig and it gets used
+     * Verifies that you can define an output stream via the SpoutConfig and it gets used
      * in the declareOutputFields() method.
      */
     @Test
     @UseDataProvider("provideOutputFields")
     public void testDeclareOutputFields_with_stream(final Object inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
-        final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
+        final Map<String,Object> config = getDefaultConfig("DynamicSpout-", streamId);
 
         // Define our output fields as key and value.
         config.put(SpoutConfig.OUTPUT_FIELDS, inputFields);
@@ -722,7 +720,7 @@ public class DynamicSpoutTest {
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but do not call open.
-        final SidelineSpout spout = new SidelineSpout(config);
+        final DynamicSpout spout = new DynamicSpout(config);
 
         // call declareOutputFields
         spout.declareOutputFields(declarer);
@@ -1114,7 +1112,7 @@ public class DynamicSpoutTest {
         final String consumerIdPrefix,
         final String configuredStreamId) {
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(Maps.newHashMap()));
+        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());

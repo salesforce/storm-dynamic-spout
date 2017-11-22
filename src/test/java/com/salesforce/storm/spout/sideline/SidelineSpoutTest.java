@@ -83,7 +83,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Test coverage for SidelineSpout specific functionality.
+ * Provides End-To-End integration test coverage for SidelineSpout specific functionality.
  * This test does not attempt to validate all pieces of DynamicSpout, as that is covered by DynamicSpoutTest.
  */
 @RunWith(DataProviderRunner.class)
