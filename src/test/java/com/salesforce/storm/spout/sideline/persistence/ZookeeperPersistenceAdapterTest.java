@@ -170,14 +170,44 @@ public class ZookeeperPersistenceAdapterTest {
         // Persist it
         logger.info("Persisting {}", consumerState);
 
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 0, 10L, 11L);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 1, 100L, 101L);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 2, 1000L, 1001L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier,
+            sidelineRequest,
+            new ConsumerPartition(topicName, 0),
+            10L,
+            11L
+        );
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier,
+            sidelineRequest,
+            new ConsumerPartition(topicName, 1),
+            100L,
+            101L
+        );
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier,
+            sidelineRequest,
+            new ConsumerPartition(topicName, 2),
+            1000L,
+            1001L
+        );
 
         // Attempt to read it?
-        SidelinePayload result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
-        SidelinePayload result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 1);
-        SidelinePayload result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 2);
+        SidelinePayload result1 = persistenceAdapter.retrieveSidelineRequest(
+            sidelineRequestIdentifier,
+            new ConsumerPartition(topicName, 0)
+        );
+        SidelinePayload result2 = persistenceAdapter.retrieveSidelineRequest(
+            sidelineRequestIdentifier,
+            new ConsumerPartition(topicName, 1)
+        );
+        SidelinePayload result3 = persistenceAdapter.retrieveSidelineRequest(
+            sidelineRequestIdentifier,
+            new ConsumerPartition(topicName, 2)
+        );
 
         logger.info("Result {} {} {}", result1, result2, result3);
 
@@ -203,9 +233,9 @@ public class ZookeeperPersistenceAdapterTest {
         // Re-retrieve, should still be there.
         // Attempt to read it?
         // Attempt to read it?
-        result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
-        result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 1);
-        result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 2);
+        result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 0));
+        result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 1));
+        result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 2));
 
         logger.info("Result {} {} {}", result1, result2, result3);
 
@@ -222,14 +252,14 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals("Ending offset matches", Long.valueOf(1001L), result3.endingOffset);
 
         // Clear out hose requests
-        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 0);
-        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 1);
-        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 2);
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 0));
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 1));
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 2));
 
         // Attempt to retrieve those sideline requests, they should come back null
-        result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 0);
-        result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 1);
-        result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, 2);
+        result1 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 0));
+        result2 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 1));
+        result3 = persistenceAdapter.retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 2));
 
         logger.info("Result {} {} {}", result1, result2, result3);
 
@@ -301,7 +331,14 @@ public class ZookeeperPersistenceAdapterTest {
 
         logger.info("expectedStoredState = {}", expectedStoredState);
 
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier, sidelineRequest, 0, 1L, 2L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier,
+            sidelineRequest,
+            new ConsumerPartition(topicName, 0),
+            1L,
+            2L
+        );
 
         // Since this is an async operation, use await() to watch for the change
         await()
@@ -341,7 +378,7 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals("Got unexpected state", expectedStoredState, storedDataStr);
 
         // Now test clearing
-        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, 0);
+        persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 0));
 
         // Validate in the Zk Client.
         doesNodeExist = zookeeperClient.exists(
@@ -382,7 +419,7 @@ public class ZookeeperPersistenceAdapterTest {
             SidelineType.START,
             new SidelineRequestIdentifier("test"),
             sidelineRequest,
-            0,
+            new ConsumerPartition("Foobar", 0),
             1L,
             2L
         );
@@ -401,7 +438,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier("test"), 0);
+        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier("test"), new ConsumerPartition("Foobar", 0));
     }
 
     @Rule
@@ -417,11 +454,12 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Call method and watch for exception
         expectedExceptionClearSidelineRequestBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier("test"), 0);
+        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier("test"), new ConsumerPartition("Foobar", 0));
     }
 
     @Test
     public void testListSidelineRequests() {
+        final String topicName = "MyTopic";
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
@@ -434,20 +472,62 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("test1");
         final SidelineRequest sidelineRequest1 = new SidelineRequest(sidelineRequestIdentifier1, null);
 
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier1,
+            sidelineRequest1,
+            new ConsumerPartition(topicName, 0),
+            10L,
+            11L
+        );
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier1,
+            sidelineRequest1,
+            new ConsumerPartition(topicName, 1),
+            10L,
+            11L
+        );
 
         final SidelineRequestIdentifier sidelineRequestIdentifier2 = new SidelineRequestIdentifier("test2");
         final SidelineRequest sidelineRequest2 = new SidelineRequest(sidelineRequestIdentifier2, null);
 
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest2, 0, 100L, 101L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier2,
+            sidelineRequest2,
+            new ConsumerPartition(topicName, 0),
+            100L,
+            101L
+        );
 
         final SidelineRequestIdentifier sidelineRequestIdentifier3 = new SidelineRequestIdentifier("test3");
         final SidelineRequest sidelineRequest3 = new SidelineRequest(sidelineRequestIdentifier3, null);
 
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 0, 1000L, 1001L);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 1, 1000L, 1001L);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier3, sidelineRequest3, 2, 1000L, 1001L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier3,
+            sidelineRequest3,
+            new ConsumerPartition(topicName, 0),
+            1000L,
+            1001L
+        );
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier3,
+            sidelineRequest3,
+            new ConsumerPartition(topicName, 1),
+            1000L,
+            1001L
+        );
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier3,
+            sidelineRequest3,
+            new ConsumerPartition(topicName, 2),
+            1000L,
+            1001L
+        );
 
         final List<SidelineRequestIdentifier> ids = persistenceAdapter.listSidelineRequests();
 
@@ -468,6 +548,7 @@ public class ZookeeperPersistenceAdapterTest {
     public void testListSidelineRequestPartitions() {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
+        final String topicName = "MyTopic";
 
         final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
 
@@ -482,16 +563,37 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest2 = new SidelineRequest(sidelineRequestIdentifier2, null);
 
         // Two partitions for sideline request 1
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 0, 10L, 11L);
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier1, sidelineRequest1, 1, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier1,
+            sidelineRequest1,
+            new ConsumerPartition(topicName, 0),
+            10L,
+            11L
+        );
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier1,
+            sidelineRequest1,
+            new ConsumerPartition(topicName, 1),
+            10L,
+            11L
+        );
         // One partition for sideline request 2
-        persistenceAdapter.persistSidelineRequestState(SidelineType.START, sidelineRequestIdentifier2, sidelineRequest1, 0, 10L, 11L);
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            sidelineRequestIdentifier2,
+            sidelineRequest1,
+            new ConsumerPartition(topicName, 0),
+            10L,
+            11L
+        );
 
-        Set<Integer> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
+        Set<ConsumerPartition> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
 
         assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0, 1)), partitionsForSidelineRequest1);
 
-        Set<Integer> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
+        Set<ConsumerPartition> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
 
         assertEquals(Collections.unmodifiableSet(Sets.newHashSet(0)), partitionsForSidelineRequest2);
 

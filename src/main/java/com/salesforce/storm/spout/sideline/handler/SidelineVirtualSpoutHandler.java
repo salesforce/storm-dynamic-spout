@@ -83,7 +83,7 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
                 for (final ConsumerPartition consumerPartition : virtualSpout.getStartingState().getConsumerPartitions()) {
                     persistenceAdapter.clearSidelineRequest(
                         sidelineRequestIdentifier,
-                        consumerPartition.partition()
+                        consumerPartition
                     );
                 }
             }
