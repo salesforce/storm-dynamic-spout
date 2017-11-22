@@ -45,7 +45,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -147,7 +146,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         data.put("filterChainStep", Serializer.serialize(request.step));
 
         // Persist!
-        curatorHelper.writeJson(getZkRequestStatePathForPartition(id.toString(), consumerPartition.partition()), data);
+        curatorHelper.writeJson(getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition), data);
     }
 
     @Override
@@ -158,7 +157,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Read!
-        final String path = getZkRequestStatePathForPartition(id.toString(), consumerPartition.partition());
+        final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
         // TODO: We should make a real object for this and update readJson() to support a class declaration
         Map<Object, Object> json = curatorHelper.readJson(path);
         logger.debug("Read request state from Zookeeper at {}: {}", path, json);
@@ -193,7 +192,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Delete!
-        final String path = getZkRequestStatePathForPartition(id.toString(), consumerPartition.partition());
+        final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
         logger.info("Delete request from Zookeeper at {}", path);
         curatorHelper.deleteNode(path);
 
@@ -282,8 +281,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     /**
      * @return full zookeeper path for our sideline request for a specific partition.
      */
-    String getZkRequestStatePathForPartition(final String sidelineIdentifierStr, final int partitionId) {
-        return getZkRequestStatePath(sidelineIdentifierStr) + "/" + partitionId;
+    String getZkRequestStatePathForConsumerPartition(final String sidelineIdentifierStr, final ConsumerPartition consumerPartition) {
+        return getZkRequestStatePath(sidelineIdentifierStr) + "/" + consumerPartition.namespace() + "/" + consumerPartition.partition();
     }
 
     /**

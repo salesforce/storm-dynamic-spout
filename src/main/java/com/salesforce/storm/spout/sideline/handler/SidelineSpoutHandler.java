@@ -234,8 +234,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             );
         }
 
-        final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
-
         final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
