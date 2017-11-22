@@ -622,7 +622,7 @@ public class SidelineSpoutHandlerTest {
     }
 
     private VirtualSpoutFactory getVirtualSpoutFactory(final Map<String,Object> config) {
-        return new VirtualSpoutFactory(null, new MockTopologyContext(), new FactoryManager(config), new LogRecorder());
+        return new VirtualSpoutFactory(config, new MockTopologyContext(), new FactoryManager(config), new LogRecorder());
     }
 
     private Map<String, Object> getConfig() {
