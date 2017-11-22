@@ -222,7 +222,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Update emit count metric for VirtualSpout this tuple originated from
         getMetricsRecorder()
-            .count(Metrics.virtualSpout_emit, message.getMessageId().getSrcVirtualSpoutId().toString());
+            .count(Metrics.VIRTUAL_SPOUT_EMIT, message.getMessageId().getSrcVirtualSpoutId().toString());
     }
 
     /**

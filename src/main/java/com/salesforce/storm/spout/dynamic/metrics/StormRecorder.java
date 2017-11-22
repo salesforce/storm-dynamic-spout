@@ -195,10 +195,8 @@ public class StormRecorder implements MetricsRecorder {
      * @return in format of: "className.metricPrefix.metricName"
      */
 
-    // TODO refactor?
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {
-        final StringBuilder keyBuilder = new StringBuilder(metric.getContext())
-            .append(".");
+        final StringBuilder keyBuilder = new StringBuilder();
 
         // Conditionally add key prefix.
         if (getMetricPrefix() != null && !getMetricPrefix().isEmpty()) {
@@ -206,6 +204,8 @@ public class StormRecorder implements MetricsRecorder {
                 .append(getMetricPrefix())
                 .append(".");
         }
+
+        // Our default implementation should include the simple class name in the key
         keyBuilder.append(
             MessageFormatter.format(metric.getKey(), parameters).getMessage()
         );

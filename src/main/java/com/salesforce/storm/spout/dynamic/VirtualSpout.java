@@ -307,7 +307,7 @@ public class VirtualSpout implements DelegateSpout {
         if (isFiltered) {
             // Increment filtered metric
             getMetricsRecorder()
-                .count(Metrics.virtualSpout_filtered, getVirtualSpoutId().toString());
+                .count(Metrics.VIRTUAL_SPOUT_FILTERED, getVirtualSpoutId().toString());
 
             // Ack
             ack(messageId);
@@ -377,7 +377,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // update ack metric
         getMetricsRecorder()
-            .count(Metrics.virtualSpout_ack, getVirtualSpoutId().toString());
+            .count(Metrics.VIRTUAL_SPOUT_ACK, getVirtualSpoutId().toString());
     }
 
     @Override
@@ -407,7 +407,7 @@ public class VirtualSpout implements DelegateSpout {
 
             // Update metric
             getMetricsRecorder()
-                .count(Metrics.virtualSpout_exceededRetryLimit, getVirtualSpoutId().toString());
+                .count(Metrics.VIRTUAL_SPOUT_EXCEEDED_RETRY_LIMIT, getVirtualSpoutId().toString());
 
             // Done.
             return;
@@ -418,7 +418,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Update metric
         getMetricsRecorder()
-            .count(Metrics.virtualSpout_fail, getVirtualSpoutId().toString());
+            .count(Metrics.VIRTUAL_SPOUT_FAIL, getVirtualSpoutId().toString());
     }
 
     /**

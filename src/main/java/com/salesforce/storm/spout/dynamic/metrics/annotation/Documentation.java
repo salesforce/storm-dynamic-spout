@@ -32,7 +32,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation for documenting spout configuration options.
+ * Document metric information.
+ *
+ * Used to auto-generate metric documentation in README files.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -40,7 +42,7 @@ import java.lang.annotation.Target;
 public @interface Documentation {
 
     /**
-     * Enum of the Metric types.
+     * Types of metrics.
      */
     enum Type {
         AVERAGE,
@@ -50,17 +52,17 @@ public @interface Documentation {
     }
 
     /**
-     * Enum of Categories.
+     * Categories for a metric.
      */
     enum Category {
-        UNKNOWN,
-        CONSUMER,
         DYNAMIC_SPOUT,
-        KAFKA_CONSUMER,
-        SPOUT_MONITOR,
-        VIRTUAL_SPOUT
+        KAFKA,
+        SIDELINE
     }
 
+    /**
+     * Unit for a metric.
+     */
     enum Unit {
         UNKNOWN("Unknown"),
         NUMBER("Number"),
@@ -76,21 +78,27 @@ public @interface Documentation {
     }
 
     /**
-     * @return Description of the configuration setting.
+     * @return description of the configuration setting.
      */
     String description() default "";
 
+    /**
+     * @return values that should be replaced in the key.
+     */
     String[] dynamicValues() default {};
 
+    /**
+     * @return unit of measurement for the metric.
+     */
     Unit unit() default Unit.UNKNOWN;
 
     /**
-     * @return Category of the configuration setting.
+     * @return category of the configuration setting.
      */
     Category category();
 
     /**
-     * @return Category of the configuration setting.
+     * @return category of the configuration setting.
      */
     Type type();
 }

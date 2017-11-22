@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
-import com.salesforce.storm.spout.dynamic.metrics.CustomMetricDefinition;
+import com.salesforce.storm.spout.dynamic.metrics.CustomMetric;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -71,11 +71,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(SidelineSpoutHandler.class);
 
-    private static final CustomMetricDefinition startMetric =
-        new CustomMetricDefinition("SidelineSpoutHandler", "start-sideline");
+    private static final CustomMetric startMetric =
+        new CustomMetric("SidelineSpoutHandler", "start-sideline");
 
-    private static final CustomMetricDefinition stopMetric =
-        new CustomMetricDefinition("SidelineSpoutHandler", "stop-sideline");
+    private static final CustomMetric stopMetric =
+        new CustomMetric("SidelineSpoutHandler", "stop-sideline");
 
     /**
      * Identifier for the firehose, or 'main' VirtualSpout instance.

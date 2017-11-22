@@ -26,13 +26,24 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 /**
- * Defines a metric that can be used in {@link MetricsRecorder}.
+ * Custom metric.
+ *
+ * Take a simple string and adhere to the definition used by the {@link MetricsRecorder}.
  */
-public interface MetricDefinition {
+public class CustomMetric implements MetricDefinition {
+    private final String key;
 
-    /**
-     * Key to use for the given metric.
-     * @return key to use for the given metric.
-     */
-    String getKey();
+    public CustomMetric(final String key) {
+        this.key = key;
+    }
+
+    @Override
+    public String getKey() {
+        return key;
+    }
+
+    @Override
+    public String toString() {
+        return key;
+    }
 }

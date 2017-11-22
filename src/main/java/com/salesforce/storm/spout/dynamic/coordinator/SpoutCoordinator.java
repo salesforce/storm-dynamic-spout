@@ -410,12 +410,12 @@ public class SpoutCoordinator implements Runnable {
         );
 
         // Report to metrics record
-        getMetricsRecorder().assignValue(Metrics.spoutMonitor_bufferSize, getVirtualSpoutMessageBus().messageSize());
-        getMetricsRecorder().assignValue(Metrics.spoutMonitor_running, executor.getActiveCount());
-        getMetricsRecorder().assignValue(Metrics.spoutMonitor_queued, executor.getQueue().size());
-        getMetricsRecorder().assignValue(Metrics.spoutMonitor_errored, getNumberOfFailedTasks());
-        getMetricsRecorder().assignValue(Metrics.spoutMonitor_completed, executor.getCompletedTaskCount());
-        getMetricsRecorder().assignValue(Metrics.spoutMonitor_poolSize, executor.getPoolSize());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_MONITOR_BUFFER_SIZE, getVirtualSpoutMessageBus().messageSize());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_MONITOR_RUNNING, executor.getActiveCount());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_MONITOR_QUEUED, executor.getQueue().size());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_MONITOR_ERRORED, getNumberOfFailedTasks());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_MONITOR_COMPLETED, executor.getCompletedTaskCount());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_MONITOR_POOL_SIZE, executor.getPoolSize());
 
         // Loop through spouts instances
         try {
@@ -437,7 +437,7 @@ public class SpoutCoordinator implements Runnable {
 
                 // Report how many filters are applied on this virtual spout.
                 getMetricsRecorder().assignValue(
-                    Metrics.virtualSpout_numberFiltersApplied,
+                    Metrics.VIRTUAL_SPOUT_NUMBER_FILTERS_APPLIED,
                     spout.getNumberOfFiltersApplied(),
                     spout.getVirtualSpoutId().toString()
                 );

@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
-import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
@@ -125,7 +124,7 @@ class SpoutPartitionProgressMonitor {
 
             // Capture our metrics...
             metricsRecorder.assignValue(
-                Metrics.virtualSpout_partition_currentOffset,
+                Metrics.VIRTUAL_SPOUT_PARTITION_CURRENT_OFFSET,
                 currentOffset,
                 spout.getVirtualSpoutId().toString(),
                 consumerPartition.partition()
@@ -133,7 +132,7 @@ class SpoutPartitionProgressMonitor {
 
             if (totalProcessed != null) {
                 metricsRecorder.assignValue(
-                    Metrics.virtualSpout_partition_totalProcessed,
+                    Metrics.VIRTUAL_SPOUT_PARTITION_TOTAL_PROCESSED,
                     totalProcessed,
                     spout.getVirtualSpoutId().toString(),
                     consumerPartition.partition()
@@ -142,7 +141,7 @@ class SpoutPartitionProgressMonitor {
 
             if (totalUnprocessed != null) {
                 metricsRecorder.assignValue(
-                    Metrics.virtualSpout_partition_totalUnprocessed,
+                    Metrics.VIRTUAL_SPOUT_PARTITION_TOTAL_UNPROCESSED,
                     totalUnprocessed,
                     spout.getVirtualSpoutId().toString(),
                     consumerPartition.partition()
@@ -151,7 +150,7 @@ class SpoutPartitionProgressMonitor {
 
             if (totalMessages != null) {
                 metricsRecorder.assignValue(
-                    Metrics.virtualSpout_partition_totalMessages,
+                    Metrics.VIRTUAL_SPOUT_PARTITION_TOTAL_MESSAGES,
                     totalMessages,
                     spout.getVirtualSpoutId().toString(),
                     consumerPartition.partition()
@@ -160,7 +159,7 @@ class SpoutPartitionProgressMonitor {
 
             if (percentComplete != null) {
                 metricsRecorder.assignValue(
-                    Metrics.virtualSpout_partition_percentComplete,
+                    Metrics.VIRTUAL_SPOUT_PARTITION_PERCENT_COMPLETE,
                     percentComplete,
                     spout.getVirtualSpoutId().toString(),
                     consumerPartition.partition()
@@ -169,7 +168,7 @@ class SpoutPartitionProgressMonitor {
 
             if (startingOffset != null) {
                 metricsRecorder.assignValue(
-                    Metrics.virtualSpout_partition_startingOffset,
+                    Metrics.VIRTUAL_SPOUT_PARTITION_STARTING_OFFSET,
                     startingOffset,
                     spout.getVirtualSpoutId().toString(),
                     consumerPartition.partition()
@@ -178,7 +177,7 @@ class SpoutPartitionProgressMonitor {
 
             if (endingOffset != null) {
                 metricsRecorder.assignValue(
-                    Metrics.virtualSpout_partition_endingOffset,
+                    Metrics.VIRTUAL_SPOUT_PARTITION_ENDING_OFFSET,
                     endingOffset,
                     spout.getVirtualSpoutId().toString(),
                     consumerPartition.partition()
