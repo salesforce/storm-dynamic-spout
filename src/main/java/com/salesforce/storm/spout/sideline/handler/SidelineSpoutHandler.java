@@ -141,10 +141,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             "Sideline persistence adapter class is required"
         );
 
-        persistenceAdapter = FactoryManager.createNewInstance(
+        this.persistenceAdapter = FactoryManager.createNewInstance(
             persistenceAdapterClass
         );
-        persistenceAdapter.open(spoutConfig);
+        this.persistenceAdapter.open(spoutConfig);
+
+        this.delegateSpoutFactory = delegateSpoutFactory;
     }
 
     /**

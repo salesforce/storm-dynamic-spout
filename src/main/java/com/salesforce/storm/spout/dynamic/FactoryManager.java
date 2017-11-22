@@ -129,7 +129,7 @@ public class FactoryManager implements Serializable {
     }
 
     private synchronized <T> T createNewInstanceFromConfig(final String configKey) {
-        Preconditions.checkArgument(
+        Preconditions.checkState(
             spoutConfig.containsKey(configKey),
             "Class has not been specified for configuration key " + configKey
         );
