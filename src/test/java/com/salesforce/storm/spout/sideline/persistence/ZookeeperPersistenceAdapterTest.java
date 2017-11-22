@@ -109,6 +109,7 @@ public class ZookeeperPersistenceAdapterTest {
      */
     @Test
     public void testOpen() {
+        final String namespace = "Test";
         final int partitionId = 1;
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
@@ -128,7 +129,8 @@ public class ZookeeperPersistenceAdapterTest {
 
         assertEquals(
             "Unexpected zkRequestStatePath returned",
-            expectedZkRequestStatePath, persistenceAdapter.getZkRequestStatePathForConsumerPartition(expectedConsumerId, partitionId)
+            expectedZkRequestStatePath,
+            persistenceAdapter.getZkRequestStatePathForConsumerPartition(expectedConsumerId, new ConsumerPartition(namespace, partitionId))
         );
 
         // Close everyone out
