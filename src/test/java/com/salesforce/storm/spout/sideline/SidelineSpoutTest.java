@@ -523,7 +523,7 @@ public class SidelineSpoutTest {
      * @param spout - the Spout instance to ack tuples on.
      * @param spoutEmissions - The SpoutEmissions we want to ack.
      */
-    private void ackTuples(final DynamicSpout spout, final List<SpoutEmission> spoutEmissions) {
+    private void ackTuples(final SidelineSpout spout, final List<SpoutEmission> spoutEmissions) {
         if (spoutEmissions.isEmpty()) {
             throw new RuntimeException("You cannot ack an empty list!  You probably have a bug in your test.");
         }
@@ -536,7 +536,7 @@ public class SidelineSpoutTest {
         // Make method accessible.
         try {
             // TODO find better way to do this w/o reflections.
-            final Field field = spout.getClass().getDeclaredField("messageBus");
+            final Field field = DynamicSpout.class.getDeclaredField("messageBus");
             field.setAccessible(true);
 
             // Grab reference to message bus.
@@ -668,16 +668,16 @@ public class SidelineSpoutTest {
      * @param spout - The spout instance
      * @param howManyVirtualSpoutsWeWantLeft - Wait until this many virtual spouts are left running.
      */
-    private void waitForVirtualSpouts(final DynamicSpout spout, final int howManyVirtualSpoutsWeWantLeft) {
+    private void waitForVirtualSpouts(final SidelineSpout spout, final int howManyVirtualSpoutsWeWantLeft) {
         try {
             // TODO find better way to do this avoiding reflections
-            final Field field = spout.getClass().getDeclaredField("spoutCoordinator");
+            final Field field = DynamicSpout.class.getDeclaredField("spoutCoordinator");
             field.setAccessible(true);
             final SpoutCoordinator spoutCoordinator = (SpoutCoordinator) field.get(spout);
 
             await()
                 .atMost(5, TimeUnit.SECONDS)
-                .until(() -> spoutCoordinator.getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
+                .until(spoutCoordinator::getTotalSpouts, equalTo(howManyVirtualSpoutsWeWantLeft));
             assertEquals(
                 "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
                 howManyVirtualSpoutsWeWantLeft,
