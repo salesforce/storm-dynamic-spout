@@ -127,11 +127,6 @@ public class MockDelegateSpout implements DelegateSpout {
     }
 
     @Override
-    public int getNumberOfFiltersApplied() {
-        return 0;
-    }
-
-    @Override
     public Consumer getConsumer() {
         return new MockConsumer();
     }
