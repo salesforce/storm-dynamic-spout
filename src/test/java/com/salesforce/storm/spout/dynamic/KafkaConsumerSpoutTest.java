@@ -110,8 +110,7 @@ public class KafkaConsumerSpoutTest {
      * We publish some data into kafka, and validate that when we call nextTuple() on
      * our spout that we get out our messages that were published into kafka.
      *
-     * This does not make use of any side lining logic, just simple consuming from the
-     * 'fire hose' consumer.
+     * Uses a single VirtualSpout running the Kafka Consumer.
      *
      * We run this test multiple times using a DataProvider to test using but an implicit/unconfigured
      * output stream name (default), as well as an explicitly configured stream name.
@@ -188,8 +187,7 @@ public class KafkaConsumerSpoutTest {
      * We then fail some tuples and validate that they get replayed.
      * We ack some tuples and then validate that they do NOT get replayed.
      *
-     * This does not make use of any side lining logic, just simple consuming from the
-     * 'fire hose' namespace.
+     * Just simple consuming from a single VirtualSpout using the KafkaConsumer.
      */
     @Test
     public void doBasicFailTest() throws InterruptedException {

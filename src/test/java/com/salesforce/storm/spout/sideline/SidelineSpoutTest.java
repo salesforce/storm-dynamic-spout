@@ -85,6 +85,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Provides End-To-End integration test coverage for SidelineSpout specific functionality.
  * This test does not attempt to validate all pieces of DynamicSpout, as that is covered by DynamicSpoutTest.
+ * Although not required to use SidelineSpout, some of these tests use the Kafka consumer as a dependency to validate
+ * behavior.
  */
 @RunWith(DataProviderRunner.class)
 public class SidelineSpoutTest {
