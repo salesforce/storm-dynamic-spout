@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.mocks;
 
+import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import org.apache.storm.task.TopologyContext;
@@ -54,7 +55,8 @@ public class MockSpoutHandler implements SpoutHandler {
      * Open the handler.
      * @param spoutConfig Spout configuration.
      */
-    public void open(Map<String, Object> spoutConfig) {
+    @Override
+    public void open(Map<String, Object> spoutConfig, DelegateSpoutFactory delegateSpoutFactory) {
         hasCalledOpen = true;
         this.spoutConfig = spoutConfig;
     }
@@ -62,6 +64,7 @@ public class MockSpoutHandler implements SpoutHandler {
     /**
      * Close the handler.
      */
+    @Override
     public void close() {
         hasCalledClosed = true;
     }
@@ -72,6 +75,7 @@ public class MockSpoutHandler implements SpoutHandler {
      * @param topologyConfig Topology configuration.
      * @param topologyContext Topology context.
      */
+    @Override
     public void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
         openedSpouts.add(
             new OpenedSpoutParams(spout, topologyConfig, topologyContext)
@@ -82,6 +86,7 @@ public class MockSpoutHandler implements SpoutHandler {
      * Called when the DynamicSpout is activated.
      * @param spout DynamicSpout instance.
      */
+    @Override
     public void onSpoutActivate(final DynamicSpout spout) {
         activatedSpouts.add(spout);
     }
@@ -90,6 +95,7 @@ public class MockSpoutHandler implements SpoutHandler {
      * Called when the DynamicSpout is deactivated.
      * @param spout DynamicSpout instance.
      */
+    @Override
     public void onSpoutDeactivate(final DynamicSpout spout) {
         deactivatedSpouts.add(spout);
     }
@@ -98,6 +104,7 @@ public class MockSpoutHandler implements SpoutHandler {
      * Called when the DynamicSpout is closed.
      * @param spout DynamicSpout instance.
      */
+    @Override
     public void onSpoutClose(final DynamicSpout spout) {
         closedSpouts.add(spout);
     }
