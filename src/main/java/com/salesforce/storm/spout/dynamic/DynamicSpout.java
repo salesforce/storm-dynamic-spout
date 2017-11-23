@@ -35,6 +35,7 @@ import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -48,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * DynamicSpout's contain other virtualized spouts, and provide mechanisms for interacting with the spout life cycle
@@ -234,27 +234,8 @@ public class DynamicSpout extends BaseRichSpout {
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());
 
         // Update emit count metric for VirtualSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, message.getMessageId().getSrcVirtualSpoutId() + ".emit", 1);
-
-        // Everything below is temporary emit metrics for debugging.
-
-        // Update / Display emit metrics
-        final VirtualSpoutIdentifier srcId = message.getMessageId().getSrcVirtualSpoutId();
-        if (!emitCountMetrics.containsKey(srcId)) {
-            emitCountMetrics.put(srcId, 1L);
-        } else {
-            emitCountMetrics.put(srcId, emitCountMetrics.get(srcId) + 1L);
-        }
-        emitCounter++;
-        if (emitCounter >= 5_000_000L) {
-            for (Map.Entry<VirtualSpoutIdentifier, Long> entry : emitCountMetrics.entrySet()) {
-                logger.info("Emit Count on {} => {}", entry.getKey(), entry.getValue());
-            }
-            emitCountMetrics.clear();
-            emitCounter = 0;
-        }
-
-        // End temp debugging logs
+        getMetricsRecorder()
+            .count(Metrics.VIRTUAL_SPOUT_EMIT, message.getMessageId().getSrcVirtualSpoutId().toString());
     }
 
     /**
@@ -361,7 +342,7 @@ public class DynamicSpout extends BaseRichSpout {
         getMessageBus().ack(messageId);
 
         // Update ack count metric for VirtualSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, messageId.getSrcVirtualSpoutId() + ".ack", 1);
+        getMetricsRecorder().count(Metrics.VIRTUAL_SPOUT_ACK, messageId.getSrcVirtualSpoutId());
     }
 
     /**

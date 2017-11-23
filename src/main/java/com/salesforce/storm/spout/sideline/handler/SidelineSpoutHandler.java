@@ -44,6 +44,7 @@ import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.InvalidFilterChainStepException;
 import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
+import com.salesforce.storm.spout.sideline.metrics.SidelineMetrics;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -368,8 +369,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         // Add our new filter steps
         fireHoseSpout.getFilterChain().addStep(sidelineRequest.id, sidelineRequest.step);
 
-        // Update start count metric
-        spout.getMetricsRecorder().count(getClass(), "start-sideline", 1L);
+        // Update start countBy metric
+        spout.getMetricsRecorder().count(SidelineMetrics.START);
     }
 
     /**
@@ -453,8 +454,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             endingState
         );
 
-        // Update stop count metric
-        spout.getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
+        // Update stop countBy metric
+        spout.getMetricsRecorder().count(SidelineMetrics.STOP);
     }
 
     /**

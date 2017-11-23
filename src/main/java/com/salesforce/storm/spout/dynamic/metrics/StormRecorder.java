@@ -33,10 +33,10 @@ import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * A wrapper for recording metrics in Storm
@@ -55,11 +55,6 @@ import java.util.concurrent.Callable;
  */
 public class StormRecorder implements MetricsRecorder {
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
-
-    /**
-     * Contains a map of Reduced Metrics, which are used to calculate averages over time.
-     */
-    private MultiReducedMetric averagedValues;
 
     /**
      * Contains a map of Assigned Metrics, which are used to set a metric to a specific value.
@@ -113,7 +108,6 @@ public class StormRecorder implements MetricsRecorder {
             timeBucketSeconds, Boolean.toString(metricPrefix.isEmpty()));
 
         // Register the top level metrics.
-        averagedValues = topologyContext.registerMetric("AVERAGES", new MultiReducedMetric(new MeanReducer()), timeBucketSeconds);
         assignedValues = topologyContext.registerMetric("GAUGES", new MultiAssignableMetric(), timeBucketSeconds);
         timers = topologyContext.registerMetric("TIMERS", new MultiReducedMetric(new MeanReducer()), timeBucketSeconds);
         counters = topologyContext.registerMetric("COUNTERS", new MultiCountMetric(), timeBucketSeconds);
@@ -125,75 +119,54 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void count(final Class sourceClass, final String metricName) {
-        count(sourceClass, metricName, 1);
+    public void count(final MetricDefinition metric) {
+        countBy(metric, 1L, new Object[0]);
     }
 
     @Override
-    public void count(final Class sourceClass, final String metricName, final long incrementBy) {
-        // Generate key
-        final String key = generateKey(sourceClass, metricName);
+    public void count(final MetricDefinition metric, final Object... metricParameters) {
+        countBy(metric, 1L, metricParameters);
+    }
 
+    @Override
+    public void countBy(final MetricDefinition metric, final long incrementBy) {
+        countBy(metric, incrementBy, new Object[0]);
+    }
+
+    @Override
+    public void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
         counters.scope(key).incrBy(incrementBy);
     }
 
     @Override
-    public void averageValue(final Class sourceClass, final String metricName, final Object value) {
-        final String key = generateKey(sourceClass, metricName);
-
-        averagedValues.scope(key).update(value);
-    }
-
-    @Override
-    public void assignValue(final Class sourceClass, final String metricName, final Object value) {
-        final String key = generateKey(sourceClass, metricName);
+    public void assignValue(final MetricDefinition metric, final Object value, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
         assignedValues.scope(key).setValue(value);
     }
 
-    /**
-     * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!).
-     */
-    public <T> T timer(final Class sourceClass, final String metricName, final Callable<T> callable) throws Exception {
-        // Wrap in timing
-        final long start = Clock.systemUTC().millis();
-        T result = callable.call();
-        final long end = Clock.systemUTC().millis();
-
-        // Update
-        timer(sourceClass, metricName, (end - start));
-
-        // return result.
-        return result;
+    @Override
+    public void assignValue(final MetricDefinition metric, final Object value) {
+        assignValue(metric, value, new Object[0]);
     }
 
-    /**
-     * Record how long something took to process.
-     *
-     * @param sourceClass The class that the timing occurred in.
-     * @param metricName The name of the metric.
-     * @param timeInMs How long it took, in milliseconds.
-     */
-    public void timer(final Class sourceClass, final String metricName, final long timeInMs) {
-        final String key = generateKey(sourceClass, metricName);
-        timers.scope(key).update(timeInMs);
-
-        // Update total time value.  This tracks how much time in total has been
-        // spent in this key, in milliseconds
-        final String totalTimeKey = metricName + "_totalTimeMs";
-        count(sourceClass, totalTimeKey, timeInMs);
-    }
 
     @Override
-    public void startTimer(final Class sourceClass, final String metricName) {
-        final String key = generateKey(sourceClass, metricName);
+    public void startTimer(final MetricDefinition metric, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
         timerStartValues.put(key, Clock.systemUTC().millis());
     }
 
     @Override
-    public void stopTimer(final Class sourceClass, final String metricName) {
+    public void startTimer(final MetricDefinition metric) {
+        startTimer(metric, new Object[0]);
+    }
+
+    @Override
+    public void stopTimer(final MetricDefinition metric, final Object... metricParameters) {
         final long stopTime = Clock.systemUTC().millis();
 
-        final String key = generateKey(sourceClass, metricName);
+        final String key = generateKey(metric, metricParameters);
         final Long startTime = timerStartValues.get(key);
 
         if (startTime == null) {
@@ -201,8 +174,17 @@ public class StormRecorder implements MetricsRecorder {
             return;
         }
 
-        // Calculate total time inbetween starting and stopping
-        timer(sourceClass, metricName, stopTime - startTime);
+        // Record Difference.
+        final long totalTimeMs = stopTime - startTime;
+        timers.scope(key).update(totalTimeMs);
+
+        // Increment counter
+        counters.scope(key + "_totalTimeMs").incrBy(totalTimeMs);
+    }
+
+    @Override
+    public void stopTimer(final MetricDefinition metric) {
+        stopTimer(metric, new Object[0]);
     }
 
     /**
@@ -210,9 +192,9 @@ public class StormRecorder implements MetricsRecorder {
      *
      * @return in format of: "className.metricPrefix.metricName"
      */
-    private String generateKey(final Class sourceClass, final String metricName) {
-        final StringBuilder keyBuilder = new StringBuilder(sourceClass.getSimpleName())
-            .append(".");
+
+    private String generateKey(final MetricDefinition metric, final Object[] parameters) {
+        final StringBuilder keyBuilder = new StringBuilder();
 
         // Conditionally add key prefix.
         if (getMetricPrefix() != null && !getMetricPrefix().isEmpty()) {
@@ -220,7 +202,11 @@ public class StormRecorder implements MetricsRecorder {
                 .append(getMetricPrefix())
                 .append(".");
         }
-        keyBuilder.append(metricName);
+
+        // Our default implementation should include the simple class name in the key
+        keyBuilder.append(
+            MessageFormatter.format(metric.getKey(), parameters).getMessage()
+        );
         return keyBuilder.toString();
     }
 

@@ -322,26 +322,6 @@ Class | Key | Type | Description
 ------|-----|------|------------
 SidelineSpout | start-sideline | Counter | How many `Start Sideline` requests have been received.
 SidelineSpout | stop-sideline | Counter | How many `Stop Sideline` requests have been received.
-VirtualSpout | `virtual-spout-id`.emit | Counter | Tuple emit count per VirtualSpout instance.
-VirtualSpout | `virtual-spout-id`.ack | Counter | Tuple ack count per VirtualSpout instance.
-VirtualSpout | `virtual-spout-id`.fail | Counter | Messages who have failed.
-VirtualSpout | `virtual-spout-id`.filtered | Counter | Filtered messages per VirtualSpout instance.
-VirtualSpout | `virtual-spout-id`.exceeded_retry_limit | Counter | Messages who have exceeded the maximum configured retry count.
-VirtualSpout | `virtual-spout-id`.number_filters_applied | Gauge | How many Filters are being applied against the VirtualSpout instance.
-VirtualSpout | `virtual-spout-id`.partitionX.totalMessages | Gauge | Total number of messages to be processed by the VirtualSpout for the given partition.
-VirtualSpout | `virtual-spout-id`.partitionX.totalProcessed | Gauge | Number of messages processed by the VirtualSpout instance for the given partition.
-VirtualSpout | `virtual-spout-id`.partitionX.totalUnprocessed | Gauge | Number of messages remaining to be processed by the VirtualSpout instance for the given partition.
-VirtualSpout | `virtual-spout-id`.partitionX.percentComplete | Gauge | Percentage of messages processed out of the total for the given partition.
-VirtualSpout | `virtual-spout-id`.partitionX.startingOffset | Gauge | The starting offset position for the given partition.
-VirtualSpout | `virtual-spout-id`.partitionX.currentOffset | Gauge | The offset currently being processed for the given partition.
-VirtualSpout | `virtual-spout-id`.partitionX.endingOffset | Gauge | The ending offset for the given partition.
-SpoutMonitor | poolSize | Gauge | The max number of VirtualSpout instances that will be run concurrently.
-SpoutMonitor | running | Gauge | The number of running VirtualSpout instances.
-SpoutMonitor | queued | Gauge | The number of queued VirtualSpout instances.
-SpoutMonitor | completed | Gauge | The number of completed VirtualSpout instances.
-Consumer | topic.`topic`.partition.`partition`.currentOffset | Gauge | Offset consumer has processed.
-Consumer | topic.`topic`.partition.`partition`.endOffset | Gauge | Offset for TAIL position in the partition.
-Consumer | topic.`topic`.partition.`partition`.lag | Gauge | Difference between endOffset and currentOffset metrics.
 
 # Sidelining
 

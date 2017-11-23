@@ -36,6 +36,7 @@ import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -406,12 +407,12 @@ public class SpoutCoordinator implements Runnable {
         );
 
         // Report to metrics record
-        getMetricsRecorder().assignValue(getClass(), "bufferSize", getVirtualSpoutMessageBus().messageSize());
-        getMetricsRecorder().assignValue(getClass(), "running", executor.getActiveCount());
-        getMetricsRecorder().assignValue(getClass(), "queued", executor.getQueue().size());
-        getMetricsRecorder().assignValue(getClass(), "errored", getNumberOfFailedTasks());
-        getMetricsRecorder().assignValue(getClass(), "completed", executor.getCompletedTaskCount());
-        getMetricsRecorder().assignValue(getClass(), "poolSize", executor.getPoolSize());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_COORDINATOR_BUFFER_SIZE, getVirtualSpoutMessageBus().messageSize());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_COORDINATOR_RUNNING, executor.getActiveCount());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_COORDINATOR_QUEUED, executor.getQueue().size());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_COORDINATOR_ERRORED, getNumberOfFailedTasks());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_COORDINATOR_COMPLETED, executor.getCompletedTaskCount());
+        getMetricsRecorder().assignValue(Metrics.SPOUT_COORDINATOR_POOL_SIZE, executor.getPoolSize());
 
         // Loop through spouts instances
         try {
@@ -433,8 +434,9 @@ public class SpoutCoordinator implements Runnable {
 
                 // Report how many filters are applied on this virtual spout.
                 getMetricsRecorder().assignValue(
-                    VirtualSpout.class,
-                    spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied()
+                    Metrics.VIRTUAL_SPOUT_NUMBER_FILTERS_APPLIED,
+                    spout.getNumberOfFiltersApplied(),
+                    spout.getVirtualSpoutId().toString()
                 );
             }
         } catch (final Throwable throwable) {
