@@ -209,6 +209,19 @@ public class SpoutCoordinator implements Runnable {
     }
 
     /**
+     * Get a {@link DelegateSpout} instance from the {@link SpoutCoordinator}.
+     *
+     * This is useful is you want to manipulate the filter chain or alter the ending state after a {@link DelegateSpout} has
+     * been added to the {@link SpoutCoordinator}.
+     *
+     * @param virtualSpoutIdentifier identifier for teh {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}.
+     * @return {@link DelegateSpout} instance
+     */
+    public synchronized DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        return runningSpouts.get(virtualSpoutIdentifier).getSpoutRunner().getSpout();
+    }
+
+    /**
      * Signals to a VirtualSpout to stop, ultimately removing it from the monitor.
      * This call will block waiting for the VirtualSpout instance to shutdown.
      *

@@ -66,8 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.Iterator;
@@ -186,8 +184,11 @@ public class SidelineSpoutTest {
         // all tuples are filtered.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 3000L);
 
+        // TODO: Validate something in here
+        StaticTrigger.sendResumeRequest(request);
+
         // Send a stop sideline request
-        StaticTrigger.sendStopRequest(request);
+        StaticTrigger.sendCompleteRequest(request);
 
         // Wait for the sideline vspout to start,
         waitForVirtualSpouts(spout, 2);
@@ -293,8 +294,6 @@ public class SidelineSpoutTest {
         // This means that our starting offset for the sideline'd data should start at offset 3 (we acked offsets 0, 1, 2)
         StaticTrigger.sendStartRequest(request);
 
-        final SidelineRequestIdentifier sidelineRequestIdentifier = request.id;
-
         // Produce 5 more messages into kafka, should be offsets [10,11,12,13,14]
         final List<ProducedKafkaRecord<byte[], byte[]>> additionalProducedRecords = produceRecords(5, 0);
 
@@ -335,8 +334,11 @@ public class SidelineSpoutTest {
         // offsets [4,5,6,7,8,9,10,11,12,13,14] <- last committed offset now 14 on firehose.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 20, 100L);
 
+        // TODO: Validate something in here
+        StaticTrigger.sendResumeRequest(request);
+
         // Send a stop sideline request
-        StaticTrigger.sendStopRequest(request);
+        StaticTrigger.sendCompleteRequest(request);
         final SidelineVirtualSpoutIdentifier sidelineIdentifier = new SidelineVirtualSpoutIdentifier(consumerIdPrefix, request.id);
 
         // Verify 2 VirtualSpouts are running

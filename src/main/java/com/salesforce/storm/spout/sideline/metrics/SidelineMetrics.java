@@ -47,7 +47,15 @@ public final class SidelineMetrics {
         type = MetricDocumentation.Type.COUNTER,
         unit = MetricDocumentation.Unit.NUMBER,
         category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of stopped sidelines."
+        description = "Total number of resumed sidelines."
     )
-    public static final MetricDefinition STOP = new ClassMetric(SidelineSpoutHandler.class, "stop");
+    public static final MetricDefinition RESUME = new ClassMetric(SidelineSpoutHandler.class, "resume");
+
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.COUNTER,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.SIDELINE,
+        description = "Total number of resolving sidelines."
+    )
+    public static final MetricDefinition RESOLVE = new ClassMetric(SidelineSpoutHandler.class, "resolve");
 }

@@ -445,6 +445,20 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
+     * Get a {@link DelegateSpout} instance from the {@link SpoutCoordinator}.
+     *
+     * This is useful is you want to manipulate the filter chain or alter the ending state after a {@link DelegateSpout} has
+     * been added to the {@link SpoutCoordinator}.
+     *
+     * @param virtualSpoutIdentifier identifier for teh {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}.
+     * @return {@link DelegateSpout} instance
+     */
+    public DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        checkSpoutOpened();
+        return getSpoutCoordinator().getVirtualSpout(virtualSpoutIdentifier);
+    }
+
+    /**
      * Get the total number of virtual spouts in the coordinator.
      *
      * This method crosses the thread barrier to determine its value.

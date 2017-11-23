@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 
 /**
  * A proxy to create a layer of indirection between the SpoutHandler and the Triggers. This allows us to refactor where
@@ -36,28 +35,61 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 public interface SidelineController {
 
     /**
-     * Does a sideline exist in the started state?
+     * Is a sideline in the start state?
+     *
      * @param sidelineRequest sideline request.
-     * @return true it does, false it does not.
+     * @return true it is in this state, false if it is not.
      */
-    boolean isSidelineStarted(SidelineRequest sidelineRequest);
+    boolean isStarted(SidelineRequest sidelineRequest);
 
     /**
      * Start sidelining.
-     * @param request Sideline request, container an id and a filter chain step.
-     */
-    void startSidelining(final SidelineRequest request);
-
-    /**
-     * Does a sideline exist in the stopped state?
+     * 
+     * Starting a sideline applies a {@link com.salesforce.storm.spout.dynamic.filter.FilterChainStep} to the firehose
+     * such that messages are filtered. When this happens the current offset of the firehose is captured and persisted,
+     * as it will be used later when the sideline goes to {@link #resume(SidelineRequest)}.
+     *
      * @param sidelineRequest sideline request.
-     * @return true it has, false it has not.
      */
-    boolean isSidelineStopped(SidelineRequest sidelineRequest);
+    void start(final SidelineRequest sidelineRequest);
 
     /**
-     * Stop sidelining.
-     * @param request Sideline request, container an id and a filter chain step.
+     * Is a sideline in the resume state?
+     *
+     * @param sidelineRequest sideline request.
+     * @return true it is in this state, false if it is not.
      */
-    void stopSidelining(final SidelineRequest request);
+    boolean isResumed(SidelineRequest sidelineRequest);
+
+    /**
+     * Resume sidelining.
+     *
+     * Resuming a sideline create a new {@link com.salesforce.storm.spout.dynamic.VirtualSpout} instance that will
+     * using the offset captured in {@link #start(SidelineRequest)} as its starting point.  While a sideline is in
+     * this state the {@link com.salesforce.storm.spout.dynamic.filter.FilterChainStep} will remain on the firehose.
+     *
+     * @param sidelineRequest Sideline request, container an id and a filter chain step.
+     */
+    void resume(final SidelineRequest sidelineRequest);
+
+    /**
+     * Is a sideline is the resolve state?
+     *
+     * @param sidelineRequest sideline request.
+     * @return true it is in this state, false if it is not.
+     */
+    boolean isResolving(SidelineRequest sidelineRequest);
+
+    /**
+     * Resolve a sideline.
+     *
+     * The {@link com.salesforce.storm.spout.dynamic.VirtualSpout} processing the historical data from the sideline window is
+     * is given an ending offset, and the {@link com.salesforce.storm.spout.dynamic.filter.FilterChainStep} is removed
+     * from the firehose {@link com.salesforce.storm.spout.dynamic.VirtualSpout}.
+     *
+     * The verbiage here is that we are 'resolving' the sideline, meaning that we are moving back to processing on the firehose.
+     *
+     * @param sidelineRequest Sideline request, container an id and a filter chain step.
+     */
+    void resolve(final SidelineRequest sidelineRequest);
 }
