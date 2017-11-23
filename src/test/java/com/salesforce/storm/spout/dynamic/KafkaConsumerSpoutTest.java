@@ -33,6 +33,7 @@ import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
 import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
@@ -44,6 +45,7 @@ import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter
 import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.retry.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
+import com.salesforce.storm.spout.dynamic.test.TestHelper;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -146,7 +148,7 @@ public class KafkaConsumerSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
             config,
-            topologyContext,
+            new ConsumerPeerContext(0, 1),
             new FactoryManager(config),
             new LogRecorder(),
             null,
@@ -219,15 +221,7 @@ public class KafkaConsumerSpoutTest {
 
         // Add a VirtualSpout.
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
         spout.addVirtualSpout(virtualSpout);
 
         // Call next tuple, namespace is empty, so should get nothing.
@@ -333,15 +327,7 @@ public class KafkaConsumerSpoutTest {
 
         // Add a VirtualSpout.
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
         spout.addVirtualSpout(virtualSpout);
 
         // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
@@ -376,15 +362,8 @@ public class KafkaConsumerSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create and add virtual spout
-        virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Call next tuple to get remaining tuples out.
@@ -420,15 +399,8 @@ public class KafkaConsumerSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create new VirtualSpout instance and add it.
-        virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Validate no further tuples, as we acked all the things.
@@ -511,15 +483,7 @@ public class KafkaConsumerSpoutTest {
 
         // Create and add virtualSpout
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for our virtual spout to start
@@ -630,15 +594,7 @@ public class KafkaConsumerSpoutTest {
 
         // Create and add virtualSpout
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for our virtual spout to start

@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.apache.storm.task.TopologyContext;
@@ -44,10 +45,6 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      */
     private final Map<String, Object> spoutConfig;
     /**
-     * Topology context.
-     */
-    private final TopologyContext topologyContext;
-    /**
      * Factory manager, for creating instances of classes driven by configuration.
      */
     private final FactoryManager factoryManager;
@@ -55,25 +52,29 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      * Metrics recorder, for capturing metrics.
      */
     private final MetricsRecorder metricsRecorder;
+    /**
+     * Consumer peer context.
+     */
+    private final ConsumerPeerContext consumerPeerContext;
 
     /**
      * Factory for easily creating {@link DelegateSpout} instances.
      *
      * Handy in things like {@link com.salesforce.storm.spout.dynamic.handler.SpoutHandler} where we want to abstract away particulars, such
      * as the things passed down from {@link DynamicSpout} such as the {@link MetricsRecorder} as an example.
-     * @param spoutConfig Our topology config
-     * @param topologyContext Our topology context
-     * @param factoryManager FactoryManager instance.
-     * @param metricsRecorder MetricsRecorder instance.
+     * @param spoutConfig spout configuration.
+     * @param consumerPeerContext contextual information about this processes peers.
+     * @param factoryManager {@link FactoryManager} instance.
+     * @param metricsRecorder {@link MetricsRecorder} instance.
      */
     public VirtualSpoutFactory(
         final Map<String, Object> spoutConfig,
-        final TopologyContext topologyContext,
+        final ConsumerPeerContext consumerPeerContext,
         final FactoryManager factoryManager,
         final MetricsRecorder metricsRecorder
     ) {
         this.spoutConfig = spoutConfig;
-        this.topologyContext = topologyContext;
+        this.consumerPeerContext = consumerPeerContext;
         this.factoryManager = factoryManager;
         this.metricsRecorder = metricsRecorder;
     }
@@ -94,7 +95,7 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
         return new VirtualSpout(
             identifier,
             this.spoutConfig,
-            this.topologyContext,
+            this.consumerPeerContext,
             this.factoryManager,
             this.metricsRecorder,
             startingState,

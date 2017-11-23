@@ -38,6 +38,7 @@ import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.dynamic.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
+import com.salesforce.storm.spout.dynamic.test.TestHelper;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -200,15 +201,8 @@ public class DynamicSpoutTest {
         assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
 
         // Add a VirtualSpout.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for VirtualSpout to start
@@ -275,15 +269,8 @@ public class DynamicSpoutTest {
             new DefaultVirtualSpoutIdentifier("MyVSpoutId" + System.currentTimeMillis());
 
         // Add a VirtualSpout.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for VirtualSpout to start
@@ -357,15 +344,8 @@ public class DynamicSpoutTest {
             new DefaultVirtualSpoutIdentifier("MyVSpoutId" + System.currentTimeMillis());
 
         // Add a VirtualSpout.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for VirtualSpout to start
@@ -485,15 +465,8 @@ public class DynamicSpoutTest {
             new DefaultVirtualSpoutIdentifier("MyVSpoutId" + System.currentTimeMillis());
 
         // Add a VirtualSpout.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for VirtualSpout to start
@@ -559,15 +532,8 @@ public class DynamicSpoutTest {
             new DefaultVirtualSpoutIdentifier("MyVSpoutId" + System.currentTimeMillis());
 
         // Add a VirtualSpout.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for VirtualSpout to start
@@ -651,25 +617,8 @@ public class DynamicSpoutTest {
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
 
         // Create two virtual Spouts
-        final VirtualSpout virtualSpout1 = new VirtualSpout(
-            vspoutId1,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
-        // Add a VirtualSpout.
-        final VirtualSpout virtualSpout2 = new VirtualSpout(
-            vspoutId2,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout1 = TestHelper.createVirtualSpout(config, vspoutId1);
+        final VirtualSpout virtualSpout2 = TestHelper.createVirtualSpout(config, vspoutId2);
 
         // Add them
         spout.addVirtualSpout(virtualSpout1);
