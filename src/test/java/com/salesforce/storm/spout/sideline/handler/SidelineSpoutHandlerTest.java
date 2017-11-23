@@ -26,6 +26,9 @@
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
+import com.salesforce.storm.spout.dynamic.FactoryManager;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
+import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -74,8 +77,10 @@ public class SidelineSpoutHandlerTest {
     public void testOpen() {
         final Map<String, Object> config = getConfig();
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
 
         assertEquals(
             config,
@@ -99,8 +104,10 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getFireHoseSpout());
@@ -134,8 +141,10 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
 
         final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
 
@@ -200,8 +209,10 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
 
         final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
 
@@ -265,8 +276,10 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
 
         final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
 
@@ -345,8 +358,10 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertNotNull(sidelineSpoutHandler.getSidelineTriggers());
@@ -374,8 +389,10 @@ public class SidelineSpoutHandlerTest {
         // Override our trigger class with one that does not actually exist.
         config.put(SidelineConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
 
         expectedExceptionMisconfiguredCreateStartingTrigger.expect(RuntimeException.class);
 
@@ -402,9 +419,11 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         // Create our handler
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         final VirtualSpoutIdentifier virtualSpoutIdentifier = sidelineSpoutHandler.generateSidelineVirtualSpoutId(
@@ -436,8 +455,10 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
-        sidelineSpoutHandler.open(config);
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertTrue(
@@ -598,6 +619,10 @@ public class SidelineSpoutHandlerTest {
         // aforementioned lack of accessibility to non-firehose spouts.
         sidelineSpoutHandler.close();
         spout.close();
+    }
+
+    private VirtualSpoutFactory getVirtualSpoutFactory(final Map<String,Object> config) {
+        return new VirtualSpoutFactory(config, new MockTopologyContext(), new FactoryManager(config), new LogRecorder());
     }
 
     private Map<String, Object> getConfig() {

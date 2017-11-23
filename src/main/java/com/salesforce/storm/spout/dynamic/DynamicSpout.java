@@ -93,6 +93,11 @@ public class DynamicSpout extends BaseRichSpout {
     private final FactoryManager factoryManager;
 
     /**
+     * Factory creating {@link DelegateSpout} instances.
+     */
+    private DelegateSpoutFactory virtualSpoutFactory;
+
+    /**
      * Handler for callbacks at various stages of a dynamic spout's lifecycle.
      */
     private SpoutHandler spoutHandler;
@@ -125,7 +130,7 @@ public class DynamicSpout extends BaseRichSpout {
         this.spoutConfig = Collections.unmodifiableMap(SpoutConfig.setDefaults(spoutConfig));
 
         // Create our factory manager, which must be serializable.
-        factoryManager = new FactoryManager(getSpoutConfig());
+        this.factoryManager = new FactoryManager(getSpoutConfig());
     }
 
     /**
@@ -157,8 +162,8 @@ public class DynamicSpout extends BaseRichSpout {
         // finished setting all of these things up.
 
         // Initialize Metrics Collection
-        metricsRecorder = getFactoryManager().createNewMetricsRecorder();
-        metricsRecorder.open(getSpoutConfig(), getTopologyContext());
+        this.metricsRecorder = getFactoryManager().createNewMetricsRecorder();
+        this.metricsRecorder.open(getSpoutConfig(), getTopologyContext());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
@@ -186,14 +191,23 @@ public class DynamicSpout extends BaseRichSpout {
         // For emit metrics
         emitCountMetrics = Maps.newHashMap();
 
+        // TODO: This should be configurable and created dynamically, the problem is that right now we are still tightly
+        // coupled to the VirtualSpout implementation.
+        this.virtualSpoutFactory = new VirtualSpoutFactory(
+            spoutConfig,
+            topologyContext,
+            factoryManager,
+            metricsRecorder
+        );
+
         // Our spout is open, it's not dependent upon the handler to finish opening for us to be 'opened'
         // This is important, because if we waited most of our getters that check the opened state of the
         // spout would throw an exception and make them unusable.
         isOpen = true;
 
-        spoutHandler = getFactoryManager().createSpoutHandler();
-        spoutHandler.open(spoutConfig);
-        spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
+        this.spoutHandler = getFactoryManager().createSpoutHandler();
+        this.spoutHandler.open(spoutConfig, virtualSpoutFactory);
+        this.spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
     }
 
     /**
