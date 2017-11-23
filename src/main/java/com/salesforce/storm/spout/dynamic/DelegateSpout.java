@@ -103,13 +103,6 @@ public interface DelegateSpout {
     ConsumerState getEndingState();
 
     /**
-     * Get the number of filters applied to spout's filter chain. Used for metrics in the spout monitor.
-     * TODO Should we drop this metric? This feels out of place in the interface.
-     * @return Number of filters applied.
-     */
-    int getNumberOfFiltersApplied();
-
-    /**
      * Get the Consumer this spout is using to pull messages from.
      * @return Consumer instance.
      */

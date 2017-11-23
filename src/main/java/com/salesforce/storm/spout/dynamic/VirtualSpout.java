@@ -256,6 +256,8 @@ public class VirtualSpout implements DelegateSpout {
      */
     @Override
     public Message nextTuple() {
+        getMetricsRecorder().assignValue(getClass(), getVirtualSpoutId() + ".filters", getFilterChain().getSteps().size());
+
         // Start total Time timer.
         getMetricsRecorder().startTimer(getClass(), "nextTuple.entireMethod");
 
@@ -320,7 +322,7 @@ public class VirtualSpout implements DelegateSpout {
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
             // Increment filtered metric
-            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".filtered");
+            getMetricsRecorder().count(getClass(), getVirtualSpoutId() + ".filtered");
 
             // Ack
             ack(messageId);
@@ -433,7 +435,7 @@ public class VirtualSpout implements DelegateSpout {
             consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
 
             // Update metric
-            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit");
+            getMetricsRecorder().count(getClass(), getVirtualSpoutId() + ".exceeded_retry_limit");
 
             // Done.
             return;
@@ -443,7 +445,7 @@ public class VirtualSpout implements DelegateSpout {
         retryManager.failed(messageId);
 
         // Update metric
-        getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".fail");
+        getMetricsRecorder().count(getClass(), getVirtualSpoutId() + ".fail");
     }
 
     /**
@@ -517,11 +519,6 @@ public class VirtualSpout implements DelegateSpout {
 
     public ConsumerState getEndingState() {
         return endingState;
-    }
-
-    @Override
-    public int getNumberOfFiltersApplied() {
-        return getFilterChain().getSteps().size();
     }
 
     public Map<String, Object> getSpoutConfig() {

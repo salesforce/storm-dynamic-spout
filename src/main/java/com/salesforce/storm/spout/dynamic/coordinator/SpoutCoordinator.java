@@ -430,12 +430,6 @@ public class SpoutCoordinator implements Runnable {
                 getSpoutPartitionProgressMonitor().reportStatus(
                     spout
                 );
-
-                // Report how many filters are applied on this virtual spout.
-                getMetricsRecorder().assignValue(
-                    VirtualSpout.class,
-                    spout.getVirtualSpoutId() + ".number_filters_applied", spout.getNumberOfFiltersApplied()
-                );
             }
         } catch (final Throwable throwable) {
             // report the error up.
