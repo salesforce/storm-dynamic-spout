@@ -218,6 +218,13 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     synchronized void loadSidelines() {
         final VirtualSpoutIdentifier fireHoseIdentifier = getFireHoseSpoutIdentifier();
 
+        // Presumably this happens only if the VirtualSpout has crashed inside of the coordinator.  What this means is that the thread
+        // died, but we have a left over instance.  This is very unlikely to happen
+        if (!spout.hasVirtualSpout(fireHoseIdentifier) && fireHoseSpout != null) {
+            // We do not call close() here because it's NOT safe.
+            fireHoseSpout = null;
+        }
+
         // If we haven't spun up a VirtualSpout yet, we create it here.
         if (fireHoseSpout == null) {
             // Create the main spout for the namespace, we'll dub it the 'firehose'
