@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added isSidelineStarted() and isSidelineStopped() to the `SidelineController`
 - [PR-52](https://github.com/salesforce/storm-dynamic-spout/pull/52) Remove Kafka-Test-Server.  Replace with Kafka-JUnit external dependency.
+- [PR-66](https://github.com/salesforce/storm-dynamic-spout/pull/66) DynamicSpout.open() now throws IllegalStateException if you attempt to open it more than once.
 
 ### Improvements
 - [PR-38](https://github.com/salesforce/storm-dynamic-spout/pull/38) Removed unused method `Deserializer.getOutputFields()`.

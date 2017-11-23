@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.handler;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
+import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
