@@ -34,7 +34,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test that the factory correctly create {@link VirtualSpout instances}.
@@ -46,7 +46,7 @@ public class VirtualSpoutFactoryTest {
      */
     @Test
     public void testCreate() {
-        final Map config = new HashMap<>();
+        final Map<String,Object> config = new HashMap<>();
         final MockTopologyContext topologyContext = new MockTopologyContext();
         final FactoryManager factoryManager = new FactoryManager(config);
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -106,5 +106,4 @@ public class VirtualSpoutFactoryTest {
             virtualSpout.getEndingState()
         );
     }
-
 }
