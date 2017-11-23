@@ -522,7 +522,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
-        final VirtualSpout virtualSpout = delegateSpoutFactory.create(virtualSpoutId, startingState, endingState);
+        final DelegateSpout virtualSpout = delegateSpoutFactory.create(virtualSpoutId, startingState, endingState);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         virtualSpout.getFilterChain().addStep(id, step);
