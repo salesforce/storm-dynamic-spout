@@ -26,6 +26,7 @@
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
@@ -54,6 +55,7 @@ public class SidelineVirtualSpoutHandlerTest {
     @Test
     public void testOnVirtualSpoutCompletion() {
         final String prefix = "MyVirtualSpout";
+        final String namespace = MockConsumer.topic;
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("SidelineRequest");
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, new StaticMessageFilter());
 
@@ -77,7 +79,7 @@ public class SidelineVirtualSpoutHandlerTest {
             SidelineType.STOP,
             sidelineRequestIdentifier,
             sidelineRequest,
-            0, // partition
+            new ConsumerPartition(namespace, 0), // partition
             1L, // starting offset
             1L // ending offset
         );
@@ -85,7 +87,7 @@ public class SidelineVirtualSpoutHandlerTest {
             SidelineType.START,
             sidelineRequestIdentifier,
             sidelineRequest,
-            5, // partition
+            new ConsumerPartition(namespace, 5), // partition
             3L, // starting offset
             2L // ending offset
         );
@@ -95,13 +97,13 @@ public class SidelineVirtualSpoutHandlerTest {
 
         // Do we still have a record for partition 0?
         SidelinePayload partition0 = sidelineVirtualSpoutHandler.getPersistenceAdapter()
-            .retrieveSidelineRequest(sidelineRequestIdentifier, 0);
+            .retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(namespace, 0));
 
         assertNull(partition0);
 
         // Do we still have a record for partition 5?
         SidelinePayload partition5 = sidelineVirtualSpoutHandler.getPersistenceAdapter()
-            .retrieveSidelineRequest(sidelineRequestIdentifier, 5);
+            .retrieveSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(namespace, 5));
 
         assertNull(partition5);
 

@@ -247,8 +247,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             fireHoseSpout = delegateSpoutFactory.create(fireHoseIdentifier);
         }
 
-        final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
-
         final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
 
@@ -258,9 +256,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
             SidelinePayload payload = null;
 
-            final Set<Integer> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
+            final Set<ConsumerPartition> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
 
-            for (final Integer partition : partitions) {
+            for (final ConsumerPartition partition : partitions) {
                 payload = retrieveSidelinePayload(id, partition);
 
                 if (payload == null) {
@@ -268,11 +266,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                     continue;
                 }
 
-                startingStateBuilder.withPartition(topic, partition, payload.startingOffset);
+                startingStateBuilder.withPartition(partition, payload.startingOffset);
 
                 // We only have an ending offset on STOP requests
                 if (payload.endingOffset != null) {
-                    endingStateStateBuilder.withPartition(topic, partition, payload.endingOffset);
+                    endingStateStateBuilder.withPartition(partition, payload.endingOffset);
                 }
             }
 
@@ -361,7 +359,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 SidelineType.START,
                 sidelineRequest.id, // TODO: Now that this is in the request, we should change the persistence adapter
                 sidelineRequest,
-                consumerPartition.partition(),
+                consumerPartition,
                 startingState.getOffsetForNamespaceAndPartition(consumerPartition),
                 null
             );
@@ -421,7 +419,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             // This is the state that the VirtualSpout should start with
             final SidelinePayload sidelinePayload = retrieveSidelinePayload(
                 id,
-                consumerPartition.partition()
+                consumerPartition
             );
 
             if (sidelinePayload == null) {
@@ -439,7 +437,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 SidelineType.STOP,
                 id,
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
-                consumerPartition.partition(),
+                consumerPartition,
                 sidelinePayload.startingOffset,
                 endingState.getOffsetForNamespaceAndPartition(consumerPartition)
             );
@@ -557,9 +555,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         return new SidelineVirtualSpoutIdentifier(getVirtualSpoutIdPrefix(), sidelineRequestIdentifier);
     }
 
-    private SidelinePayload retrieveSidelinePayload(final SidelineRequestIdentifier id, final int partition) {
+    private SidelinePayload retrieveSidelinePayload(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
         try {
-            return getPersistenceAdapter().retrieveSidelineRequest(id, partition);
+            return getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition);
         } catch (InvalidFilterChainStepException ex) {
             logger.error("Unable to load sideline payload {}", ex);
             // Basically if we can't deserialize the step we're not sending back any part of the payload.

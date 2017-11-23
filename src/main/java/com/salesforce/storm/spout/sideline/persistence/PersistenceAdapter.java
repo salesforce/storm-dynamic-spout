@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.persistence;
 
+import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -54,7 +55,7 @@ public interface PersistenceAdapter {
      * @param type type of the sideline (Start/Stop).
      * @param id unique identifier for the sideline request.
      * @param request sideline request.
-     * @param partitionId Partition id
+     * @param consumerPartition consumer partition.
      * @param startingOffset Ending offset
      * @param endingOffset Starting offset
      */
@@ -62,7 +63,7 @@ public interface PersistenceAdapter {
         final SidelineType type,
         final SidelineRequestIdentifier id,
         final SidelineRequest request,
-        final int partitionId,
+        final ConsumerPartition consumerPartition,
         final Long startingOffset,
         final Long endingOffset
     );
@@ -70,24 +71,24 @@ public interface PersistenceAdapter {
     /**
      * Retrieves a sideline request state for the given SidelineRequestIdentifier.
      * @param id SidelineRequestIdentifier you want to retrieve the state for.
-     * @param partitionId PartitionId to persist.
-     * @return The ConsumerState that was persisted via persistSidelineRequestState().
+     * @param consumerPartition consumer partition.
+     * @return Payload of the sideline data that was persisted.
      */
-    SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id, int partitionId);
+    SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition);
 
     /**
      * List the partitions for the given sideline request.
      * @param id Identifier for the sideline request that you want the partitions for
-     * @return A list of the partitions for the sideline request
+     * @return A list of the consumer partitions for the sideline request
      */
-    Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id);
+    Set<ConsumerPartition> listSidelineRequestPartitions(final SidelineRequestIdentifier id);
 
     /**
      * Removes a sideline request from the persistence layer.
-     * @param id - SidelineRequestIdentifier you want to clear.
-     * @param partitionId - Partition of the sideline request you want to clear
+     * @param id Identifier to clear.
+     * @param consumerPartition consumer partition.
      */
-    void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId);
+    void clearSidelineRequest(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition);
 
     /**
      * Lists existing sideline requests.

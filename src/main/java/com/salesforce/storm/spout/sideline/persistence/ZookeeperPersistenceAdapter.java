@@ -29,6 +29,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
@@ -44,7 +45,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -121,23 +121,14 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         curator = null;
     }
 
-    /**
-     * Persist a sideline request
-     * @param type Sideline Type (Start/Stop)
-     * @param id Unique identifier for the sideline request.
-     * @param request Sideline Request
-     * @param partitionId Partition id
-     * @param startingOffset Ending offset
-     * @param endingOffset Starting offset
-     */
     @Override
     public void persistSidelineRequestState(
-        SidelineType type,
-        SidelineRequestIdentifier id,
-        SidelineRequest request,
-        int partitionId,
-        Long startingOffset,
-        Long endingOffset
+        final SidelineType type,
+        final SidelineRequestIdentifier id,
+        final SidelineRequest request,
+        final ConsumerPartition consumerPartition,
+        final Long startingOffset,
+        final Long endingOffset
     ) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
@@ -155,18 +146,18 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         data.put("filterChainStep", Serializer.serialize(request.step));
 
         // Persist!
-        curatorHelper.writeJson(getZkRequestStatePathForPartition(id.toString(), partitionId), data);
+        curatorHelper.writeJson(getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition), data);
     }
 
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
+    public SidelinePayload retrieveSidelineRequest(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Read!
-        final String path = getZkRequestStatePathForPartition(id.toString(), partitionId);
+        final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
         // TODO: We should make a real object for this and update readJson() to support a class declaration
         Map<Object, Object> json = curatorHelper.readJson(path);
         logger.debug("Read request state from Zookeeper at {}: {}", path, json);
@@ -193,27 +184,25 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         );
     }
 
-    /**
-     * Removes a sideline request from the persistence layer.
-     * @param id SidelineRequestIdentifier you want to clear.
-     * @param partitionId partition id to clear for.
-     */
     @Override
-    public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
+    public void clearSidelineRequest(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
         // Validate we're in a state that can be used.
         verifyHasBeenOpened();
 
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Delete!
-        final String path = getZkRequestStatePathForPartition(id.toString(), partitionId);
+        final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
         logger.info("Delete request from Zookeeper at {}", path);
         curatorHelper.deleteNode(path);
 
         // Attempt to delete the parent path.
         // This is a noop if the parent path is not empty.
-        final String parentPath = path.substring(0, path.lastIndexOf('/'));
-        curatorHelper.deleteNodeIfNoChildren(parentPath);
+        final String topicPath = path.substring(0, path.lastIndexOf('/'));
+        curatorHelper.deleteNodeIfNoChildren(topicPath);
+
+        final String sidelineRequestPath = topicPath.substring(0, topicPath.lastIndexOf('/'));
+        curatorHelper.deleteNodeIfNoChildren(sidelineRequestPath);
     }
 
     /**
@@ -246,38 +235,39 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         return ids;
     }
 
-    /**
-     * List the partitions for the given sideline request.
-     * @param id identifier for the sideline request that you want the partitions for
-     * @return a list of the partitions for the sideline request
-     */
     @Override
-    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+    public Set<ConsumerPartition> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
         verifyHasBeenOpened();
 
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
-        final Set<Integer> partitions = Sets.newHashSet();
+        final Set<ConsumerPartition> consumerPartitions = Sets.newHashSet();
 
         try {
             final String path = getZkRequestStatePath(id.toString());
 
             if (curator.checkExists().forPath(path) == null) {
-                return partitions;
+                return consumerPartitions;
             }
 
-            final List<String> partitionNodes = curator.getChildren().forPath(path);
+            final List<String> namespaces = curator.getChildren().forPath(path);
 
-            for (String partition : partitionNodes) {
-                partitions.add(Integer.valueOf(partition));
+            for (final String namespace : namespaces) {
+                final List<String> partitions = curator.getChildren().forPath(path + "/" + namespace);
+
+                for (final String partition : partitions) {
+                    consumerPartitions.add(
+                        new ConsumerPartition(namespace, Integer.valueOf(partition))
+                    );
+                }
             }
 
-            logger.debug("Partitions for sideline request {} = {}", id, partitions);
+            logger.debug("Partitions for sideline request {} = {}", id, consumerPartitions);
         } catch (Exception ex) {
             logger.error("{}", ex);
         }
 
-        return Collections.unmodifiableSet(partitions);
+        return Collections.unmodifiableSet(consumerPartitions);
     }
 
     private FilterChainStep parseJsonToFilterChainSteps(final Map<Object, Object> json) {
@@ -300,8 +290,8 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     /**
      * @return full zookeeper path for our sideline request for a specific partition.
      */
-    String getZkRequestStatePathForPartition(final String sidelineIdentifierStr, final int partitionId) {
-        return getZkRequestStatePath(sidelineIdentifierStr) + "/" + partitionId;
+    String getZkRequestStatePathForConsumerPartition(final String sidelineIdentifierStr, final ConsumerPartition consumerPartition) {
+        return getZkRequestStatePath(sidelineIdentifierStr) + "/" + consumerPartition.namespace() + "/" + consumerPartition.partition();
     }
 
     /**

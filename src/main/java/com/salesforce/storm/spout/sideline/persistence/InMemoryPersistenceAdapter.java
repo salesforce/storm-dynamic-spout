@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.sideline.persistence;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -35,6 +36,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -59,42 +61,29 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
         storedSidelineRequests.clear();
     }
 
-    /**
-     * @param type SidelineType (Start or Stop)
-     * @param id unique identifier for the sideline request.
-     * @param partitionId which partition we want to persist.
-     * @param startingOffset The starting offset to persist.
-     * @param endingOffset The ending offset to persist.
-     */
     @Override
     public void persistSidelineRequestState(
         final SidelineType type,
         final SidelineRequestIdentifier id,
         final SidelineRequest request,
-        final int partitionId,
+        final ConsumerPartition consumerPartition,
         final Long startingOffset,
         final Long endingOffset
     ) {
         storedSidelineRequests.put(
-            getSidelineRequestStateKey(id, partitionId),
+            getSidelineRequestStateKey(id, consumerPartition),
             new SidelinePayload(type, id, request, startingOffset, endingOffset)
         );
     }
 
-    /**
-     * Retrieves a sideline request state for the given SidelineRequestIdentifier.
-     * @param id SidelineRequestIdentifier you want to retrieve the state for.
-     * @param partitionId which partition
-     * @return The ConsumerState that was persisted via persistSidelineRequestState().
-     */
     @Override
-    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
-        return storedSidelineRequests.get(getSidelineRequestStateKey(id, partitionId));
+    public SidelinePayload retrieveSidelineRequest(SidelineRequestIdentifier id, ConsumerPartition consumerPartition) {
+        return storedSidelineRequests.get(getSidelineRequestStateKey(id, consumerPartition));
     }
 
     @Override
-    public void clearSidelineRequest(SidelineRequestIdentifier id, int partitionId) {
-        storedSidelineRequests.remove(getSidelineRequestStateKey(id, partitionId));
+    public void clearSidelineRequest(SidelineRequestIdentifier id, ConsumerPartition consumerPartition) {
+        storedSidelineRequests.remove(getSidelineRequestStateKey(id, consumerPartition));
     }
 
     @Override
@@ -109,54 +98,51 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     }
 
     @Override
-    public Set<Integer> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
-        final Set<Integer> partitions = Sets.newHashSet();
+    public Set<ConsumerPartition> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
+        final Set<ConsumerPartition> partitions = Sets.newHashSet();
 
         for (SidelineRequestStateKey key : storedSidelineRequests.keySet()) {
             if (key.id.equals(id)) {
-                partitions.add(key.partitionId);
+                partitions.add(key.consumerPartition);
             }
         }
 
         return Collections.unmodifiableSet(partitions);
     }
 
-    private SidelineRequestStateKey getSidelineRequestStateKey(final SidelineRequestIdentifier id, final int partitionId) {
-        return new SidelineRequestStateKey(id, partitionId);
+    private SidelineRequestStateKey getSidelineRequestStateKey(
+        final SidelineRequestIdentifier id,
+        final ConsumerPartition consumerPartition
+    ) {
+        return new SidelineRequestStateKey(id, consumerPartition);
     }
 
     private static class SidelineRequestStateKey {
 
         public final SidelineRequestIdentifier id;
-        public final int partitionId;
+        public final ConsumerPartition consumerPartition;
 
-        SidelineRequestStateKey(final SidelineRequestIdentifier id, final int partitionId) {
+        SidelineRequestStateKey(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
             this.id = id;
-            this.partitionId = partitionId;
+            this.consumerPartition = consumerPartition;
         }
 
         @Override
-        public boolean equals(Object other) {
-            if (this == other) {
+        public boolean equals(Object obj) {
+            if (this == obj) {
                 return true;
             }
-            if (other == null || getClass() != other.getClass()) {
+            if (obj == null || getClass() != obj.getClass()) {
                 return false;
             }
-
-            SidelineRequestStateKey that = (SidelineRequestStateKey) other;
-
-            if (partitionId != that.partitionId) {
-                return false;
-            }
-            return id != null ? id.equals(that.id) : that.id == null;
+            SidelineRequestStateKey that = (SidelineRequestStateKey) obj;
+            return Objects.equals(id, that.id)
+                && Objects.equals(consumerPartition, that.consumerPartition);
         }
 
         @Override
         public int hashCode() {
-            int result = id != null ? id.hashCode() : 0;
-            result = 31 * result + partitionId;
-            return result;
+            return Objects.hash(id, consumerPartition);
         }
     }
 }

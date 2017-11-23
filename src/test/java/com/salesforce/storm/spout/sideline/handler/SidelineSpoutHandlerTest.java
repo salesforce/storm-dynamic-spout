@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.handler;
 
+import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
@@ -126,6 +127,8 @@ public class SidelineSpoutHandlerTest {
     public void testOnSpoutOpenResumesSidelines() {
         final Map<String, Object> config = getConfig();
 
+        final String namespace = "Test";
+
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
         final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
@@ -153,7 +156,7 @@ public class SidelineSpoutHandlerTest {
             SidelineType.START,
             startRequestId,
             startRequest,
-            0,
+            new ConsumerPartition(namespace, 0),
             1L,
             2L
         );
@@ -162,7 +165,7 @@ public class SidelineSpoutHandlerTest {
             SidelineType.STOP,
             stopRequestId,
             stopRequest,
-            1,
+            new ConsumerPartition(namespace, 1),
             3L,
             4L
         );
@@ -202,6 +205,8 @@ public class SidelineSpoutHandlerTest {
     public void testStartSidelining() {
         final Map<String, Object> config = getConfig();
 
+        final String namespace = MockConsumer.topic;
+
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
         final SidelineRequest startRequest = new SidelineRequest(startRequestId, startFilter);
@@ -240,7 +245,7 @@ public class SidelineSpoutHandlerTest {
             sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().get(startRequestId)
         );
 
-        final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 0);
+        final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(startRequestId, new ConsumerPartition(namespace, 0));
 
         assertEquals(SidelineType.START, partition0.type);
         assertEquals(startRequestId, partition0.id);
@@ -248,7 +253,7 @@ public class SidelineSpoutHandlerTest {
         assertEquals(Long.valueOf(1L), partition0.startingOffset);
         assertNull(partition0.endingOffset);
 
-        final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(startRequestId, 5);
+        final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(startRequestId, new ConsumerPartition(namespace, 5));
 
         assertEquals(SidelineType.START, partition5.type);
         assertEquals(startRequestId, partition5.id);
@@ -268,6 +273,8 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testStopSidelining() {
         final Map<String, Object> config = getConfig();
+
+        final String namespace = MockConsumer.topic;
 
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
         final StaticMessageFilter stopFilter = new StaticMessageFilter();
@@ -291,7 +298,7 @@ public class SidelineSpoutHandlerTest {
             SidelineType.START,
             stopRequestId,
             stopRequest,
-            0, // partition
+            new ConsumerPartition(namespace, 0),
             1L, // starting offset
             null // ending offset
         );
@@ -299,7 +306,7 @@ public class SidelineSpoutHandlerTest {
             SidelineType.START,
             stopRequestId,
             stopRequest,
-            5, // partition
+            new ConsumerPartition(namespace, 5),
             3L, // starting offset
             null // ending offset
         );
@@ -324,7 +331,7 @@ public class SidelineSpoutHandlerTest {
             sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
         );
 
-        final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, 0);
+        final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, new ConsumerPartition(namespace, 0));
 
         assertEquals(SidelineType.STOP, partition0.type);
         assertEquals(stopRequestId, partition0.id);
@@ -332,7 +339,7 @@ public class SidelineSpoutHandlerTest {
         assertEquals(Long.valueOf(1L), partition0.startingOffset);
         assertEquals(Long.valueOf(1L), partition0.endingOffset);
 
-        final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, 5);
+        final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, new ConsumerPartition(namespace, 5));
 
         assertEquals(SidelineType.STOP, partition5.type);
         assertEquals(stopRequestId, partition5.id);
@@ -452,6 +459,8 @@ public class SidelineSpoutHandlerTest {
     public void testLoadSidelines() {
         final Map<String, Object> config = getConfig();
 
+        final String namespace = "Test";
+
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(null, new MockTopologyContext(), null);
 
@@ -486,7 +495,7 @@ public class SidelineSpoutHandlerTest {
             SidelineType.START,
             startRequestId,
             startRequest,
-            0,
+            new ConsumerPartition(namespace, 0),
             1L,
             2L
         );
@@ -495,7 +504,7 @@ public class SidelineSpoutHandlerTest {
             SidelineType.STOP,
             stopRequestId,
             stopRequest,
-            1,
+            new ConsumerPartition(namespace, 1),
             3L,
             4L
         );
