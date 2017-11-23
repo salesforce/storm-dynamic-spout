@@ -41,7 +41,7 @@ public interface DelegateSpoutFactory {
      * @param identifier identifier to use for this instance.
      * @return instance of {@link DelegateSpout}.
      */
-    <T extends DelegateSpout> T create(
+    DelegateSpout create(
         final VirtualSpoutIdentifier identifier
     );
 
@@ -51,7 +51,7 @@ public interface DelegateSpoutFactory {
      * @param startingState starting consumer state for this instance.
      * @return instance of {@link DelegateSpout}.
      */
-    <T extends DelegateSpout> T create(
+    DelegateSpout create(
         final VirtualSpoutIdentifier identifier,
         final ConsumerState startingState
     );
@@ -63,7 +63,7 @@ public interface DelegateSpoutFactory {
      * @param endingState ending consumer state for this instance.
      * @return instance of {@link DelegateSpout}.
      */
-    <T extends DelegateSpout> T create(
+    DelegateSpout create(
         final VirtualSpoutIdentifier identifier,
         final ConsumerState startingState,
         final ConsumerState endingState
