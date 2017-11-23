@@ -503,6 +503,7 @@ public class VirtualSpout implements DelegateSpout {
      * Get the spout's current consumer state.
      * @return current consumer state
      */
+    @Override
     public ConsumerState getCurrentState() {
         // This could happen is someone tries calling this method before the vspout is opened
         if (consumer == null) {
@@ -511,12 +512,24 @@ public class VirtualSpout implements DelegateSpout {
         return consumer.getCurrentState();
     }
 
+    @Override
     public ConsumerState getStartingState() {
         return startingState;
     }
 
+    @Override
     public ConsumerState getEndingState() {
         return endingState;
+    }
+
+    /**
+     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     *
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
+     */
+    @Override
+    public void setEndingState(final ConsumerState endingState) {
+        this.endingState = endingState;
     }
 
     @Override

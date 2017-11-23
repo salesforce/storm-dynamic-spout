@@ -1609,6 +1609,53 @@ public class VirtualSpoutTest {
     }
 
     /**
+     * Test that ending state can be set after the {@link VirtualSpout} is opened.
+     */
+    @Test
+    public void testSetEndingState() {
+        // Create inputs
+        final Map topologyConfig = getDefaultConfig();
+        final TopologyContext mockTopologyContext = new MockTopologyContext();
+        final RetryManager mockRetryManager = mock(RetryManager.class);
+
+        // Create a mock SidelineConsumer
+        final Consumer mockConsumer = mock(Consumer.class);
+
+        // Create factory manager
+        final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
+        when(mockFactoryManager.createNewConsumerInstance()).thenReturn(mockConsumer);
+
+        // Create spout & open
+        final VirtualSpout virtualSpout = new VirtualSpout(
+            new DefaultVirtualSpoutIdentifier("MyConsumerId"),
+            topologyConfig,
+            mockTopologyContext,
+            mockFactoryManager,
+            new LogRecorder(),
+            ConsumerState.builder().build(),
+            // Ending state here is explicitly set to null
+            null
+        );
+        virtualSpout.open();
+
+        assertNull("Ending state is not null", virtualSpout.getEndingState());
+
+        final ConsumerState endingState = ConsumerState
+            .builder()
+            .withPartition("Test", 0, 100L)
+            .build()
+        ;
+
+        virtualSpout.setEndingState(endingState);
+
+        assertEquals(
+            "Ending state does not match the one that was set",
+            endingState,
+            virtualSpout.getEndingState()
+        );
+    }
+
+    /**
      * Utility method to generate a standard config map.
      */
     private Map<String, Object> getDefaultConfig() {

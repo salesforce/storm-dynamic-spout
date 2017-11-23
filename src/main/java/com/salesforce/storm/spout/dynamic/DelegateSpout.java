@@ -103,6 +103,13 @@ public interface DelegateSpout {
     ConsumerState getEndingState();
 
     /**
+     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     *
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
+     */
+    void setEndingState(ConsumerState endingState);
+
+    /**
      * Get the number of filters applied to spout's filter chain. Used for metrics in the spout monitor.
      * TODO Should we drop this metric? This feels out of place in the interface.
      * @return Number of filters applied.

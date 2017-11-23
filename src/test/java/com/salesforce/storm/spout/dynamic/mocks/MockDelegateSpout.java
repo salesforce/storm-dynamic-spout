@@ -125,6 +125,17 @@ public class MockDelegateSpout implements DelegateSpout {
         return MockConsumer.buildConsumerState(MockConsumer.partitions);
     }
 
+    /**
+     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     *
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
+     */
+    @Override
+    public void setEndingState(final ConsumerState endingState) {
+        // NOOP for now, this should be improved with getStartingState() and getEndingState()
+    }
+
+
     @Override
     public int getNumberOfFiltersApplied() {
         return 0;
