@@ -106,8 +106,6 @@ public class DynamicSpout extends BaseRichSpout {
      * For collecting metrics.
      */
     private transient MetricsRecorder metricsRecorder;
-    private transient Map<VirtualSpoutIdentifier, Long> emitCountMetrics;
-    private long emitCounter = 0L;
 
     /**
      * Determines which output stream to emit tuples out.
@@ -187,9 +185,6 @@ public class DynamicSpout extends BaseRichSpout {
             metricsRecorder
         );
         spoutCoordinator.open();
-
-        // For emit metrics
-        emitCountMetrics = Maps.newHashMap();
 
         // TODO: This should be configurable and created dynamically, the problem is that right now we are still tightly
         // coupled to the VirtualSpout implementation.
