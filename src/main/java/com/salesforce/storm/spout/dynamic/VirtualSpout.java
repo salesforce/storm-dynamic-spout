@@ -470,6 +470,7 @@ public class VirtualSpout implements DelegateSpout {
         return virtualSpoutId;
     }
 
+    @Override
     public FilterChain getFilterChain() {
         return filterChain;
     }
@@ -505,11 +506,6 @@ public class VirtualSpout implements DelegateSpout {
     @Override
     public void setEndingState(final ConsumerState endingState) {
         this.endingState = endingState;
-    }
-
-    @Override
-    public int getNumberOfFiltersApplied() {
-        return getFilterChain().getSteps().size();
     }
 
     public Map<String, Object> getSpoutConfig() {

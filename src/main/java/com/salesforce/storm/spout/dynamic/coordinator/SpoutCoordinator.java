@@ -435,7 +435,7 @@ public class SpoutCoordinator implements Runnable {
                 // Report how many filters are applied on this virtual spout.
                 getMetricsRecorder().assignValue(
                     Metrics.VIRTUAL_SPOUT_NUMBER_FILTERS_APPLIED,
-                    spout.getNumberOfFiltersApplied(),
+                    spout.getFilterChain().getSteps().size(),
                     spout.getVirtualSpoutId().toString()
                 );
             }

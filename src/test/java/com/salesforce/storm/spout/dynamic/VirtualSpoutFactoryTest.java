@@ -68,7 +68,7 @@ public class VirtualSpoutFactoryTest {
             .withPartition(new ConsumerPartition("bar", 1), 72L)
             .build();
 
-        final VirtualSpout virtualSpout = virtualSpoutFactory.create(identifier, startingState, endingState);
+        final VirtualSpout virtualSpout = (VirtualSpout) virtualSpoutFactory.create(identifier, startingState, endingState);
 
         assertEquals(
             "Config doesn't match",

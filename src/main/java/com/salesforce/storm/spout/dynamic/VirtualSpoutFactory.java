@@ -82,7 +82,7 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      * @return instance of {@link DelegateSpout}.
      */
     @Override
-    public VirtualSpout create(
+    public DelegateSpout create(
         final VirtualSpoutIdentifier identifier,
         final ConsumerState startingState,
         final ConsumerState endingState
@@ -105,7 +105,7 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      * @return instance of {@link DelegateSpout}.
      */
     @Override
-    public VirtualSpout create(
+    public DelegateSpout create(
         final VirtualSpoutIdentifier identifier,
         final ConsumerState startingState
     ) {
@@ -118,7 +118,7 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      * @return instance of {@link DelegateSpout}.
      */
     @Override
-    public VirtualSpout create(
+    public DelegateSpout create(
         final VirtualSpoutIdentifier identifier
     ) {
         return create(identifier, null, null);

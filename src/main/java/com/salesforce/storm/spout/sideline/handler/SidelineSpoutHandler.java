@@ -37,7 +37,6 @@ import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
@@ -118,7 +117,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * This is our main Virtual Spout instance which consumes from the configured namespace.
      */
-    private VirtualSpout fireHoseSpout;
+    private DelegateSpout fireHoseSpout;
 
     /**
      * When this handler is opened this method stores spout config for use by the instance.
@@ -523,7 +522,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
-        final VirtualSpout virtualSpout = delegateSpoutFactory.create(virtualSpoutId, startingState, endingState);
+        final DelegateSpout virtualSpout = delegateSpoutFactory.create(virtualSpoutId, startingState, endingState);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         virtualSpout.getFilterChain().addStep(id, step);
@@ -598,7 +597,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * Get the firehose virtual spout
      * @return Firehose virtual spout.
      */
-    VirtualSpout getFireHoseSpout() {
+    DelegateSpout getFireHoseSpout() {
         return fireHoseSpout;
     }
 
