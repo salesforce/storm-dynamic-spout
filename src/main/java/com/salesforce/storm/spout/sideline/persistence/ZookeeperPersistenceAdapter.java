@@ -160,7 +160,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
         // Read!
-       final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
+        final String path = getZkRequestStatePathForConsumerPartition(id.toString(), consumerPartition);
 
         final SidelinePayload sidelinePayload = curatorHelper.readJson(path, SidelinePayload.class);
 
