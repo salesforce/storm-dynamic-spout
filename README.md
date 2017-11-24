@@ -169,14 +169,14 @@ spout.kafka.topic | String |  | Defines which Kafka topic we will consume messag
 ### Sideline Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
-sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 
-sideline.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 
-sideline.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 
+sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 6000
+sideline.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 10
+sideline.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 10
 sideline.persistence.zookeeper.root | String |  | Defines the root path to persist state under. Example: "/consumer-state" | 
 sideline.persistence.zookeeper.servers | List |  | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | 
-sideline.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 
+sideline.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 6000
 sideline.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
-sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check running sidelines and refresh them if necessary. Defaults to 600. | 
+sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check running sidelines and refresh them if necessary. | 600
 sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
 
 <!-- SIDELINE_CONFIGURATION_END_DELIMITER -->

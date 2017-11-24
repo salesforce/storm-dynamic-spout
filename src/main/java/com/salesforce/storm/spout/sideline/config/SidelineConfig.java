@@ -55,7 +55,7 @@ public class SidelineConfig {
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.SIDELINE,
-        description = "Interval (in seconds) to check running sidelines and refresh them if necessary. Defaults to 600.",
+        description = "Interval (in seconds) to check running sidelines and refresh them if necessary.",
         type = Integer.class
     )
     public static final String REFRESH_INTERVAL_SECONDS = "sideline.refresh_interval_seconds";

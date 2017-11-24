@@ -27,7 +27,6 @@ package com.salesforce.storm.spout.documentation;
 
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
-import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation;
 
 import java.io.BufferedReader;
 import java.io.IOException;

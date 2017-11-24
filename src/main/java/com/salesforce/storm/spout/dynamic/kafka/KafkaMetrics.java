@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
 import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
-import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation;
+import com.salesforce.storm.spout.documentation.MetricDocumentation;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 /**

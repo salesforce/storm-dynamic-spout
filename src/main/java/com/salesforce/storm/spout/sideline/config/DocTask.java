@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -62,7 +63,7 @@ public class DocTask {
     private static void generateConfigDocs(final Path inputPath) throws IOException {
         final String tagArg = "SIDELINE_CONFIGURATION";
         final List<ClassSpec> classSpecs = new ArrayList<>();
-        classSpecs.add(new ClassSpec(SidelineConfig.class));
+        classSpecs.add(new ClassSpec(SidelineConfig.class, SidelineConfig.setDefaults(new HashMap())));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateConfigDocs();

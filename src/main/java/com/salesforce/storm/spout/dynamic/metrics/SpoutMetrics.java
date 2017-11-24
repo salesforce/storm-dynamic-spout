@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
-import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation;
+import com.salesforce.storm.spout.documentation.MetricDocumentation;
 
 /**
  * Metrics for the {@link com.salesforce.storm.spout.dynamic.DynamicSpout} and friends.
