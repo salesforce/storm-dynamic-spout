@@ -46,6 +46,7 @@ import java.util.List;
 public class DocTask {
     /**
      * Entry point into Doc generating task.
+     * @param args not used.
      * @throws IOException on error writing file.
      */
     public static void main(final String[] args) throws IOException {

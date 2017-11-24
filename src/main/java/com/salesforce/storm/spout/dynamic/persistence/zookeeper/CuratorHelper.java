@@ -112,6 +112,7 @@ public class CuratorHelper {
      *
      * @param path node containing JSON to read from.
      * @param clazz class of the object the JSON should be deserialized to.
+     * @param <T> object type we are deserializing into.
      * @return map representing the JSON stored within the zookeeper node.
      */
     public <T> T readJson(final String path, final Class<T> clazz) {

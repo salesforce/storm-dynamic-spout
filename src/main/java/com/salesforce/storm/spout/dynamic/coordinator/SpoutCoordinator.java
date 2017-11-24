@@ -132,6 +132,7 @@ public class SpoutCoordinator implements Runnable {
     /**
      * Constructor.
      * @param topologyConfig Storm topology config.
+     * @param threadContext Contextual information used to name spawned threads.
      * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      * @param metricsRecorder MetricRecorder implementation for recording metrics.
      */

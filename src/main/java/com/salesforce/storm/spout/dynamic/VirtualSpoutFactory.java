@@ -61,6 +61,10 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      *
      * Handy in things like {@link com.salesforce.storm.spout.dynamic.handler.SpoutHandler} where we want to abstract away particulars, such
      * as the things passed down from {@link DynamicSpout} such as the {@link MetricsRecorder} as an example.
+     * @param spoutConfig Our topology config
+     * @param topologyContext Our topology context
+     * @param factoryManager FactoryManager instance.
+     * @param metricsRecorder MetricsRecorder instance.
      */
     public VirtualSpoutFactory(
         final Map<String, Object> spoutConfig,
