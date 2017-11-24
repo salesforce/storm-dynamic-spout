@@ -89,9 +89,15 @@ public interface Consumer {
      */
     ConsumerState flushConsumerState();
 
-    // The following methods are likely to be removed in future refactorings.
+    /**
+     * Cleanup internal consumer state relating to the instance.
+     */
     void removeConsumerState();
 
-    // Maybe the logic in VSpout that needs this can be refactored within KafkaConsumer?
+    /**
+     * Requests that the consumer stop consuming from the specified ConsumerPartition.
+     * @param consumerPartitionToUnsubscribe Consumer Partition to stop consuming from.
+     * @return true if unsubscribed, false if not.
+     */
     boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe);
 }
