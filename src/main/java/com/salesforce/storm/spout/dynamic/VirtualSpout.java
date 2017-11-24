@@ -34,7 +34,7 @@ import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.filter.FilterChain;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
-import com.salesforce.storm.spout.dynamic.metrics.Metrics;
+import com.salesforce.storm.spout.dynamic.metrics.SpoutMetrics;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
@@ -307,7 +307,7 @@ public class VirtualSpout implements DelegateSpout {
         if (isFiltered) {
             // Increment filtered metric
             getMetricsRecorder()
-                .count(Metrics.VIRTUAL_SPOUT_FILTERED, getVirtualSpoutId().toString());
+                .count(SpoutMetrics.VIRTUAL_SPOUT_FILTERED, getVirtualSpoutId().toString());
 
             // Ack
             ack(messageId);
@@ -377,7 +377,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // update ack metric
         getMetricsRecorder()
-            .count(Metrics.VIRTUAL_SPOUT_ACK, getVirtualSpoutId().toString());
+            .count(SpoutMetrics.VIRTUAL_SPOUT_ACK, getVirtualSpoutId().toString());
     }
 
     @Override
@@ -407,7 +407,7 @@ public class VirtualSpout implements DelegateSpout {
 
             // Update metric
             getMetricsRecorder()
-                .count(Metrics.VIRTUAL_SPOUT_EXCEEDED_RETRY_LIMIT, getVirtualSpoutId().toString());
+                .count(SpoutMetrics.VIRTUAL_SPOUT_EXCEEDED_RETRY_LIMIT, getVirtualSpoutId().toString());
 
             // Done.
             return;
@@ -418,7 +418,7 @@ public class VirtualSpout implements DelegateSpout {
 
         // Update metric
         getMetricsRecorder()
-            .count(Metrics.VIRTUAL_SPOUT_FAIL, getVirtualSpoutId().toString());
+            .count(SpoutMetrics.VIRTUAL_SPOUT_FAIL, getVirtualSpoutId().toString());
     }
 
     /**

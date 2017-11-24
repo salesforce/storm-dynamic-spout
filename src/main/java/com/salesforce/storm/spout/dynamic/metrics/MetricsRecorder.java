@@ -65,12 +65,14 @@ public interface MetricsRecorder {
 
     /**
      * Count a metric, given a name, increments it by value.
+     * @param metric metric definition.
      * @param incrementBy amount to increment the metric by.
      */
     void countBy(final MetricDefinition metric, final long incrementBy);
 
     /**
      * Count a metric, given a name and increments by a specific amount.
+     * @param metric metric definition.
      * @param incrementBy amount to increment the metric by.
      * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
      *                         can be replace with the supplied parameters.

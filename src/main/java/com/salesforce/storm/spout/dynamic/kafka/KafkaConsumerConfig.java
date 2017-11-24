@@ -25,8 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.kafka;
 
+import com.salesforce.storm.spout.documentation.ConfigDocumentation;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.config.annotation.Documentation;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.util.List;
@@ -45,8 +45,8 @@ public class KafkaConsumerConfig {
      * (String) Defines which Deserializer (Schema?) implementation to use.
      * Should be a full classpath to a class that implements the Deserializer interface.
      */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.KAFKA,
         description = "Defines which Deserializer (Schema?) implementation to use. "
         + "Should be a full classpath to a class that implements the Deserializer interface.",
         type = String.class
@@ -56,8 +56,8 @@ public class KafkaConsumerConfig {
     /**
      * (String) Defines which Kafka topic we will consume messages from.
      */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.KAFKA,
         description = "Defines which Kafka topic we will consume messages from.",
         type = String.class
     )
@@ -67,8 +67,8 @@ public class KafkaConsumerConfig {
      * (List[String]) Holds a list of Kafka Broker hostnames + ports in the following format:
      * ["broker1:9092", "broker2:9092", ...]
      */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.KAFKA,
         description = "Holds a list of Kafka Broker hostnames + ports in the following format: "
         + "[\"broker1:9092\", \"broker2:9092\", ...]",
         type = List.class
@@ -80,8 +80,8 @@ public class KafkaConsumerConfig {
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
      * This must be unique to your spout instance, and must not change between deploys.
      */
-    @Documentation(
-        category = Documentation.Category.KAFKA,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.KAFKA,
         description = "Defines a consumerId prefix to use for all consumers created by the spout. "
         + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class

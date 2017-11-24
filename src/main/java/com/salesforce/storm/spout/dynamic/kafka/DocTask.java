@@ -23,65 +23,47 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.config.annotation;
+package com.salesforce.storm.spout.dynamic.kafka;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.salesforce.storm.spout.documentation.ClassSpec;
+import com.salesforce.storm.spout.documentation.DocGenerator;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Annotation for documenting spout configuration options.
+ * Generates Configuration and Metric README documentation for Kafka Consumer.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface Documentation {
-
+public class DocTask {
     /**
-     * Enum of the categories for the configuration setting.
+     * Entry point into Doc generating task.
+     * @param args not used.
+     * @throws IOException on error writing file.
      */
-    enum Category {
-        NONE(""),
-        KAFKA("Kafka"),
-        PERSISTENCE("Persistence"),
-        PERSISTENCE_ZOOKEEPER("Zookeeper Persistence");
-
-        private final String value;
-
-        Category(final String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
+    public static void main(final String[] args) throws IOException {
+        final Path inputPath = Paths.get("README.md");
+        generateConfigDocs(inputPath);
+        generateMetricDocs(inputPath);
     }
 
-    /**
-     * @return Description of the configuration setting.
-     */
-    String description() default "";
+    private static void generateMetricDocs(final Path inputPath) throws IOException {
+        final String tagArg = "KAFKA_CONSUMER_METRICS";
+        final List<ClassSpec> classSpecs = new ArrayList<>();
+        classSpecs.add(new ClassSpec(KafkaMetrics.class));
 
-    /**
-     * @return Whether or not the configuration setting is required.
-     */
-    boolean required() default false;
+        final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
+        docGenerator.generateMetricDocs();
+    }
 
-    /**
-     * @return Category of the configuration setting.
-     */
-    Category category() default Category.NONE;
+    private static void generateConfigDocs(final Path inputPath) throws IOException {
+        final String tagArg = "KAFKA_CONSUMER_CONFIGURATION";
+        final List<ClassSpec> classSpecs = new ArrayList<>();
+        classSpecs.add(new ClassSpec(KafkaConsumerConfig.class));
 
-    /**
-     * @return Type of the value for the configuration setting.
-     */
-    Class type() default Default.class;
-
-    /**
-     * Default class type for use on the type field.
-     */
-    final class Default {}
+        final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
+        docGenerator.generateConfigDocs();
+    }
 }

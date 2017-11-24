@@ -23,31 +23,43 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.metrics;
+package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
 import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
 import com.salesforce.storm.spout.documentation.MetricDocumentation;
-import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 /**
- * Sideline specific metrics.
+ * Metrics for the {@link com.salesforce.storm.spout.dynamic.kafka.Consumer} and friends.
  */
-public final class SidelineMetrics {
+public final class KafkaMetrics {
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.GAUGE,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.KAFKA,
+        description = "Offset consumer has processed.",
+        dynamicValues = { "topic", "partition" }
+    )
+    public static final MetricDefinition KAFKA_CURRENT_OFFSET =
+        new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.currentOffset");
 
     @MetricDocumentation(
-        type = MetricDocumentation.Type.COUNTER,
+        type = MetricDocumentation.Type.GAUGE,
         unit = MetricDocumentation.Unit.NUMBER,
-        category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of started sidelines."
+        category = MetricDocumentation.Category.KAFKA,
+        description = "Offset for TAIL position in the partition.",
+        dynamicValues = { "topic", "partition" }
     )
-    public static final MetricDefinition START = new ClassMetric(SidelineSpoutHandler.class, "start");
+    public static final MetricDefinition KAFKA_END_OFFSET =
+        new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.endOffset");
 
     @MetricDocumentation(
-        type = MetricDocumentation.Type.COUNTER,
+        type = MetricDocumentation.Type.GAUGE,
         unit = MetricDocumentation.Unit.NUMBER,
-        category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of stopped sidelines."
+        category = MetricDocumentation.Category.KAFKA,
+        description = "Difference between endOffset and currentOffset metrics.",
+        dynamicValues = { "topic", "partition" }
     )
-    public static final MetricDefinition STOP = new ClassMetric(SidelineSpoutHandler.class, "stop");
+    public static final MetricDefinition KAFKA_LAG = new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.lag");
 }

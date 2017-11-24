@@ -23,31 +23,40 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.metrics;
+package com.salesforce.storm.spout.documentation;
 
-import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
-import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
-import com.salesforce.storm.spout.documentation.MetricDocumentation;
-import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Sideline specific metrics.
+ * Define a Class instance to generate documentation from.
  */
-public final class SidelineMetrics {
+public class ClassSpec {
+    private final Class clazz;
+    private final Map<String, Object> defaults;
 
-    @MetricDocumentation(
-        type = MetricDocumentation.Type.COUNTER,
-        unit = MetricDocumentation.Unit.NUMBER,
-        category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of started sidelines."
-    )
-    public static final MetricDefinition START = new ClassMetric(SidelineSpoutHandler.class, "start");
+    /**
+     * Constructor.
+     * @param clazz Class to generate documentation for.
+     * @param defaults Default values for each option.
+     */
+    public ClassSpec(final Class clazz, final Map<String, Object> defaults) {
+        this.clazz = clazz;
+        this.defaults = defaults;
+    }
 
-    @MetricDocumentation(
-        type = MetricDocumentation.Type.COUNTER,
-        unit = MetricDocumentation.Unit.NUMBER,
-        category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of stopped sidelines."
-    )
-    public static final MetricDefinition STOP = new ClassMetric(SidelineSpoutHandler.class, "stop");
+    public ClassSpec(final Class clazz) {
+        this(clazz, new HashMap<>());
+    }
+
+    /**
+     * @return Configured class instance.
+     */
+    public Class getClazz() {
+        return clazz;
+    }
+
+    public Map<String, Object> getDefaults() {
+        return defaults;
+    }
 }

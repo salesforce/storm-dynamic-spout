@@ -23,31 +23,67 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.metrics;
+package com.salesforce.storm.spout.documentation;
 
-import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
-import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
-import com.salesforce.storm.spout.documentation.MetricDocumentation;
-import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Sideline specific metrics.
+ * Annotation for documenting spout configuration options.
  */
-public final class SidelineMetrics {
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface ConfigDocumentation {
 
-    @MetricDocumentation(
-        type = MetricDocumentation.Type.COUNTER,
-        unit = MetricDocumentation.Unit.NUMBER,
-        category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of started sidelines."
-    )
-    public static final MetricDefinition START = new ClassMetric(SidelineSpoutHandler.class, "start");
+    /**
+     * Enum of the categories for the configuration setting.
+     */
+    enum Category {
+        NONE(""),
+        DYNAMIC_SPOUT("Dynamic Spout"),
+        KAFKA("Kafka Consumer"),
+        PERSISTENCE("Persistence"),
+        PERSISTENCE_ZOOKEEPER("Zookeeper Persistence"),
+        SIDELINE("Sideline");
 
-    @MetricDocumentation(
-        type = MetricDocumentation.Type.COUNTER,
-        unit = MetricDocumentation.Unit.NUMBER,
-        category = MetricDocumentation.Category.SIDELINE,
-        description = "Total number of stopped sidelines."
-    )
-    public static final MetricDefinition STOP = new ClassMetric(SidelineSpoutHandler.class, "stop");
+        private final String value;
+
+        Category(final String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
+    /**
+     * @return Description of the configuration setting.
+     */
+    String description() default "";
+
+    /**
+     * @return Whether or not the configuration setting is required.
+     */
+    boolean required() default false;
+
+    /**
+     * @return Category of the configuration setting.
+     */
+    Category category() default Category.NONE;
+
+    /**
+     * @return Type of the value for the configuration setting.
+     */
+    Class type() default Default.class;
+
+    /**
+     * Default class type for use on the type field.
+     */
+    final class Default {}
 }

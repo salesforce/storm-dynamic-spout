@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.metrics.annotation;
+package com.salesforce.storm.spout.documentation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -39,7 +39,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Documentation {
+public @interface MetricDocumentation {
 
     /**
      * Types of metrics.
@@ -48,16 +48,30 @@ public @interface Documentation {
         AVERAGE,
         COUNTER,
         GAUGE,
-        TIMER
+        TIMER;
+
+        public String toString() {
+            return name();
+        }
     }
 
     /**
      * Categories for a metric.
      */
     enum Category {
-        DYNAMIC_SPOUT,
-        KAFKA,
-        SIDELINE
+        DYNAMIC_SPOUT("Dynamic Spout"),
+        KAFKA("Kafka"),
+        SIDELINE("Sideline");
+
+        final String value;
+
+        Category(final String value) {
+            this.value = value;
+        }
+
+        public String toString() {
+            return value;
+        }
     }
 
     /**
@@ -75,10 +89,14 @@ public @interface Documentation {
         Unit(final String value) {
             this.value = value;
         }
+
+        public String toString() {
+            return value;
+        }
     }
 
     /**
-     * @return description of the configuration setting.
+     * @return description of the metric.
      */
     String description() default "";
 
@@ -93,12 +111,12 @@ public @interface Documentation {
     Unit unit() default Unit.UNKNOWN;
 
     /**
-     * @return category of the configuration setting.
+     * @return category of the metric.
      */
     Category category();
 
     /**
-     * @return category of the configuration setting.
+     * @return type of the metric.
      */
     Type type();
 }

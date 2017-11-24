@@ -45,7 +45,7 @@
     <licenses>
         <license>
             <name>BSD-3</name>
-            <url>https://github.com/salesforce/storm-dynamic-spout/blob/master/LICENSE.txt</url>
+            <url>https://raw.githubusercontent.com/salesforce/storm-dynamic-spout/master/LICENSE.txt</url>
         </license>
     </licenses>
 
@@ -415,6 +415,51 @@
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
+            </plugin>
+
+            <!-- Generate README documentation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <!-- Generate DynamicSpout docs -->
+                    <execution>
+                        <id>generate-dynamicspout-docs</id>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.salesforce.storm.spout.dynamic.config.DocTask</mainClass>
+                        </configuration>
+                    </execution>
+
+                    <!-- Generate KafkaConsumer docs -->
+                    <execution>
+                        <id>generate-kafkaconsumer-docs</id>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.salesforce.storm.spout.dynamic.kafka.DocTask</mainClass>
+                        </configuration>
+                    </execution>
+
+                    <!-- Generate Sideline Docs -->
+                    <execution>
+                        <id>generate-sideline-docs</id>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.salesforce.storm.spout.sideline.config.DocTask</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+
             </plugin>
         </plugins>
 

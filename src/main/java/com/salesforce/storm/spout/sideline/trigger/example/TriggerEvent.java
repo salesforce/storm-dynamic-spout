@@ -61,11 +61,12 @@ public class TriggerEvent {
      * trigger and one that has not.
      *
      * @param type sideline type, either start of stop.
-     * @param data data bag, key => values.
+     * @param data data bag, maps keys to values.
      * @param createdAt when the event was created.
      * @param createdBy who created the event.
      * @param description a description of the reason for the sideline request.
      * @param processed whether or not the event (in its current state has been processed)
+     * @param updatedAt Timestamp the event was last updated.
      */
     public TriggerEvent(
         final SidelineType type,
