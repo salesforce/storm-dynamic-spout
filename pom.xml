@@ -416,6 +416,39 @@
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
+
+            <!-- Generate README documentation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <!-- Generate DynamicSpout docs -->
+                    <execution>
+                        <id>generate-dynamicspout-docs</id>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.salesforce.storm.spout.dynamic.config.DocTask</mainClass>
+                        </configuration>
+                    </execution>
+
+                    <!-- Generate Sideline Docs -->
+                    <execution>
+                        <id>generate-sideline-docs</id>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.salesforce.storm.spout.sideline.config.DocTask</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+
+            </plugin>
         </plugins>
 
         <pluginManagement>
