@@ -64,8 +64,8 @@ public class DocGenerator {
      */
     public DocGenerator(final Path inputPath, final String delimiterTag, final List<ClassSpec> classSpecs) {
         this.inputPath = inputPath;
-        this.delimiterStartTag =  "[//]: <> (" + delimiterTag + "_BEGIN_DELIMITER)";
-        this.delimiterStopTag = "[//]: <> (" + delimiterTag + "_END_DELIMITER)";
+        this.delimiterStartTag =  "<!-- " + delimiterTag + "_BEGIN_DELIMITER -->";
+        this.delimiterStopTag = "<!-- " + delimiterTag + "_END_DELIMITER -->";
         this.classSpecs = classSpecs;
     }
 

@@ -111,7 +111,7 @@ When your topology is deployed with a `DynamicSpout` and it starts up, the `Dyna
 ## Configuration
 All of these options can be found inside of [SpoutConfig](src/main/java/com/salesforce/storm/spout/dynamic/config/SpoutConfig.java).
 
-[//]: <> (DYNAMIC_SPOUT_CONFIGURATION_BEGIN_DELIMITER)
+<!-- DYNAMIC_SPOUT_CONFIGURATION_BEGIN_DELIMITER -->
 ### Dynamic Spout Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
@@ -152,9 +152,9 @@ spout.persistence.zookeeper.root | String |  | Defines the root path to persist 
 spout.persistence.zookeeper.servers | List |  | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | 
 spout.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 6000
 
-[//]: <> (DYNAMIC_SPOUT_CONFIGURATION_END_DELIMITER)
+<!-- DYNAMIC_SPOUT_CONFIGURATION_END_DELIMITER -->
 
-[//]: <> (KAFKA_CONSUMER_CONFIGURATION_BEGIN_DELIMITER)
+<!-- KAFKA_CONSUMER_CONFIGURATION_BEGIN_DELIMITER -->
 ### Kafka Consumer Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
@@ -163,9 +163,9 @@ spout.kafka.brokers | List |  | Holds a list of Kafka Broker hostnames + ports i
 spout.kafka.deserializer.class | String |  | Defines which Deserializer (Schema?) implementation to use. Should be a full classpath to a class that implements the Deserializer interface. | 
 spout.kafka.topic | String |  | Defines which Kafka topic we will consume messages from. | 
 
-[//]: <> (KAFKA_CONSUMER_CONFIGURATION_END_DELIMITER)
+<!-- KAFKA_CONSUMER_CONFIGURATION_END_DELIMITER -->
 
-[//]: <> (SIDELINE_CONFIGURATION_BEGIN_DELIMITER)
+<!-- SIDELINE_CONFIGURATION_BEGIN_DELIMITER -->
 ### Sideline Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
@@ -179,7 +179,7 @@ sideline.persistence_adapter.class | String | Required | Defines which Persisten
 sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check running sidelines and refresh them if necessary. Defaults to 600. | 
 sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
 
-[//]: <> (SIDELINE_CONFIGURATION_END_DELIMITER)
+<!-- SIDELINE_CONFIGURATION_END_DELIMITER -->
 
 
 ## Components
@@ -322,7 +322,7 @@ Timer | Calculates how long on average, in milliseconds, an event takes.  These 
 
 Below is a list of metrics that are collected with the metric type and description.
 
-[//]: <> (DYNAMIC_SPOUT_METRICS_BEGIN_DELIMITER)
+<!-- DYNAMIC_SPOUT_METRICS_BEGIN_DELIMITER -->
 ### Dynamic Spout Metrics
 Key | Type | Unit | Description |
 --- | ---- | ---- | ----------- |
@@ -346,9 +346,9 @@ VirtualSpout.{virtualSpoutIdentifier}.partition.{partition}.totalMessages | GAUG
 VirtualSpout.{virtualSpoutIdentifier}.partition.{partition}.totalProcessed | GAUGE | Number | Number of messages processed by the VirtualSpout instance for the given partition. | 
 VirtualSpout.{virtualSpoutIdentifier}.partition.{partition}.totalUnprocessed | GAUGE | Number | Number of messages remaining to be processed by the VirtualSpout instance for the given partition. | 
 
-[//]: <> (DYNAMIC_SPOUT_METRICS_END_DELIMITER)
+<!-- DYNAMIC_SPOUT_METRICS_END_DELIMITER -->
 
-[//]: <> (KAFKA_CONSUMER_METRICS_BEGIN_DELIMITER)
+<!-- KAFKA_CONSUMER_METRICS_BEGIN_DELIMITER -->
 ### Kafka Metrics
 Key | Type | Unit | Description |
 --- | ---- | ---- | ----------- |
@@ -356,16 +356,16 @@ KafkaConsumer.topic.{topic}.partition.{partition}.currentOffset | GAUGE | Number
 KafkaConsumer.topic.{topic}.partition.{partition}.endOffset | GAUGE | Number | Offset for TAIL position in the partition. | 
 KafkaConsumer.topic.{topic}.partition.{partition}.lag | GAUGE | Number | Difference between endOffset and currentOffset metrics. | 
 
-[//]: <> (KAFKA_CONSUMER_METRICS_END_DELIMITER)
+<!-- KAFKA_CONSUMER_METRICS_END_DELIMITER -->
 
-[//]: <> (SIDELINE_METRICS_BEGIN_DELIMITER)
+<!-- SIDELINE_METRICS_BEGIN_DELIMITER -->
 ### Sideline Metrics
 Key | Type | Unit | Description |
 --- | ---- | ---- | ----------- |
 SidelineSpoutHandler.start | COUNTER | Number | Total number of started sidelines. | 
 SidelineSpoutHandler.stop | COUNTER | Number | Total number of stopped sidelines. | 
 
-[//]: <> (SIDELINE_METRICS_END_DELIMITER)
+<!-- SIDELINE_METRICS_END_DELIMITER -->
 
 # Sidelining
 
