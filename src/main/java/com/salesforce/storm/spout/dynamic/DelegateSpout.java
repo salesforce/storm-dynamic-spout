@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
+import com.salesforce.storm.spout.dynamic.filter.FilterChain;
 
 /**
  * A virtualized spout that is run from within the DyanmicSpout by the SpoutCoordinator.
@@ -103,15 +104,21 @@ public interface DelegateSpout {
     ConsumerState getEndingState();
 
     /**
-     * Get the number of filters applied to spout's filter chain. Used for metrics in the spout monitor.
-     * TODO Should we drop this metric? This feels out of place in the interface.
-     * @return Number of filters applied.
+     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     *
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
      */
-    int getNumberOfFiltersApplied();
+    void setEndingState(ConsumerState endingState);
 
     /**
      * Get the Consumer this spout is using to pull messages from.
      * @return Consumer instance.
      */
     Consumer getConsumer();
+
+    /**
+     * Get the filter chain.
+     * @return filter chain instance.
+     */
+    FilterChain getFilterChain();
 }

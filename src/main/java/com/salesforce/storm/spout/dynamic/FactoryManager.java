@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
@@ -66,8 +67,8 @@ public class FactoryManager implements Serializable {
      * @return returns a new instance of the configured RetryManager.
      */
     public RetryManager createNewFailedMsgRetryManagerInstance() {
-        return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.RETRY_MANAGER_CLASS)
+        return createNewInstanceFromConfig(
+            SpoutConfig.RETRY_MANAGER_CLASS
         );
     }
 
@@ -75,8 +76,8 @@ public class FactoryManager implements Serializable {
      * @return returns a new instance of the configured persistence manager.
      */
     public PersistenceAdapter createNewPersistenceAdapterInstance() {
-        return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ADAPTER_CLASS)
+        return createNewInstanceFromConfig(
+            SpoutConfig.PERSISTENCE_ADAPTER_CLASS
         );
     }
 
@@ -84,8 +85,8 @@ public class FactoryManager implements Serializable {
      * @return returns a new instance of the configured Metrics Recorder manager.
      */
     public MetricsRecorder createNewMetricsRecorder() {
-        return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.METRICS_RECORDER_CLASS)
+        return createNewInstanceFromConfig(
+            SpoutConfig.METRICS_RECORDER_CLASS
         );
     }
 
@@ -93,8 +94,8 @@ public class FactoryManager implements Serializable {
      * @return returns a new instance of the configured MessageBuffer interface.
      */
     public MessageBuffer createNewMessageBufferInstance() {
-        return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.TUPLE_BUFFER_CLASS)
+        return createNewInstanceFromConfig(
+            SpoutConfig.TUPLE_BUFFER_CLASS
         );
     }
 
@@ -102,8 +103,8 @@ public class FactoryManager implements Serializable {
      * @return returns a new instance of the configured Consumer interface.
      */
     public Consumer createNewConsumerInstance() {
-        return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.CONSUMER_CLASS)
+        return createNewInstanceFromConfig(
+            SpoutConfig.CONSUMER_CLASS
         );
     }
 
@@ -112,8 +113,8 @@ public class FactoryManager implements Serializable {
      * @return Instance of a SpoutHandler
      */
     public SpoutHandler createSpoutHandler() {
-        return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.SPOUT_HANDLER_CLASS)
+        return createNewInstanceFromConfig(
+            SpoutConfig.SPOUT_HANDLER_CLASS
         );
     }
 
@@ -122,8 +123,19 @@ public class FactoryManager implements Serializable {
      * @return Instance of a VirtualSpoutHandler
      */
     public synchronized VirtualSpoutHandler createVirtualSpoutHandler() {
+        return createNewInstanceFromConfig(
+            SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS
+        );
+    }
+
+    private synchronized <T> T createNewInstanceFromConfig(final String configKey) {
+        Preconditions.checkState(
+            spoutConfig.containsKey(configKey),
+            "Class has not been specified for configuration key " + configKey
+        );
+
         return createNewInstance(
-            (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS)
+            (String) spoutConfig.get(configKey)
         );
     }
 

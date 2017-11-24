@@ -23,68 +23,82 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.handler;
+package com.salesforce.storm.spout.dynamic.metrics.annotation;
 
-import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
-import com.salesforce.storm.spout.dynamic.DynamicSpout;
-import org.apache.storm.task.TopologyContext;
-
-import java.util.Map;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Handlers (or callbacks) used by the DynamicSpout during it's lifecycle. Integrations can hook into the DynamicSpout
- * by creating a SpoutHanlder implementation.
+ * Document metric information.
+ *
+ * Used to auto-generate metric documentation in README files.
  */
-public interface SpoutHandler {
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Documentation {
 
     /**
-     * Open the handler.
-     * @param spoutConfig Spout configuration.
-     * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
+     * Types of metrics.
      */
-    default void open(Map<String, Object> spoutConfig, DelegateSpoutFactory delegateSpoutFactory) {
-
+    enum Type {
+        AVERAGE,
+        COUNTER,
+        GAUGE,
+        TIMER
     }
 
     /**
-     * Close the handler.
+     * Categories for a metric.
      */
-    default void close() {
-
+    enum Category {
+        DYNAMIC_SPOUT,
+        KAFKA,
+        SIDELINE
     }
 
     /**
-     * Called when the DynamicSpout is opened.
-     * @param spout DynamicSpout instance.
-     * @param topologyConfig Topology configuration.
-     * @param topologyContext Topology context.
+     * Unit for a metric.
      */
-    default void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
+    enum Unit {
+        UNKNOWN("Unknown"),
+        NUMBER("Number"),
+        PERCENT("Percent 0.0 to 1.0"),
+        TIME_MILLISECONDS("Time in milliseconds"),
+        TIME_SECONDS("Time in seconds");
 
+        final String value;
+
+        Unit(final String value) {
+            this.value = value;
+        }
     }
 
     /**
-     * Called when the DynamicSpout is activated.
-     * @param spout DynamicSpout instance.
+     * @return description of the configuration setting.
      */
-    default void onSpoutActivate(DynamicSpout spout) {
-
-    }
+    String description() default "";
 
     /**
-     * Called when the DynamicSpout is deactivated.
-     * @param spout DynamicSpout instance.
+     * @return values that should be replaced in the key.
      */
-    default void onSpoutDeactivate(DynamicSpout spout) {
-
-    }
+    String[] dynamicValues() default {};
 
     /**
-     * Called when the DynamicSpout is closed.
-     * @param spout DynamicSpout instance.
+     * @return unit of measurement for the metric.
      */
-    default void onSpoutClose(DynamicSpout spout) {
+    Unit unit() default Unit.UNKNOWN;
 
-    }
+    /**
+     * @return category of the configuration setting.
+     */
+    Category category();
+
+    /**
+     * @return category of the configuration setting.
+     */
+    Type type();
 }

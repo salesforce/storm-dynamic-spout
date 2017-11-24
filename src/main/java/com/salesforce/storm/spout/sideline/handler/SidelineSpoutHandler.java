@@ -29,19 +29,21 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.DelegateSpout;
+import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.InvalidFilterChainStepException;
 import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
+import com.salesforce.storm.spout.sideline.metrics.SidelineMetrics;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.persistence.SidelinePayload;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -97,21 +99,33 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     private final List<SidelineTrigger> sidelineTriggers = new ArrayList<>();
 
+    /**
+     * {@link DynamicSpout} instance that has this handler attached to it.
+     */
     private DynamicSpout spout;
 
+    /**
+     * Persistence layer for storing sideline state.
+     */
     private PersistenceAdapter persistenceAdapter;
+
+    /**
+     * Factory for creating {@link com.salesforce.storm.spout.dynamic.DelegateSpout} instac.es
+     */
+    private DelegateSpoutFactory delegateSpoutFactory;
 
     /**
      * This is our main Virtual Spout instance which consumes from the configured namespace.
      */
-    private VirtualSpout fireHoseSpout;
+    private DelegateSpout fireHoseSpout;
 
     /**
      * When this handler is opened this method stores spout config for use by the instance.
      * @param spoutConfig Spout configuration.
+     * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
      */
     @Override
-    public void open(final Map<String, Object> spoutConfig) {
+    public void open(final Map<String, Object> spoutConfig, final DelegateSpoutFactory delegateSpoutFactory) {
         if (isOpen) {
             throw new RuntimeException("SidelineSpoutHandler is already opened!");
         }
@@ -127,10 +141,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             "Sideline persistence adapter class is required"
         );
 
-        persistenceAdapter = FactoryManager.createNewInstance(
+        this.persistenceAdapter = FactoryManager.createNewInstance(
             persistenceAdapterClass
         );
-        persistenceAdapter.open(spoutConfig);
+        this.persistenceAdapter.open(spoutConfig);
+
+        this.delegateSpoutFactory = delegateSpoutFactory;
     }
 
     /**
@@ -218,23 +234,18 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     synchronized void loadSidelines() {
         final VirtualSpoutIdentifier fireHoseIdentifier = getFireHoseSpoutIdentifier();
 
+        // Presumably this happens only if the VirtualSpout has crashed inside of the coordinator.  What this means is that the thread
+        // died, but we have a left over instance.  This is very unlikely to happen
+        if (!spout.hasVirtualSpout(fireHoseIdentifier) && fireHoseSpout != null) {
+            // We do not call close() here because it's NOT safe.
+            fireHoseSpout = null;
+        }
+
         // If we haven't spun up a VirtualSpout yet, we create it here.
         if (fireHoseSpout == null) {
             // Create the main spout for the namespace, we'll dub it the 'firehose'
-            fireHoseSpout = new VirtualSpout(
-                // We use a normal virtual spout identifier here rather than the sideline one because this is NOT a sideline,
-                // it's our firehose.
-                fireHoseIdentifier,
-                getSpoutConfig(),
-                topologyContext,
-                spout.getFactoryManager(),
-                spout.getMetricsRecorder(),
-                null,
-                null
-            );
+            fireHoseSpout = delegateSpoutFactory.create(fireHoseIdentifier);
         }
-
-        final String topic = (String) getSpoutConfig().get(KafkaConsumerConfig.KAFKA_TOPIC);
 
         final List<SidelineRequestIdentifier> existingRequestIds = getPersistenceAdapter().listSidelineRequests();
         logger.info("Found {} existing sideline requests that need to be resumed", existingRequestIds.size());
@@ -245,9 +256,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
             SidelinePayload payload = null;
 
-            final Set<Integer> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
+            final Set<ConsumerPartition> partitions = getPersistenceAdapter().listSidelineRequestPartitions(id);
 
-            for (final Integer partition : partitions) {
+            for (final ConsumerPartition partition : partitions) {
                 payload = retrieveSidelinePayload(id, partition);
 
                 if (payload == null) {
@@ -255,11 +266,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                     continue;
                 }
 
-                startingStateBuilder.withPartition(topic, partition, payload.startingOffset);
+                startingStateBuilder.withPartition(partition, payload.startingOffset);
 
                 // We only have an ending offset on STOP requests
                 if (payload.endingOffset != null) {
-                    endingStateStateBuilder.withPartition(topic, partition, payload.endingOffset);
+                    endingStateStateBuilder.withPartition(partition, payload.endingOffset);
                 }
             }
 
@@ -348,7 +359,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 SidelineType.START,
                 sidelineRequest.id, // TODO: Now that this is in the request, we should change the persistence adapter
                 sidelineRequest,
-                consumerPartition.partition(),
+                consumerPartition,
                 startingState.getOffsetForNamespaceAndPartition(consumerPartition),
                 null
             );
@@ -357,8 +368,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         // Add our new filter steps
         fireHoseSpout.getFilterChain().addStep(sidelineRequest.id, sidelineRequest.step);
 
-        // Update start count metric
-        spout.getMetricsRecorder().count(getClass(), "start-sideline", 1L);
+        // Update start countBy metric
+        spout.getMetricsRecorder().count(SidelineMetrics.START);
     }
 
     /**
@@ -408,7 +419,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             // This is the state that the VirtualSpout should start with
             final SidelinePayload sidelinePayload = retrieveSidelinePayload(
                 id,
-                consumerPartition.partition()
+                consumerPartition
             );
 
             if (sidelinePayload == null) {
@@ -426,7 +437,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 SidelineType.STOP,
                 id,
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
-                consumerPartition.partition(),
+                consumerPartition,
                 sidelinePayload.startingOffset,
                 endingState.getOffsetForNamespaceAndPartition(consumerPartition)
             );
@@ -442,8 +453,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             endingState
         );
 
-        // Update stop count metric
-        spout.getMetricsRecorder().count(getClass(), "stop-sideline", 1L);
+        // Update stop countBy metric
+        spout.getMetricsRecorder().count(SidelineMetrics.STOP);
     }
 
     /**
@@ -511,15 +522,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         logger.debug("Starting VirtualSpout {} with starting state {} and ending state", virtualSpoutId, startingState, endingState);
 
         // Create spout instance.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutId,
-            getSpoutConfig(),
-            topologyContext,
-            spout.getFactoryManager(),
-            spout.getMetricsRecorder(),
-            startingState,
-            endingState
-        );
+        final DelegateSpout virtualSpout = delegateSpoutFactory.create(virtualSpoutId, startingState, endingState);
 
         // Add the supplied filter chain step to the new virtual spout's filter chain
         virtualSpout.getFilterChain().addStep(id, step);
@@ -552,9 +555,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         return new SidelineVirtualSpoutIdentifier(getVirtualSpoutIdPrefix(), sidelineRequestIdentifier);
     }
 
-    private SidelinePayload retrieveSidelinePayload(final SidelineRequestIdentifier id, final int partition) {
+    private SidelinePayload retrieveSidelinePayload(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
         try {
-            return getPersistenceAdapter().retrieveSidelineRequest(id, partition);
+            return getPersistenceAdapter().retrieveSidelineRequest(id, consumerPartition);
         } catch (InvalidFilterChainStepException ex) {
             logger.error("Unable to load sideline payload {}", ex);
             // Basically if we can't deserialize the step we're not sending back any part of the payload.
@@ -594,7 +597,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * Get the firehose virtual spout
      * @return Firehose virtual spout.
      */
-    VirtualSpout getFireHoseSpout() {
+    DelegateSpout getFireHoseSpout() {
         return fireHoseSpout;
     }
 

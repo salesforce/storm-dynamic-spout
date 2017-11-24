@@ -30,10 +30,10 @@ import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * Metrics recorder that dumps metrics to logs.
@@ -60,13 +60,24 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void count(Class sourceClass, String metricName) {
-        count(sourceClass, metricName, 1);
+    public void count(final MetricDefinition metric) {
+        countBy(metric, 1L, new Object[0]);
     }
 
     @Override
-    public void count(Class sourceClass, String metricName, long incrementBy) {
-        final String key = generateKey(sourceClass, metricName);
+    public void count(final MetricDefinition metric, final Object... metricParameters) {
+        countBy(metric, 1L, metricParameters);
+
+    }
+
+    @Override
+    public void countBy(final MetricDefinition metric, final long incrementBy) {
+        countBy(metric, incrementBy, new Object[0]);
+    }
+
+    @Override
+    public void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
         synchronized (counters) {
             final long newValue = counters.getOrDefault(key, 0L) + incrementBy;
             counters.put(key, newValue);
@@ -75,76 +86,48 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void averageValue(Class sourceClass, String metricName, Object value) {
-        if (!(value instanceof Number)) {
-            // Dunno what to do?
-            return;
-        }
-        final String key = generateKey(sourceClass, metricName);
-
-        synchronized (averages) {
-            if (!averages.containsKey(key)) {
-                averages.put(key, new CircularFifoBuffer(64));
-            }
-            averages.get(key).add(value);
-
-            // TODO - make this work, for now assume double values?
-            // Now calculate average using the ring buffer.
-            Number total = 0;
-            for (Object entry: averages.get(key)) {
-                total = total.doubleValue() + ((Number)entry).doubleValue();
-            }
-            logger.debug("[AVERAGE] {} => {}", key, (total.doubleValue() / averages.get(key).size()));
-        }
-    }
-
-    @Override
-    public void assignValue(Class sourceClass, String metricName, Object value) {
-        final String key = generateKey(sourceClass, metricName);
+    public void assignValue(final MetricDefinition metric, final Object value, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
         assignedValues.put(key, value);
         logger.debug("[ASSIGNED] {} => {}", key, value);
     }
 
     @Override
-    public <T> T timer(Class sourceClass, String metricName, Callable<T> callable) throws Exception {
-        // Wrap in timing
-        final long start = Clock.systemUTC().millis();
-        T result = callable.call();
-        final long end = Clock.systemUTC().millis();
-
-        // Update
-        timer(sourceClass, metricName, (end - start));
-
-        // return result.
-        return result;
+    public void assignValue(final MetricDefinition metric, final Object value) {
+        assignValue(metric, value, new Object[0]);
     }
 
     @Override
-    public void timer(Class sourceClass, String metricName, long timeInMs) {
-        logger.debug("[TIMER] {} + {}", generateKey(sourceClass, metricName), timeInMs);
-    }
-
-    @Override
-    public void startTimer(Class sourceClass, String metricName) {
-        final String key = generateKey(sourceClass, metricName);
+    public void startTimer(final MetricDefinition metric, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
         timerStartValues.put(key, Clock.systemUTC().millis());
     }
 
     @Override
-    public void stopTimer(Class sourceClass, String metricName) {
+    public void startTimer(final MetricDefinition metric) {
+        startTimer(metric, new Object[0]);
+    }
+
+    @Override
+    public void stopTimer(final MetricDefinition metric, final Object... metricParameters) {
         final long stopTime = Clock.systemUTC().millis();
 
-        final String key = generateKey(sourceClass, metricName);
+        final String key = generateKey(metric, metricParameters);
         final Long startTime = timerStartValues.get(key);
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
             return;
         }
-        timer(sourceClass, metricName, stopTime - startTime);
+        logger.debug("[TIMER] {} + {}", key, stopTime - startTime);
     }
 
-    private String generateKey(Class sourceClass, String metricName) {
-        return sourceClass.getSimpleName() + "." + metricName;
+    @Override
+    public void stopTimer(final MetricDefinition metric) {
+        stopTimer(metric, new Object[0]);
+    }
+
+    private String generateKey(final MetricDefinition metric, final Object[] parameters) {
+        return MessageFormatter.format(metric.getKey(), parameters).getMessage();
     }
 }

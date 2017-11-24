@@ -23,68 +23,45 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.handler;
-
-import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
-import com.salesforce.storm.spout.dynamic.DynamicSpout;
-import org.apache.storm.task.TopologyContext;
-
-import java.util.Map;
+package com.salesforce.storm.spout.dynamic.metrics;
 
 /**
- * Handlers (or callbacks) used by the DynamicSpout during it's lifecycle. Integrations can hook into the DynamicSpout
- * by creating a SpoutHanlder implementation.
+ * Custom metric.
+ *
+ * Take a simple string and adhere to the definition used by the {@link MetricsRecorder}.
  */
-public interface SpoutHandler {
+public class ClassMetric implements MetricDefinition {
 
     /**
-     * Open the handler.
-     * @param spoutConfig Spout configuration.
-     * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
+     * Class of the metric.
      */
-    default void open(Map<String, Object> spoutConfig, DelegateSpoutFactory delegateSpoutFactory) {
+    private final Class clazz;
 
+    /**
+     * Name of the metric.
+     */
+    private final String name;
+
+    /**
+     * Defines a metric for a class.
+     * @param clazz Context of the metric.
+     * @param name Name of the metric.
+     */
+    public ClassMetric(final Class clazz, final String name) {
+        this.clazz = clazz;
+        this.name = name;
     }
 
-    /**
-     * Close the handler.
-     */
-    default void close() {
-
+    @Override
+    public String getKey() {
+        return this.clazz.getSimpleName().concat(".").concat(name);
     }
 
-    /**
-     * Called when the DynamicSpout is opened.
-     * @param spout DynamicSpout instance.
-     * @param topologyConfig Topology configuration.
-     * @param topologyContext Topology context.
-     */
-    default void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext) {
-
-    }
-
-    /**
-     * Called when the DynamicSpout is activated.
-     * @param spout DynamicSpout instance.
-     */
-    default void onSpoutActivate(DynamicSpout spout) {
-
-    }
-
-    /**
-     * Called when the DynamicSpout is deactivated.
-     * @param spout DynamicSpout instance.
-     */
-    default void onSpoutDeactivate(DynamicSpout spout) {
-
-    }
-
-    /**
-     * Called when the DynamicSpout is closed.
-     * @param spout DynamicSpout instance.
-     */
-    default void onSpoutClose(DynamicSpout spout) {
-
+    @Override
+    public String toString() {
+        return "ClassMetric{"
+            + "clazz=" + clazz
+            + ", name='" + name + '\''
+            + '}';
     }
 }

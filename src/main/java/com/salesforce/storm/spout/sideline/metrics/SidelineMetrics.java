@@ -23,60 +23,31 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.filter;
+package com.salesforce.storm.spout.sideline.metrics;
 
-import com.salesforce.storm.spout.dynamic.Message;
-
-import java.util.UUID;
+import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
+import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
+import com.salesforce.storm.spout.dynamic.metrics.annotation.Documentation;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 
 /**
- * We use this filter in tests because it allows us an easy way to define
- * how a filter behaves.
+ * Sideline specific metrics.
  */
-public class StaticMessageFilter implements FilterChainStep {
+public final class SidelineMetrics {
 
-    /**
-     * We need a way to make this instance unique from others, so we use a UUID.
-     */
-    private String id = UUID.randomUUID().toString();
+    @Documentation(
+        type = Documentation.Type.COUNTER,
+        unit = Documentation.Unit.NUMBER,
+        category = Documentation.Category.SIDELINE,
+        description = "Total number of started sidelines."
+    )
+    public static final MetricDefinition START = new ClassMetric(SidelineSpoutHandler.class, "start");
 
-    public StaticMessageFilter() {
-    }
-
-    public StaticMessageFilter(final String id) {
-        this.id = id;
-    }
-
-    @Override
-    public boolean filter(Message message) {
-        return true;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        StaticMessageFilter that = (StaticMessageFilter) other;
-
-        return id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return id;
-    }
+    @Documentation(
+        type = Documentation.Type.COUNTER,
+        unit = Documentation.Unit.NUMBER,
+        category = Documentation.Category.SIDELINE,
+        description = "Total number of stopped sidelines."
+    )
+    public static final MetricDefinition STOP = new ClassMetric(SidelineSpoutHandler.class, "stop");
 }

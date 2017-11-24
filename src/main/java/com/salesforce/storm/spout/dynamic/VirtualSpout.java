@@ -34,6 +34,7 @@ import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.filter.FilterChain;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
@@ -256,16 +257,12 @@ public class VirtualSpout implements DelegateSpout {
      */
     @Override
     public Message nextTuple() {
-        // Start total Time timer.
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.entireMethod");
-
         // Talk to a "failed tuple manager interface" object to see if any tuples
         // that failed previously are ready to be replayed.  This is an interface
         // meaning you can implement your own behavior here.  Maybe failed tuples never get replayed,
         // Maybe they get replayed a maximum number of times?  Maybe they get replayed forever but have
         // an exponential back off time period between fails?  Who knows/cares, not us cuz its an interface.
         // If so, emit that and return.
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.failedRetry");
         final MessageId nextFailedMessageId = retryManager.nextFailedMessageToRetry();
         if (nextFailedMessageId != null) {
             if (trackedMessages.containsKey(nextFailedMessageId)) {
@@ -276,24 +273,18 @@ public class VirtualSpout implements DelegateSpout {
                 retryManager.acked(nextFailedMessageId);
             }
         }
-        getMetricsRecorder().stopTimer(getClass(), "nextTuple.failedRetry");
 
         // Grab the next message from Consumer instance.
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.nextRecord");
         final Record record = consumer.nextRecord();
         if (record == null) {
             logger.debug("Unable to find any new messages from consumer");
             return null;
         }
-        getMetricsRecorder().stopTimer(getClass(), "nextTuple.nextRecord");
 
         // Create a Tuple Message Id
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.messageId");
         final MessageId messageId = new MessageId(record.getNamespace(), record.getPartition(), record.getOffset(), getVirtualSpoutId());
-        getMetricsRecorder().stopTimer(getClass(), "nextTuple.messageId");
 
         // Determine if this tuple exceeds our ending offset
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.doesExceedEndOffset");
         if (doesMessageExceedEndingOffset(messageId)) {
             logger.debug("Tuple {} exceeds max offset, acking", messageId);
 
@@ -304,23 +295,19 @@ public class VirtualSpout implements DelegateSpout {
             // Simply return null.
             return null;
         }
-        getMetricsRecorder().stopTimer(getClass(), "nextTuple.doesExceedEndOffset");
 
         // Create Message
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.message");
         final Message message = new Message(messageId, record.getValues());
-        getMetricsRecorder().stopTimer(getClass(), "nextTuple.message");
 
         // Determine if this tuple should be filtered. If it IS filtered, loop and find the next one?
         // Loops through each step in the chain to filter a filter before emitting
-        getMetricsRecorder().startTimer(getClass(), "nextTuple.isFiltered");
         final boolean isFiltered  = getFilterChain().filter(message);
-        getMetricsRecorder().stopTimer(getClass(), "nextTuple.isFiltered");
 
         // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
         if (isFiltered) {
             // Increment filtered metric
-            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".filtered");
+            getMetricsRecorder()
+                .count(Metrics.VIRTUAL_SPOUT_FILTERED, getVirtualSpoutId().toString());
 
             // Ack
             ack(messageId);
@@ -331,10 +318,6 @@ public class VirtualSpout implements DelegateSpout {
 
         // Track it message for potential retries.
         trackedMessages.put(messageId, message);
-
-        // record total time and total calls
-        getMetricsRecorder().stopTimer(getClass(),"nextTuple.entireMethod");
-        getMetricsRecorder().count(getClass(), "nextTuple.totalCalls");
 
         // Return it.
         return message;
@@ -370,41 +353,31 @@ public class VirtualSpout implements DelegateSpout {
 
     @Override
     public void ack(Object msgId) {
-        getMetricsRecorder().startTimer(getClass(), "ack.entireMethod");
-
         if (msgId == null) {
             logger.warn("Null msg id passed, ignoring");
             return;
         }
 
         // Convert to MessageId
-        getMetricsRecorder().startTimer(getClass(), "ack.messageId");
         final MessageId messageId;
         try {
             messageId = (MessageId) msgId;
         } catch (final ClassCastException e) {
             throw new IllegalArgumentException("Invalid msgId object type passed " + msgId.getClass());
         }
-        getMetricsRecorder().stopTimer(getClass(), "ack.messageId");
 
         // Talk to Consumer and mark the offset completed.
-        getMetricsRecorder().startTimer(getClass(), "ack.commitOffset");
         consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
-        getMetricsRecorder().stopTimer(getClass(), "ack.commitOffset");
 
         // Remove this tuple from the spout where we track things in-case the tuple fails.
-        getMetricsRecorder().startTimer(getClass(), "ack.removeTracked");
         trackedMessages.remove(messageId);
-        getMetricsRecorder().stopTimer(getClass(), "ack.removeTracked");
 
         // Mark it as completed in the failed message handler if it exists.
-        getMetricsRecorder().startTimer(getClass(), "ack.failedMsgAck");
         retryManager.acked(messageId);
-        getMetricsRecorder().stopTimer(getClass(), "ack.failedMsgAck");
 
-        // Increment totals
-        getMetricsRecorder().stopTimer(getClass(), "ack.entireMethod");
-        getMetricsRecorder().count(getClass(), "ack.totalCalls");
+        // update ack metric
+        getMetricsRecorder()
+            .count(Metrics.VIRTUAL_SPOUT_ACK, getVirtualSpoutId().toString());
     }
 
     @Override
@@ -433,7 +406,8 @@ public class VirtualSpout implements DelegateSpout {
             consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
 
             // Update metric
-            getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".exceeded_retry_limit");
+            getMetricsRecorder()
+                .count(Metrics.VIRTUAL_SPOUT_EXCEEDED_RETRY_LIMIT, getVirtualSpoutId().toString());
 
             // Done.
             return;
@@ -443,7 +417,8 @@ public class VirtualSpout implements DelegateSpout {
         retryManager.failed(messageId);
 
         // Update metric
-        getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".fail");
+        getMetricsRecorder()
+            .count(Metrics.VIRTUAL_SPOUT_FAIL, getVirtualSpoutId().toString());
     }
 
     /**
@@ -495,6 +470,7 @@ public class VirtualSpout implements DelegateSpout {
         return virtualSpoutId;
     }
 
+    @Override
     public FilterChain getFilterChain() {
         return filterChain;
     }
@@ -503,6 +479,7 @@ public class VirtualSpout implements DelegateSpout {
      * Get the spout's current consumer state.
      * @return current consumer state
      */
+    @Override
     public ConsumerState getCurrentState() {
         // This could happen is someone tries calling this method before the vspout is opened
         if (consumer == null) {
@@ -511,17 +488,24 @@ public class VirtualSpout implements DelegateSpout {
         return consumer.getCurrentState();
     }
 
+    @Override
     public ConsumerState getStartingState() {
         return startingState;
     }
 
+    @Override
     public ConsumerState getEndingState() {
         return endingState;
     }
 
+    /**
+     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     *
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
+     */
     @Override
-    public int getNumberOfFiltersApplied() {
-        return getFilterChain().getSteps().size();
+    public void setEndingState(final ConsumerState endingState) {
+        this.endingState = endingState;
     }
 
     public Map<String, Object> getSpoutConfig() {

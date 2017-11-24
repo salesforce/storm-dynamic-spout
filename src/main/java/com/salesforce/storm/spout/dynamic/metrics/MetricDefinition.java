@@ -23,60 +23,16 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.filter;
-
-import com.salesforce.storm.spout.dynamic.Message;
-
-import java.util.UUID;
+package com.salesforce.storm.spout.dynamic.metrics;
 
 /**
- * We use this filter in tests because it allows us an easy way to define
- * how a filter behaves.
+ * Defines a metric that can be used in {@link MetricsRecorder}.
  */
-public class StaticMessageFilter implements FilterChainStep {
+public interface MetricDefinition {
 
     /**
-     * We need a way to make this instance unique from others, so we use a UUID.
+     * Key to use for the given metric.
+     * @return key to use for the given metric.
      */
-    private String id = UUID.randomUUID().toString();
-
-    public StaticMessageFilter() {
-    }
-
-    public StaticMessageFilter(final String id) {
-        this.id = id;
-    }
-
-    @Override
-    public boolean filter(Message message) {
-        return true;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-
-        StaticMessageFilter that = (StaticMessageFilter) other;
-
-        return id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return id;
-    }
+    String getKey();
 }

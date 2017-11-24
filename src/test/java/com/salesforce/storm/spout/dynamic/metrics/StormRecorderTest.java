@@ -72,7 +72,6 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("AVERAGES"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
@@ -105,7 +104,6 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("AVERAGES"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
         verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
         verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
@@ -135,7 +133,6 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("AVERAGES"), any(MultiReducedMetric.class), eq(timeBucket));
         verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(timeBucket));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(timeBucket));
         verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(timeBucket));
@@ -165,7 +162,6 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("AVERAGES"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
@@ -256,9 +252,8 @@ public class StormRecorderTest {
     @Test
     public void testStartAndStopTimer() throws InterruptedException {
         // Define inputs
-        final Class sourceClass = getClass();
-        final String metricName = "MyMetric";
-        final String expectedMetricName = sourceClass.getSimpleName() + "." + metricName;
+        final CustomMetric metricDefinition = new CustomMetric("MyContext.MyMetric");
+        final String expectedMetricName = "MyContext.MyMetric";
         final String expectedTotalTimeMetricName = expectedMetricName + "_totalTimeMs";
 
         // Create empty config
@@ -276,8 +271,8 @@ public class StormRecorderTest {
         final MultiCountMetric counterMetrics = (MultiCountMetric) mockTopologyContext.getRegisteredMetricByName("COUNTERS");
 
         // Lets time something.  It's ok if this ends up being 0.
-        recorder.startTimer(sourceClass, metricName);
-        recorder.stopTimer(sourceClass, metricName);
+        recorder.startTimer(metricDefinition);
+        recorder.stopTimer(metricDefinition);
 
         // Validate
         final Map<String, Long> timerValues = (Map<String, Long>) timerMetrics.getValueAndReset();

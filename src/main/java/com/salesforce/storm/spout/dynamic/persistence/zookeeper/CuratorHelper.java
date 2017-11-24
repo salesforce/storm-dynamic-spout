@@ -57,17 +57,28 @@ public class CuratorHelper {
     /**
      * JSON parser.
      */
-    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create();
-
+    private final Gson gson;
 
     /**
      * Helper methods for common tasks when working with Curator.
      * @param curator curator instance.
      */
     public CuratorHelper(final CuratorFramework curator) {
-        this.curator = curator;
+        this(
+            curator,
+            new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create()
+        );
     }
 
+    /**
+     * Helper methods for common tasks when working with Curator.
+     * @param curator curator instance.
+     * @param gson JSON parser instance.
+     */
+    public CuratorHelper(final CuratorFramework curator, Gson gson) {
+        this.curator = curator;
+        this.gson = gson;
+    }
 
     /**
      * Internal method to write JSON structured data into a zookeeper node.

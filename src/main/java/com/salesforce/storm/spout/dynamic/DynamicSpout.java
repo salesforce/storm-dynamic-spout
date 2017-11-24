@@ -35,6 +35,7 @@ import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -48,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * DynamicSpout's contain other virtualized spouts, and provide mechanisms for interacting with the spout life cycle
@@ -93,6 +93,11 @@ public class DynamicSpout extends BaseRichSpout {
     private final FactoryManager factoryManager;
 
     /**
+     * Factory creating {@link DelegateSpout} instances.
+     */
+    private DelegateSpoutFactory virtualSpoutFactory;
+
+    /**
      * Handler for callbacks at various stages of a dynamic spout's lifecycle.
      */
     private SpoutHandler spoutHandler;
@@ -101,8 +106,6 @@ public class DynamicSpout extends BaseRichSpout {
      * For collecting metrics.
      */
     private transient MetricsRecorder metricsRecorder;
-    private transient Map<VirtualSpoutIdentifier, Long> emitCountMetrics;
-    private long emitCounter = 0L;
 
     /**
      * Determines which output stream to emit tuples out.
@@ -125,7 +128,7 @@ public class DynamicSpout extends BaseRichSpout {
         this.spoutConfig = Collections.unmodifiableMap(SpoutConfig.setDefaults(spoutConfig));
 
         // Create our factory manager, which must be serializable.
-        factoryManager = new FactoryManager(getSpoutConfig());
+        this.factoryManager = new FactoryManager(getSpoutConfig());
     }
 
     /**
@@ -135,12 +138,12 @@ public class DynamicSpout extends BaseRichSpout {
      * @param topologyConfig The Storm Topology configuration.
      * @param topologyContext The Storm Topology context.
      * @param spoutOutputCollector The output collector to emit tuples via.
+     * @throws IllegalStateException if you attempt to open the spout multiple times.
      */
     @Override
     public void open(Map topologyConfig, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         if (isOpen) {
-            logger.warn("This spout has already been opened, cowardly refusing to open it again!");
-            return;
+            throw new IllegalStateException("This spout has already been opened.");
         }
 
         // Save references.
@@ -157,8 +160,8 @@ public class DynamicSpout extends BaseRichSpout {
         // finished setting all of these things up.
 
         // Initialize Metrics Collection
-        metricsRecorder = getFactoryManager().createNewMetricsRecorder();
-        metricsRecorder.open(getSpoutConfig(), getTopologyContext());
+        this.metricsRecorder = getFactoryManager().createNewMetricsRecorder();
+        this.metricsRecorder.open(getSpoutConfig(), getTopologyContext());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
@@ -183,17 +186,23 @@ public class DynamicSpout extends BaseRichSpout {
         );
         spoutCoordinator.open();
 
-        // For emit metrics
-        emitCountMetrics = Maps.newHashMap();
+        // TODO: This should be configurable and created dynamically, the problem is that right now we are still tightly
+        // coupled to the VirtualSpout implementation.
+        this.virtualSpoutFactory = new VirtualSpoutFactory(
+            spoutConfig,
+            topologyContext,
+            factoryManager,
+            metricsRecorder
+        );
 
         // Our spout is open, it's not dependent upon the handler to finish opening for us to be 'opened'
         // This is important, because if we waited most of our getters that check the opened state of the
         // spout would throw an exception and make them unusable.
         isOpen = true;
 
-        spoutHandler = getFactoryManager().createSpoutHandler();
-        spoutHandler.open(spoutConfig);
-        spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
+        this.spoutHandler = getFactoryManager().createSpoutHandler();
+        this.spoutHandler.open(spoutConfig, virtualSpoutFactory);
+        this.spoutHandler.onSpoutOpen(this, topologyConfig, topologyContext);
     }
 
     /**
@@ -220,27 +229,8 @@ public class DynamicSpout extends BaseRichSpout {
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());
 
         // Update emit count metric for VirtualSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, message.getMessageId().getSrcVirtualSpoutId() + ".emit", 1);
-
-        // Everything below is temporary emit metrics for debugging.
-
-        // Update / Display emit metrics
-        final VirtualSpoutIdentifier srcId = message.getMessageId().getSrcVirtualSpoutId();
-        if (!emitCountMetrics.containsKey(srcId)) {
-            emitCountMetrics.put(srcId, 1L);
-        } else {
-            emitCountMetrics.put(srcId, emitCountMetrics.get(srcId) + 1L);
-        }
-        emitCounter++;
-        if (emitCounter >= 5_000_000L) {
-            for (Map.Entry<VirtualSpoutIdentifier, Long> entry : emitCountMetrics.entrySet()) {
-                logger.info("Emit Count on {} => {}", entry.getKey(), entry.getValue());
-            }
-            emitCountMetrics.clear();
-            emitCounter = 0;
-        }
-
-        // End temp debugging logs
+        getMetricsRecorder()
+            .count(Metrics.VIRTUAL_SPOUT_EMIT, message.getMessageId().getSrcVirtualSpoutId().toString());
     }
 
     /**
@@ -303,9 +293,9 @@ public class DynamicSpout extends BaseRichSpout {
             metricsRecorder = null;
         }
 
-        if (spoutHandler != null) {
-            spoutHandler.onSpoutClose(this);
-            spoutHandler.close();
+        if (getSpoutHandler() != null) {
+            getSpoutHandler().onSpoutClose(this);
+            getSpoutHandler().close();
             spoutHandler = null;
         }
 
@@ -318,8 +308,8 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void activate() {
         logger.debug("Activating spout");
-        if (spoutHandler != null) {
-            spoutHandler.onSpoutActivate(this);
+        if (getSpoutHandler() != null) {
+            getSpoutHandler().onSpoutActivate(this);
         }
     }
 
@@ -329,8 +319,8 @@ public class DynamicSpout extends BaseRichSpout {
     @Override
     public void deactivate() {
         logger.debug("Deactivate spout");
-        if (spoutHandler != null) {
-            spoutHandler.onSpoutDeactivate(this);
+        if (getSpoutHandler() != null) {
+            getSpoutHandler().onSpoutDeactivate(this);
         }
     }
 
@@ -347,7 +337,7 @@ public class DynamicSpout extends BaseRichSpout {
         getMessageBus().ack(messageId);
 
         // Update ack count metric for VirtualSpout this tuple originated from
-        getMetricsRecorder().count(VirtualSpout.class, messageId.getSrcVirtualSpoutId() + ".ack", 1);
+        getMetricsRecorder().count(Metrics.VIRTUAL_SPOUT_ACK, messageId.getSrcVirtualSpoutId());
     }
 
     /**
@@ -391,6 +381,9 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
      * managed with teh other currently running spouts.
+     *
+     * This method is blocking.
+     *
      * @param spout New delegate spout
      * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
      */
@@ -473,6 +466,14 @@ public class DynamicSpout extends BaseRichSpout {
     SpoutMessageBus getMessageBus() {
         checkSpoutOpened();
         return messageBus;
+    }
+
+    /**
+     * @return The SpoutHandler implementation.
+     */
+    SpoutHandler getSpoutHandler() {
+        checkSpoutOpened();
+        return spoutHandler;
     }
 
     /**

@@ -28,7 +28,6 @@ package com.salesforce.storm.spout.dynamic.metrics;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 /**
  * Any implementation of this should be written to be thread safe.  This instance
@@ -52,69 +51,73 @@ public interface MetricsRecorder {
 
     /**
      * Count a metric, given a name, increments it by 1.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
+     * @param metric metric definition.
      */
-    void count(final Class sourceClass, final String metricName);
+    void count(final MetricDefinition metric);
+
+    /**
+     * Count a metric, given a name, increments it by 1.
+     * @param metric metric definition.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
+     */
+    void count(final MetricDefinition metric, final Object... metricParameters);
 
     /**
      * Count a metric, given a name, increments it by value.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
      * @param incrementBy amount to increment the metric by.
      */
-    void count(final Class sourceClass, final String metricName, final long incrementBy);
-
+    void countBy(final MetricDefinition metric, final long incrementBy);
 
     /**
-     * Gauge a metric, given a name, by a specify value.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param value value of the metric.
+     * Count a metric, given a name and increments by a specific amount.
+     * @param incrementBy amount to increment the metric by.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
-    void averageValue(final Class sourceClass, final String metricName, final Object value);
+    void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters);
 
     /**
      * Assign a value to metric.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param value value of the metric.
+     * @param metric metric definition.
+     * @param value value to be assigned.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
-    void assignValue(final Class sourceClass, final String metricName, final Object value);
+    void assignValue(final MetricDefinition metric, final Object value, final Object... metricParameters);
 
     /**
-     * Gauge the execution time, given a name and scope, for the Callable code (you should use a lambda!)
-     *
-     * A scope is a secondary key space, so Foo.Bar as a metric name.
-     *
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param callable Some code that you want to time when it runs
-     * @param <T> return type of the callable.
-     * @return The result of the Callable, whatever they might be
-     * @throws Exception Hopefully whatever went wrong in your callable
+     * Assign a value to metric.
+     * @param metric metric definition.
+     * @param value value to be assigned.
      */
-    <T> T timer(final Class sourceClass, final String metricName, final Callable<T> callable) throws Exception;
-
-    /**
-     * Record the execution time, given a name and scope.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
-     * @param timeInMs time to capture for the metric.
-     */
-    void timer(final Class sourceClass, final String metricName, final long timeInMs);
+    void assignValue(final MetricDefinition metric, final Object value);
 
     /**
      * Starts a timer for the given sourceClass and metricName.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
+     * @param metric metric definition.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
-    void startTimer(final Class sourceClass, final String metricName);
+    void startTimer(final MetricDefinition metric, final Object... metricParameters);
+
+    /**
+     * Starts a timer for the given sourceClass and metricName.
+     * @param metric metric definition.
+     */
+    void startTimer(final MetricDefinition metric);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
-     * @param sourceClass class the metric originates from.
-     * @param metricName name of the metric.
+     * @param metric metric definition.
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
      */
-    void stopTimer(final Class sourceClass, final String metricName);
+    void stopTimer(final MetricDefinition metric, final Object... metricParameters);
+
+    /**
+     * Stops and records a timer for the given sourceClass and metricName.
+     * @param metric metric definition.
+     */
+    void stopTimer(final MetricDefinition metric);
 }

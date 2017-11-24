@@ -26,10 +26,10 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
-import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,35 +119,69 @@ class SpoutPartitionProgressMonitor {
             Long percentComplete = null;
             // Need both stats, and to make sure we don't divide by 0!
             if (totalProcessed != null && totalMessages != null && totalMessages > 0) {
-                percentComplete = (totalProcessed / totalMessages) * 100;
+                percentComplete = (totalProcessed / totalMessages);
             }
 
             // Capture our metrics...
-
-            metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".currentOffset", currentOffset);
+            metricsRecorder.assignValue(
+                Metrics.VIRTUAL_SPOUT_PARTITION_CURRENT_OFFSET,
+                currentOffset,
+                spout.getVirtualSpoutId().toString(),
+                consumerPartition.partition()
+            );
 
             if (totalProcessed != null) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".totalProcessed", totalProcessed);
+                metricsRecorder.assignValue(
+                    Metrics.VIRTUAL_SPOUT_PARTITION_TOTAL_PROCESSED,
+                    totalProcessed,
+                    spout.getVirtualSpoutId().toString(),
+                    consumerPartition.partition()
+                );
             }
 
             if (totalUnprocessed != null) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".totalUnprocessed", totalUnprocessed);
+                metricsRecorder.assignValue(
+                    Metrics.VIRTUAL_SPOUT_PARTITION_TOTAL_UNPROCESSED,
+                    totalUnprocessed,
+                    spout.getVirtualSpoutId().toString(),
+                    consumerPartition.partition()
+                );
             }
 
             if (totalMessages != null) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".totalMessages", totalMessages);
+                metricsRecorder.assignValue(
+                    Metrics.VIRTUAL_SPOUT_PARTITION_TOTAL_MESSAGES,
+                    totalMessages,
+                    spout.getVirtualSpoutId().toString(),
+                    consumerPartition.partition()
+                );
             }
 
             if (percentComplete != null) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".percentComplete", percentComplete);
+                metricsRecorder.assignValue(
+                    Metrics.VIRTUAL_SPOUT_PARTITION_PERCENT_COMPLETE,
+                    percentComplete,
+                    spout.getVirtualSpoutId().toString(),
+                    consumerPartition.partition()
+                );
             }
 
             if (startingOffset != null) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".startingOffset", startingOffset);
+                metricsRecorder.assignValue(
+                    Metrics.VIRTUAL_SPOUT_PARTITION_STARTING_OFFSET,
+                    startingOffset,
+                    spout.getVirtualSpoutId().toString(),
+                    consumerPartition.partition()
+                );
             }
 
             if (endingOffset != null) {
-                metricsRecorder.assignValue(VirtualSpout.class, metricKey + ".endingOffset", endingOffset);
+                metricsRecorder.assignValue(
+                    Metrics.VIRTUAL_SPOUT_PARTITION_ENDING_OFFSET,
+                    endingOffset,
+                    spout.getVirtualSpoutId().toString(),
+                    consumerPartition.partition()
+                );
             }
 
             // Log our metrics...

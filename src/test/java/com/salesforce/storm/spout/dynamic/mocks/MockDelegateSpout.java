@@ -34,7 +34,7 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.consumer.MockConsumer;
+import com.salesforce.storm.spout.dynamic.filter.FilterChain;
 
 import java.util.Queue;
 import java.util.Set;
@@ -45,6 +45,7 @@ import java.util.UUID;
  */
 public class MockDelegateSpout implements DelegateSpout {
     private final VirtualSpoutIdentifier virtualSpoutId;
+    private final FilterChain filterChain = new FilterChain();
     public volatile boolean requestedStop = false;
     public volatile boolean wasOpenCalled = false;
     public volatile boolean wasCloseCalled = false;
@@ -126,13 +127,23 @@ public class MockDelegateSpout implements DelegateSpout {
         return MockConsumer.buildConsumerState(MockConsumer.partitions);
     }
 
+    /**
+     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     *
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
+     */
     @Override
-    public int getNumberOfFiltersApplied() {
-        return 0;
+    public void setEndingState(final ConsumerState endingState) {
+        // NOOP for now, this should be improved with getStartingState() and getEndingState()
     }
 
     @Override
     public Consumer getConsumer() {
         return new MockConsumer();
+    }
+
+    @Override
+    public FilterChain getFilterChain() {
+        return filterChain;
     }
 }

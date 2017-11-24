@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.config;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.documentation.Documentation;
+import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
 import com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
@@ -393,6 +394,13 @@ public class SpoutConfig {
     )
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
 
+    @Documentation(
+        description = "Defines which DelegateSpoutFactory implementation to use. "
+        + "Should be a fully qualified class path that implements the DelegateSpoutFactory interface.",
+        type = String.class
+    )
+    public static final String VIRTUAL_SPOUT_FACTORY_CLASS = "spout.virtual_spout_factory_class";
+
     /**
      * Logger for logging logs.
      */
@@ -568,6 +576,15 @@ public class SpoutConfig {
                 "Unspecified configuration value for {} using default value {}",
                 VIRTUAL_SPOUT_HANDLER_CLASS,
                 clonedConfig.get(VIRTUAL_SPOUT_HANDLER_CLASS)
+            );
+        }
+
+        if (!clonedConfig.containsKey(VIRTUAL_SPOUT_FACTORY_CLASS)) {
+            clonedConfig.put(VIRTUAL_SPOUT_FACTORY_CLASS, VirtualSpoutFactory.class);
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                VIRTUAL_SPOUT_FACTORY_CLASS,
+                clonedConfig.get(VIRTUAL_SPOUT_FACTORY_CLASS)
             );
         }
 
