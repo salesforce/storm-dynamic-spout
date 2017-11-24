@@ -207,37 +207,4 @@ public final class Metrics {
     )
     public static final MetricDefinition VIRTUAL_SPOUT_PARTITION_ENDING_OFFSET =
         new ClassMetric(VirtualSpout.class, "{}.partition.{}.endingOffset");
-
-    /*
-     * Kafka Consumer Metrics.
-     */
-
-    @Documentation(
-        type = Documentation.Type.GAUGE,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.KAFKA,
-        description = "Offset consumer has processed.",
-        dynamicValues = { "topic", "partition" }
-    )
-    public static final MetricDefinition KAFKA_CURRENT_OFFSET =
-        new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.currentOffset");
-
-    @Documentation(
-        type = Documentation.Type.GAUGE,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.KAFKA,
-        description = "Offset for TAIL position in the partition.",
-        dynamicValues = { "topic", "partition" }
-    )
-    public static final MetricDefinition KAFKA_END_OFFSET =
-        new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.endOffset");
-
-    @Documentation(
-        type = Documentation.Type.GAUGE,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.KAFKA,
-        description = "Difference between endOffset and currentOffset metrics.",
-        dynamicValues = { "topic", "partition" }
-    )
-    public static final MetricDefinition KAFKA_LAG = new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.lag");
 }

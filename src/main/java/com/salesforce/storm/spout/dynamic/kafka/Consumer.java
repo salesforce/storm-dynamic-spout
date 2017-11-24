@@ -392,7 +392,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
             // Assign the value for endOffset for this topic and partition.
             metricsRecorder.assignValue(
-                Metrics.KAFKA_END_OFFSET,
+                KafkaMetrics.KAFKA_END_OFFSET,
                 endOffset,
                 topicPartition.topic(), topicPartition.partition()
             );
@@ -409,14 +409,14 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
             // Current offset is the consumers current position.
             metricsRecorder.assignValue(
-                Metrics.KAFKA_CURRENT_OFFSET,
+                KafkaMetrics.KAFKA_CURRENT_OFFSET,
                 currentOffset,
                 topicPartition.topic(), topicPartition.partition()
             );
 
             // Calculate "lag" based on (endOffset - currentOffset).
             metricsRecorder.assignValue(
-                Metrics.KAFKA_LAG,
+                KafkaMetrics.KAFKA_LAG,
                 (endOffset - currentOffset),
                 topicPartition.topic(), topicPartition.partition()
             );
