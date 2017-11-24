@@ -319,13 +319,13 @@ public class SpoutConfig {
 
     /**
      * (int) Defines maximum size of the tuple buffer.  After the buffer reaches this size
-     * the internal kafka consumers will be blocked from consuming.
+     * the internal VirtualSpouts will be blocked from generating additional tuples until they have been emitted into the topology.
      * Default Value: 2000
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal "
-        + "kafka consumers will be blocked from consuming.",
+        + "VirtualSpouts will be blocked from generating additional tuples until they have been emitted into the topology.",
         type = Integer.class
     )
     public static final String TUPLE_BUFFER_MAX_SIZE = "spout.coordinator.tuple_buffer.max_size";

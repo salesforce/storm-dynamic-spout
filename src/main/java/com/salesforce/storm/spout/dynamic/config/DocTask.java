@@ -38,9 +38,6 @@ import java.util.List;
 
 /**
  * Generates Configuration Values for DynamicSpout.
- * For now this generates the configuration for DynamicSpout and Kafka consumer.
- * but the idea is that in the future we'd define a task within each module and be able to generate separate READMEs
- * for each.
  */
 public class DocTask {
     /**
