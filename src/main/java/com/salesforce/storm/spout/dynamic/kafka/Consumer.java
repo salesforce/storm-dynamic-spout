@@ -37,7 +37,6 @@ import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.PartitionOffsetsManager;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
-import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

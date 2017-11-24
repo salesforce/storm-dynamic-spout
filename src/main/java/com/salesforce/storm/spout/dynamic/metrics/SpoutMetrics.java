@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation
 /**
  * Metrics for the {@link com.salesforce.storm.spout.dynamic.DynamicSpout} and friends.
  */
-public final class Metrics {
+public final class SpoutMetrics {
 
     @MetricDocumentation(
         type = MetricDocumentation.Type.GAUGE,

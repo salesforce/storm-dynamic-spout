@@ -25,12 +25,8 @@
 
 package com.salesforce.storm.spout.sideline.config;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.documentation.ClassSpec;
 import com.salesforce.storm.spout.documentation.DocGenerator;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
-import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.sideline.metrics.SidelineMetrics;
 
 import java.io.IOException;

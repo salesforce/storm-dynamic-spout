@@ -1,4 +1,8 @@
 #!/bin/bash
+
+## Generally speaking, you should instead run `mvn clean site` to generate the documentation.
+
+## Fail if any command fails
 set -e
 
 ## Build package

@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
@@ -35,7 +34,7 @@ import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutNotOpenedException;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
-import com.salesforce.storm.spout.dynamic.metrics.Metrics;
+import com.salesforce.storm.spout.dynamic.metrics.SpoutMetrics;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -159,7 +158,7 @@ public class DynamicSpout extends BaseRichSpout {
         // because each of these getters perform a check to see if the spout is open, and it's not yet until we've
         // finished setting all of these things up.
 
-        // Initialize Metrics Collection
+        // Initialize Metric Recorder
         this.metricsRecorder = getFactoryManager().createNewMetricsRecorder();
         this.metricsRecorder.open(getSpoutConfig(), getTopologyContext());
 
@@ -230,7 +229,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Update emit count metric for VirtualSpout this tuple originated from
         getMetricsRecorder()
-            .count(Metrics.VIRTUAL_SPOUT_EMIT, message.getMessageId().getSrcVirtualSpoutId().toString());
+            .count(SpoutMetrics.VIRTUAL_SPOUT_EMIT, message.getMessageId().getSrcVirtualSpoutId().toString());
     }
 
     /**
@@ -337,7 +336,7 @@ public class DynamicSpout extends BaseRichSpout {
         getMessageBus().ack(messageId);
 
         // Update ack count metric for VirtualSpout this tuple originated from
-        getMetricsRecorder().count(Metrics.VIRTUAL_SPOUT_ACK, messageId.getSrcVirtualSpoutId());
+        getMetricsRecorder().count(SpoutMetrics.VIRTUAL_SPOUT_ACK, messageId.getSrcVirtualSpoutId());
     }
 
     /**
