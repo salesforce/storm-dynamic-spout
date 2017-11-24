@@ -49,6 +49,7 @@ public class SpoutConfig {
      * (String) Defines the name of the output stream tuples will be emitted out of.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines the name of the output stream tuples will be emitted out of.",
         type = String.class
     )
@@ -62,6 +63,7 @@ public class SpoutConfig {
      * Or as an explicitly defined Fields object.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines the output fields that the spout will emit as a list of field names.",
         type = List.class
     )
@@ -78,6 +80,7 @@ public class SpoutConfig {
      * Should be a full classpath to a class that implements the Consumer interface.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which Consumer implementation to use. "
         + "Should be a full classpath to a class that implements the Consumer interface.",
         type = String.class
@@ -176,13 +179,14 @@ public class SpoutConfig {
 ///////////////////////////////////
 // Failed Message Retry Config
 ///////////////////////////////////
-    
+
     /**
      * (String) Defines which RetryManager implementation to use.
      * Should be a full classpath to a class that implements the RetryManager interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager"
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which RetryManager implementation to use. "
         + "Should be a full classpath to a class that implements the RetryManager interface.",
         type = String.class,
@@ -200,6 +204,7 @@ public class SpoutConfig {
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines how many times a failed message will be replayed before just being acked. "
         + "A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. "
         + "A positive value means tuples will be retried up to this limit, then dropped.",
@@ -218,6 +223,7 @@ public class SpoutConfig {
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. "
         + "Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). "
         + "Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least "
@@ -235,6 +241,7 @@ public class SpoutConfig {
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines how quickly the delay increases after each failed tuple. "
         + "Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.",
         type = Double.class
@@ -248,6 +255,7 @@ public class SpoutConfig {
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines an upper bound of the max delay time between retried a failed tuple.",
         type = Long.class
     )
@@ -263,6 +271,7 @@ public class SpoutConfig {
      * Default Value: "com.salesforce.storm.spout.dynamic.metrics.LogRecorder"
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which MetricsRecorder implementation to use. "
         + "Should be a full classpath to a class that implements the MetricsRecorder interface.",
         type = String.class
@@ -274,6 +283,7 @@ public class SpoutConfig {
      * Default Value: 60
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines the time bucket to group metrics together under.",
         type = Integer.class
     )
@@ -284,6 +294,7 @@ public class SpoutConfig {
      * Default Value: false
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines if MetricsRecorder instance should include the taskId in the metric key.",
         type = Boolean.class
     )
@@ -299,6 +310,7 @@ public class SpoutConfig {
      * Default Value: com.salesforce.storm.spout.dynamic.buffer.RoundRobinBuffer
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which MessageBuffer implementation to use. "
         + "Should be a full classpath to a class that implements the MessageBuffer interface.",
         type = String.class
@@ -311,6 +323,7 @@ public class SpoutConfig {
      * Default Value: 2000
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal "
         + "kafka consumers will be blocked from consuming.",
         type = Integer.class
@@ -322,6 +335,7 @@ public class SpoutConfig {
      * Default Value: 2000
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.",
         type = Long.class
     )
@@ -333,6 +347,7 @@ public class SpoutConfig {
      * Default Value: 10000
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop them with force, in Milliseconds.",
         type = Long.class
     )
@@ -343,6 +358,7 @@ public class SpoutConfig {
      * Default Value: 30000
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "How often we'll make sure each VirtualSpout persists its state, in Milliseconds.",
         type = Long.class
     )
@@ -354,6 +370,7 @@ public class SpoutConfig {
      * This must be unique to your spout instance, and must not change between deploys.
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. "
         + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
@@ -365,6 +382,7 @@ public class SpoutConfig {
      * Default Value: 10
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "The size of the thread pool for running virtual spouts.",
         type = Integer.class
     )
@@ -376,6 +394,7 @@ public class SpoutConfig {
      * Default value: com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which SpoutHandler implementation to use. "
         + "Should be a fully qualified class path that implements the SpoutHandler interface.",
         type = String.class
@@ -388,6 +407,7 @@ public class SpoutConfig {
      * Default value: com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler
      */
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which VirtualSpoutHandler implementation to use. "
         + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
         type = String.class
@@ -395,6 +415,7 @@ public class SpoutConfig {
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
 
     @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
         description = "Defines which DelegateSpoutFactory implementation to use. "
         + "Should be a fully qualified class path that implements the DelegateSpoutFactory interface.",
         type = String.class

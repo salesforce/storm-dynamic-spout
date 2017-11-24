@@ -44,9 +44,11 @@ public @interface ConfigDocumentation {
      */
     enum Category {
         NONE(""),
-        KAFKA("Kafka"),
+        DYNAMIC_SPOUT("Dynamic Spout"),
+        KAFKA("Kafka Consumer"),
         PERSISTENCE("Persistence"),
-        PERSISTENCE_ZOOKEEPER("Zookeeper Persistence");
+        PERSISTENCE_ZOOKEEPER("Zookeeper Persistence"),
+        SIDELINE("Sideline");
 
         private final String value;
 

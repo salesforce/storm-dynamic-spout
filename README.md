@@ -109,9 +109,10 @@ Using the default straight-out-of-the-box configuration, this spout has the foll
 When your topology is deployed with a `DynamicSpout` and it starts up, the `DynamicSpout` will first start the `SpoutMonitor`. The `SpoutMonitor` will watch for `VirtualSpout` instances that are added to it, this is typically handled by a `SpoutHandler` instance that is configured on the `DynamicSpout`.  Each `VirtualSpout` will create a `Consumer` that leverages a starting `ConsumerState` to begin it's work.  
  
 ## Configuration
-All of these options can be found inside of [SidelineSpoutConfig](src/main/java/com/salesforce/storm/spout/dynamic/config/SidelineSpoutConfig.java).
+All of these options can be found inside of [SpoutConfig](src/main/java/com/salesforce/storm/spout/dynamic/config/SpoutConfig.java).
 
 [//]: <> (DYNAMIC_SPOUT_CONFIGURATION_BEGIN_DELIMITER)
+### Dynamic Spout Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
 spout.consumer.class | String |  | Defines which Consumer implementation to use. Should be a full classpath to a class that implements the Consumer interface. | com.salesforce.storm.spout.dynamic.kafka.Consumer
@@ -136,12 +137,12 @@ spout.spout_handler_class | String |  | Defines which SpoutHandler implementatio
 spout.virtual_spout_factory_class | String |  | Defines which DelegateSpoutFactory implementation to use. Should be a fully qualified class path that implements the DelegateSpoutFactory interface. | class com.salesforce.storm.spout.dynamic.VirtualSpoutFactory
 spout.virtual_spout_handler_class | String |  | Defines which VirtualSpoutHandler implementation to use. Should be a fully qualified class path that implements the VirtualSpoutHandler interface. | com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler
 
-### Persistence
+### Persistence Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
 spout.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
 
-### Zookeeper Persistence
+### Zookeeper Persistence Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
 spout.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 6000
@@ -154,7 +155,7 @@ spout.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session tim
 [//]: <> (DYNAMIC_SPOUT_CONFIGURATION_END_DELIMITER)
 
 [//]: <> (KAFKA_CONSUMER_CONFIGURATION_BEGIN_DELIMITER)
-### Kafka
+### Kafka Consumer Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
 spout.coordinator.virtual_spout_id_prefix | String |  | Defines a consumerId prefix to use for all consumers created by the spout. This must be unique to your spout instance, and must not change between deploys. | 
@@ -165,6 +166,7 @@ spout.kafka.topic | String |  | Defines which Kafka topic we will consume messag
 [//]: <> (KAFKA_CONSUMER_CONFIGURATION_END_DELIMITER)
 
 [//]: <> (SIDELINE_CONFIGURATION_BEGIN_DELIMITER)
+### Sideline Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
 sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 

@@ -207,7 +207,7 @@ public class DocGenerator {
         for (ConfigDocumentation.Category category : lines.keySet()) {
             if (category != ConfigDocumentation.Category.NONE) {
                 outputBuilder
-                    .append("### " + category.toString())
+                    .append("### " + category.toString() + " Configuration Options")
                     .append(System.lineSeparator());
             }
 

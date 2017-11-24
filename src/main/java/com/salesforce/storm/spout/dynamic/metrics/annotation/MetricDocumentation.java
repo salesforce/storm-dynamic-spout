@@ -48,7 +48,11 @@ public @interface MetricDocumentation {
         AVERAGE,
         COUNTER,
         GAUGE,
-        TIMER
+        TIMER;
+
+        public String toString() {
+            return name();
+        }
     }
 
     /**
@@ -92,7 +96,7 @@ public @interface MetricDocumentation {
     }
 
     /**
-     * @return description of the configuration setting.
+     * @return description of the metric.
      */
     String description() default "";
 
@@ -107,12 +111,12 @@ public @interface MetricDocumentation {
     Unit unit() default Unit.UNKNOWN;
 
     /**
-     * @return category of the configuration setting.
+     * @return category of the metric.
      */
     Category category();
 
     /**
-     * @return category of the configuration setting.
+     * @return type of the metric.
      */
     Type type();
 }
