@@ -121,7 +121,7 @@ spout.coordinator.max_concurrent_virtual_spouts | Integer |  | The size of the t
 spout.coordinator.max_spout_shutdown_time_ms | Long |  | How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop them with force, in Milliseconds. | 10000
 spout.coordinator.monitor_thread_interval_ms | Long |  | How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds. | 2000
 spout.coordinator.tuple_buffer.class | String |  | Defines which MessageBuffer implementation to use. Should be a full classpath to a class that implements the MessageBuffer interface. | com.salesforce.storm.spout.dynamic.buffer.RoundRobinBuffer
-spout.coordinator.tuple_buffer.max_size | Integer |  | Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal kafka consumers will be blocked from consuming. | 2000
+spout.coordinator.tuple_buffer.max_size | Integer |  | Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal VirtualSpouts will be blocked from generating additional tuples until they have been emitted into the topology. | 2000
 spout.coordinator.virtual_spout_id_prefix | String |  | Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. This must be unique to your spout instance, and must not change between deploys. | 
 spout.metrics.class | String |  | Defines which MetricsRecorder implementation to use. Should be a full classpath to a class that implements the MetricsRecorder interface. | com.salesforce.storm.spout.dynamic.metrics.LogRecorder
 spout.metrics.enable_task_id_prefix | Boolean |  | Defines if MetricsRecorder instance should include the taskId in the metric key. | 

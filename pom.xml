@@ -45,7 +45,7 @@
     <licenses>
         <license>
             <name>BSD-3</name>
-            <url>https://github.com/salesforce/storm-dynamic-spout/blob/master/LICENSE.txt</url>
+            <url>https://raw.githubusercontent.com/salesforce/storm-dynamic-spout/master/LICENSE.txt</url>
         </license>
     </licenses>
 
