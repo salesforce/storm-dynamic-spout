@@ -650,7 +650,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     /**
      * @return PersistenceAdapter instance.
      */
-    public PersistenceAdapter getPersistenceAdapter() {
+    PersistenceAdapter getPersistenceAdapter() {
         return persistenceAdapter;
     }
 

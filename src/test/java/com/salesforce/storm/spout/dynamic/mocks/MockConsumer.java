@@ -115,12 +115,7 @@ public class MockConsumer implements Consumer {
     public void removeConsumerState() {
 
     }
-
-    @Override
-    public PersistenceAdapter getPersistenceAdapter() {
-        return persistenceAdapter;
-    }
-
+    
     @Override
     public boolean unsubscribeConsumerPartition(ConsumerPartition consumerPartitionToUnsubscribe) {
         return false;

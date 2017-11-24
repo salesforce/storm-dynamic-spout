@@ -1327,16 +1327,12 @@ public class VirtualSpoutTest {
     @Test
     public void testCloseWithCompletedFlagSetToFalse() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier("SidelineRequestId");
 
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
-
-        // Create a mock PersistanceManager & associate with SidelineConsumer.
-        final PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-        when(mockConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Create factory manager
         final FactoryManager factoryManager = spy(new FactoryManager(topologyConfig));
@@ -1380,17 +1376,13 @@ public class VirtualSpoutTest {
     @Test
     public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         topologyConfig.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier("SidelineRequestId");
 
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
-
-        // Create a mock PersistanceManager & associate with SidelineConsumer.
-        final PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-        when(mockConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Create factory manager
         final FactoryManager factoryManager = spy(new FactoryManager(topologyConfig));
@@ -1438,15 +1430,11 @@ public class VirtualSpoutTest {
     @Test
     public void testCloseWithCompletedFlagSetToTrueNoSidelineREquestIdentifier() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
-
-        // Create a mock PersistanceManager & associate with SidelineConsumer.
-        final PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-        when(mockConsumer.getPersistenceAdapter()).thenReturn(mockPersistenceAdapter);
 
         // Create factory manager
         final FactoryManager factoryManager = spy(new FactoryManager(topologyConfig));
