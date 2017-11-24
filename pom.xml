@@ -435,6 +435,18 @@
                         </configuration>
                     </execution>
 
+                    <!-- Generate KafkaConsumer docs -->
+                    <execution>
+                        <id>generate-kafkaconsumer-docs</id>
+                        <phase>site</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.salesforce.storm.spout.dynamic.kafka.DocTask</mainClass>
+                        </configuration>
+                    </execution>
+
                     <!-- Generate Sideline Docs -->
                     <execution>
                         <id>generate-sideline-docs</id>

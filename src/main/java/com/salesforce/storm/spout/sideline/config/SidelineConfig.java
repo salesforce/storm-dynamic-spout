@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.sideline.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.documentation.Documentation;
+import com.salesforce.storm.spout.documentation.ConfigDocumentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +42,7 @@ public class SidelineConfig {
      * (List|String) Defines one or more sideline trigger(s) (if any) to use.
      * Should be a fully qualified class path that implements thee SidelineTrigger interface.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines one or more sideline trigger(s) (if any) to use. "
         + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
         type = String.class
@@ -52,7 +52,7 @@ public class SidelineConfig {
     /**
      * (Integer) Interval (in seconds) to check running sidelines and refresh them if necessary.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Interval (in seconds) to check running sidelines and refresh them if necessary. Defaults to 600.",
         type = Integer.class
     )
@@ -63,7 +63,7 @@ public class SidelineConfig {
      * Should be a full classpath to a class that implements the PersistenceAdapter interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter"
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which PersistenceAdapter implementation to use. "
         + "Should be a full classpath to a class that implements the PersistenceAdapter interface.",
         type = String.class,
@@ -77,7 +77,7 @@ public class SidelineConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
         + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
         type = List.class
@@ -90,7 +90,7 @@ public class SidelineConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines the root path to persist state under. Example: \"/consumer-state\"",
         type = String.class
     )
@@ -99,7 +99,7 @@ public class SidelineConfig {
     /**
      * (Integer) Zookeeper session timeout.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper session timeout.",
         type = Integer.class
     )
@@ -108,7 +108,7 @@ public class SidelineConfig {
     /**
      * (Integer) Zookeeper connection timeout.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper connection timeout.",
         type = Integer.class
     )
@@ -117,7 +117,7 @@ public class SidelineConfig {
     /**
      * (Integer) Zookeeper retry attempts.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper retry attempts.",
         type = Integer.class
     )
@@ -126,7 +126,7 @@ public class SidelineConfig {
     /**
      * (Integer) Zookeeper retry interval.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper retry interval.",
         type = Integer.class
     )

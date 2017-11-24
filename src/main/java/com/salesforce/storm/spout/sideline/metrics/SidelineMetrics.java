@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.metrics;
 
 import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
 import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
-import com.salesforce.storm.spout.dynamic.metrics.annotation.Documentation;
+import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 
 /**
@@ -35,18 +35,18 @@ import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
  */
 public final class SidelineMetrics {
 
-    @Documentation(
-        type = Documentation.Type.COUNTER,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.SIDELINE,
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.COUNTER,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.SIDELINE,
         description = "Total number of started sidelines."
     )
     public static final MetricDefinition START = new ClassMetric(SidelineSpoutHandler.class, "start");
 
-    @Documentation(
-        type = Documentation.Type.COUNTER,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.SIDELINE,
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.COUNTER,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.SIDELINE,
         description = "Total number of stopped sidelines."
     )
     public static final MetricDefinition STOP = new ClassMetric(SidelineSpoutHandler.class, "stop");

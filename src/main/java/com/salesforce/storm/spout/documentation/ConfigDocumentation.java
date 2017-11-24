@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic.metrics.annotation;
+package com.salesforce.storm.spout.documentation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -32,73 +32,56 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Document metric information.
- *
- * Used to auto-generate metric documentation in README files.
+ * Annotation for documenting spout configuration options.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Documentation {
+public @interface ConfigDocumentation {
 
     /**
-     * Types of metrics.
-     */
-    enum Type {
-        AVERAGE,
-        COUNTER,
-        GAUGE,
-        TIMER
-    }
-
-    /**
-     * Categories for a metric.
+     * Enum of the categories for the configuration setting.
      */
     enum Category {
-        DYNAMIC_SPOUT,
-        KAFKA,
-        SIDELINE
-    }
+        NONE(""),
+        KAFKA("Kafka"),
+        PERSISTENCE("Persistence"),
+        PERSISTENCE_ZOOKEEPER("Zookeeper Persistence");
 
-    /**
-     * Unit for a metric.
-     */
-    enum Unit {
-        UNKNOWN("Unknown"),
-        NUMBER("Number"),
-        PERCENT("Percent 0.0 to 1.0"),
-        TIME_MILLISECONDS("Time in milliseconds"),
-        TIME_SECONDS("Time in seconds");
+        private final String value;
 
-        final String value;
-
-        Unit(final String value) {
+        Category(final String value) {
             this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
         }
     }
 
     /**
-     * @return description of the configuration setting.
+     * @return Description of the configuration setting.
      */
     String description() default "";
 
     /**
-     * @return values that should be replaced in the key.
+     * @return Whether or not the configuration setting is required.
      */
-    String[] dynamicValues() default {};
+    boolean required() default false;
 
     /**
-     * @return unit of measurement for the metric.
+     * @return Category of the configuration setting.
      */
-    Unit unit() default Unit.UNKNOWN;
+    Category category() default Category.NONE;
 
     /**
-     * @return category of the configuration setting.
+     * @return Type of the value for the configuration setting.
      */
-    Category category();
+    Class type() default Default.class;
 
     /**
-     * @return category of the configuration setting.
+     * Default class type for use on the type field.
      */
-    Type type();
+    final class Default {}
 }

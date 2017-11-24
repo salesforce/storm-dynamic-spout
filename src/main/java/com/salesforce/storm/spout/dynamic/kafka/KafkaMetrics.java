@@ -27,37 +27,37 @@ package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.salesforce.storm.spout.dynamic.metrics.ClassMetric;
 import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
-import com.salesforce.storm.spout.dynamic.metrics.annotation.Documentation;
+import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 /**
  * Metrics for the {@link com.salesforce.storm.spout.dynamic.kafka.Consumer} and friends.
  */
 public final class KafkaMetrics {
-    @Documentation(
-        type = Documentation.Type.GAUGE,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.KAFKA,
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.GAUGE,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.KAFKA,
         description = "Offset consumer has processed.",
         dynamicValues = { "topic", "partition" }
     )
     public static final MetricDefinition KAFKA_CURRENT_OFFSET =
         new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.currentOffset");
 
-    @Documentation(
-        type = Documentation.Type.GAUGE,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.KAFKA,
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.GAUGE,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.KAFKA,
         description = "Offset for TAIL position in the partition.",
         dynamicValues = { "topic", "partition" }
     )
     public static final MetricDefinition KAFKA_END_OFFSET =
         new ClassMetric(KafkaConsumer.class, "topic.{}.partition.{}.endOffset");
 
-    @Documentation(
-        type = Documentation.Type.GAUGE,
-        unit = Documentation.Unit.NUMBER,
-        category = Documentation.Category.KAFKA,
+    @MetricDocumentation(
+        type = MetricDocumentation.Type.GAUGE,
+        unit = MetricDocumentation.Unit.NUMBER,
+        category = MetricDocumentation.Category.KAFKA,
         description = "Difference between endOffset and currentOffset metrics.",
         dynamicValues = { "topic", "partition" }
     )

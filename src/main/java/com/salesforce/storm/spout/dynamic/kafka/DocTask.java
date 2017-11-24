@@ -23,15 +23,10 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.config;
+package com.salesforce.storm.spout.dynamic.kafka;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.documentation.ClassSpec;
 import com.salesforce.storm.spout.documentation.DocGenerator;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
-import com.salesforce.storm.spout.dynamic.metrics.Metrics;
-import com.salesforce.storm.spout.sideline.metrics.SidelineMetrics;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -40,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Generates Configuration Values for Sideline.
+ * Generates Configuration and Metric README documentation for Kafka Consumer.
  */
 public class DocTask {
     /**
@@ -48,25 +43,25 @@ public class DocTask {
      * @param args not used.
      * @throws IOException on error writing file.
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(final String[] args) throws IOException {
         final Path inputPath = Paths.get("README.md");
         generateConfigDocs(inputPath);
         generateMetricDocs(inputPath);
     }
 
     private static void generateMetricDocs(final Path inputPath) throws IOException {
-        final String tagArg = "SIDELINE_METRICS";
+        final String tagArg = "KAFKA_CONSUMER_METRICS";
         final List<ClassSpec> classSpecs = new ArrayList<>();
-        classSpecs.add(new ClassSpec(SidelineMetrics.class));
+        classSpecs.add(new ClassSpec(KafkaMetrics.class));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateMetricDocs();
     }
 
     private static void generateConfigDocs(final Path inputPath) throws IOException {
-        final String tagArg = "SIDELINE_CONFIGURATION";
+        final String tagArg = "KAFKA_CONSUMER_CONFIGURATION";
         final List<ClassSpec> classSpecs = new ArrayList<>();
-        classSpecs.add(new ClassSpec(SidelineConfig.class));
+        classSpecs.add(new ClassSpec(KafkaConsumerConfig.class));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateConfigDocs();

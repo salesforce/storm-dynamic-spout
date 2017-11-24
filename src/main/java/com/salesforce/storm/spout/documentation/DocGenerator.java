@@ -26,6 +26,8 @@
 package com.salesforce.storm.spout.documentation;
 
 import com.google.common.base.Preconditions;
+import com.salesforce.storm.spout.dynamic.metrics.MetricDefinition;
+import com.salesforce.storm.spout.dynamic.metrics.annotation.MetricDocumentation;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -68,10 +70,42 @@ public class DocGenerator {
     }
 
     /**
-     * Generate the documentation.
+     * Builds documentation around Configuration, injecting it into the document.
+     * @throws IOException on IO Errors.
+     */
+    public void generateConfigDocs() throws IOException {
+        try {
+            final StringBuilder contentBuilder = new StringBuilder();
+            for (final ClassSpec classSpec : classSpecs) {
+                buildConfigSection(classSpec.getClazz(), classSpec.getDefaults(), contentBuilder);
+            }
+            injectContent(contentBuilder.toString());
+        } catch (final Exception exception) {
+            throw new RuntimeException(exception.getMessage(), exception);
+        }
+    }
+
+    /**
+     * Builds documentation around Metrics, injecting it into the document.
+     * @throws IOException on IO Errors.
+     */
+    public void generateMetricDocs() throws IOException {
+        try {
+            final StringBuilder contentBuilder = new StringBuilder();
+            for (final ClassSpec classSpec : classSpecs) {
+                buildMetricSection(classSpec.getClazz(), contentBuilder);
+            }
+            injectContent(contentBuilder.toString());
+        } catch (final Exception exception) {
+            throw new RuntimeException(exception.getMessage(), exception);
+        }
+    }
+
+    /**
+     * Injects generated String content into the document between the start delimiter and ending delimiter.
      * @throws IOException on IO errors.
      */
-    public void generate() throws IOException {
+    private void injectContent(final String content) throws IOException {
         // Validate we have an input file
         Preconditions.checkArgument(
             inputPath.toFile().exists() && inputPath.toFile().isFile(),
@@ -95,10 +129,8 @@ public class DocGenerator {
                     configurationSectionFound = true;
                     readmePrintWriter.println(line);
                 } else if (delimiterStopTag.equals(line)) {
-                    for (final ClassSpec classSpec : classSpecs) {
-                        mergeConfigSection(classSpec.getClazz(), classSpec.getDefaults(), readmePrintWriter);
-                    }
                     insideConfigurationSection = false;
+                    readmePrintWriter.append(content);
                     readmePrintWriter.println(line);
                 } else if (!insideConfigurationSection) {
                     readmePrintWriter.println(line);
@@ -117,8 +149,6 @@ public class DocGenerator {
                 inputPath.toAbsolutePath(),
                 delimiterStopTag
             );
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new RuntimeException(e.getMessage(), e);
         }
         Files.copy(tempOutPath, inputPath, StandardCopyOption.REPLACE_EXISTING);
         Files.deleteIfExists(tempOutPath);
@@ -130,16 +160,14 @@ public class DocGenerator {
      * @throws IllegalAccessException on error
      * @throws NoSuchFieldException on error
      */
-    private void mergeConfigSection(
+    private void buildConfigSection(
         final Class configClass,
         final Map<String, Object> defaults,
-        final PrintWriter readmePrintWriter
+        final StringBuilder outputBuilder
     ) throws IllegalAccessException, NoSuchFieldException {
         System.out.println("Processing " + configClass.getName());
 
-        readmePrintWriter.println();
-
-        final Map<Documentation.Category, List<String>> lines = new TreeMap<>();
+        final Map<ConfigDocumentation.Category, List<String>> lines = new TreeMap<>();
 
         final Field[] fields = configClass.getDeclaredFields();
 
@@ -147,13 +175,13 @@ public class DocGenerator {
             // Presumably our configuration field...
             if (field.getType() == String.class) {
                 // Not a documented field, so let's skip over it
-                if (!field.isAnnotationPresent(Documentation.class)) {
+                if (!field.isAnnotationPresent(ConfigDocumentation.class)) {
                     continue;
                 }
 
                 final String configParam = (String) configClass.getField(field.getName()).get(configClass);
 
-                final Documentation documentation = field.getAnnotation(Documentation.class);
+                final ConfigDocumentation documentation = field.getAnnotation(ConfigDocumentation.class);
 
                 final StringBuilder builder = new StringBuilder();
 
@@ -176,22 +204,95 @@ public class DocGenerator {
             }
         }
 
-        for (Documentation.Category category : lines.keySet()) {
-            if (category != Documentation.Category.NONE) {
-                readmePrintWriter.println("### " + category.toString());
+        for (ConfigDocumentation.Category category : lines.keySet()) {
+            if (category != ConfigDocumentation.Category.NONE) {
+                outputBuilder
+                    .append("### " + category.toString())
+                    .append(System.lineSeparator());
             }
 
-            readmePrintWriter.println("Config Key | Type | Required | Description | Default Value |");
-            readmePrintWriter.println("---------- | ---- | -------- | ----------- | ------------- |");
+            outputBuilder
+                .append("Config Key | Type | Required | Description | Default Value |")
+                .append(System.lineSeparator())
+                .append("---------- | ---- | -------- | ----------- | ------------- |")
+                .append(System.lineSeparator());
 
             Collections.sort(lines.get(category));
 
             for (String line : lines.get(category)) {
-                readmePrintWriter.println(line);
+                outputBuilder
+                    .append(line)
+                    .append(System.lineSeparator());
             }
-            readmePrintWriter.println();
+            outputBuilder.append(System.lineSeparator());
+        }
+    }
+
+    private void buildMetricSection(
+        final Class metricClass,
+        final StringBuilder outputBuilder) throws NoSuchFieldException, IllegalAccessException {
+        System.out.println("Processing " + metricClass.getName());
+
+        final Map<MetricDocumentation.Category, List<String>> lines = new TreeMap<>();
+
+        final Field[] fields = metricClass.getDeclaredFields();
+
+        for (Field field : fields) {
+            // Presumably our configuration field...
+            if (!field.getType().isAssignableFrom(MetricDefinition.class)) {
+                continue;
+            }
+
+            // Not a documented field, so let's skip over it
+            if (!field.isAnnotationPresent(MetricDocumentation.class)) {
+                continue;
+            }
+
+            final MetricDefinition metricDefinition = (MetricDefinition) metricClass.getField(field.getName()).get(metricClass);
+
+            final MetricDocumentation documentation = field.getAnnotation(MetricDocumentation.class);
+
+            final StringBuilder builder = new StringBuilder();
+            lines.computeIfAbsent(documentation.category(), k -> new ArrayList<>());
+
+            final String type = documentation.type().name();
+            final String unit = documentation.unit().toString();
+            final String description = documentation.description();
+
+            // Generate the key with dynamicValues injected.
+            String key = metricDefinition.getKey();
+            for (final String dynamicValue : documentation.dynamicValues()) {
+                key = key.replaceFirst("\\{\\}", "{" + dynamicValue + "}");
+            }
+
+            builder.append(key).append(DELIMITER);
+            builder.append(type).append(DELIMITER);
+            builder.append(unit).append(DELIMITER);
+            builder.append(description).append(DELIMITER);
+            lines.get(documentation.category()).add(builder.toString());
+
+            System.out.println("Found lines " + lines);
         }
 
-        readmePrintWriter.println();
+        for (MetricDocumentation.Category category : lines.keySet()) {
+            outputBuilder
+                .append("### " + category.toString() + " Metrics")
+                .append(System.lineSeparator());
+
+            outputBuilder
+                .append("Key | Type | Unit | Description |")
+                .append(System.lineSeparator())
+                .append("--- | ---- | ---- | ----------- |")
+                .append(System.lineSeparator());
+
+            Collections.sort(lines.get(category));
+
+            for (String line : lines.get(category)) {
+                outputBuilder
+                    .append(line)
+                    .append(System.lineSeparator());
+            }
+            outputBuilder.append(System.lineSeparator());
+        }
     }
 }

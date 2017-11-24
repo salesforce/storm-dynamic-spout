@@ -29,6 +29,8 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.documentation.ClassSpec;
 import com.salesforce.storm.spout.documentation.DocGenerator;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
+import com.salesforce.storm.spout.dynamic.kafka.KafkaMetrics;
+import com.salesforce.storm.spout.dynamic.metrics.Metrics;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 
 import java.io.IOException;
@@ -51,12 +53,25 @@ public class DocTask {
      */
     public static void main(final String[] args) throws IOException {
         final Path inputPath = Paths.get("README.md");
+        generateConfigDocs(inputPath);
+        generateMetricDocs(inputPath);
+    }
+
+    private static void generateMetricDocs(final Path inputPath) throws IOException {
+        final String tagArg = "DYNAMIC_SPOUT_METRICS";
+        final List<ClassSpec> classSpecs = new ArrayList<>();
+        classSpecs.add(new ClassSpec(Metrics.class));
+
+        final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
+        docGenerator.generateMetricDocs();
+    }
+
+    private static void generateConfigDocs(final Path inputPath) throws IOException {
         final String tagArg = "DYNAMIC_SPOUT_CONFIGURATION";
         final List<ClassSpec> classSpecs = new ArrayList<>();
         classSpecs.add(new ClassSpec(SpoutConfig.class, SpoutConfig.setDefaults(Maps.newHashMap())));
-        classSpecs.add(new ClassSpec(KafkaConsumerConfig.class));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
-        docGenerator.generate();
+        docGenerator.generateConfigDocs();
     }
 }

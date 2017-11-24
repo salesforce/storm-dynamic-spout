@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger.example;
 
-import com.salesforce.storm.spout.documentation.Documentation;
+import com.salesforce.storm.spout.documentation.ConfigDocumentation;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class Config {
     /**
      * (String) Class name for the class of the {@link FilterChainStepBuilder} instance.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Class name for the class of the FilterChainStepBuilder instance.",
         type = String.class
     )
@@ -54,7 +54,7 @@ public class Config {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
         + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
         type = List.class
@@ -67,7 +67,7 @@ public class Config {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines the root path to watch for events under. Example: \"/sideline-trigger\"",
         type = String.class
     )
@@ -76,7 +76,7 @@ public class Config {
     /**
      * (Integer) Zookeeper session timeout.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper session timeout.",
         type = Integer.class
     )
@@ -85,7 +85,7 @@ public class Config {
     /**
      * (Integer) Zookeeper connection timeout.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper connection timeout.",
         type = Integer.class
     )
@@ -94,7 +94,7 @@ public class Config {
     /**
      * (Integer) Zookeeper retry attempts.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper retry attempts.",
         type = Integer.class
     )
@@ -103,7 +103,7 @@ public class Config {
     /**
      * (Integer) Zookeeper retry interval.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Zookeeper retry interval.",
         type = Integer.class
     )

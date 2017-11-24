@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.config;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.documentation.Documentation;
+import com.salesforce.storm.spout.documentation.ConfigDocumentation;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
 import com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
@@ -48,7 +48,7 @@ public class SpoutConfig {
     /**
      * (String) Defines the name of the output stream tuples will be emitted out of.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines the name of the output stream tuples will be emitted out of.",
         type = String.class
     )
@@ -61,7 +61,7 @@ public class SpoutConfig {
      * Also supported as a single string of comma separated values: "field1, field2, ..."
      * Or as an explicitly defined Fields object.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines the output fields that the spout will emit as a list of field names.",
         type = List.class
     )
@@ -77,7 +77,7 @@ public class SpoutConfig {
      * (String) Defines which Consumer implementation to use.
      * Should be a full classpath to a class that implements the Consumer interface.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which Consumer implementation to use. "
         + "Should be a full classpath to a class that implements the Consumer interface.",
         type = String.class
@@ -93,8 +93,8 @@ public class SpoutConfig {
      * Should be a full classpath to a class that implements the PersistenceAdapter interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter"
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE,
         description = "Defines which PersistenceAdapter implementation to use. "
         + "Should be a full classpath to a class that implements the PersistenceAdapter interface.",
         type = String.class,
@@ -112,8 +112,8 @@ public class SpoutConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
         + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
         type = List.class
@@ -126,8 +126,8 @@ public class SpoutConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Defines the root path to persist state under. Example: \"/consumer-state\"",
         type = String.class
     )
@@ -136,8 +136,8 @@ public class SpoutConfig {
     /**
      * (Integer) Zookeeper session timeout.
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Zookeeper session timeout.",
         type = Integer.class
     )
@@ -146,8 +146,8 @@ public class SpoutConfig {
     /**
      * (Integer) Zookeeper connection timeout.
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Zookeeper connection timeout.",
         type = Integer.class
     )
@@ -156,8 +156,8 @@ public class SpoutConfig {
     /**
      * (Integer) Zookeeper retry attempts.
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Zookeeper retry attempts.",
         type = Integer.class
     )
@@ -166,8 +166,8 @@ public class SpoutConfig {
     /**
      * (Integer) Zookeeper retry interval.
      */
-    @Documentation(
-        category = Documentation.Category.PERSISTENCE_ZOOKEEPER,
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.PERSISTENCE_ZOOKEEPER,
         description = "Zookeeper retry interval.",
         type = Integer.class
     )
@@ -182,7 +182,7 @@ public class SpoutConfig {
      * Should be a full classpath to a class that implements the RetryManager interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager"
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which RetryManager implementation to use. "
         + "Should be a full classpath to a class that implements the RetryManager interface.",
         type = String.class,
@@ -199,7 +199,7 @@ public class SpoutConfig {
      * Default Value: -1
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines how many times a failed message will be replayed before just being acked. "
         + "A negative value means tuples will be retried forever. A value of 0 means tuples will never be retried. "
         + "A positive value means tuples will be retried up to this limit, then dropped.",
@@ -217,7 +217,7 @@ public class SpoutConfig {
      * Default Value: 2000 (2 seconds)
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. "
         + "Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). "
         + "Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least "
@@ -234,7 +234,7 @@ public class SpoutConfig {
      * Default Value: 2.0
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines how quickly the delay increases after each failed tuple. "
         + "Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.",
         type = Double.class
@@ -247,7 +247,7 @@ public class SpoutConfig {
      * Default Value: 900000 (15 minutes)
      * Optional - Only required if you use the DefaultRetryManager implementation.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines an upper bound of the max delay time between retried a failed tuple.",
         type = Long.class
     )
@@ -262,7 +262,7 @@ public class SpoutConfig {
      * Should be a full classpath to a class that implements the MetricsRecorder interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.metrics.LogRecorder"
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which MetricsRecorder implementation to use. "
         + "Should be a full classpath to a class that implements the MetricsRecorder interface.",
         type = String.class
@@ -273,7 +273,7 @@ public class SpoutConfig {
      * (boolean) Defines the time bucket to group metrics together under.
      * Default Value: 60
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines the time bucket to group metrics together under.",
         type = Integer.class
     )
@@ -283,7 +283,7 @@ public class SpoutConfig {
      * (boolean) Defines if MetricsRecord instance should include the taskId in the metric key.
      * Default Value: false
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines if MetricsRecorder instance should include the taskId in the metric key.",
         type = Boolean.class
     )
@@ -298,7 +298,7 @@ public class SpoutConfig {
      * Should be a full classpath to a class that implements the MessageBuffer interface.
      * Default Value: com.salesforce.storm.spout.dynamic.buffer.RoundRobinBuffer
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which MessageBuffer implementation to use. "
         + "Should be a full classpath to a class that implements the MessageBuffer interface.",
         type = String.class
@@ -310,7 +310,7 @@ public class SpoutConfig {
      * the internal kafka consumers will be blocked from consuming.
      * Default Value: 2000
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines maximum size of the tuple buffer.  After the buffer reaches this size the internal "
         + "kafka consumers will be blocked from consuming.",
         type = Integer.class
@@ -321,7 +321,7 @@ public class SpoutConfig {
      * (long) How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.
      * Default Value: 2000
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "How often our monitor thread will run and watch over its managed virtual spout instances, in milliseconds.",
         type = Long.class
     )
@@ -332,7 +332,7 @@ public class SpoutConfig {
      * them with force, in Milliseconds.
      * Default Value: 10000
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "How long we'll wait for all VirtualSpout's to cleanly shut down, before we stop them with force, in Milliseconds.",
         type = Long.class
     )
@@ -342,7 +342,7 @@ public class SpoutConfig {
      * (long) How often we'll make sure each VirtualSpout persists its state, in Milliseconds.
      * Default Value: 30000
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "How often we'll make sure each VirtualSpout persists its state, in Milliseconds.",
         type = Long.class
     )
@@ -353,7 +353,7 @@ public class SpoutConfig {
      * (String) Defines a consumerId prefix to use for all consumers created by the spout.
      * This must be unique to your spout instance, and must not change between deploys.
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. "
         + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
@@ -364,7 +364,7 @@ public class SpoutConfig {
      * (int) The size of the thread pool for running virtual spouts.
      * Default Value: 10
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "The size of the thread pool for running virtual spouts.",
         type = Integer.class
     )
@@ -375,7 +375,7 @@ public class SpoutConfig {
      * Should be a fully qualified class path that implements the SpoutHandler interface.
      * Default value: com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which SpoutHandler implementation to use. "
         + "Should be a fully qualified class path that implements the SpoutHandler interface.",
         type = String.class
@@ -387,14 +387,14 @@ public class SpoutConfig {
      * Should be a fully qualified class path that implements the VirtualSpoutHandler interface.
      * Default value: com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler
      */
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which VirtualSpoutHandler implementation to use. "
         + "Should be a fully qualified class path that implements the VirtualSpoutHandler interface.",
         type = String.class
     )
     public static final String VIRTUAL_SPOUT_HANDLER_CLASS = "spout.virtual_spout_handler_class";
 
-    @Documentation(
+    @ConfigDocumentation(
         description = "Defines which DelegateSpoutFactory implementation to use. "
         + "Should be a fully qualified class path that implements the DelegateSpoutFactory interface.",
         type = String.class
