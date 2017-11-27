@@ -1666,7 +1666,7 @@ public class VirtualSpoutTest {
 
         defaultConfig.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
-        return SpoutConfig.setDefaults(defaultConfig);
+        return defaultConfig;
     }
 
     /**

@@ -80,7 +80,7 @@ public class ZookeeperWatchTriggerTest {
 
         final String consumerId = "VirtualSpoutPrefix";
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
@@ -198,7 +198,7 @@ public class ZookeeperWatchTriggerTest {
 
         final String consumerId = "VirtualSpoutPrefix";
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));

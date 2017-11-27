@@ -544,7 +544,7 @@ public class ZookeeperPersistenceAdapterTest {
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
-        return Tools.immutableCopy(SpoutConfig.setDefaults(config));
+        return Tools.immutableCopy(config);
     }
 
     /**

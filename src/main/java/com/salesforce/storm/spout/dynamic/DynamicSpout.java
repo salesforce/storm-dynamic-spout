@@ -60,9 +60,9 @@ public class DynamicSpout extends BaseRichSpout {
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpout.class);
 
     /**
-     * The Spout configuration map.
+     * The Spout configuration.
      */
-    private Map<String, Object> spoutConfig;
+    private SpoutConfig spoutConfig;
 
     /**
      * Spout's output collector, for emitting tuples out into the topology.
@@ -121,13 +121,12 @@ public class DynamicSpout extends BaseRichSpout {
      * Constructor to create our spout.
      * @param spoutConfig Our configuration.
      */
-    public DynamicSpout(Map<String, Object> spoutConfig) {
-        // TODO: Should this method change to a SpoutConfig instance?
-        // Save off config, injecting appropriate default values for anything not explicitly configured.
-        this.spoutConfig = Collections.unmodifiableMap(SpoutConfig.setDefaults(spoutConfig));
+    public DynamicSpout(SpoutConfig spoutConfig) {
+        // Save off config instance.
+        this.spoutConfig = spoutConfig;
 
         // Create our factory manager, which must be serializable.
-        this.factoryManager = new FactoryManager(getSpoutConfig());
+        this.factoryManager = new FactoryManager(getSpoutConfig().toMap());
     }
 
     /**
@@ -160,11 +159,11 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Initialize Metric Recorder
         this.metricsRecorder = getFactoryManager().createNewMetricsRecorder();
-        this.metricsRecorder.open(getSpoutConfig(), getTopologyContext());
+        this.metricsRecorder.open(getSpoutConfig().toMap(), getTopologyContext());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
-        messageBuffer.open(getSpoutConfig());
+        messageBuffer.open(getSpoutConfig().toMap());
 
         // Create MessageBus instance and store into SpoutMessageBus reference reducing accessible scope.
         final MessageBus messageBus = new MessageBus(messageBuffer);
@@ -178,7 +177,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Create Coordinator instance and call open.
         spoutCoordinator = new SpoutCoordinator(
-            getSpoutConfig(),
+            getSpoutConfig().toMap(),
             threadContext,
             messageBus,
             metricsRecorder
@@ -188,7 +187,7 @@ public class DynamicSpout extends BaseRichSpout {
         // TODO: This should be configurable and created dynamically, the problem is that right now we are still tightly
         // coupled to the VirtualSpout implementation.
         this.virtualSpoutFactory = new VirtualSpoutFactory(
-            spoutConfig,
+            spoutConfig.toMap(),
             topologyContext,
             factoryManager,
             metricsRecorder
@@ -357,7 +356,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    public Map<String, Object> getSpoutConfig() {
+    public SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 

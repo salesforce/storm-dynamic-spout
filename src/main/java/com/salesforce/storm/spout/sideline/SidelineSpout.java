@@ -61,6 +61,6 @@ public class SidelineSpout extends DynamicSpout {
      */
     @SuppressWarnings("unchecked")
     public SidelineSpout(Map config) {
-        super(modifyConfig(config));
+        super(new SpoutConfig(modifyConfig(config)));
     }
 }

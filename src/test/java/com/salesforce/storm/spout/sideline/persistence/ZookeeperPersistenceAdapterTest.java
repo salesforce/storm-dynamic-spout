@@ -650,12 +650,12 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
-        Map config = Maps.newHashMap();
+        final Map config = new HashMap();
         config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
-        return Tools.immutableCopy(SpoutConfig.setDefaults(config));
+        return Tools.immutableCopy(config);
     }
 
     /**

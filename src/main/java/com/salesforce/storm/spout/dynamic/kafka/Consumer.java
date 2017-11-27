@@ -771,16 +771,4 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Return TopicPartitions for our assigned partitions
         return topicPartitions;
     }
-
-    /**
-     * Utility method to reduce duplication around generating metric keyspaces for
-     * topic/partition metrics.
-     * @param topic Name of topic the metric belongs to.
-     * @param partition Partition the metric belongs to.
-     * @param metric Name of the metric.
-     * @return Properly formatted keyspace for metric.
-     */
-    private String getTopicPartitionMetricKey(final String topic, final int partition, final String metric) {
-        return "topic." + topic + ".partition." + partition + "." + metric;
-    }
 }

@@ -48,6 +48,7 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -655,7 +656,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = new HashMap<>();
 
         // Configure our internal operations to run frequently for our test case.
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
@@ -754,7 +755,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = new HashMap<>();
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -795,7 +796,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = new HashMap<>();
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -832,7 +833,7 @@ public class SpoutCoordinatorTest {
         metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
 
         // Define our configuration with reduced run time.
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
 
         // Create SpoutCoordinator
@@ -894,7 +895,7 @@ public class SpoutCoordinatorTest {
     }
 
     private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
-        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> topologyConfig = new HashMap<>();
         topologyConfig.put(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
         topologyConfig.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
         topologyConfig.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);

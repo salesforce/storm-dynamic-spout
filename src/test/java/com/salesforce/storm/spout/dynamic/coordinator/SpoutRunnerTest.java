@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -585,7 +586,7 @@ public class SpoutRunnerTest {
     }
 
     private Map<String, Object> getDefaultConfig(long consumerStateFlushIntervalMs) {
-        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> topologyConfig = new HashMap<>();
         topologyConfig.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, consumerStateFlushIntervalMs);
         return topologyConfig;
     }

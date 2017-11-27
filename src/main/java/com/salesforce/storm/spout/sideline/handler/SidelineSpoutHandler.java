@@ -82,7 +82,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * The Spout configuration map.
      */
-    private Map<String, Object> spoutConfig;
+    private SpoutConfig spoutConfig;
 
     /**
      * The Topology Context object.
@@ -125,7 +125,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
      */
     @Override
-    public void open(final Map<String, Object> spoutConfig, final DelegateSpoutFactory delegateSpoutFactory) {
+    public void open(final SpoutConfig spoutConfig, final DelegateSpoutFactory delegateSpoutFactory) {
         if (isOpen) {
             throw new RuntimeException("SidelineSpoutHandler is already opened!");
         }
@@ -144,7 +144,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         this.persistenceAdapter = FactoryManager.createNewInstance(
             persistenceAdapterClass
         );
-        this.persistenceAdapter.open(spoutConfig);
+        this.persistenceAdapter.open(spoutConfig.toMap());
 
         this.delegateSpoutFactory = delegateSpoutFactory;
     }
@@ -191,12 +191,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         createSidelineTriggers();
 
         Preconditions.checkArgument(
-            spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)
-            && spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS) != null,
+            !spoutConfig.hasNonNullValue(SidelineConfig.REFRESH_INTERVAL_SECONDS),
             "Configuration value for " + SidelineConfig.REFRESH_INTERVAL_SECONDS + " is required."
         );
 
-        final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
+        final long refreshIntervalSeconds = spoutConfig.getLong(SidelineConfig.REFRESH_INTERVAL_SECONDS);
 
         final long refreshIntervalMillis = TimeUnit.SECONDS.toMillis(refreshIntervalSeconds);
 
@@ -221,7 +220,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         }, refreshIntervalMillis, refreshIntervalMillis);
 
         for (final SidelineTrigger sidelineTrigger : sidelineTriggers) {
-            sidelineTrigger.open(getSpoutConfig());
+            sidelineTrigger.open(getSpoutConfig().toMap());
         }
     }
 
@@ -613,7 +612,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * Get the spout config.
      * @return Spout config.
      */
-    Map<String, Object> getSpoutConfig() {
+    SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 

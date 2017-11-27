@@ -2514,7 +2514,7 @@ public class ConsumerTest {
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
-        return SpoutConfig.setDefaults(defaultConfig);
+        return defaultConfig;
     }
 
     /**

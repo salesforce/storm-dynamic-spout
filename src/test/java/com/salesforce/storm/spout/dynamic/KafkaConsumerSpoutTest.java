@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +139,7 @@ public class KafkaConsumerSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Add a VirtualSpout.
@@ -211,7 +212,7 @@ public class KafkaConsumerSpoutTest {
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -325,7 +326,7 @@ public class KafkaConsumerSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        DynamicSpout spout = new DynamicSpout(config);
+        DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -372,7 +373,7 @@ public class KafkaConsumerSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create fresh new instance of spout & call open all with the same config
-        spout = new DynamicSpout(config);
+        spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create and add virtual spout
@@ -416,7 +417,7 @@ public class KafkaConsumerSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create fresh new instance of spout & call open all with the same config
-        spout = new DynamicSpout(config);
+        spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create new VirtualSpout instance and add it.
@@ -503,7 +504,7 @@ public class KafkaConsumerSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout and call open().
-        DynamicSpout spout = new DynamicSpout(config);
+        DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -622,7 +623,7 @@ public class KafkaConsumerSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout and call open().
-        DynamicSpout spout = new DynamicSpout(config);
+        DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -927,7 +928,7 @@ public class KafkaConsumerSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/kafkaconsumer-spout-test/testRun" + System.currentTimeMillis();
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = new HashMap<>();
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());

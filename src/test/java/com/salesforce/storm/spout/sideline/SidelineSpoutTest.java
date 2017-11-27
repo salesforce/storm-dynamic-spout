@@ -70,6 +70,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Clock;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -705,7 +706,7 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun" + System.currentTimeMillis();
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(Maps.newHashMap()));
+        final Map<String, Object> config = new HashMap<>();
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
