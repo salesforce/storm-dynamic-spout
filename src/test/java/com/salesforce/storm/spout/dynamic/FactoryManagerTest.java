@@ -26,6 +26,7 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager;
@@ -69,7 +70,7 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewFailedMsgRetryManagerInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final SpoutConfig spoutConfig = mock(SpoutConfig.class);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), new HashMap<>());
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // We expect this to throw an exception.
@@ -172,7 +173,7 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewMessageBufferInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final SpoutConfig spoutConfig = mock(SpoutConfig.class);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), new HashMap<>());
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // We expect this to throw an exception.
