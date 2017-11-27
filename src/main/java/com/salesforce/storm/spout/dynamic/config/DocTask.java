@@ -63,7 +63,9 @@ public class DocTask {
     private static void generateConfigDocs(final Path inputPath) throws IOException {
         final String tagArg = "DYNAMIC_SPOUT_CONFIGURATION";
         final List<ClassSpec> classSpecs = new ArrayList<>();
-        classSpecs.add(new ClassSpec(SpoutConfig.class, SpoutConfig.setDefaults(Maps.newHashMap())));
+
+        // TODO rewrite
+        //classSpecs.add(new ClassSpec(DynamicSpoutConfig.class, DynamicSpoutConfig.setDefaults(Maps.newHashMap())));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateConfigDocs();

@@ -63,7 +63,8 @@ public class DocTask {
     private static void generateConfigDocs(final Path inputPath) throws IOException {
         final String tagArg = "SIDELINE_CONFIGURATION";
         final List<ClassSpec> classSpecs = new ArrayList<>();
-        classSpecs.add(new ClassSpec(SidelineConfig.class, SidelineConfig.setDefaults(new HashMap())));
+        // TODO rewrite
+        //classSpecs.add(new ClassSpec(SidelineConfig.class, SidelineConfig.setDefaults(new HashMap())));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateConfigDocs();

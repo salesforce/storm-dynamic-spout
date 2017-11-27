@@ -25,9 +25,8 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineController;
-
-import java.util.Map;
 
 /**
  * Static trigger, you should only ever use this for testing.
@@ -41,10 +40,10 @@ public class StaticTrigger implements SidelineTrigger {
 
     /**
      * Open the trigger.
-     * @param config spout configuration.
+     * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(final Map config) {
+    public void open(final SpoutConfig spoutConfig) {
     }
 
     /**

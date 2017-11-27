@@ -30,6 +30,8 @@ import com.google.gson.GsonBuilder;
 import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
@@ -80,13 +82,13 @@ public class ZookeeperWatchTriggerTest {
 
         final String consumerId = "VirtualSpoutPrefix";
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
+        final Map<String, Object> config = new HashMap<>();
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
         );
         config.put(
@@ -105,7 +107,7 @@ public class ZookeeperWatchTriggerTest {
 
         final ZookeeperWatchTrigger trigger = new ZookeeperWatchTrigger();
         trigger.setSidelineController(sidelineSpoutHandler);
-        trigger.open(config);
+        trigger.open(new SpoutConfig(new ConfigDefinition(), config));
 
         // We're going to turn some events into JSON
         final Gson gson = new GsonBuilder()
@@ -198,13 +200,13 @@ public class ZookeeperWatchTriggerTest {
 
         final String consumerId = "VirtualSpoutPrefix";
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
+        final Map<String, Object> config = new HashMap<>();
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
         );
         config.put(
@@ -277,7 +279,7 @@ public class ZookeeperWatchTriggerTest {
 
         final ZookeeperWatchTrigger trigger = new ZookeeperWatchTrigger();
         trigger.setSidelineController(sidelineSpoutHandler);
-        trigger.open(config);
+        trigger.open(new SpoutConfig(new ConfigDefinition(), config));
 
         await()
             .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());

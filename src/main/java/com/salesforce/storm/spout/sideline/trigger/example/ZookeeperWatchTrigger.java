@@ -29,7 +29,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
-import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
@@ -56,7 +56,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -121,10 +120,10 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
 
     /**
      * Open the trigger, connect to Zookeeper and setup our watches.
-     * @param config spout configuration
+     * @param spoutConfig spout configuration
      */
     @Override
-    public void open(final Map config) {
+    public void open(final SpoutConfig spoutConfig) {
         if (isOpen) {
             // If this happens something is configured wrong, so we're going to kill the topology violently at this point
             logger.error("Trigger already opened!");
@@ -134,22 +133,22 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         logger.info("Opening {}", this.getClass());
 
         Preconditions.checkArgument(
-            config.containsKey(Config.ZK_ROOTS),
+            spoutConfig.hasNonNullValue(Config.ZK_ROOTS),
             "One or more roots must be configured in Zookeeper to watch for events."
         );
 
         curator = CuratorFactory.createNewCuratorInstance(
-            Tools.stripKeyPrefix(Config.PREFIX, config),
+            spoutConfig.stripKeyPrefix(Config.PREFIX),
             getClass().getSimpleName()
         );
 
         curatorHelper = new CuratorHelper(curator);
 
         filterChainStepBuilder = FactoryManager.createNewInstance(
-            (String) config.get(Config.FILTER_CHAIN_STEP_BUILDER_CLASS)
+            spoutConfig.getString(Config.FILTER_CHAIN_STEP_BUILDER_CLASS)
         );
 
-        final List<String> roots = (List<String>) config.get(Config.ZK_ROOTS);
+        final List<String> roots = spoutConfig.getList(Config.ZK_ROOTS);
 
         // Starting and stopping triggers fire off at almost the exact same time so we need to do this here rather
         // than after all of our other setup occurs.

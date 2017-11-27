@@ -29,6 +29,8 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,17 +81,18 @@ public class RoundRobinBuffer implements MessageBuffer {
      */
     public static RoundRobinBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
-        map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        map.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), map);
 
         RoundRobinBuffer buffer = new RoundRobinBuffer();
-        buffer.open(map);
+        buffer.open(spoutConfig);
 
         return buffer;
     }
 
     @Override
-    public void open(Map spoutConfig) {
-        Object maxBufferSizeObj = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+    public void open(final SpoutConfig spoutConfig) {
+        Object maxBufferSizeObj = spoutConfig.get(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         if (maxBufferSizeObj == null) {
             // Not configured, use default value.
             return;

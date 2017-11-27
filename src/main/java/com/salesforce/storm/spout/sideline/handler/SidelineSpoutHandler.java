@@ -33,11 +33,11 @@ import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
@@ -82,7 +82,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     /**
      * The Spout configuration map.
      */
-    private Map<String, Object> spoutConfig;
+    private SpoutConfig spoutConfig;
 
     /**
      * The Topology Context object.
@@ -125,7 +125,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * @param delegateSpoutFactory Factory for creating {@link DelegateSpout} instances.
      */
     @Override
-    public void open(final Map<String, Object> spoutConfig, final DelegateSpoutFactory delegateSpoutFactory) {
+    public void open(final SpoutConfig spoutConfig, final DelegateSpoutFactory delegateSpoutFactory) {
         if (isOpen) {
             throw new RuntimeException("SidelineSpoutHandler is already opened!");
         }
@@ -191,12 +191,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         createSidelineTriggers();
 
         Preconditions.checkArgument(
-            spoutConfig.containsKey(SidelineConfig.REFRESH_INTERVAL_SECONDS)
-            && spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS) != null,
+            spoutConfig.hasNonNullValue(SidelineConfig.REFRESH_INTERVAL_SECONDS),
             "Configuration value for " + SidelineConfig.REFRESH_INTERVAL_SECONDS + " is required."
         );
 
-        final long refreshIntervalSeconds = ((Number) spoutConfig.get(SidelineConfig.REFRESH_INTERVAL_SECONDS)).longValue();
+        final long refreshIntervalSeconds = spoutConfig.getLong(SidelineConfig.REFRESH_INTERVAL_SECONDS);
 
         final long refreshIntervalMillis = TimeUnit.SECONDS.toMillis(refreshIntervalSeconds);
 
@@ -536,7 +535,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * @return virtual spout id prefix.
      */
     String getVirtualSpoutIdPrefix() {
-        return (String) getSpoutConfig().get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        return (String) getSpoutConfig().get(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
     }
 
     /**
@@ -613,7 +612,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * Get the spout config.
      * @return Spout config.
      */
-    Map<String, Object> getSpoutConfig() {
+    SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 

@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import java.util.Map;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 /**
  * Interface that controls persistence of state.
@@ -37,7 +37,7 @@ public interface PersistenceAdapter {
      * persistState() or getState().
      * @param spoutConfig - The storm topology config map.
      */
-    void open(Map spoutConfig);
+    void open(SpoutConfig spoutConfig);
 
     /**
      * Performs any cleanup required for the implementation on shutdown.

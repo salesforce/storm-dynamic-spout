@@ -30,6 +30,8 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +81,7 @@ public class RatioMessageBuffer implements MessageBuffer {
     /**
      * Config option for max buffer size.
      */
-    public static final String CONFIG_BUFFER_SIZE = SpoutConfig.TUPLE_BUFFER_MAX_SIZE;
+    public static final String CONFIG_BUFFER_SIZE = DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE;
 
     /**
      * Config option for NON-throttled buffer size.
@@ -119,19 +121,20 @@ public class RatioMessageBuffer implements MessageBuffer {
      */
     public static RatioMessageBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
-        map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        map.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
         map.put(CONFIG_THROTTLE_RATIO, 0.5);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), map);
 
         RatioMessageBuffer buffer = new RatioMessageBuffer();
-        buffer.open(map);
+        buffer.open(spoutConfig);
 
         return buffer;
     }
 
     @Override
-    public void open(final Map spoutConfig) {
+    public void open(final SpoutConfig spoutConfig) {
         // Setup non-throttled buffer size
-        Object bufferSize = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object bufferSize = spoutConfig.get(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         if (bufferSize != null && bufferSize instanceof Number) {
             maxBufferSize = ((Number) bufferSize).intValue();
         }

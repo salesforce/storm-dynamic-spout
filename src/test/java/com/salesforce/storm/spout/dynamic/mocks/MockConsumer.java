@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.dynamic.mocks;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
@@ -58,12 +59,12 @@ public class MockConsumer implements Consumer {
 
     @Override
     public void open(
-        Map<String, Object> spoutConfig,
-        VirtualSpoutIdentifier virtualSpoutIdentifier,
-        ConsumerPeerContext consumerPeerContext,
-        PersistenceAdapter persistenceAdapter,
-        MetricsRecorder metricsRecorder,
-        ConsumerState startingState
+        final SpoutConfig spoutConfig,
+        final VirtualSpoutIdentifier virtualSpoutIdentifier,
+        final ConsumerPeerContext consumerPeerContext,
+        final PersistenceAdapter persistenceAdapter,
+        final MetricsRecorder metricsRecorder,
+        final ConsumerState startingState
     ) {
         this.persistenceAdapter = persistenceAdapter;
         this.activeVirtualSpoutIdentifier = virtualSpoutIdentifier;

@@ -25,39 +25,36 @@
 
 package com.salesforce.storm.spout.sideline.config;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.documentation.ConfigDocumentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
+import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Sideline Configuration Directives.
  */
-public class SidelineConfig {
+public final class SidelineConfig extends SpoutConfig {
+
+    /**
+     * Holds our Configuration Definition.
+     */
+    private static final ConfigDefinition CONFIG;
 
     /**
      * (List|String) Defines one or more sideline trigger(s) (if any) to use.
      * Should be a fully qualified class path that implements thee SidelineTrigger interface.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Defines one or more sideline trigger(s) (if any) to use. "
-        + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
-        type = String.class
-    )
     public static final String TRIGGER_CLASS = "sideline.trigger_class";
 
     /**
      * (Integer) Interval (in seconds) to check running sidelines and refresh them if necessary.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Interval (in seconds) to check running sidelines and refresh them if necessary.",
-        type = Integer.class
-    )
     public static final String REFRESH_INTERVAL_SECONDS = "sideline.refresh_interval_seconds";
 
     /**
@@ -65,13 +62,6 @@ public class SidelineConfig {
      * Should be a full classpath to a class that implements the PersistenceAdapter interface.
      * Default Value: "com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter"
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Defines which PersistenceAdapter implementation to use. "
-        + "Should be a full classpath to a class that implements the PersistenceAdapter interface.",
-        type = String.class,
-        required = true
-    )
     public static final String PERSISTENCE_ADAPTER_CLASS = "sideline.persistence_adapter.class";
 
     /**
@@ -80,12 +70,6 @@ public class SidelineConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
-        + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
-        type = List.class
-    )
     public static final String PERSISTENCE_ZK_SERVERS = "sideline.persistence.zookeeper.servers";
 
     /**
@@ -94,114 +78,120 @@ public class SidelineConfig {
      *
      * Optional - Only required if you use the Zookeeper persistence implementation.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Defines the root path to persist state under. Example: \"/consumer-state\"",
-        type = String.class
-    )
     public static final String PERSISTENCE_ZK_ROOT = "sideline.persistence.zookeeper.root";
 
     /**
      * (Integer) Zookeeper session timeout.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Zookeeper session timeout.",
-        type = Integer.class
-    )
     public static final String PERSISTENCE_ZK_SESSION_TIMEOUT = "sideline.persistence.zookeeper.session_timeout";
 
     /**
      * (Integer) Zookeeper connection timeout.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Zookeeper connection timeout.",
-        type = Integer.class
-    )
     public static final String PERSISTENCE_ZK_CONNECTION_TIMEOUT = "sideline.persistence.zookeeper.connection_timeout";
 
     /**
      * (Integer) Zookeeper retry attempts.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Zookeeper retry attempts.",
-        type = Integer.class
-    )
     public static final String PERSISTENCE_ZK_RETRY_ATTEMPTS = "sideline.persistence.zookeeper.retry_attempts";
 
     /**
      * (Integer) Zookeeper retry interval.
      */
-    @ConfigDocumentation(
-        category = ConfigDocumentation.Category.SIDELINE,
-        description = "Zookeeper retry interval.",
-        type = Integer.class
-    )
     public static final String PERSISTENCE_ZK_RETRY_INTERVAL = "sideline.persistence.zookeeper.retry_interval";
 
-    /**
-     * Logger for logging logs.
+    /*
+     * Build Configuration definition.
      */
-    private static final Logger logger = LoggerFactory.getLogger(SidelineConfig.class);
-
-    /**
-     * Utility method to add any unspecified configuration value for items with their defaults.
-     * @param config config to update.
-     * @return cloned copy of the config that is updated.
-     */
-    public static Map<String, Object> setDefaults(Map config) {
-        // Clone the map
-        Map<String, Object> clonedConfig = Maps.newHashMap();
-        clonedConfig.putAll(config);
-
-        if (!clonedConfig.containsKey(PERSISTENCE_ZK_SESSION_TIMEOUT)) {
-            clonedConfig.put(PERSISTENCE_ZK_SESSION_TIMEOUT, 6000);
-            logger.info(
-                "Unspecified configuration value for {} using default value {}",
-                PERSISTENCE_ZK_SESSION_TIMEOUT,
-                clonedConfig.get(PERSISTENCE_ZK_SESSION_TIMEOUT)
-            );
-        }
-
-        if (!clonedConfig.containsKey(PERSISTENCE_ZK_CONNECTION_TIMEOUT)) {
-            clonedConfig.put(PERSISTENCE_ZK_CONNECTION_TIMEOUT, 6000);
-            logger.info(
-                "Unspecified configuration value for {} using default value {}",
-                PERSISTENCE_ZK_CONNECTION_TIMEOUT,
-                clonedConfig.get(PERSISTENCE_ZK_CONNECTION_TIMEOUT)
-            );
-        }
-
-        if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_ATTEMPTS)) {
-            clonedConfig.put(PERSISTENCE_ZK_RETRY_ATTEMPTS, 10);
-            logger.info(
-                "Unspecified configuration value for {} using default value {}",
-                PERSISTENCE_ZK_RETRY_ATTEMPTS,
-                clonedConfig.get(PERSISTENCE_ZK_RETRY_ATTEMPTS)
-            );
-        }
-
-        if (!clonedConfig.containsKey(PERSISTENCE_ZK_RETRY_INTERVAL)) {
-            clonedConfig.put(PERSISTENCE_ZK_RETRY_INTERVAL, 10);
-            logger.info(
-                "Unspecified configuration value for {} using default value {}",
-                PERSISTENCE_ZK_RETRY_INTERVAL,
-                clonedConfig.get(PERSISTENCE_ZK_RETRY_INTERVAL)
-            );
-        }
-
-        if (!clonedConfig.containsKey(REFRESH_INTERVAL_SECONDS)) {
-            // Default to 10 minutes
-            clonedConfig.put(REFRESH_INTERVAL_SECONDS, 600);
-            logger.info(
-                "Unspecified configuration value for {} using default value {}",
+    static {
+        // Extend DynamicSpoutConfig.
+        CONFIG = new ConfigDefinition(DynamicSpoutConfig.CONFIG)
+            .define(
+                TRIGGER_CLASS,
+                String.class,
+                null,
+                ConfigDefinition.Importance.HIGH,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Defines one or more sideline trigger(s) (if any) to use. "
+                + "Should be a fully qualified class path that implements thee SidelineTrigger interface."
+            ).define(
                 REFRESH_INTERVAL_SECONDS,
-                clonedConfig.get(REFRESH_INTERVAL_SECONDS)
-            );
-        }
+                Integer.class,
+                600,
+                ConfigDefinition.Importance.LOW,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Interval (in seconds) to check running sidelines and refresh them if necessary."
+            ).define(
+                PERSISTENCE_ADAPTER_CLASS,
+                String.class,
+                null,
+                ConfigDefinition.Importance.HIGH,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Defines which PersistenceAdapter implementation to use. "
+                + "Should be a full classpath to a class that implements the PersistenceAdapter interface."
+            ).define(
+                PERSISTENCE_ZK_SERVERS,
+                List.class,
+                null,
+                ConfigDefinition.Importance.HIGH,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
+                + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]"
+            ).define(
+                PERSISTENCE_ZK_ROOT,
+                String.class,
+                null,
+                ConfigDefinition.Importance.HIGH,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Defines the root path to persist state under. Example: \"/consumer-state\""
+            ).define(
+                PERSISTENCE_ZK_SESSION_TIMEOUT,
+                Integer.class,
+                6000,
+                ConfigDefinition.Importance.LOW,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Zookeeper session timeout."
+            ).define(
+                PERSISTENCE_ZK_CONNECTION_TIMEOUT,
+                Integer.class,
+                6000,
+                ConfigDefinition.Importance.LOW,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Zookeeper connection timeout."
+            ).define(
+                PERSISTENCE_ZK_RETRY_ATTEMPTS,
+                Integer.class,
+                10,
+                ConfigDefinition.Importance.LOW,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Zookeeper retry attempts."
+            ).define(
+                PERSISTENCE_ZK_RETRY_INTERVAL,
+                Integer.class,
+                10,
+                ConfigDefinition.Importance.LOW,
+                ConfigDocumentation.Category.SIDELINE.name(),
+                "Zookeeper retry interval."
+            )
+            // Re-define some default values.
+            .setDefaultValue(DynamicSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName())
+            .setDefaultValue(DynamicSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName())
+            .lock();
+    }
 
-        return clonedConfig;
+    /**
+     * Constructor.
+     * New Default config.
+     */
+    public SidelineConfig() {
+        this(new HashMap<>());
+    }
+
+    /**
+     * Constructor.  Create new instance using values.
+     * @param values Configuration values.
+     */
+    public SidelineConfig(final Map<String, Object> values) {
+        super(CONFIG, values);
     }
 }

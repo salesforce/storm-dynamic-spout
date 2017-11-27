@@ -27,21 +27,19 @@ package com.salesforce.storm.spout.dynamic.mocks;
 
 import com.salesforce.storm.spout.dynamic.DelegateSpoutFactory;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import org.apache.storm.task.TopologyContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A stand-in implementation of SpoutHandler used in tests.
  */
 public class MockSpoutHandler implements SpoutHandler {
-    private Map<String, Object> spoutConfig = null;
+    private SpoutConfig spoutConfig = null;
 
     private boolean hasCalledOpen = false;
     private boolean hasCalledClosed = false;
@@ -56,7 +54,7 @@ public class MockSpoutHandler implements SpoutHandler {
      * @param spoutConfig Spout configuration.
      */
     @Override
-    public void open(Map<String, Object> spoutConfig, DelegateSpoutFactory delegateSpoutFactory) {
+    public void open(SpoutConfig spoutConfig, DelegateSpoutFactory delegateSpoutFactory) {
         hasCalledOpen = true;
         this.spoutConfig = spoutConfig;
     }
@@ -109,7 +107,7 @@ public class MockSpoutHandler implements SpoutHandler {
         closedSpouts.add(spout);
     }
 
-    public Map<String, Object> getSpoutConfig() {
+    public SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 

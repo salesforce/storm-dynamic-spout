@@ -34,6 +34,8 @@ import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -82,11 +84,12 @@ public class RoundRobinBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        config.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), config);
 
         // Create buffer
         MessageBuffer messageBuffer = new RoundRobinBuffer();
-        messageBuffer.open(config);
+        messageBuffer.open(spoutConfig);
 
         // Keep track of our order per spoutId
         final Map<DefaultVirtualSpoutIdentifier, Queue<Message>> submittedOrder = Maps.newHashMap();
@@ -186,11 +189,12 @@ public class RoundRobinBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+        config.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), config);
 
         // Create buffer
         RoundRobinBuffer messageBuffer = new RoundRobinBuffer();
-        messageBuffer.open(config);
+        messageBuffer.open(spoutConfig);
 
         // Validate
         assertEquals("Set correct", inputValue.intValue(), messageBuffer.getMaxBufferSizePerVirtualSpout());

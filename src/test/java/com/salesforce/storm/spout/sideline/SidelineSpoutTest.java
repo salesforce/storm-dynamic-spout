@@ -27,7 +27,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
@@ -37,7 +36,7 @@ import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
@@ -66,10 +65,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Clock;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -137,15 +135,15 @@ public class SidelineSpoutTest {
         final VirtualSpoutIdentifier firehoseIdentifier = new DefaultVirtualSpoutIdentifier(consumerIdPrefix + ":main");
 
         // Create our Config
-        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix);
+        final SidelineConfig sidelineConfig = getDefaultSidelineConfig(consumerIdPrefix);
 
         // Create some stand-in mocks.
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        final SidelineSpout spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        final SidelineSpout spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // wait for firehose vspout to start
         waitForVirtualSpouts(spout, 1);
@@ -252,19 +250,20 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
         config.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName()
         );
+        final SidelineConfig sidelineConfig = new SidelineConfig(config);
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        SidelineSpout spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        SidelineSpout spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 6);
@@ -323,9 +322,8 @@ public class SidelineSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        spout = new SidelineSpout(config);
-
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Wait 3 seconds, then verify we have a single virtual spouts running
         Thread.sleep(3000L);
@@ -380,8 +378,8 @@ public class SidelineSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Verify we have a 2 virtual spouts running
         waitForVirtualSpouts(spout, 2);
@@ -443,9 +441,8 @@ public class SidelineSpoutTest {
 
 
         // Create our spout, add references to our static trigger, and call open().
-        spout = new SidelineSpout(config);
-
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Verify we have a single 1 virtual spouts running,
         // This makes sure that we don't resume a previously completed sideline request.
@@ -696,6 +693,10 @@ public class SidelineSpoutTest {
         return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
     }
 
+    private SidelineConfig getDefaultSidelineConfig(final String consumerIdPrefix) {
+        return new SidelineConfig(getDefaultConfig(consumerIdPrefix));
+    }
+
     /**
      * Generates a Storm Topology configuration with some sane values for our test scenarios.
      *
@@ -705,31 +706,31 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun" + System.currentTimeMillis();
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(Maps.newHashMap()));
+        final Map<String, Object> config = new HashMap<>();
 
         // Kafka Consumer config items
-        config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(getKafkaTestServer().getKafkaConnectString()));
 
         // DynamicSpout config items
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
-        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutCoordinator thread to run every 1 second
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second
-        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         // Enable sideline options
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());

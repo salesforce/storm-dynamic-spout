@@ -29,16 +29,14 @@ import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
-import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 /**
  * Handler for sideline virtual spouts.
@@ -51,8 +49,8 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
     private PersistenceAdapter persistenceAdapter;
 
     @Override
-    public void open(final Map<String, Object> spoutConfig) {
-        final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
+    public void open(final SpoutConfig spoutConfig) {
+        final String persistenceAdapterClass = spoutConfig.getString(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
 
         Preconditions.checkArgument(
             persistenceAdapterClass != null && !persistenceAdapterClass.isEmpty(),

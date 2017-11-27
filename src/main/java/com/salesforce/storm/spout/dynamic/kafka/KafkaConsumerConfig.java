@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.salesforce.storm.spout.documentation.ConfigDocumentation;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.util.List;
@@ -86,7 +86,7 @@ public class KafkaConsumerConfig {
         + "This must be unique to your spout instance, and must not change between deploys.",
         type = String.class
     )
-    public static final String CONSUMER_ID_PREFIX = SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
+    public static final String CONSUMER_ID_PREFIX = DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX;
 
     private final Properties kafkaConsumerProperties = new Properties();
     private final String topic;

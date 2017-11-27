@@ -26,12 +26,12 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -44,7 +44,7 @@ public interface PersistenceAdapter {
      * persistState() or getState().
      * @param spoutConfig - The storm topology config map.
      */
-    void open(Map spoutConfig);
+    void open(final SpoutConfig spoutConfig);
 
     /**
      * Performs any cleanup required for the implementation on shutdown.

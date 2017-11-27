@@ -25,11 +25,10 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import org.apache.storm.task.TopologyContext;
-
-import java.util.Map;
 
 /**
  * Factory for easily creating {@link DelegateSpout} instances.
@@ -42,7 +41,7 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
     /**
      * Spout configuration.
      */
-    private final Map<String, Object> spoutConfig;
+    private final SpoutConfig spoutConfig;
     /**
      * Topology context.
      */
@@ -67,7 +66,7 @@ public class VirtualSpoutFactory implements DelegateSpoutFactory {
      * @param metricsRecorder MetricsRecorder instance.
      */
     public VirtualSpoutFactory(
-        final Map<String, Object> spoutConfig,
+        final SpoutConfig spoutConfig,
         final TopologyContext topologyContext,
         final FactoryManager factoryManager,
         final MetricsRecorder metricsRecorder

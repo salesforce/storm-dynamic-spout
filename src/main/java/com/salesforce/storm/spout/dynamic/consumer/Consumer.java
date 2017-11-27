@@ -27,10 +27,9 @@ package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
-
-import java.util.Map;
 
 /**
  * This defines the interface for Consumers.
@@ -50,7 +49,7 @@ public interface Consumer {
      * @param startingState (optional) if not null, this defines the state at which the consumer should resume from.
      */
     void open(
-        final Map<String, Object> spoutConfig,
+        final SpoutConfig spoutConfig,
         final VirtualSpoutIdentifier virtualSpoutIdentifier,
         final ConsumerPeerContext consumerPeerContext,
         final PersistenceAdapter persistenceAdapter,

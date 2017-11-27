@@ -26,9 +26,8 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.dynamic.mocks.MockSpoutHandler;
 import com.salesforce.storm.spout.dynamic.retry.FailedTuplesFirstRetryManager;
@@ -117,18 +116,23 @@ public class DynamicSpoutTest {
     public void testMissingRequiredConfigurationConsumerIdPrefix() {
         // Create our config missing the consumerIdPrefix
         final Map<String, Object> config = getDefaultConfig(null, null);
-        config.remove(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+
+        // Unset VirtualSpoutIdPrefix.
+        config.remove(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+
+        // Define spout config
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
 
         // When we call open, we expect illegal state exception about our missing configuration item
         expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        expectedException.expectMessage(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Call open
         spout.open(config, topologyContext, spoutOutputCollector);
@@ -144,13 +148,14 @@ public class DynamicSpoutTest {
 
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, null);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock storm topology stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         try {
@@ -173,13 +178,14 @@ public class DynamicSpoutTest {
 
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, null);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock storm topology stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create new unique VSpoutId
@@ -197,9 +203,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -251,15 +257,16 @@ public class DynamicSpoutTest {
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(DynamicSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock storm topology stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -272,9 +279,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -334,14 +341,15 @@ public class DynamicSpoutTest {
 
         // Configure to use our FailedTuplesFirstRetryManager retry manager.
         // This implementation will always replay failed tuples first.
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -354,9 +362,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -443,13 +451,14 @@ public class DynamicSpoutTest {
 
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        DynamicSpout spout = new DynamicSpout(config);
+        DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create new unique VSpoutId
@@ -459,9 +468,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -536,13 +545,14 @@ public class DynamicSpoutTest {
 
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout,
-        DynamicSpout spout = new DynamicSpout(config);
+        DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -551,9 +561,9 @@ public class DynamicSpoutTest {
         // Create two virtual Spouts
         final VirtualSpout virtualSpout1 = new VirtualSpout(
             vspoutId1,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -561,9 +571,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout2 = new VirtualSpout(
             vspoutId2,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -628,16 +638,17 @@ public class DynamicSpoutTest {
     @Test
     public void testReportErrors() {
         // Define config
-        Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "ConsumerIdPrefix");
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        final Map<String, Object> config = new HashMap<>();
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, "ConsumerIdPrefix");
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mocks
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector mockSpoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
 
         // Call open
         spout.open(config, topologyContext, mockSpoutOutputCollector);
@@ -672,7 +683,7 @@ public class DynamicSpoutTest {
     }
 
     /**
-     * Verifies that you do not define an output stream via the SpoutConfig
+     * Verifies that you do not define an output stream via the DynamicSpoutConfig
      * declareOutputFields() method with default to using 'default' stream.
      */
     @Test
@@ -682,12 +693,14 @@ public class DynamicSpoutTest {
         final Map<String,Object> config = getDefaultConfig("DynamicSpout-", null);
 
         // Define our output fields as key and value.
-        config.put(SpoutConfig.OUTPUT_FIELDS, inputFields);
+        config.put(DynamicSpoutConfig.OUTPUT_FIELDS, inputFields);
+
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but don't call open
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
 
         // call declareOutputFields
         spout.declareOutputFields(declarer);
@@ -705,7 +718,7 @@ public class DynamicSpoutTest {
     }
 
     /**
-     * Verifies that you can define an output stream via the SpoutConfig and it gets used
+     * Verifies that you can define an output stream via the DynamicSpoutConfig and it gets used
      * in the declareOutputFields() method.
      */
     @Test
@@ -715,12 +728,14 @@ public class DynamicSpoutTest {
         final Map<String,Object> config = getDefaultConfig("DynamicSpout-", streamId);
 
         // Define our output fields as key and value.
-        config.put(SpoutConfig.OUTPUT_FIELDS, inputFields);
+        config.put(DynamicSpoutConfig.OUTPUT_FIELDS, inputFields);
+
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final OutputFieldsGetter declarer = new OutputFieldsGetter();
 
         // Create spout, but do not call open.
-        final DynamicSpout spout = new DynamicSpout(config);
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
 
         // call declareOutputFields
         spout.declareOutputFields(declarer);
@@ -764,8 +779,9 @@ public class DynamicSpoutTest {
      */
     @Test
     public void testSpoutHandlerHooks() {
-        final Map<String, Object> spoutConfig = getDefaultConfig("MyPrefix", "default");
-        spoutConfig.put(SpoutConfig.SPOUT_HANDLER_CLASS, MockSpoutHandler.class.getName());
+        final Map<String, Object> config = getDefaultConfig("MyPrefix", "default");
+        config.put(DynamicSpoutConfig.SPOUT_HANDLER_CLASS, MockSpoutHandler.class.getName());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mocks
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -785,7 +801,7 @@ public class DynamicSpoutTest {
 
         // Ensure that open() hook was called with appropriate config
         assertTrue("Should have called open() hook", mockSpoutHandler.isHasCalledOpen());
-        assertEquals("Appropriate SpoutConfig passed", spoutConfig, mockSpoutHandler.getSpoutConfig());
+        assertEquals("Appropriate DynamicSpoutConfig passed", spoutConfig, mockSpoutHandler.getSpoutConfig());
 
         // Validate onSpoutOpen() hook was called
         assertEquals("Should have been called once", 1, mockSpoutHandler.getOpenedSpouts().size());
@@ -1104,39 +1120,38 @@ public class DynamicSpoutTest {
 
     /**
      * Generates a Storm Topology configuration with some sane values for our test scenarios.
-     *
-     * @param consumerIdPrefix - consumerId prefix to use.
+     *  @param consumerIdPrefix - consumerId prefix to use.
      * @param configuredStreamId - What streamId we should emit tuples out of.
      */
     private Map<String, Object> getDefaultConfig(
         final String consumerIdPrefix,
         final String configuredStreamId) {
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = new HashMap<>();
 
         // Kafka Consumer config items
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
         // DynamicSpout config items
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
 
         // Use In Memory Persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutCoordinator thread to run every 1 second
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second
-        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(DynamicSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
         return config;
