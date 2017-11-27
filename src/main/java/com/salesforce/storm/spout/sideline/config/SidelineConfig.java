@@ -43,7 +43,7 @@ import java.util.Map;
 /**
  * Sideline Configuration Directives.
  */
-public class SidelineConfig extends SpoutConfig {
+public final class SidelineConfig extends SpoutConfig {
 
     /**
      * Holds our Configuration Definition.
