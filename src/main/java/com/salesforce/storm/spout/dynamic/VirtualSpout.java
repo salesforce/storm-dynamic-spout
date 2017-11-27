@@ -164,7 +164,7 @@ public class VirtualSpout implements DelegateSpout {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
-        // Save reference to DynamicSpoutConfig.
+        // Save reference to SpoutConfig.
         this.spoutConfig = spoutConfig;
 
         // Save factory manager instance
@@ -509,7 +509,10 @@ public class VirtualSpout implements DelegateSpout {
         this.endingState = endingState;
     }
 
-    public SpoutConfig getSpoutConfig() {
+    /**
+     * @return SpoutConfig instance.
+     */
+    SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 
@@ -521,7 +524,7 @@ public class VirtualSpout implements DelegateSpout {
      * Access the FactoryManager for creating various configurable classes.
      * @return factory manager instance.
      */
-    public FactoryManager getFactoryManager() {
+    FactoryManager getFactoryManager() {
         return factoryManager;
     }
 

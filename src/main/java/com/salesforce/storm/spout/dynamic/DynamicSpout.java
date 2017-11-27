@@ -121,7 +121,7 @@ public class DynamicSpout extends BaseRichSpout {
      * Constructor to create our spout.
      * @param spoutConfig Our configuration.
      */
-    public DynamicSpout(SpoutConfig spoutConfig) {
+    public DynamicSpout(final SpoutConfig spoutConfig) {
         // Save off config instance.
         this.spoutConfig = spoutConfig;
 

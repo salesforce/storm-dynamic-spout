@@ -43,7 +43,7 @@ public interface MessageBuffer {
      * Called prior to utilizing the instance.
      * @param spoutConfig - a copy of the storm topology config.
      */
-    void open(SpoutConfig spoutConfig);
+    void open(final SpoutConfig spoutConfig);
 
     /**
      * Let the Implementation know that we're adding a new VirtualSpoutId.
