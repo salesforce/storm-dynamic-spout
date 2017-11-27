@@ -25,10 +25,9 @@
 
 package com.salesforce.storm.spout.dynamic.retry;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import org.junit.Test;
 
@@ -55,7 +54,7 @@ public class NeverRetryManagerTest {
         final DefaultVirtualSpoutIdentifier consumerId3 = new DefaultVirtualSpoutIdentifier("ConsumerId3");
         final DefaultVirtualSpoutIdentifier consumerId4 = new DefaultVirtualSpoutIdentifier("ConsumerId4");
 
-        retryManager.open(new AbstractConfig(new ConfigDefinition(), new HashMap<>()));
+        retryManager.open(new SpoutConfig(new ConfigDefinition(), new HashMap<>()));
 
         // retryFurther always returns false
         assertFalse(retryManager.retryFurther(new MessageId("MyTopic1", 1, 1L, consumerId1)));

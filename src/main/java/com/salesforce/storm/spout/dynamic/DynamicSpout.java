@@ -27,8 +27,8 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.coordinator.ThreadContext;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
@@ -62,7 +62,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * The Spout configuration.
      */
-    private AbstractConfig spoutConfig;
+    private SpoutConfig spoutConfig;
 
     /**
      * Spout's output collector, for emitting tuples out into the topology.
@@ -121,7 +121,7 @@ public class DynamicSpout extends BaseRichSpout {
      * Constructor to create our spout.
      * @param spoutConfig Our configuration.
      */
-    public DynamicSpout(AbstractConfig spoutConfig) {
+    public DynamicSpout(SpoutConfig spoutConfig) {
         // Save off config instance.
         this.spoutConfig = spoutConfig;
 
@@ -149,8 +149,8 @@ public class DynamicSpout extends BaseRichSpout {
         this.outputCollector = spoutOutputCollector;
 
         // Ensure a consumer id prefix has been correctly set.
-        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX))) {
-            throw new IllegalStateException("Missing required configuration: " + SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        if (Strings.isNullOrEmpty((String) getSpoutConfigItem(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX))) {
+            throw new IllegalStateException("Missing required configuration: " + DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
         }
 
         // We do not use the getters for things like the metricsRecorder and coordinator here
@@ -241,7 +241,7 @@ public class DynamicSpout extends BaseRichSpout {
         final String streamId = getOutputStreamId();
 
         // Construct fields from config
-        final Object fieldsCfgValue = getSpoutConfigItem(SpoutConfig.OUTPUT_FIELDS);
+        final Object fieldsCfgValue = getSpoutConfigItem(DynamicSpoutConfig.OUTPUT_FIELDS);
         final Fields fields;
         if (fieldsCfgValue instanceof List && !((List) fieldsCfgValue).isEmpty() && ((List) fieldsCfgValue).get(0) instanceof String) {
             // List of String values.
@@ -250,7 +250,7 @@ public class DynamicSpout extends BaseRichSpout {
             // Log deprecation warning.
             logger.warn(
                 "Supplying configuration {} as a comma separated string is deprecated.  Please migrate your "
-                + "configuration to provide this option as a List.", SpoutConfig.OUTPUT_FIELDS
+                + "configuration to provide this option as a List.", DynamicSpoutConfig.OUTPUT_FIELDS
             );
             // Comma separated
             fields = new Fields(Tools.splitAndTrim((String) fieldsCfgValue));
@@ -356,7 +356,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    public AbstractConfig getSpoutConfig() {
+    public SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 
@@ -480,9 +480,9 @@ public class DynamicSpout extends BaseRichSpout {
     String getOutputStreamId() {
         if (outputStreamId == null) {
             if (spoutConfig == null) {
-                throw new IllegalStateException("Missing required configuration! SpoutConfig not defined!");
+                throw new IllegalStateException("Missing required configuration! DynamicSpoutConfig not defined!");
             }
-            outputStreamId = (String) getSpoutConfigItem(SpoutConfig.OUTPUT_STREAM_ID);
+            outputStreamId = (String) getSpoutConfigItem(DynamicSpoutConfig.OUTPUT_STREAM_ID);
             if (Strings.isNullOrEmpty(outputStreamId)) {
                 outputStreamId = Utils.DEFAULT_STREAM_ID;
             }

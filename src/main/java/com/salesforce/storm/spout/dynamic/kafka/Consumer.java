@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.PartitionDistributor;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -199,7 +199,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      */
     @Override
     public void open(
-        final AbstractConfig spoutConfig,
+        final SpoutConfig spoutConfig,
         final VirtualSpoutIdentifier virtualSpoutIdentifier,
         final ConsumerPeerContext consumerPeerContext,
         final PersistenceAdapter persistenceAdapter,

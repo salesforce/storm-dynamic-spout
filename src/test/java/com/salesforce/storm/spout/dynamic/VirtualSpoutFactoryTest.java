@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
@@ -33,7 +33,6 @@ import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -47,7 +46,7 @@ public class VirtualSpoutFactoryTest {
      */
     @Test
     public void testCreate() {
-        final SpoutConfig spoutConfig = new SpoutConfig(new HashMap<>());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(new HashMap<>());
         final MockTopologyContext topologyContext = new MockTopologyContext();
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
         final MetricsRecorder metricsRecorder = new LogRecorder();

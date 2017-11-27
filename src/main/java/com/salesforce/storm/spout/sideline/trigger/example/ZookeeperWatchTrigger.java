@@ -29,8 +29,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
-import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
@@ -57,7 +56,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -125,7 +123,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      * @param spoutConfig spout configuration
      */
     @Override
-    public void open(final AbstractConfig spoutConfig) {
+    public void open(final SpoutConfig spoutConfig) {
         if (isOpen) {
             // If this happens something is configured wrong, so we're going to kill the topology violently at this point
             logger.error("Trigger already opened!");

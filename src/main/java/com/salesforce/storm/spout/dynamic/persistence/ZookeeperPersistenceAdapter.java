@@ -27,17 +27,13 @@ package com.salesforce.storm.spout.dynamic.persistence;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
-import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Persistence layer implemented using Zookeeper.
@@ -70,10 +66,10 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(final AbstractConfig spoutConfig) {
+    public void open(final SpoutConfig spoutConfig) {
         // Root node / prefix to write entries under.
-        final String zkRoot = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_ROOT);
-        final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        final String zkRoot = (String) spoutConfig.get(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT);
+        final String consumerId = (String) spoutConfig.get(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         Preconditions.checkArgument(
             zkRoot != null && !zkRoot.isEmpty(),

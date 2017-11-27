@@ -27,8 +27,8 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
@@ -38,7 +38,6 @@ import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Handles creating instances of specific interface implementations, based off of
@@ -53,13 +52,13 @@ public class FactoryManager implements Serializable {
     /**
      * Holds our configuration so we know what classes to create instances of.
      */
-    private final AbstractConfig spoutConfig;
+    private final SpoutConfig spoutConfig;
 
     /**
      * Constructor.
      * @param spoutConfig Spout config.
      */
-    public FactoryManager(final AbstractConfig spoutConfig) {
+    public FactoryManager(final SpoutConfig spoutConfig) {
         // Keep reference to config.
         this.spoutConfig = spoutConfig;
     }
@@ -69,7 +68,7 @@ public class FactoryManager implements Serializable {
      */
     public RetryManager createNewFailedMsgRetryManagerInstance() {
         return createNewInstanceFromConfig(
-            SpoutConfig.RETRY_MANAGER_CLASS
+            DynamicSpoutConfig.RETRY_MANAGER_CLASS
         );
     }
 
@@ -78,7 +77,7 @@ public class FactoryManager implements Serializable {
      */
     public PersistenceAdapter createNewPersistenceAdapterInstance() {
         return createNewInstanceFromConfig(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS
+            DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS
         );
     }
 
@@ -87,7 +86,7 @@ public class FactoryManager implements Serializable {
      */
     public MetricsRecorder createNewMetricsRecorder() {
         return createNewInstanceFromConfig(
-            SpoutConfig.METRICS_RECORDER_CLASS
+            DynamicSpoutConfig.METRICS_RECORDER_CLASS
         );
     }
 
@@ -96,7 +95,7 @@ public class FactoryManager implements Serializable {
      */
     public MessageBuffer createNewMessageBufferInstance() {
         return createNewInstanceFromConfig(
-            SpoutConfig.TUPLE_BUFFER_CLASS
+            DynamicSpoutConfig.TUPLE_BUFFER_CLASS
         );
     }
 
@@ -105,7 +104,7 @@ public class FactoryManager implements Serializable {
      */
     public Consumer createNewConsumerInstance() {
         return createNewInstanceFromConfig(
-            SpoutConfig.CONSUMER_CLASS
+            DynamicSpoutConfig.CONSUMER_CLASS
         );
     }
 
@@ -115,7 +114,7 @@ public class FactoryManager implements Serializable {
      */
     public SpoutHandler createSpoutHandler() {
         return createNewInstanceFromConfig(
-            SpoutConfig.SPOUT_HANDLER_CLASS
+            DynamicSpoutConfig.SPOUT_HANDLER_CLASS
         );
     }
 
@@ -125,7 +124,7 @@ public class FactoryManager implements Serializable {
      */
     public synchronized VirtualSpoutHandler createVirtualSpoutHandler() {
         return createNewInstanceFromConfig(
-            SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS
+            DynamicSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS
         );
     }
 

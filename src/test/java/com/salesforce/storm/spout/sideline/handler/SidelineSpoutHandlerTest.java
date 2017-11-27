@@ -29,12 +29,12 @@ import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.dynamic.filter.NegatingFilterChainStep;
@@ -77,7 +77,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOpen() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
@@ -99,7 +99,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutOpenCreatesFirehose() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(spoutConfig);
@@ -128,7 +128,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutOpenResumesSidelines() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final String namespace = "Test";
 
@@ -207,7 +207,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testStartSidelining() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final String namespace = MockConsumer.topic;
 
@@ -277,7 +277,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testStopSidelining() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final String namespace = MockConsumer.topic;
 
@@ -363,7 +363,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testOnSpoutClose() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(spoutConfig);
@@ -402,7 +402,7 @@ public class SidelineSpoutHandlerTest {
         // Override our trigger class with one that does not actually exist.
         config.put(SidelineConfig.TRIGGER_CLASS, "FooBar" + System.currentTimeMillis());
 
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
@@ -426,7 +426,7 @@ public class SidelineSpoutHandlerTest {
 
         // Create our config, specify the consumer id because it will be used as a prefix
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create a persistence adapter, this is called in the handler onSpoutOpen() method, we're just trying to avoid a NullPointer here
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -467,7 +467,7 @@ public class SidelineSpoutHandlerTest {
     @Test
     public void testLoadSidelines() {
         final Map<String, Object> config = getConfig();
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final String namespace = "Test";
 
@@ -640,7 +640,7 @@ public class SidelineSpoutHandlerTest {
         spout.close();
     }
 
-    private VirtualSpoutFactory getVirtualSpoutFactory(final SpoutConfig spoutConfig) {
+    private VirtualSpoutFactory getVirtualSpoutFactory(final DynamicSpoutConfig spoutConfig) {
         return new VirtualSpoutFactory(spoutConfig, new MockTopologyContext(), new FactoryManager(spoutConfig), new LogRecorder());
     }
 
@@ -649,7 +649,7 @@ public class SidelineSpoutHandlerTest {
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, CONSUMER_ID_PREFIX);
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, "KafkaTopic");
         config.put(
-            SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
+            DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.class.getName()
         );
         config.put(
@@ -657,7 +657,7 @@ public class SidelineSpoutHandlerTest {
             InMemoryPersistenceAdapter.class.getName()
         );
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
-        config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(SidelineConfig.REFRESH_INTERVAL_SECONDS, 10);
 
         return config;

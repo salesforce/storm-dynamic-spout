@@ -30,9 +30,9 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -80,8 +80,8 @@ public class MessageBufferTest {
      */
     private static MessageBuffer createInstance(Class clazz, int bufferSize) throws IllegalAccessException, InstantiationException {
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
-        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
+        config.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), config);
 
         MessageBuffer messageBuffer = (MessageBuffer) clazz.newInstance();
         messageBuffer.open(spoutConfig);

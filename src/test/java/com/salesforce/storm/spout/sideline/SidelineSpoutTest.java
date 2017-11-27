@@ -27,7 +27,6 @@ package com.salesforce.storm.spout.sideline;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
@@ -37,7 +36,7 @@ import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
@@ -66,8 +65,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
@@ -253,7 +250,7 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
         config.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName()
@@ -709,28 +706,28 @@ public class SidelineSpoutTest {
         final Map<String, Object> config = new HashMap<>();
 
         // Kafka Consumer config items
-        config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(getKafkaTestServer().getKafkaConnectString()));
 
         // DynamicSpout config items
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
-        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutCoordinator thread to run every 1 second
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second
-        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         // Enable sideline options
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());

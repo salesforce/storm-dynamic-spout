@@ -28,7 +28,6 @@ package com.salesforce.storm.spout.dynamic.kafka;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
@@ -37,8 +36,8 @@ import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
@@ -137,7 +136,7 @@ public class ConsumerTest {
     @Test
     public void testOpenSetsProperties() {
         // Create config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -208,7 +207,7 @@ public class ConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -275,7 +274,7 @@ public class ConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -361,7 +360,7 @@ public class ConsumerTest {
         final long earliestPositionPartition2 = 2324L;
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -467,7 +466,7 @@ public class ConsumerTest {
         final long expectedOffsetToStartConsumeFrom = lastCommittedOffset + 1;
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -536,7 +535,7 @@ public class ConsumerTest {
         final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -638,7 +637,7 @@ public class ConsumerTest {
         final long expectedStateOffsetPartition3 = earliestOffsetPartition3 - 1;
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -1181,7 +1180,7 @@ public class ConsumerTest {
 
         // Set deserializer instance to our null deserializer
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
-        final AbstractConfig spoutConfig = new SpoutConfig(config);
+        final SpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -1228,7 +1227,7 @@ public class ConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecords = producedRecords.subList(5,10);
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig();
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create virtualSpoutId
         final VirtualSpoutIdentifier virtualSpoutIdentifier = getDefaultVSpoutId();
@@ -1439,7 +1438,7 @@ public class ConsumerTest {
         }
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
         final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
@@ -1592,7 +1591,7 @@ public class ConsumerTest {
         }
 
         // Setup our config
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
         final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
@@ -1918,7 +1917,7 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2035,7 +2034,7 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2210,7 +2209,7 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2308,7 +2307,7 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2403,7 +2402,7 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
@@ -2473,7 +2472,7 @@ public class ConsumerTest {
             new OffsetOutOfRangeException(new HashMap<>())
         );
 
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
         persistenceAdapter.open(spoutConfig);
@@ -2540,15 +2539,15 @@ public class ConsumerTest {
     /**
      * Utility method to generate a standard config map.
      */
-    private AbstractConfig getDefaultSpoutConfig() {
+    private SpoutConfig getDefaultSpoutConfig() {
         return getDefaultSpoutConfig(topicName);
     }
 
     /**
-     * Utility method to generate a standard SpoutConfig.
+     * Utility method to generate a standard DynamicSpoutConfig.
      */
-    private AbstractConfig getDefaultSpoutConfig(final String topicName) {
-        return new SpoutConfig(getDefaultConfig(topicName));
+    private SpoutConfig getDefaultSpoutConfig(final String topicName) {
+        return new DynamicSpoutConfig(getDefaultConfig(topicName));
     }
 
     /**
@@ -2566,9 +2565,9 @@ public class ConsumerTest {
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         // Dynamic Spout config items
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        defaultConfig.put(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(DynamicSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        defaultConfig.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         return defaultConfig;
     }
@@ -2591,7 +2590,7 @@ public class ConsumerTest {
      * Utility method to generate a defaultly configured and opened Consumer instance.
      */
     private Consumer getDefaultConsumerInstanceAndOpen(final String topicName) {
-        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+        final SpoutConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();

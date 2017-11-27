@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class LogRecorder implements MetricsRecorder {
     private final Map<String, Long> timerStartValues = Maps.newConcurrentMap();
 
     @Override
-    public void open(AbstractConfig spoutConfig, TopologyContext topologyContext) {
+    public void open(SpoutConfig spoutConfig, TopologyContext topologyContext) {
     }
 
     @Override

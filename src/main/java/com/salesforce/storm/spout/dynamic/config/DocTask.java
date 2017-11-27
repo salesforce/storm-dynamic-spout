@@ -65,7 +65,7 @@ public class DocTask {
         final List<ClassSpec> classSpecs = new ArrayList<>();
 
         // TODO rewrite
-        //classSpecs.add(new ClassSpec(SpoutConfig.class, SpoutConfig.setDefaults(Maps.newHashMap())));
+        //classSpecs.add(new ClassSpec(DynamicSpoutConfig.class, DynamicSpoutConfig.setDefaults(Maps.newHashMap())));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateConfigDocs();

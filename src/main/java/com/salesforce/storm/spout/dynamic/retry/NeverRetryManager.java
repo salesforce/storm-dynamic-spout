@@ -26,16 +26,14 @@
 package com.salesforce.storm.spout.dynamic.retry;
 
 import com.salesforce.storm.spout.dynamic.MessageId;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-
-import java.util.Map;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 /**
  * This implementation will never retry failed messages.  One and done.
  */
 public class NeverRetryManager implements RetryManager {
     @Override
-    public void open(final AbstractConfig spoutConfig) {
+    public void open(final SpoutConfig spoutConfig) {
         // Nothing to do
     }
 

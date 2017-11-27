@@ -28,9 +28,9 @@ package com.salesforce.storm.spout.dynamic.buffer;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +78,7 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     /**
      * Config option for NON-throttled buffer size.
      */
-    public static final String CONFIG_BUFFER_SIZE = SpoutConfig.TUPLE_BUFFER_MAX_SIZE;
+    public static final String CONFIG_BUFFER_SIZE = DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE;
 
     /**
      * Config option for throttled buffer size.
@@ -117,9 +117,9 @@ public class ThrottledMessageBuffer implements MessageBuffer {
      */
     public static ThrottledMessageBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
-        map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
+        map.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
         map.put(CONFIG_THROTTLE_BUFFER_SIZE, 10);
-        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), map);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), map);
 
         ThrottledMessageBuffer buffer = new ThrottledMessageBuffer();
         buffer.open(spoutConfig);
@@ -128,9 +128,9 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     @Override
-    public void open(final AbstractConfig spoutConfig) {
+    public void open(final SpoutConfig spoutConfig) {
         // Setup non-throttled buffer size
-        Object bufferSize = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object bufferSize = spoutConfig.get(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         if (bufferSize != null && bufferSize instanceof Number) {
             maxBufferSize = ((Number) bufferSize).intValue();
         }

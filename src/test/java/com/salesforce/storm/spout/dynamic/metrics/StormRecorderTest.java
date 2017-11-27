@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
@@ -57,7 +57,7 @@ public class StormRecorderTest {
     @Test
     public void testOpen_useDefaults() {
         // Create empty config
-        final SpoutConfig spoutConfig = new SpoutConfig();
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig();
 
         // Create mock TopologyContet
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -89,10 +89,10 @@ public class StormRecorderTest {
 
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.METRICS_RECORDER_TIME_BUCKET, timeBucket);
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_TIME_BUCKET, timeBucket);
 
         // Create Spout Config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mock TopologyContet
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -121,10 +121,10 @@ public class StormRecorderTest {
 
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.METRICS_RECORDER_TIME_BUCKET, timeBucket);
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_TIME_BUCKET, timeBucket);
 
         // Create Spout Config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mock TopologyContet
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -153,10 +153,10 @@ public class StormRecorderTest {
 
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.METRICS_RECORDER_TIME_BUCKET, timeBucketCfg);
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_TIME_BUCKET, timeBucketCfg);
 
         // Create Spout Config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mock TopologyContet
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -186,10 +186,10 @@ public class StormRecorderTest {
 
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX, true);
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX, true);
 
         // Create Spout Config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mock TopologyContet
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -214,10 +214,10 @@ public class StormRecorderTest {
 
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX, false);
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX, false);
 
         // Create Spout Config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mock TopologyContet
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -243,10 +243,10 @@ public class StormRecorderTest {
 
         // Create empty config
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX, 22);
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX, 22);
 
         // Create Spout Config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create mock TopologyContext
         final TopologyContext mockTopologyContext = mock(TopologyContext.class);
@@ -275,7 +275,7 @@ public class StormRecorderTest {
         final String expectedTotalTimeMetricName = expectedMetricName + "_totalTimeMs";
 
         // Create empty config
-        final SpoutConfig spoutConfig = new SpoutConfig();
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig();
 
         // Create mock TopologyContet
         final MockTopologyContext mockTopologyContext = new MockTopologyContext();

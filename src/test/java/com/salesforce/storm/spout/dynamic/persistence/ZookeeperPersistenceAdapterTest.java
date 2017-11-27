@@ -27,9 +27,9 @@ package com.salesforce.storm.spout.dynamic.persistence;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.KeeperException;
@@ -87,7 +87,7 @@ public class ZookeeperPersistenceAdapterTest {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
-        final SpoutConfig spoutConfig = createDefaultConfig(inputHosts, null, null);
+        final DynamicSpoutConfig spoutConfig = createDefaultConfig(inputHosts, null, null);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -539,19 +539,19 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private SpoutConfig createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
+    private DynamicSpoutConfig createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
         Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
-        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
-        return new SpoutConfig(config);
+        return new DynamicSpoutConfig(config);
     }
 
     /**
      * Helper method.
      */
-    private SpoutConfig createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
+    private DynamicSpoutConfig createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
         return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 

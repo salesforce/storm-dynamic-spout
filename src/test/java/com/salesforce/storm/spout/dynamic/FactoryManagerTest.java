@@ -26,9 +26,8 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
@@ -70,7 +69,7 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewFailedMsgRetryManagerInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final AbstractConfig spoutConfig = mock(AbstractConfig.class);
+        final SpoutConfig spoutConfig = mock(SpoutConfig.class);
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // We expect this to throw an exception.
@@ -97,8 +96,8 @@ public class FactoryManagerTest {
     public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
@@ -128,7 +127,7 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewPersistenceAdapterInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final FactoryManager factoryManager = new FactoryManager(new SpoutConfig());
+        final FactoryManager factoryManager = new FactoryManager(new DynamicSpoutConfig());
 
         // We expect this to throw an exception.
         expectedExceptionCreateNewPersistenceAdapterInstanceMissingConfig.expect(IllegalStateException.class);
@@ -142,8 +141,8 @@ public class FactoryManagerTest {
     public void testCreateNewPersistenceAdapterUsingDefaultImpl() {
         // Try with UTF8 String deserializer
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
@@ -173,7 +172,7 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewMessageBufferInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final AbstractConfig spoutConfig = mock(AbstractConfig.class);
+        final SpoutConfig spoutConfig = mock(SpoutConfig.class);
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // We expect this to throw an exception.
@@ -200,8 +199,8 @@ public class FactoryManagerTest {
     public void testCreateNewMessageBuffer(final Class clazz) {
         // Try with UTF8 String deserializer
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        config.put(DynamicSpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 

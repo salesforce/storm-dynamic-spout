@@ -28,7 +28,6 @@ package com.salesforce.storm.spout.dynamic;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
@@ -71,7 +70,7 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Holds reference to our spout configuration.
      */
-    private final AbstractConfig spoutConfig;
+    private final SpoutConfig spoutConfig;
 
     /**
      * Our Factory Manager.
@@ -148,7 +147,7 @@ public class VirtualSpout implements DelegateSpout {
      */
     public VirtualSpout(
         final VirtualSpoutIdentifier virtualSpoutId,
-        final AbstractConfig spoutConfig,
+        final SpoutConfig spoutConfig,
         final TopologyContext topologyContext,
         final FactoryManager factoryManager,
         final MetricsRecorder metricsRecorder,
@@ -165,7 +164,7 @@ public class VirtualSpout implements DelegateSpout {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
-        // Save reference to SpoutConfig.
+        // Save reference to DynamicSpoutConfig.
         this.spoutConfig = spoutConfig;
 
         // Save factory manager instance
@@ -510,7 +509,7 @@ public class VirtualSpout implements DelegateSpout {
         this.endingState = endingState;
     }
 
-    public AbstractConfig getSpoutConfig() {
+    public SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 

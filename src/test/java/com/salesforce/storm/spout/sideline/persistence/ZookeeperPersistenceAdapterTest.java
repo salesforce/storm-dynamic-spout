@@ -34,9 +34,9 @@ import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +99,7 @@ public class ZookeeperPersistenceAdapterTest {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
-        final AbstractConfig spoutConfig = createDefaultConfig(inputHosts, null, null);
+        final SpoutConfig spoutConfig = createDefaultConfig(inputHosts, null, null);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -125,7 +124,7 @@ public class ZookeeperPersistenceAdapterTest {
             + String.valueOf(partitionId);
 
         // Create our config
-        final AbstractConfig spoutConfig = createDefaultConfig(
+        final SpoutConfig spoutConfig = createDefaultConfig(
             getZkServer().getConnectString(),
             configuredZkRoot,
             configuredConsumerPrefix);
@@ -167,7 +166,7 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // Create our config
-        final AbstractConfig spoutConfig = createDefaultConfig(
+        final SpoutConfig spoutConfig = createDefaultConfig(
             getZkServer().getConnectString(),
             configuredZkRoot,
             configuredConsumerPrefix);
@@ -330,7 +329,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final AbstractConfig spoutConfig = createDefaultConfig(
+        final SpoutConfig spoutConfig = createDefaultConfig(
             getZkServer().getConnectString(),
             configuredZkRoot,
             configuredConsumerPrefix);
@@ -514,7 +513,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
-        final AbstractConfig spoutConfig = createDefaultConfig(
+        final SpoutConfig spoutConfig = createDefaultConfig(
             getZkServer().getConnectString(),
             configuredZkRoot,
             configuredConsumerPrefix);
@@ -604,7 +603,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
         final String topicName = "MyTopic";
 
-        final AbstractConfig spoutConfig = createDefaultConfig(
+        final SpoutConfig spoutConfig = createDefaultConfig(
             getZkServer().getConnectString(),
             configuredZkRoot,
             configuredConsumerPrefix);
@@ -667,19 +666,19 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private AbstractConfig createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
+    private SpoutConfig createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
         final Map<String, Object> config = new HashMap<>();
         config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
-        config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
-        return new AbstractConfig(new ConfigDefinition(), config);
+        return new SpoutConfig(new ConfigDefinition(), config);
     }
 
     /**
      * Helper method.
      */
-    private AbstractConfig createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
+    private SpoutConfig createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
         return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 

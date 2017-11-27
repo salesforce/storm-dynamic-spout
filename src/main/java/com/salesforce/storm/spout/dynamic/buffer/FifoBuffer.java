@@ -28,9 +28,9 @@ package com.salesforce.storm.spout.dynamic.buffer;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -57,8 +57,8 @@ public class FifoBuffer implements MessageBuffer {
      */
     public static FifoBuffer createDefaultInstance() {
         final Map<String, Object> map = Maps.newHashMap();
-        map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
-        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), map);
+        map.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), map);
 
         FifoBuffer buffer = new FifoBuffer();
         buffer.open(spoutConfig);
@@ -67,9 +67,9 @@ public class FifoBuffer implements MessageBuffer {
     }
 
     @Override
-    public void open(AbstractConfig spoutConfig) {
+    public void open(SpoutConfig spoutConfig) {
         // Defines the bounded size of our buffer.  Ideally this would be configurable.
-        Object maxBufferSizeObj = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
+        Object maxBufferSizeObj = spoutConfig.get(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         int maxBufferSize = DEFAULT_MAX_SIZE;
         if (maxBufferSizeObj != null && maxBufferSizeObj instanceof Number) {
             maxBufferSize = ((Number) maxBufferSizeObj).intValue();

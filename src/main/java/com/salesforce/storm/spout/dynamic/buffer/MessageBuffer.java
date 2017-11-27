@@ -27,9 +27,7 @@ package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-
-import java.util.Map;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 /**
  * This interface defines an abstraction around essentially a concurrent queue.
@@ -45,7 +43,7 @@ public interface MessageBuffer {
      * Called prior to utilizing the instance.
      * @param spoutConfig - a copy of the storm topology config.
      */
-    void open(AbstractConfig spoutConfig);
+    void open(SpoutConfig spoutConfig);
 
     /**
      * Let the Implementation know that we're adding a new VirtualSpoutId.

@@ -27,12 +27,11 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
 import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
@@ -131,16 +130,16 @@ public class KafkaConsumerSpoutTest {
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(DynamicSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock storm topology stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
+        final DynamicSpout spout = new DynamicSpout(new DynamicSpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Add a VirtualSpout.
@@ -206,10 +205,10 @@ public class KafkaConsumerSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Configure to use our FailedTuplesFirstRetryManager retry manager.
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
 
         // Create spout config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -323,17 +322,17 @@ public class KafkaConsumerSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         // Create spout config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
+        DynamicSpout spout = new DynamicSpout(new DynamicSpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -424,7 +423,7 @@ public class KafkaConsumerSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create fresh new instance of spout & call open all with the same config
-        spout = new DynamicSpout(new SpoutConfig(config));
+        spout = new DynamicSpout(new DynamicSpoutConfig(config));
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create new VirtualSpout instance and add it.
@@ -498,10 +497,10 @@ public class KafkaConsumerSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         // Create spout config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -620,9 +619,9 @@ public class KafkaConsumerSpoutTest {
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
 
         // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
@@ -943,33 +942,33 @@ public class KafkaConsumerSpoutTest {
         final Map<String, Object> config = new HashMap<>();
 
         // Kafka Consumer config items
-        config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
+        config.put(DynamicSpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
         config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(getKafkaTestServer().getKafkaConnectString()));
 
         // DynamicSpout config items
-        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
-        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+        config.put(DynamicSpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        config.put(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        config.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         // Configure SpoutCoordinator thread to run every 1 second
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000L);
 
         // Configure flushing consumer state every 1 second
-        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
+        config.put(DynamicSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, 1000L);
 
         // For now use the Log Recorder
-        config.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        config.put(DynamicSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         // If we have a stream Id we should be configured with
         if (configuredStreamId != null) {
             // Drop it into our configuration.
-            config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
+            config.put(DynamicSpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
 
         return config;

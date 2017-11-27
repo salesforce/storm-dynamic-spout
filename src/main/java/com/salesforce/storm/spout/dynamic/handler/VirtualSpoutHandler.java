@@ -26,9 +26,7 @@
 package com.salesforce.storm.spout.dynamic.handler;
 
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-
-import java.util.Map;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 /**
  * Handlers (or callbacks) used by the VirtualSpout during it's lifecycle. Integrations can hook into the VirtualSpout
@@ -40,7 +38,7 @@ public interface VirtualSpoutHandler {
      * Open the handler.
      * @param spoutConfig Spout configuration.
      */
-    default void open(final AbstractConfig spoutConfig) {
+    default void open(final SpoutConfig spoutConfig) {
 
     }
 

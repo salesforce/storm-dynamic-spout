@@ -33,9 +33,9 @@ import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -84,8 +84,8 @@ public class RoundRobinBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
-        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
+        config.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), config);
 
         // Create buffer
         MessageBuffer messageBuffer = new RoundRobinBuffer();
@@ -189,8 +189,8 @@ public class RoundRobinBufferTest {
 
         // Create config
         Map<String, Object> config = Maps.newHashMap();
-        config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
-        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
+        config.put(DynamicSpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+        final SpoutConfig spoutConfig = new SpoutConfig(new ConfigDefinition(), config);
 
         // Create buffer
         RoundRobinBuffer messageBuffer = new RoundRobinBuffer();

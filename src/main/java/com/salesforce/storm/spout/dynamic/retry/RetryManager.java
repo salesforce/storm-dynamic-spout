@@ -26,9 +26,7 @@
 package com.salesforce.storm.spout.dynamic.retry;
 
 import com.salesforce.storm.spout.dynamic.MessageId;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
-
-import java.util.Map;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 /**
  * Interface for Tracking Failed messages.  By creating an implementation of this interface
@@ -40,7 +38,7 @@ public interface RetryManager {
      * Initialization.
      * @param spoutConfig spout configuration.
      */
-    void open(AbstractConfig spoutConfig);
+    void open(SpoutConfig spoutConfig);
 
     /**
      * Called for MessageId's that have failed to process within the Topology.

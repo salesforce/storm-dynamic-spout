@@ -26,8 +26,8 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
@@ -68,7 +68,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -97,7 +96,7 @@ public class VirtualSpoutTest {
         config.put("Key1", "Value1");
         config.put("Key2", "Value2");
         config.put("Key3", "Value3");
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create a mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -132,7 +131,7 @@ public class VirtualSpoutTest {
      */
     @Test
     public void testSetAndGetConsumerId() {
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Define input
         final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("myConsumerId");
@@ -157,7 +156,7 @@ public class VirtualSpoutTest {
      */
     @Test
     public void testSetAndGetStopRequested() {
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create spout
         final VirtualSpout virtualSpout = new VirtualSpout(
@@ -187,7 +186,7 @@ public class VirtualSpoutTest {
     @Test
     public void testCallingOpenTwiceThrowsException() {
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -239,7 +238,7 @@ public class VirtualSpoutTest {
     @Test
     public void testOpen() {
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create mock topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -303,7 +302,7 @@ public class VirtualSpoutTest {
         final Record expectedConsumerRecord = null;
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -347,7 +346,7 @@ public class VirtualSpoutTest {
     @Test
     public void testNextTupleWhenSerializerFailsToDeserialize() {
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -403,7 +402,7 @@ public class VirtualSpoutTest {
         );
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -470,7 +469,7 @@ public class VirtualSpoutTest {
         );
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -556,7 +555,7 @@ public class VirtualSpoutTest {
             .build();
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -692,7 +691,7 @@ public class VirtualSpoutTest {
         );
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -802,7 +801,7 @@ public class VirtualSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -845,7 +844,7 @@ public class VirtualSpoutTest {
     @Test
     public void testFailWithInvalidMsgIdObject() {
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -883,7 +882,7 @@ public class VirtualSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -924,7 +923,7 @@ public class VirtualSpoutTest {
     @Test
     public void testAckWithInvalidMsgIdObject() {
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -970,7 +969,7 @@ public class VirtualSpoutTest {
         );
 
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
@@ -1015,7 +1014,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWithNoEndingStateDefined() {
         // Create test config
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -1058,7 +1057,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1101,7 +1100,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1144,7 +1143,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1192,7 +1191,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1238,7 +1237,7 @@ public class VirtualSpoutTest {
         final boolean expectedResult = true;
 
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -1279,7 +1278,7 @@ public class VirtualSpoutTest {
     @Test
     public void testCloseWithCompletedFlagSetToFalse() throws NoSuchFieldException, IllegalAccessException {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier("SidelineRequestId");
 
@@ -1329,12 +1328,12 @@ public class VirtualSpoutTest {
     public void testCloseWithCompletedFlagSetToTrue() throws NoSuchFieldException, IllegalAccessException {
         // Create inputs
         final Map<String, Object> config = getDefaultConfig();
-        config.put(SpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
+        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final SidelineRequestIdentifier sidelineRequestId = new SidelineRequestIdentifier("SidelineRequestId");
 
         // Create test config
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create a mock SidelineConsumer
         final Consumer mockConsumer = mock(Consumer.class);
@@ -1385,7 +1384,7 @@ public class VirtualSpoutTest {
     @Test
     public void testCloseWithCompletedFlagSetToTrueNoSidelineREquestIdentifier() throws NoSuchFieldException, IllegalAccessException {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -1456,7 +1455,7 @@ public class VirtualSpoutTest {
         );
 
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
 
         // Create a mock SidelineConsumer
@@ -1506,7 +1505,7 @@ public class VirtualSpoutTest {
     @Test
     public void testGetCurrentState() {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
@@ -1555,7 +1554,7 @@ public class VirtualSpoutTest {
     @Test
     public void testSetEndingState() {
         // Create test config and mocks
-        final SpoutConfig spoutConfig = getDefaultSpoutConfig();
+        final DynamicSpoutConfig spoutConfig = getDefaultSpoutConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
@@ -1609,15 +1608,15 @@ public class VirtualSpoutTest {
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         // DynamicSpout config items
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        defaultConfig.put(DynamicSpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(DynamicSpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
+        defaultConfig.put(DynamicSpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
         defaultConfig.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
         );
 
-        defaultConfig.put(SpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
+        defaultConfig.put(DynamicSpoutConfig.METRICS_RECORDER_CLASS, LogRecorder.class.getName());
 
         return defaultConfig;
     }
@@ -1654,7 +1653,7 @@ public class VirtualSpoutTest {
         return factoryManager;
     }
 
-    private SpoutConfig getDefaultSpoutConfig() {
-        return new SpoutConfig(getDefaultConfig());
+    private DynamicSpoutConfig getDefaultSpoutConfig() {
+        return new DynamicSpoutConfig(getDefaultConfig());
     }
 }

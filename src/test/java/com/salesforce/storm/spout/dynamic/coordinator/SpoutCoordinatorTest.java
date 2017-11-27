@@ -30,7 +30,7 @@ import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
 import com.salesforce.storm.spout.dynamic.exception.SpoutDoesNotExistException;
@@ -97,7 +97,7 @@ public class SpoutCoordinatorTest {
         final long monitorInterval = 300L;
 
         // Create config
-        final SpoutConfig spoutConfig = getDefaultConfig(maxConcurrentSpouts, maxShutdownTime, monitorInterval);
+        final DynamicSpoutConfig spoutConfig = getDefaultConfig(maxConcurrentSpouts, maxShutdownTime, monitorInterval);
 
         // Create metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
@@ -280,7 +280,7 @@ public class SpoutCoordinatorTest {
         // Define how long to wait for async operations
         final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(DynamicSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -353,7 +353,7 @@ public class SpoutCoordinatorTest {
         // Define how long to wait for async operations
         final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(DynamicSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -439,7 +439,7 @@ public class SpoutCoordinatorTest {
 
         // Determine how many concurrent instances we are configured to run at a time
         // If we submit more than this number of VirtualSpouts, they should get queued.
-        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(DynamicSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -622,15 +622,15 @@ public class SpoutCoordinatorTest {
 
         // Create noop metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
+        metricsRecorder.open(new DynamicSpoutConfig(), new MockTopologyContext());
 
         // Define our configuration
         final Map<String, Object> config = new HashMap<>();
 
         // Configure our internal operations to run frequently for our test case.
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
-        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
+        config.put(DynamicSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -722,10 +722,10 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
+        metricsRecorder.open(new DynamicSpoutConfig(), new MockTopologyContext());
 
         // Define our configuration
-        final SpoutConfig spoutConfig = new SpoutConfig();
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig();
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -763,10 +763,10 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
+        metricsRecorder.open(new DynamicSpoutConfig(), new MockTopologyContext());
 
         // Define our configuration
-        final SpoutConfig spoutConfig = new SpoutConfig();
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig();
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -800,12 +800,12 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
+        metricsRecorder.open(new DynamicSpoutConfig(), new MockTopologyContext());
 
         // Define our configuration with reduced run time.
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
-        final SpoutConfig spoutConfig = new SpoutConfig(config);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
+        final DynamicSpoutConfig spoutConfig = new DynamicSpoutConfig(config);
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -865,18 +865,18 @@ public class SpoutCoordinatorTest {
         }
     }
 
-    private SpoutConfig getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
+    private DynamicSpoutConfig getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
         final Map<String, Object> config = new HashMap<>();
-        config.put(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
-        config.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
-        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);
+        config.put(DynamicSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
+        config.put(DynamicSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
+        config.put(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);
 
-        return new SpoutConfig(config);
+        return new DynamicSpoutConfig(config);
     }
 
     private SpoutCoordinator getDefaultMonitorInstance(final MessageBus messageBus) {
         // Create config
-        final SpoutConfig spoutConfig = getDefaultConfig(2, 2000L, 100L);
+        final DynamicSpoutConfig spoutConfig = getDefaultConfig(2, 2000L, 100L);
 
         // Create metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();

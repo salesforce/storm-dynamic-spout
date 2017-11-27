@@ -30,16 +30,14 @@ import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Manages running a VirtualSpout instance.
@@ -67,7 +65,7 @@ class SpoutRunner implements Runnable {
     /**
      * Spout configuration.
      */
-    private final AbstractConfig spoutConfig;
+    private final SpoutConfig spoutConfig;
 
     /**
      * Records when this instance was started, so we can calculate total run time on close.
@@ -93,7 +91,7 @@ class SpoutRunner implements Runnable {
         final DelegateSpout spout,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final Clock clock,
-        final AbstractConfig spoutConfig
+        final SpoutConfig spoutConfig
     ) {
         this.spout = spout;
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
@@ -211,7 +209,7 @@ class SpoutRunner implements Runnable {
     /**
      * @return - Storm topology configuration.
      */
-    AbstractConfig getSpoutConfig() {
+    SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 
@@ -226,7 +224,7 @@ class SpoutRunner implements Runnable {
      * @return - How frequently, in milliseconds, we should flush consumer state.
      */
     long getConsumerStateFlushIntervalMs() {
-        return getSpoutConfig().getLong(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS);
+        return getSpoutConfig().getLong(DynamicSpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS);
     }
 
     DelegateSpout getSpout() {

@@ -30,8 +30,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
@@ -90,7 +90,7 @@ public class SpoutCoordinator implements Runnable {
     /**
      * Spout configuration.
      */
-    private final AbstractConfig spoutConfig;
+    private final SpoutConfig spoutConfig;
 
     /**
      * Metrics Recorder implementation for collecting metrics.
@@ -137,7 +137,7 @@ public class SpoutCoordinator implements Runnable {
      * @param metricsRecorder MetricRecorder implementation for recording metrics.
      */
     public SpoutCoordinator(
-        final AbstractConfig spoutConfig,
+        final SpoutConfig spoutConfig,
         final ThreadContext threadContext,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final MetricsRecorder metricsRecorder
@@ -513,7 +513,7 @@ public class SpoutCoordinator implements Runnable {
     /**
      * @return Spout configuration.
      */
-    AbstractConfig getSpoutConfig() {
+    SpoutConfig getSpoutConfig() {
         return spoutConfig;
     }
 
@@ -521,21 +521,21 @@ public class SpoutCoordinator implements Runnable {
      * @return How often our monitor thread should run through its maintenance loop, in milliseconds.
      */
     long getMonitorThreadIntervalMs() {
-        return getSpoutConfig().getLong(SpoutConfig.MONITOR_THREAD_INTERVAL_MS);
+        return getSpoutConfig().getLong(DynamicSpoutConfig.MONITOR_THREAD_INTERVAL_MS);
     }
 
     /**
      * @return Maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     long getMaxTerminationWaitTimeMs() {
-        return getSpoutConfig().getLong(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
+        return getSpoutConfig().getLong(DynamicSpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
     }
 
     /**
      * @return Maximum amount of concurrently running VirtualSpouts we'll start.
      */
     int getMaxConcurrentVirtualSpouts() {
-        return getSpoutConfig().getInt(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        return getSpoutConfig().getInt(DynamicSpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
     }
 
     /**
