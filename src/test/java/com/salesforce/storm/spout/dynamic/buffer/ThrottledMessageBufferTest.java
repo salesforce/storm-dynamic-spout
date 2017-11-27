@@ -30,6 +30,8 @@ import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import org.apache.storm.tuple.Values;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
@@ -191,10 +193,11 @@ public class ThrottledMessageBufferTest {
         config.put(ThrottledMessageBuffer.CONFIG_BUFFER_SIZE, bufferSize);
         config.put(ThrottledMessageBuffer.CONFIG_THROTTLE_BUFFER_SIZE, throttledBufferSize);
         config.put(ThrottledMessageBuffer.CONFIG_THROTTLE_REGEX_PATTERN, regexPattern);
+        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
 
         // Create instance & open
         ThrottledMessageBuffer buffer = new ThrottledMessageBuffer();
-        buffer.open(config);
+        buffer.open(spoutConfig);
 
         return buffer;
     }

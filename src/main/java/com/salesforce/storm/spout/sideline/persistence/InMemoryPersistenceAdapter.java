@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
@@ -49,7 +50,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests;
 
     @Override
-    public void open(Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         if (storedSidelineRequests == null) {
             storedSidelineRequests = Maps.newHashMap();
         }

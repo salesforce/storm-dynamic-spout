@@ -26,6 +26,7 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -83,12 +84,12 @@ public class StormRecorder implements MetricsRecorder {
     private String metricPrefix = "";
 
     @Override
-    public void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext) {
+    public void open(final AbstractConfig spoutConfig, final TopologyContext topologyContext) {
         // Load configuration items.
 
         // Determine our time bucket window, in seconds, defaulted to 60.
         int timeBucketSeconds = 60;
-        if (spoutConfig.containsKey(SpoutConfig.METRICS_RECORDER_TIME_BUCKET)) {
+        if (spoutConfig.hasNonNullValue(SpoutConfig.METRICS_RECORDER_TIME_BUCKET)) {
             final Object timeBucketCfgValue = spoutConfig.get(SpoutConfig.METRICS_RECORDER_TIME_BUCKET);
             if (timeBucketCfgValue instanceof Number) {
                 timeBucketSeconds = ((Number) timeBucketCfgValue).intValue();
@@ -96,7 +97,7 @@ public class StormRecorder implements MetricsRecorder {
         }
 
         // Conditionally enable prefixing with taskId
-        if (spoutConfig.containsKey(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX)) {
+        if (spoutConfig.hasNonNullValue(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX)) {
             final Object taskIdCfgValue = spoutConfig.get(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX);
             if (taskIdCfgValue instanceof Boolean && (Boolean) taskIdCfgValue) {
                 this.metricPrefix = "task-" + topologyContext.getThisTaskIndex();

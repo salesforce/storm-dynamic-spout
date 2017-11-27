@@ -25,6 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
@@ -39,10 +41,10 @@ public interface MetricsRecorder {
      * Performs any required initialization/connection/setup required for
      * the implementation.  By contract, this will be called once prior to calling
      * collecting any metrics.
-     * @param spoutConfig spout configuration.
+     * @param config spout configuration.
      * @param topologyContext topology context.
      */
-    void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext);
+    void open(final AbstractConfig config, final TopologyContext topologyContext);
 
     /**
      * Perform any cleanup.

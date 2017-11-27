@@ -37,6 +37,7 @@ import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
@@ -136,11 +137,11 @@ public class ConsumerTest {
     @Test
     public void testOpenSetsProperties() {
         // Create config
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Generate a VirtualSpoutIdentifier
         final VirtualSpoutIdentifier virtualSpoutIdentifier = getDefaultVSpoutId();
@@ -153,7 +154,7 @@ public class ConsumerTest {
 
         // Call constructor
         final Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
 
         // Validate our instances got set
         assertNotNull("Config is not null", consumer.getConsumerConfig());
@@ -207,7 +208,7 @@ public class ConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -231,14 +232,26 @@ public class ConsumerTest {
         final Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // Now call open again, we expect this to throw an exception
         expectedExceptionCallConnectMultipleTimes.expect(IllegalStateException.class);
         expectedExceptionCallConnectMultipleTimes.expectMessage("open more than once");
 
         // Call it
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(),mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
     }
 
     /**
@@ -262,7 +275,7 @@ public class ConsumerTest {
         final long earliestPosition = 1000L;
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -287,7 +300,13 @@ public class ConsumerTest {
 
         // Call constructor injecting our mocks
         final Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
@@ -342,7 +361,7 @@ public class ConsumerTest {
         final long earliestPositionPartition2 = 2324L;
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -368,7 +387,13 @@ public class ConsumerTest {
 
         // Call constructor injecting our mocks
         final Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
@@ -442,7 +467,7 @@ public class ConsumerTest {
         final long expectedOffsetToStartConsumeFrom = lastCommittedOffset + 1;
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -461,7 +486,13 @@ public class ConsumerTest {
 
         // Call constructor injecting our mocks
         final Consumer consumer = new Consumer(mockKafkaConsumer);
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
@@ -505,7 +536,7 @@ public class ConsumerTest {
         final long expectedPartition2Offset = lastCommittedOffsetPartition2 + 1;
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -533,7 +564,13 @@ public class ConsumerTest {
         final Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
@@ -601,7 +638,7 @@ public class ConsumerTest {
         final long expectedStateOffsetPartition3 = earliestOffsetPartition3 - 1;
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create mock KafkaConsumer instance
         final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
@@ -636,7 +673,13 @@ public class ConsumerTest {
         final Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // For every partition returned by mockKafkaConsumer.partitionsFor(), we should subscribe to them via the
         // mockKafkaConsumer.assign() call
@@ -706,9 +749,6 @@ public class ConsumerTest {
     @Test
     public void testGetAssignedPartitionsWithSinglePartition() {
         final int expectedPartitionId = 0;
-
-        // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
 
         // Create our consumer
         final Consumer consumer = getDefaultConsumerInstanceAndOpen();
@@ -1141,14 +1181,15 @@ public class ConsumerTest {
 
         // Set deserializer instance to our null deserializer
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, NullDeserializer.class.getName());
+        final AbstractConfig spoutConfig = new SpoutConfig(config);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
 
         // Read from namespace, verify we get what we expect
         for (int x = 0; x < numberOfRecordsToProduce; x++) {
@@ -1187,14 +1228,14 @@ public class ConsumerTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecords = producedRecords.subList(5,10);
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig();
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig();
 
         // Create virtualSpoutId
         final VirtualSpoutIdentifier virtualSpoutIdentifier = getDefaultVSpoutId();
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create a state in which we have already acked the first 5 messages
         // 5 first msgs marked completed (0,1,2,3,4) = Committed Offset = 4.
@@ -1202,7 +1243,13 @@ public class ConsumerTest {
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            spoutConfig,
+            virtualSpoutIdentifier,
+            getDefaultConsumerCohortDefinition(),
+            persistenceAdapter,
+            new LogRecorder(),
+            null);
 
         // Read from namespace, verify we get what we expect, we should only get the last 5 records.
         final List<Record> consumedRecords = asyncConsumeMessages(consumer, 5);
@@ -1392,7 +1439,7 @@ public class ConsumerTest {
         }
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
         final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
@@ -1402,11 +1449,11 @@ public class ConsumerTest {
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
 
         // Ask the underlying consumer for our assigned partitions.
         final Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1545,7 +1592,7 @@ public class ConsumerTest {
         }
 
         // Setup our config
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Adjust the config so that we have 2 consumers, and we are consumer index that was passed in.
         final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(2, consumerIndex);
@@ -1555,11 +1602,11 @@ public class ConsumerTest {
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
 
         // Ask the underlying consumer for our assigned partitions.
         final Set<ConsumerPartition> assignedPartitions = consumer.getAssignedPartitions();
@@ -1871,11 +1918,11 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create & persist the starting state for our test
         // Partition 0 has starting offset = 1
@@ -1887,7 +1934,7 @@ public class ConsumerTest {
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
 
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();
@@ -1988,11 +2035,11 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create & persist the starting state for our test
         // Partition 0 has starting offset = -1
@@ -2003,7 +2050,7 @@ public class ConsumerTest {
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
 
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();
@@ -2163,11 +2210,11 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create & persist the starting state for our test
         // Partition 0 has NO starting state
@@ -2177,7 +2224,7 @@ public class ConsumerTest {
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
 
         // Attempt to retrieve records
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
@@ -2261,11 +2308,11 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create & persist the starting state for our test
         // Partition 0 has starting state of -1
@@ -2276,7 +2323,7 @@ public class ConsumerTest {
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
 
         // Attempt to retrieve records
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
@@ -2356,18 +2403,18 @@ public class ConsumerTest {
 
         // Setup our config set to reset to none
         // We should handle this internally now.
-        final Map<String, Object> config = getDefaultConfig(topicName);
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
 
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Move our persisted state to the end of the log, this is where the consumer will begin consuming from
         persistenceAdapter.persistConsumerState("MyConsumerId", 1, numberOfMsgsOnPartition1);
 
         // Create our consumer
         final Consumer consumer = new Consumer();
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
+        consumer.open(spoutConfig, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), persistenceAdapter, new LogRecorder(), null);
 
         // We are at the end of the log, so this should yield NULL every time, there's nothing after our offset
         final Record record1 = consumer.nextRecord();
@@ -2426,13 +2473,15 @@ public class ConsumerTest {
             new OffsetOutOfRangeException(new HashMap<>())
         );
 
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create our consumer
         final Consumer consumer = new Consumer(kafkaConsumer);
         consumer.open(
-            getDefaultConfig(topicName),
+            spoutConfig,
             getDefaultVSpoutId(),
             getDefaultConsumerCohortDefinition(),
             persistenceAdapter,
@@ -2491,8 +2540,15 @@ public class ConsumerTest {
     /**
      * Utility method to generate a standard config map.
      */
-    private Map<String, Object> getDefaultConfig() {
-        return getDefaultConfig(topicName);
+    private AbstractConfig getDefaultSpoutConfig() {
+        return getDefaultSpoutConfig(topicName);
+    }
+
+    /**
+     * Utility method to generate a standard SpoutConfig.
+     */
+    private AbstractConfig getDefaultSpoutConfig(final String topicName) {
+        return new SpoutConfig(getDefaultConfig(topicName));
     }
 
     /**
@@ -2535,14 +2591,16 @@ public class ConsumerTest {
      * Utility method to generate a defaultly configured and opened Consumer instance.
      */
     private Consumer getDefaultConsumerInstanceAndOpen(final String topicName) {
+        final AbstractConfig spoutConfig = getDefaultSpoutConfig(topicName);
+
         // Create our Persistence Manager
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(Maps.newHashMap());
+        persistenceAdapter.open(spoutConfig);
 
         // Create our consumer
         final Consumer consumer = new Consumer();
         consumer.open(
-            getDefaultConfig(topicName),
+            spoutConfig,
             getDefaultVSpoutId(),
             getDefaultConsumerCohortDefinition(),
             persistenceAdapter,

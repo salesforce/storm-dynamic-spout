@@ -25,9 +25,10 @@
 
 package com.salesforce.storm.spout.dynamic.retry;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
@@ -74,11 +76,15 @@ public class DefaultRetryManagerTest {
         final long expectedMaxDelayMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, expectedMaxDelayMs);
+        final AbstractConfig spoutConfig = getDefaultConfig(
+            expectedMaxRetries,
+            expectedMinRetryTimeMs,
+            expectedDelayMultiplier,
+            expectedMaxDelayMs);
 
         // Create instance and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         assertEquals("Wrong max retries", expectedMaxRetries, retryManager.getRetryLimit());
         assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getInitialRetryDelayMs());
@@ -92,11 +98,11 @@ public class DefaultRetryManagerTest {
     @Test
     public void testOpenWithNoConfigUsesDefaults() {
         // Build config.
-        Map stormConfig = getDefaultConfig(null, null, null, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(null, null, null, null);
 
         // Create instance and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         assertEquals("Wrong max retries", -1, retryManager.getRetryLimit());
         assertEquals("Wrong retry time", 2000, retryManager.getInitialRetryDelayMs());
@@ -117,12 +123,12 @@ public class DefaultRetryManagerTest {
         final double expectedDelayMultiplier = 44.5;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         // Calculate the 1st retry times
         final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
@@ -169,12 +175,12 @@ public class DefaultRetryManagerTest {
         final double expectedDelayMultiplier = 11.25;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -238,12 +244,16 @@ public class DefaultRetryManagerTest {
         final long expectedMaxDelay = 12000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, expectedMaxDelay);
+        final AbstractConfig spoutConfig = getDefaultConfig(
+            expectedMaxRetries,
+            expectedMinRetryTimeMs,
+            expectedDelayMultiplier,
+            expectedMaxDelay);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -291,12 +301,12 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -318,12 +328,12 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -345,12 +355,12 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -379,12 +389,12 @@ public class DefaultRetryManagerTest {
         final double expectedDelayMultiplier = 1.5;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -450,12 +460,12 @@ public class DefaultRetryManagerTest {
         final double expectedDelayMultiplier = 4.2;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -503,12 +513,12 @@ public class DefaultRetryManagerTest {
         final double expectedDelayMultiplier = 6.2;
 
         // Build config.
-        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
+        final AbstractConfig spoutConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.setClock(mockClock);
-        retryManager.open(stormConfig);
+        retryManager.open(spoutConfig);
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -628,20 +638,20 @@ public class DefaultRetryManagerTest {
     }
 
     // Helper method
-    private Map getDefaultConfig(Integer maxRetries, Long minRetryTimeMs, Double delayMultiplier, Long expectedMaxDelayMs) {
-        Map stormConfig = Maps.newHashMap();
+    private AbstractConfig getDefaultConfig(Integer maxRetries, Long minRetryTimeMs, Double delayMultiplier, Long expectedMaxDelayMs) {
+        final Map<String, Object> config = new HashMap<>();
         if (maxRetries != null) {
-            stormConfig.put(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT, maxRetries);
+            config.put(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT, maxRetries);
         }
         if (minRetryTimeMs != null) {
-            stormConfig.put(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS, minRetryTimeMs);
+            config.put(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS, minRetryTimeMs);
         }
         if (delayMultiplier != null) {
-            stormConfig.put(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER, delayMultiplier);
+            config.put(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER, delayMultiplier);
         }
         if (expectedMaxDelayMs != null) {
-            stormConfig.put(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMs);
+            config.put(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS, expectedMaxDelayMs);
         }
-        return stormConfig;
+        return new AbstractConfig(new ConfigDefinition(), config);
     }
 }

@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
@@ -46,13 +47,13 @@ public class VirtualSpoutFactoryTest {
      */
     @Test
     public void testCreate() {
-        final Map<String,Object> config = new HashMap<>();
+        final SpoutConfig spoutConfig = new SpoutConfig(new HashMap<>());
         final MockTopologyContext topologyContext = new MockTopologyContext();
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final FactoryManager factoryManager = new FactoryManager(spoutConfig);
         final MetricsRecorder metricsRecorder = new LogRecorder();
 
         final VirtualSpoutFactory virtualSpoutFactory = new VirtualSpoutFactory(
-            config,
+            spoutConfig,
             topologyContext,
             factoryManager,
             metricsRecorder
@@ -72,7 +73,7 @@ public class VirtualSpoutFactoryTest {
 
         assertEquals(
             "Config doesn't match",
-            config,
+            spoutConfig,
             virtualSpout.getSpoutConfig()
         );
 

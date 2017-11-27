@@ -30,6 +30,8 @@ import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -330,10 +332,11 @@ public class RatioMessageBufferTest {
         config.put(RatioMessageBuffer.CONFIG_BUFFER_SIZE, bufferSize);
         config.put(RatioMessageBuffer.CONFIG_THROTTLE_RATIO, throttleRatio);
         config.put(RatioMessageBuffer.CONFIG_THROTTLE_REGEX_PATTERN, regexPattern);
+        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
 
         // Create instance & open
         RatioMessageBuffer buffer = new RatioMessageBuffer();
-        buffer.open(config);
+        buffer.open(spoutConfig);
 
         return buffer;
     }

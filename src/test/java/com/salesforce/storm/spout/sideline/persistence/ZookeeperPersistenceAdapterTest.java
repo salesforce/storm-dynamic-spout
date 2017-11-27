@@ -34,6 +34,8 @@ import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
@@ -98,14 +100,14 @@ public class ZookeeperPersistenceAdapterTest {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(inputHosts, null, null);
+        final AbstractConfig spoutConfig = createDefaultConfig(inputHosts, null, null);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("root is required");
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
     }
 
     /**
@@ -123,11 +125,14 @@ public class ZookeeperPersistenceAdapterTest {
             + String.valueOf(partitionId);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final AbstractConfig spoutConfig = createDefaultConfig(
+            getZkServer().getConnectString(),
+            configuredZkRoot,
+            configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
 
         // Validate
         assertEquals("Unexpected zk root string", expectedZkRoot, persistenceAdapter.getZkRoot());
@@ -162,11 +167,14 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final AbstractConfig spoutConfig = createDefaultConfig(
+            getZkServer().getConnectString(),
+            configuredZkRoot,
+            configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
 
         // Create state
         final ConsumerState consumerState = ConsumerState.builder()
@@ -236,7 +244,7 @@ public class ZookeeperPersistenceAdapterTest {
 
         // Create new instance, reconnect to ZK, make sure we can still read it out with our new instance.
         persistenceAdapter = new ZookeeperPersistenceAdapter();
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
 
         // Re-retrieve, should still be there.
         // Attempt to read it?
@@ -322,9 +330,13 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final AbstractConfig spoutConfig = createDefaultConfig(
+            getZkServer().getConnectString(),
+            configuredZkRoot,
+            configuredConsumerPrefix);
+
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
 
         // 3. Attempt to persist some state.
         final String topicName = "MyTopic";
@@ -502,11 +514,14 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final AbstractConfig spoutConfig = createDefaultConfig(
+            getZkServer().getConnectString(),
+            configuredZkRoot,
+            configuredConsumerPrefix);
 
         // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("test1");
         final SidelineRequest sidelineRequest1 = new SidelineRequest(sidelineRequestIdentifier1, null);
@@ -589,11 +604,14 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
         final String topicName = "MyTopic";
 
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final AbstractConfig spoutConfig = createDefaultConfig(
+            getZkServer().getConnectString(),
+            configuredZkRoot,
+            configuredConsumerPrefix);
 
         // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
-        persistenceAdapter.open(topologyConfig);
+        persistenceAdapter.open(spoutConfig);
 
         final SidelineRequestIdentifier sidelineRequestIdentifier1 = new SidelineRequestIdentifier("test1");
         final SidelineRequest sidelineRequest1 = new SidelineRequest(sidelineRequestIdentifier1, null);
@@ -649,19 +667,19 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private Map createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
-        final Map config = new HashMap();
+    private AbstractConfig createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
+        final Map<String, Object> config = new HashMap<>();
         config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
-        return Tools.immutableCopy(config);
+        return new AbstractConfig(new ConfigDefinition(), config);
     }
 
     /**
      * Helper method.
      */
-    private Map createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
+    private AbstractConfig createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
         return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 

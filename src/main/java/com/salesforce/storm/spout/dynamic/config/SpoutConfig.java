@@ -285,12 +285,6 @@ public class SpoutConfig extends AbstractConfig {
      */
     public static final String VIRTUAL_SPOUT_FACTORY_CLASS = "spout.virtual_spout_factory_class";
 
-    /**
-     * Logger for logging logs.
-     * TODO remove?
-     */
-    private static final Logger logger = LoggerFactory.getLogger(SpoutConfig.class);
-
     /*
      * Build Configuration definition.
      */
@@ -475,7 +469,7 @@ public class SpoutConfig extends AbstractConfig {
             ).define(
                 VIRTUAL_SPOUT_ID_PREFIX,
                 String.class,
-                "TODO",
+                null,
                 ConfigDefinition.Importance.HIGH,
                 ConfigDocumentation.Category.DYNAMIC_SPOUT.name(),
                 "Defines a VirtualSpoutId prefix to use for all VirtualSpouts created by the spout. "
@@ -506,7 +500,7 @@ public class SpoutConfig extends AbstractConfig {
             ).define(
                 VIRTUAL_SPOUT_FACTORY_CLASS,
                 String.class,
-                "TODO",
+                VirtualSpoutFactory.class.getName(),
                 ConfigDefinition.Importance.LOW,
                 ConfigDocumentation.Category.DYNAMIC_SPOUT.name(),
                 "Defines which DelegateSpoutFactory implementation to use. "

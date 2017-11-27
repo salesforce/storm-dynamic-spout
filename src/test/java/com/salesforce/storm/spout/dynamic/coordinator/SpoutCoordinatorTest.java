@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic.coordinator;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
@@ -41,7 +40,6 @@ import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.buffer.FifoBuffer;
 import org.apache.storm.tuple.Values;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -51,10 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -83,36 +78,10 @@ public class SpoutCoordinatorTest {
     private static final int maxWaitTime = 5;
 
     /**
-     * This is the executor pool we run tests against.
-     */
-    private ThreadPoolExecutor executorService;
-
-    /**
      * Expect no exceptions by default.
      */
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
-
-    /**
-     * Shutdown the thread executor service when the test is all over.
-     * @throws InterruptedException something went wrong.
-     */
-    @After
-    public void shutDown() throws InterruptedException {
-        // Shut down our executor service if it exists
-        if (executorService == null) {
-            return;
-        }
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(maxWaitTime, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        if (!executorService.isTerminated()) {
-            executorService.shutdownNow();
-        }
-    }
 
     /**
      * Tests the constructor sets things appropriately.
@@ -128,22 +97,22 @@ public class SpoutCoordinatorTest {
         final long monitorInterval = 300L;
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(maxConcurrentSpouts, maxShutdownTime, monitorInterval);
+        final SpoutConfig spoutConfig = getDefaultConfig(maxConcurrentSpouts, maxShutdownTime, monitorInterval);
 
         // Create metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(topologyConfig, new MockTopologyContext());
+        metricsRecorder.open(spoutConfig, new MockTopologyContext());
 
         // Create instance.
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
-            topologyConfig,
+            spoutConfig,
             new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
         );
 
         // Call getters and validate!
-        assertEquals("TopologyConfig looks legit", topologyConfig, spoutCoordinator.getTopologyConfig());
+        assertEquals("TopologyConfig looks legit", spoutConfig, spoutCoordinator.getSpoutConfig());
         assertEquals("getMonitorThreadIntervalMs() returns right value", monitorInterval, spoutCoordinator.getMonitorThreadIntervalMs());
         assertEquals("getMaxTerminationWaitTimeMs() returns right value", maxShutdownTime, spoutCoordinator.getMaxTerminationWaitTimeMs());
         assertEquals(
@@ -311,7 +280,7 @@ public class SpoutCoordinatorTest {
         // Define how long to wait for async operations
         final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -384,7 +353,7 @@ public class SpoutCoordinatorTest {
         // Define how long to wait for async operations
         final long testWaitTime = (spoutCoordinator.getMonitorThreadIntervalMs() * 10);
 
-        final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -470,7 +439,7 @@ public class SpoutCoordinatorTest {
 
         // Determine how many concurrent instances we are configured to run at a time
         // If we submit more than this number of VirtualSpouts, they should get queued.
-        final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
+        final int maxConcurrentInstances = (int) spoutCoordinator.getSpoutConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
         List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
@@ -653,7 +622,7 @@ public class SpoutCoordinatorTest {
 
         // Create noop metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
 
         // Define our configuration
         final Map<String, Object> config = new HashMap<>();
@@ -661,10 +630,11 @@ public class SpoutCoordinatorTest {
         // Configure our internal operations to run frequently for our test case.
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
         config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, internalOperationsIntervalMs);
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
-            config,
+            spoutConfig,
             new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
@@ -752,14 +722,14 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = new HashMap<>();
+        final SpoutConfig spoutConfig = new SpoutConfig();
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
-            config,
+            spoutConfig,
             new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
@@ -793,14 +763,14 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = new HashMap<>();
+        final SpoutConfig spoutConfig = new SpoutConfig();
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
-            config,
+            spoutConfig,
             new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
@@ -830,15 +800,16 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new SpoutConfig(), new MockTopologyContext());
 
         // Define our configuration with reduced run time.
         final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
-            config,
+            spoutConfig,
             new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder
@@ -894,26 +865,26 @@ public class SpoutCoordinatorTest {
         }
     }
 
-    private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
-        final Map<String, Object> topologyConfig = new HashMap<>();
-        topologyConfig.put(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
-        topologyConfig.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
-        topologyConfig.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);
+    private SpoutConfig getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
+        final Map<String, Object> config = new HashMap<>();
+        config.put(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
+        config.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
+        config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);
 
-        return topologyConfig;
+        return new SpoutConfig(config);
     }
 
     private SpoutCoordinator getDefaultMonitorInstance(final MessageBus messageBus) {
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(2, 2000L, 100L);
+        final SpoutConfig spoutConfig = getDefaultConfig(2, 2000L, 100L);
 
         // Create metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(topologyConfig, new MockTopologyContext());
+        metricsRecorder.open(spoutConfig, new MockTopologyContext());
 
         // Create instance.
         return new SpoutCoordinator(
-            topologyConfig,
+            spoutConfig,
             new ThreadContext("Test", 1),
             messageBus,
             metricsRecorder

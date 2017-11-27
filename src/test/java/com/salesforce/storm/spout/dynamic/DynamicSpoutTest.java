@@ -204,9 +204,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
-            new FactoryManager(spoutConfig.toMap()),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -280,9 +280,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
-            new FactoryManager(spoutConfig.toMap()),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -363,9 +363,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
-            new FactoryManager(spoutConfig.toMap()),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -469,9 +469,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
-            new FactoryManager(spoutConfig.toMap()),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -562,9 +562,9 @@ public class DynamicSpoutTest {
         // Create two virtual Spouts
         final VirtualSpout virtualSpout1 = new VirtualSpout(
             vspoutId1,
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
-            new FactoryManager(spoutConfig.toMap()),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -572,9 +572,9 @@ public class DynamicSpoutTest {
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout2 = new VirtualSpout(
             vspoutId2,
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
-            new FactoryManager(spoutConfig.toMap()),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null

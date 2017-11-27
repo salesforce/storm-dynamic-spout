@@ -28,6 +28,8 @@ package com.salesforce.storm.spout.dynamic;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
@@ -69,7 +71,7 @@ public class VirtualSpout implements DelegateSpout {
     /**
      * Holds reference to our spout configuration.
      */
-    private final Map<String, Object> spoutConfig;
+    private final AbstractConfig spoutConfig;
 
     /**
      * Our Factory Manager.
@@ -146,7 +148,7 @@ public class VirtualSpout implements DelegateSpout {
      */
     public VirtualSpout(
         final VirtualSpoutIdentifier virtualSpoutId,
-        final Map<String, Object> spoutConfig,
+        final AbstractConfig spoutConfig,
         final TopologyContext topologyContext,
         final FactoryManager factoryManager,
         final MetricsRecorder metricsRecorder,
@@ -163,8 +165,8 @@ public class VirtualSpout implements DelegateSpout {
         // Save reference to topology context
         this.topologyContext = topologyContext;
 
-        // Save an immutable clone of the config
-        this.spoutConfig = Tools.immutableCopy(spoutConfig);
+        // Save reference to SpoutConfig.
+        this.spoutConfig = spoutConfig;
 
         // Save factory manager instance
         this.factoryManager = factoryManager;
@@ -211,7 +213,7 @@ public class VirtualSpout implements DelegateSpout {
         );
 
         // Open consumer
-        consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, metricsRecorder, startingState);
+        consumer.open(getSpoutConfig(), getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, metricsRecorder, startingState);
 
         // This is an approximation, after the consumer has been opened since we were not provided with a starting state
         if (startingState == null) {
@@ -223,7 +225,7 @@ public class VirtualSpout implements DelegateSpout {
         isOpened = true;
 
         virtualSpoutHandler = getFactoryManager().createVirtualSpoutHandler();
-        virtualSpoutHandler.open(spoutConfig);
+        virtualSpoutHandler.open(getSpoutConfig());
         virtualSpoutHandler.onVirtualSpoutOpen(this);
     }
 
@@ -508,16 +510,12 @@ public class VirtualSpout implements DelegateSpout {
         this.endingState = endingState;
     }
 
-    public Map<String, Object> getSpoutConfig() {
+    public AbstractConfig getSpoutConfig() {
         return spoutConfig;
     }
 
     public TopologyContext getTopologyContext() {
         return topologyContext;
-    }
-
-    public Object getSpoutConfigItem(final String key) {
-        return spoutConfig.get(key);
     }
 
     /**

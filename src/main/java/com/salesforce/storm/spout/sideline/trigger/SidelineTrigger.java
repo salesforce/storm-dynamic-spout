@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger;
 
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineController;
 
 import java.util.Map;
@@ -47,7 +48,7 @@ public interface SidelineTrigger {
      * Open the trigger.
      * @param spoutConfig Spout configuration.
      */
-    default void open(Map spoutConfig) {
+    default void open(final AbstractConfig spoutConfig) {
     }
 
     /**

@@ -31,6 +31,7 @@ import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
@@ -79,10 +80,10 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(final Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         // Root node / prefix to write entries under.
-        final String zkRoot = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ZK_ROOT);
-        final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        final String zkRoot = spoutConfig.getString(SidelineConfig.PERSISTENCE_ZK_ROOT);
+        final String consumerId = spoutConfig.getString(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         Preconditions.checkArgument(
             zkRoot != null && !zkRoot.isEmpty(),
@@ -99,7 +100,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
         this.curator = CuratorFactory.createNewCuratorInstance(
             // Take out sideline persistence config and strip the key from it for our factory.
-            Tools.stripKeyPrefix("sideline.persistence.zookeeper.", spoutConfig),
+            spoutConfig.stripKeyPrefix("sideline.persistence.zookeeper."),
             SidelineSpout.class.getSimpleName() + ":" + getClass().getSimpleName()
         );
 

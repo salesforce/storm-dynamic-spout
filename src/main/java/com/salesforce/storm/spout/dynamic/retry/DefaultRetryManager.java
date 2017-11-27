@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.MessageId;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 import java.time.Clock;
@@ -89,19 +90,19 @@ public class DefaultRetryManager implements RetryManager {
      * Called to initialize this implementation.
      * @param spoutConfig used to pass in any configuration values.
      */
-    public void open(Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         // Load config options.
-        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)) {
-            retryLimit = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)).intValue();
+        if (spoutConfig.hasNonNullValue(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)) {
+            retryLimit = spoutConfig.getInt(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT);
         }
-        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)) {
-            initialRetryDelayMs = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)).longValue();
+        if (spoutConfig.hasNonNullValue(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS)) {
+            initialRetryDelayMs = spoutConfig.getLong(SpoutConfig.RETRY_MANAGER_INITIAL_DELAY_MS);
         }
-        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)) {
-            retryDelayMultiplier = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)).doubleValue();
+        if (spoutConfig.hasNonNullValue(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER)) {
+            retryDelayMultiplier = spoutConfig.getDouble(SpoutConfig.RETRY_MANAGER_DELAY_MULTIPLIER);
         }
-        if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)) {
-            retryDelayMaxMs = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)).longValue();
+        if (spoutConfig.hasNonNullValue(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS)) {
+            retryDelayMaxMs = spoutConfig.getLong(SpoutConfig.RETRY_MANAGER_MAX_DELAY_MS);
         }
 
         // Init data structures.

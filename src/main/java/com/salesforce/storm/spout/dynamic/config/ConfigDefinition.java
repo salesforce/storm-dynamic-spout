@@ -1,3 +1,28 @@
+/**
+ * Copyright (c) 2017, Salesforce.com, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *   disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ *   disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ * * Neither the name of Salesforce.com nor the names of its contributors may be used to endorse or promote products
+ *   derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.salesforce.storm.spout.dynamic.config;
 
 import java.util.Collection;
@@ -15,6 +40,9 @@ import java.util.Set;
 public class ConfigDefinition {
     private final Map<String, ConfigKey> configKeys;
 
+    /**
+     * Constructor.
+     */
     public ConfigDefinition() {
         configKeys = new LinkedHashMap<>();
     }
@@ -26,9 +54,14 @@ public class ConfigDefinition {
         return Collections.unmodifiableSet(configKeys.keySet());
     }
 
+    /**
+     * Define a new ConfigurationKey.
+     * @param key The key to define.
+     * @return ConfigDefinition instance.
+     */
     public ConfigDefinition define(ConfigKey key) {
         if (configKeys.containsKey(key.name)) {
-            // TODO handle
+            // TODO handle?
             //throw new ConfigException("Configuration " + key.name + " is defined twice.");
         }
         configKeys.put(key.name, key);
@@ -37,13 +70,13 @@ public class ConfigDefinition {
 
     /**
      * Utility to quickly define a new ConfigDef instance.
-     * @param name
-     * @param type
-     * @param defaultValue
-     * @param importance
-     * @param description
-     * @param category
-     * @return
+     * @param name Name of configuration key.
+     * @param type Class type of value stored.
+     * @param defaultValue Default value, or null.
+     * @param importance How important is this value.
+     * @param category What category does the field fall under.
+     * @param description Human readable description.
+     * @return ConfigDefinition instance.
      */
     public ConfigDefinition define(
         String name,
@@ -63,15 +96,16 @@ public class ConfigDefinition {
         return Collections.unmodifiableCollection(configKeys.values());
     }
 
+    /**
+     * Utility method.
+     * @param name Name of configuration property.
+     * @return Default value stored, or null.
+     */
     public Object getDefaultValue(final String name) {
         if (configKeys.containsKey(name)) {
             return configKeys.get(name).defaultValue;
         }
         return null;
-    }
-
-    public boolean hasDefinedKey(final String name) {
-        return configKeys.containsKey(name);
     }
 
     /**
@@ -81,6 +115,17 @@ public class ConfigDefinition {
         HIGH, MEDIUM, LOW
     }
 
+    /**
+     * Todo later.
+     */
+    public String toHtmlTable() {
+        // todo
+        return "";
+    }
+
+    /**
+     * Defines a single Configuration property.
+     */
     public static class ConfigKey {
         public final String name;
         public final Class type;
@@ -89,6 +134,15 @@ public class ConfigDefinition {
         public final Importance importance;
         public final String category;
 
+        /**
+         * Constructor.
+         * @param name Name of configuration key.
+         * @param type Class type of value stored.
+         * @param defaultValue Default value, or null.
+         * @param importance How important is this value.
+         * @param category What category does the field fall under.
+         * @param description Human readable description.
+         */
         public ConfigKey(
             final String name,
             final Class type,
@@ -103,24 +157,5 @@ public class ConfigDefinition {
             this.description = description;
             this.category = category;
         }
-
-        public boolean hasDefault() {
-            return this.defaultValue != null;
-        }
-    }
-
-    public String toHtmlTable() {
-        // todo
-        return "";
-    }
-
-    /**
-     * Get a list of configs sorted taking the 'group' and 'orderInGroup' into account.
-     *
-     * If grouping is not specified, the result will reflect "natural" order: listing required fields first, then ordering by importance, and finally by name.
-     */
-    private List<ConfigKey> sortedConfigs() {
-        // todo
-        return null;
     }
 }

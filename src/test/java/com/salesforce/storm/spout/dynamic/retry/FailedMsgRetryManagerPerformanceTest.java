@@ -29,9 +29,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -48,7 +51,7 @@ public class FailedMsgRetryManagerPerformanceTest {
     public void runTest() throws InterruptedException {
         // Create instance with default settings
         RetryManager retryManager = new DefaultRetryManager();
-        retryManager.open(Maps.newHashMap());
+        retryManager.open(new AbstractConfig(new ConfigDefinition(), new HashMap<>()));
 
         // Do warm up
         logger.info("WARMING UP");
@@ -57,7 +60,7 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Now start test
         logger.info("STARTING TEST");
         retryManager = new DefaultRetryManager();
-        retryManager.open(Maps.newHashMap());
+        retryManager.open(new AbstractConfig(new ConfigDefinition(), new HashMap<>()));
         doTest2(retryManager);
     }
 

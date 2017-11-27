@@ -26,6 +26,7 @@
 package com.salesforce.storm.spout.dynamic.handler;
 
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public interface VirtualSpoutHandler {
      * Open the handler.
      * @param spoutConfig Spout configuration.
      */
-    default void open(Map<String, Object> spoutConfig) {
+    default void open(final AbstractConfig spoutConfig) {
 
     }
 

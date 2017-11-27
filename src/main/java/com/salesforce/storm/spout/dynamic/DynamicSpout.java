@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.coordinator.ThreadContext;
@@ -45,7 +46,6 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -62,7 +62,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * The Spout configuration.
      */
-    private SpoutConfig spoutConfig;
+    private AbstractConfig spoutConfig;
 
     /**
      * Spout's output collector, for emitting tuples out into the topology.
@@ -121,12 +121,12 @@ public class DynamicSpout extends BaseRichSpout {
      * Constructor to create our spout.
      * @param spoutConfig Our configuration.
      */
-    public DynamicSpout(SpoutConfig spoutConfig) {
+    public DynamicSpout(AbstractConfig spoutConfig) {
         // Save off config instance.
         this.spoutConfig = spoutConfig;
 
         // Create our factory manager, which must be serializable.
-        this.factoryManager = new FactoryManager(getSpoutConfig().toMap());
+        this.factoryManager = new FactoryManager(getSpoutConfig());
     }
 
     /**
@@ -159,11 +159,11 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Initialize Metric Recorder
         this.metricsRecorder = getFactoryManager().createNewMetricsRecorder();
-        this.metricsRecorder.open(getSpoutConfig().toMap(), getTopologyContext());
+        this.metricsRecorder.open(getSpoutConfig(), getTopologyContext());
 
         // Create MessageBuffer
         final MessageBuffer messageBuffer = getFactoryManager().createNewMessageBufferInstance();
-        messageBuffer.open(getSpoutConfig().toMap());
+        messageBuffer.open(getSpoutConfig());
 
         // Create MessageBus instance and store into SpoutMessageBus reference reducing accessible scope.
         final MessageBus messageBus = new MessageBus(messageBuffer);
@@ -177,7 +177,7 @@ public class DynamicSpout extends BaseRichSpout {
 
         // Create Coordinator instance and call open.
         spoutCoordinator = new SpoutCoordinator(
-            getSpoutConfig().toMap(),
+            getSpoutConfig(),
             threadContext,
             messageBus,
             metricsRecorder
@@ -187,7 +187,7 @@ public class DynamicSpout extends BaseRichSpout {
         // TODO: This should be configurable and created dynamically, the problem is that right now we are still tightly
         // coupled to the VirtualSpout implementation.
         this.virtualSpoutFactory = new VirtualSpoutFactory(
-            spoutConfig.toMap(),
+            spoutConfig,
             topologyContext,
             factoryManager,
             metricsRecorder
@@ -356,7 +356,7 @@ public class DynamicSpout extends BaseRichSpout {
     /**
      * @return The Storm topology config map.
      */
-    public SpoutConfig getSpoutConfig() {
+    public AbstractConfig getSpoutConfig() {
         return spoutConfig;
     }
 

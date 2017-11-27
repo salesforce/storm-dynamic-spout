@@ -28,6 +28,8 @@ package com.salesforce.storm.spout.dynamic.buffer;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,15 +119,16 @@ public class ThrottledMessageBuffer implements MessageBuffer {
         Map<String, Object> map = Maps.newHashMap();
         map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
         map.put(CONFIG_THROTTLE_BUFFER_SIZE, 10);
+        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), map);
 
         ThrottledMessageBuffer buffer = new ThrottledMessageBuffer();
-        buffer.open(map);
+        buffer.open(spoutConfig);
 
         return buffer;
     }
 
     @Override
-    public void open(final Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         // Setup non-throttled buffer size
         Object bufferSize = spoutConfig.get(SpoutConfig.TUPLE_BUFFER_MAX_SIZE);
         if (bufferSize != null && bufferSize instanceof Number) {

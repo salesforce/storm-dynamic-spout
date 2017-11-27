@@ -28,7 +28,11 @@ package com.salesforce.storm.spout.dynamic.retry;
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import org.junit.Test;
+
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +54,7 @@ public class FailedTuplesFirstRetryManagerTest {
 
         // construct manager and call open
         FailedTuplesFirstRetryManager retryManager = new FailedTuplesFirstRetryManager();
-        retryManager.open(Maps.newHashMap());
+        retryManager.open(new AbstractConfig(new ConfigDefinition(), new HashMap<>()));
 
         // Define our tuple message id
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);

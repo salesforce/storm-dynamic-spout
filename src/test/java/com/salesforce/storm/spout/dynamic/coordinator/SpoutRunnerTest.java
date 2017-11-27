@@ -32,6 +32,8 @@ import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
@@ -127,19 +129,19 @@ public class SpoutRunnerTest {
         final DelegateSpout spout = mock(DelegateSpout.class);
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
+        final AbstractConfig spoutConfig = getDefaultConfig(consumerStateFlushInterval);
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             spout,
             messageBus,
             clock,
-            topologyConfig
+            spoutConfig
         );
 
         // Call getters and validate!
         assertEquals("Clock instance is what we expect", clock, spoutRunner.getClock());
-        assertEquals("TopologyConfig looks legit", topologyConfig, spoutRunner.getTopologyConfig());
+        assertEquals("SpoutConfig looks legit", spoutConfig, spoutRunner.getSpoutConfig());
         assertEquals(
             "getConsumerStateFlushIntervalMs() returns right value",
             consumerStateFlushInterval,
@@ -178,14 +180,14 @@ public class SpoutRunnerTest {
         when(messageBus.getFailedMessage(eq(virtualSpoutId))).thenReturn(null);
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
+        final AbstractConfig spoutConfig = getDefaultConfig(consumerStateFlushInterval);
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
             clock,
-            topologyConfig
+            spoutConfig
         );
 
         // Start in a separate thread.
@@ -261,14 +263,14 @@ public class SpoutRunnerTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
+        final AbstractConfig spoutConfig = getDefaultConfig(consumerStateFlushInterval);
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
             clock,
-            topologyConfig
+            spoutConfig
         );
 
         // Start in a separate thread.
@@ -336,14 +338,14 @@ public class SpoutRunnerTest {
         messageBus.registerVirtualSpout(otherVirtualSpoutId);
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
+        final AbstractConfig spoutConfig = getDefaultConfig(consumerStateFlushInterval);
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
             clock,
-            topologyConfig
+            spoutConfig
         );
 
         // Start in a separate thread.
@@ -441,14 +443,14 @@ public class SpoutRunnerTest {
         messageBus.registerVirtualSpout(otherVirtualSpoutId);
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
+        final AbstractConfig spoutConfig = getDefaultConfig(consumerStateFlushInterval);
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
             clock,
-            topologyConfig
+            spoutConfig
         );
 
         // Start in a separate thread.
@@ -546,14 +548,14 @@ public class SpoutRunnerTest {
         messageBus.registerVirtualSpout(otherVirtualSpoutId);
 
         // Create config
-        final Map<String, Object> topologyConfig = getDefaultConfig(consumerStateFlushInterval);
+        final AbstractConfig spoutConfig = getDefaultConfig(consumerStateFlushInterval);
 
         // Create instance.
         SpoutRunner spoutRunner = new SpoutRunner(
             mockSpout,
             messageBus,
             clock,
-            topologyConfig
+            spoutConfig
         );
 
         // Start in a separate thread.
@@ -585,10 +587,10 @@ public class SpoutRunnerTest {
         assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
     }
 
-    private Map<String, Object> getDefaultConfig(long consumerStateFlushIntervalMs) {
-        final Map<String, Object> topologyConfig = new HashMap<>();
-        topologyConfig.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, consumerStateFlushIntervalMs);
-        return topologyConfig;
+    private AbstractConfig getDefaultConfig(long consumerStateFlushIntervalMs) {
+        final Map<String, Object> config = new HashMap<>();
+        config.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, consumerStateFlushIntervalMs);
+        return new SpoutConfig(config);
     }
 
     private CompletableFuture startSpoutRunner(SpoutRunner spoutRunner) {

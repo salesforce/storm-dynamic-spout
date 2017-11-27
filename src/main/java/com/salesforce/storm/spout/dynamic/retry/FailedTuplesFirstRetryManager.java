@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic.retry;
 
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.MessageId;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     private Queue<MessageId> failedMessageIds;
 
     @Override
-    public void open(Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         messageIdsInFlight = Sets.newHashSet();
         failedMessageIds = new LinkedList<>();
     }

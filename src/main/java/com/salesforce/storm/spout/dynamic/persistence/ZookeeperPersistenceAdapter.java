@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.dynamic.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
@@ -69,7 +70,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         // Root node / prefix to write entries under.
         final String zkRoot = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_ROOT);
         final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
@@ -89,7 +90,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
         this.curator = CuratorFactory.createNewCuratorInstance(
             // Take out spout persistence config and strip the key from it for our factory.
-            Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig),
+            spoutConfig.stripKeyPrefix("spout.persistence.zookeeper."),
             getClass().getSimpleName()
         );
 

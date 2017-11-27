@@ -26,6 +26,7 @@
 package com.salesforce.storm.spout.dynamic.retry;
 
 import com.salesforce.storm.spout.dynamic.MessageId;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 
 import java.util.Map;
 
@@ -34,7 +35,7 @@ import java.util.Map;
  */
 public class NeverRetryManager implements RetryManager {
     @Override
-    public void open(Map spoutConfig) {
+    public void open(final AbstractConfig spoutConfig) {
         // Nothing to do
     }
 

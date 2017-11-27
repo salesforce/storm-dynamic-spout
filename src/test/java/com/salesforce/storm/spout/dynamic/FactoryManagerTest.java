@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +53,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 /**
  * Test that {@link FactoryManager} creates instances correctly.
@@ -67,8 +70,8 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewFailedMsgRetryManagerInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final AbstractConfig spoutConfig = mock(AbstractConfig.class);
+        final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // We expect this to throw an exception.
         expectedExceptionCreateNewFailedMsgRetryManagerInstanceMissingConfig.expect(IllegalStateException.class);
@@ -93,9 +96,11 @@ public class FactoryManagerTest {
     @UseDataProvider("provideFailedMsgRetryManagerClasses")
     public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
+        final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // Create a few instances
         final List<RetryManager> instances = Lists.newArrayList();
@@ -123,8 +128,7 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewPersistenceAdapterInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final FactoryManager factoryManager = new FactoryManager(new SpoutConfig());
 
         // We expect this to throw an exception.
         expectedExceptionCreateNewPersistenceAdapterInstanceMissingConfig.expect(IllegalStateException.class);
@@ -137,9 +141,11 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewPersistenceAdapterUsingDefaultImpl() {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
+        final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // Create a few instances
         final List<PersistenceAdapter> instances = Lists.newArrayList();
@@ -167,8 +173,8 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewMessageBufferInstanceMissingConfig() {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final AbstractConfig spoutConfig = mock(AbstractConfig.class);
+        final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // We expect this to throw an exception.
         expectedExceptionCreateNewMessageBufferInstanceMissingConfig.expect(IllegalStateException.class);
@@ -193,9 +199,11 @@ public class FactoryManagerTest {
     @UseDataProvider("provideMessageBufferClasses")
     public void testCreateNewMessageBuffer(final Class clazz) {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
-        final FactoryManager factoryManager = new FactoryManager(config);
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
+        final FactoryManager factoryManager = new FactoryManager(spoutConfig);
 
         // Create a few instances
         final List<MessageBuffer> instances = Lists.newArrayList();

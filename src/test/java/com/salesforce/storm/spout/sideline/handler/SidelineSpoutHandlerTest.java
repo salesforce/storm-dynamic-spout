@@ -79,7 +79,7 @@ public class SidelineSpoutHandlerTest {
         final Map<String, Object> config = getConfig();
         final SpoutConfig spoutConfig = new SpoutConfig(config);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -102,12 +102,12 @@ public class SidelineSpoutHandlerTest {
         final SpoutConfig spoutConfig = new SpoutConfig(config);
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(config);
+        persistenceAdapter.open(spoutConfig);
 
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -147,7 +147,7 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -218,7 +218,7 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -288,7 +288,7 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -366,12 +366,12 @@ public class SidelineSpoutHandlerTest {
         final SpoutConfig spoutConfig = new SpoutConfig(config);
 
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(config);
+        persistenceAdapter.open(spoutConfig);
 
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -404,7 +404,7 @@ public class SidelineSpoutHandlerTest {
 
         final SpoutConfig spoutConfig = new SpoutConfig(config);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -430,12 +430,12 @@ public class SidelineSpoutHandlerTest {
 
         // Create a persistence adapter, this is called in the handler onSpoutOpen() method, we're just trying to avoid a NullPointer here
         final PersistenceAdapter persistenceAdapter = new InMemoryPersistenceAdapter();
-        persistenceAdapter.open(config);
+        persistenceAdapter.open(spoutConfig);
 
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         // Create our handler
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
@@ -474,7 +474,7 @@ public class SidelineSpoutHandlerTest {
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(null, new MockTopologyContext(), null);
 
-        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(spoutConfig);
 
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(spoutConfig, virtualSpoutFactory);
@@ -640,8 +640,8 @@ public class SidelineSpoutHandlerTest {
         spout.close();
     }
 
-    private VirtualSpoutFactory getVirtualSpoutFactory(final Map<String,Object> config) {
-        return new VirtualSpoutFactory(config, new MockTopologyContext(), new FactoryManager(config), new LogRecorder());
+    private VirtualSpoutFactory getVirtualSpoutFactory(final SpoutConfig spoutConfig) {
+        return new VirtualSpoutFactory(spoutConfig, new MockTopologyContext(), new FactoryManager(spoutConfig), new LogRecorder());
     }
 
     private Map<String, Object> getConfig() {
@@ -658,6 +658,7 @@ public class SidelineSpoutHandlerTest {
         );
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
+        config.put(SidelineConfig.REFRESH_INTERVAL_SECONDS, 10);
 
         return config;
     }

@@ -27,6 +27,8 @@ package com.salesforce.storm.spout.sideline.handler;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
@@ -66,13 +68,14 @@ public class SidelineVirtualSpoutHandlerTest {
 
         final Map<String,Object> config = Maps.newHashMap();
         config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
+        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
 
         final MockDelegateSpout mockDelegateSpout = new MockDelegateSpout(sidelineVirtualSpoutIdentifier);
 
         MockConsumer.partitions = Arrays.asList(0, 5);
 
         final SidelineVirtualSpoutHandler sidelineVirtualSpoutHandler = new SidelineVirtualSpoutHandler();
-        sidelineVirtualSpoutHandler.open(config);
+        sidelineVirtualSpoutHandler.open(spoutConfig);
 
         // Persist some stopping requests that we cleanup upon completion
         sidelineVirtualSpoutHandler.getPersistenceAdapter().persistSidelineRequestState(

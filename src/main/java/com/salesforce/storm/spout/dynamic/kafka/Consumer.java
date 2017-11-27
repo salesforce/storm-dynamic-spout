@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.PartitionDistributor;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -198,7 +199,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      */
     @Override
     public void open(
-        final Map<String, Object> spoutConfig,
+        final AbstractConfig spoutConfig,
         final VirtualSpoutIdentifier virtualSpoutIdentifier,
         final ConsumerPeerContext consumerPeerContext,
         final PersistenceAdapter persistenceAdapter,
@@ -212,8 +213,8 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         isOpen = true;
 
         // Build KafkaConsumerConfig from spoutConfig
-        final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
-        final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
+        final List<String> kafkaBrokers = spoutConfig.getList(KafkaConsumerConfig.KAFKA_BROKERS);
+        final String topic = spoutConfig.getString(KafkaConsumerConfig.KAFKA_TOPIC);
 
         Preconditions.checkArgument(
             !kafkaBrokers.isEmpty(),
@@ -238,7 +239,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
         // Create deserializer.
         final Deserializer deserializer = FactoryManager.createNewInstance(
-            (String) spoutConfig.get(KafkaConsumerConfig.DESERIALIZER_CLASS)
+            spoutConfig.getString(KafkaConsumerConfig.DESERIALIZER_CLASS)
         );
 
         // Save references

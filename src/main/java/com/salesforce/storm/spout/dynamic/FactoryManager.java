@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
@@ -52,15 +53,15 @@ public class FactoryManager implements Serializable {
     /**
      * Holds our configuration so we know what classes to create instances of.
      */
-    private final Map spoutConfig;
+    private final AbstractConfig spoutConfig;
 
     /**
      * Constructor.
      * @param spoutConfig Spout config.
      */
-    public FactoryManager(Map<String, Object> spoutConfig) {
-        // Create immutable copy of configuration.
-        this.spoutConfig = Tools.immutableCopy(spoutConfig);
+    public FactoryManager(final AbstractConfig spoutConfig) {
+        // Keep reference to config.
+        this.spoutConfig = spoutConfig;
     }
 
     /**
@@ -130,7 +131,7 @@ public class FactoryManager implements Serializable {
 
     private synchronized <T> T createNewInstanceFromConfig(final String configKey) {
         Preconditions.checkState(
-            spoutConfig.containsKey(configKey),
+            spoutConfig.hasNonNullValue(configKey),
             "Class has not been specified for configuration key " + configKey
         );
 

@@ -30,6 +30,7 @@ import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import org.slf4j.Logger;
@@ -64,9 +65,9 @@ class SpoutRunner implements Runnable {
     private final Clock clock;
 
     /**
-     * Storm topology configuration.
+     * Spout configuration.
      */
-    private final Map<String, Object> topologyConfig;
+    private final AbstractConfig spoutConfig;
 
     /**
      * Records when this instance was started, so we can calculate total run time on close.
@@ -86,18 +87,18 @@ class SpoutRunner implements Runnable {
      * @param spout The VirtualSpout instance to run.
      * @param virtualSpoutMessageBus The ThreadSafe message bus for communicating between DynamicSpout and VirtualSpout.
      * @param clock Clock instance.
-     * @param topologyConfig Topology configuration.
+     * @param spoutConfig Spout configuration.
      */
     SpoutRunner(
         final DelegateSpout spout,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final Clock clock,
-        final Map<String, Object> topologyConfig
+        final AbstractConfig spoutConfig
     ) {
         this.spout = spout;
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
         this.clock = clock;
-        this.topologyConfig = Tools.immutableCopy(topologyConfig);
+        this.spoutConfig = spoutConfig;
 
         // Record start time.
         this.startTime = getClock().millis();
@@ -210,8 +211,8 @@ class SpoutRunner implements Runnable {
     /**
      * @return - Storm topology configuration.
      */
-    Map<String, Object> getTopologyConfig() {
-        return topologyConfig;
+    AbstractConfig getSpoutConfig() {
+        return spoutConfig;
     }
 
     /**
@@ -225,7 +226,7 @@ class SpoutRunner implements Runnable {
      * @return - How frequently, in milliseconds, we should flush consumer state.
      */
     long getConsumerStateFlushIntervalMs() {
-        return ((Number) getTopologyConfig().get(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS)).longValue();
+        return getSpoutConfig().getLong(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS);
     }
 
     DelegateSpout getSpout() {

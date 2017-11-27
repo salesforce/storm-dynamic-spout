@@ -30,6 +30,8 @@ import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
+import com.salesforce.storm.spout.dynamic.config.ConfigDefinition;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
@@ -68,10 +70,11 @@ public class FifoBufferTest {
         // Create config
         Map<String, Object> config = Maps.newHashMap();
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
+        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
 
         // Create buffer & open
         MessageBuffer messageBuffer = new FifoBuffer();
-        messageBuffer.open(config);
+        messageBuffer.open(spoutConfig);
 
         // Keep track of our order
         final List<Message> submittedOrder = Lists.newArrayList();
@@ -138,10 +141,11 @@ public class FifoBufferTest {
         // Create config
         Map<String, Object> config = Maps.newHashMap();
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
+        final AbstractConfig spoutConfig = new AbstractConfig(new ConfigDefinition(), config);
 
         // Create buffer
         FifoBuffer messageBuffer = new FifoBuffer();
-        messageBuffer.open(config);
+        messageBuffer.open(spoutConfig);
 
         // Validate
         assertEquals("Set correct", inputValue.intValue(), ((LinkedBlockingQueue)messageBuffer.getUnderlyingQueue()).remainingCapacity());

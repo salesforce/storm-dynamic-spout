@@ -28,9 +28,9 @@ package com.salesforce.storm.spout.dynamic.coordinator;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
-import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutMessageBus;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.config.AbstractConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
@@ -88,9 +88,9 @@ public class SpoutCoordinator implements Runnable {
     private final Clock clock = Clock.systemUTC();
 
     /**
-     * Storm topology configuration.
+     * Spout configuration.
      */
-    private final Map<String, Object> topologyConfig;
+    private final AbstractConfig spoutConfig;
 
     /**
      * Metrics Recorder implementation for collecting metrics.
@@ -131,19 +131,19 @@ public class SpoutCoordinator implements Runnable {
 
     /**
      * Constructor.
-     * @param topologyConfig Storm topology config.
+     * @param spoutConfig Spout config.
      * @param threadContext Contextual information used to name spawned threads.
      * @param virtualSpoutMessageBus ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
      * @param metricsRecorder MetricRecorder implementation for recording metrics.
      */
     public SpoutCoordinator(
-        final Map<String, Object> topologyConfig,
+        final AbstractConfig spoutConfig,
         final ThreadContext threadContext,
         final VirtualSpoutMessageBus virtualSpoutMessageBus,
         final MetricsRecorder metricsRecorder
     ) {
         this.virtualSpoutMessageBus = virtualSpoutMessageBus;
-        this.topologyConfig = Tools.immutableCopy(topologyConfig);
+        this.spoutConfig = spoutConfig;
         this.metricsRecorder = metricsRecorder;
         this.threadContext = threadContext;
 
@@ -322,7 +322,7 @@ public class SpoutCoordinator implements Runnable {
             spout,
             getVirtualSpoutMessageBus(),
             getClock(),
-            getTopologyConfig()
+            getSpoutConfig()
         );
 
         // Run as a CompletableFuture
@@ -496,7 +496,7 @@ public class SpoutCoordinator implements Runnable {
     }
 
     /**
-     * @return - return the number of spout runner instances.
+     * @return Number of spout runner instances.
      *           *note* it doesn't mean all of these are actually running, some may be queued.
      */
     public int getTotalSpouts() {
@@ -504,38 +504,38 @@ public class SpoutCoordinator implements Runnable {
     }
 
     /**
-     * @return - Our system clock instance.
+     * @return System clock instance.
      */
     Clock getClock() {
         return clock;
     }
 
     /**
-     * @return - Storm topology configuration.
+     * @return Spout configuration.
      */
-    Map<String, Object> getTopologyConfig() {
-        return topologyConfig;
+    AbstractConfig getSpoutConfig() {
+        return spoutConfig;
     }
 
     /**
-     * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
+     * @return How often our monitor thread should run through its maintenance loop, in milliseconds.
      */
     long getMonitorThreadIntervalMs() {
-        return ((Number) getTopologyConfig().get(SpoutConfig.MONITOR_THREAD_INTERVAL_MS)).longValue();
+        return getSpoutConfig().getLong(SpoutConfig.MONITOR_THREAD_INTERVAL_MS);
     }
 
     /**
-     * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
+     * @return Maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
      */
     long getMaxTerminationWaitTimeMs() {
-        return ((Number) getTopologyConfig().get(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
+        return getSpoutConfig().getLong(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS);
     }
 
     /**
-     * @return - the maximum amount of concurrently running VirtualSpouts we'll start.
+     * @return Maximum amount of concurrently running VirtualSpouts we'll start.
      */
     int getMaxConcurrentVirtualSpouts() {
-        return ((Number) getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
+        return getSpoutConfig().getInt(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
     }
 
     /**

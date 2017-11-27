@@ -133,6 +133,7 @@ public class KafkaConsumerSpoutTest {
             // Drop it into our configuration.
             config.put(SpoutConfig.OUTPUT_STREAM_ID, configuredStreamId);
         }
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
 
         // Some mock storm topology stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
@@ -146,9 +147,9 @@ public class KafkaConsumerSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -207,12 +208,15 @@ public class KafkaConsumerSpoutTest {
         // Configure to use our FailedTuplesFirstRetryManager retry manager.
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, FailedTuplesFirstRetryManager.class.getName());
 
+        // Create spout config
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
         // Some mock stuff to get going
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create spout and call open
-        final DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
+        final DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -222,9 +226,9 @@ public class KafkaConsumerSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -321,6 +325,9 @@ public class KafkaConsumerSpoutTest {
         // Use zookeeper persistence manager
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
+        // Create spout config
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
@@ -336,9 +343,9 @@ public class KafkaConsumerSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
         VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -373,15 +380,15 @@ public class KafkaConsumerSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create fresh new instance of spout & call open all with the same config
-        spout = new DynamicSpout(new SpoutConfig(config));
+        spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Create and add virtual spout
         virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -423,9 +430,9 @@ public class KafkaConsumerSpoutTest {
         // Create new VirtualSpout instance and add it.
         virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -493,6 +500,9 @@ public class KafkaConsumerSpoutTest {
         // Use zookeeper persistence manager
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
+        // Create spout config
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
         topologyContext.taskId = taskIndex;
@@ -504,7 +514,7 @@ public class KafkaConsumerSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout and call open().
-        DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
+        DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -514,9 +524,9 @@ public class KafkaConsumerSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
@@ -612,6 +622,8 @@ public class KafkaConsumerSpoutTest {
         // Use zookeeper persistence manager
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
+        final SpoutConfig spoutConfig = new SpoutConfig(config);
+
         // Create topology context, set our task index
         MockTopologyContext topologyContext = new MockTopologyContext();
         topologyContext.taskId = taskIndex;
@@ -623,7 +635,7 @@ public class KafkaConsumerSpoutTest {
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout and call open().
-        DynamicSpout spout = new DynamicSpout(new SpoutConfig(config));
+        DynamicSpout spout = new DynamicSpout(spoutConfig);
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
@@ -633,9 +645,9 @@ public class KafkaConsumerSpoutTest {
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
-            config,
+            spoutConfig,
             topologyContext,
-            new FactoryManager(config),
+            new FactoryManager(spoutConfig),
             new LogRecorder(),
             null,
             null
