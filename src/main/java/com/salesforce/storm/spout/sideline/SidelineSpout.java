@@ -29,6 +29,8 @@ import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.DynamicSpoutConfig;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 
@@ -38,29 +40,11 @@ import java.util.Map;
  * Spout that supports sidelining messages by filters.
  */
 public class SidelineSpout extends DynamicSpout {
-
-    /**
-     * Used to overload and modify settings before passing them to the constructor.
-     * @param spoutConfig Supplied configuration.
-     * @return Resulting configuration.
-     */
-    private static Map<String, Object> modifyConfig(Map<String, Object> spoutConfig) {
-        Map<String, Object> config = Maps.newHashMap();
-        // Start by making a copy of our existing configuration map
-        config.putAll(spoutConfig);
-        // Add our opinionated configuration items
-        config.put(DynamicSpoutConfig.SPOUT_HANDLER_CLASS, SidelineSpoutHandler.class.getName());
-        config.put(DynamicSpoutConfig.VIRTUAL_SPOUT_HANDLER_CLASS, SidelineVirtualSpoutHandler.class.getName());
-        // Return a copy of the config that cannot be modified.
-        return Tools.immutableCopy(config);
-    }
-
     /**
      * Spout that supports sidelining messages by filters.
-     * @param config Spout configuration.
+     * @param spoutConfig Spout configuration.
      */
-    @SuppressWarnings("unchecked")
-    public SidelineSpout(Map config) {
-        super(new DynamicSpoutConfig(modifyConfig(config)));
+    public SidelineSpout(final SidelineConfig spoutConfig) {
+        super(spoutConfig);
     }
 }

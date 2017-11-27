@@ -45,7 +45,7 @@ public class DynamicSpoutConfig extends SpoutConfig {
     /**
      * Holds our Configuration Definition.
      */
-    private static final ConfigDefinition CONFIG;
+    public static final ConfigDefinition CONFIG;
 
     /**
      * (String) Defines the name of the output stream tuples will be emitted out of.
@@ -492,7 +492,7 @@ public class DynamicSpoutConfig extends SpoutConfig {
                 ConfigDocumentation.Category.DYNAMIC_SPOUT.name(),
                 "Defines which DelegateSpoutFactory implementation to use. "
                 + "Should be a fully qualified class path that implements the DelegateSpoutFactory interface."
-            );
+            ).lock();
     }
 
     /**

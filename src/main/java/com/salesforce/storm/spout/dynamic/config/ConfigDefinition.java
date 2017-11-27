@@ -38,6 +38,7 @@ import java.util.Set;
  * Highly inspired by Kafka's ConfigDef class.
  */
 public class ConfigDefinition {
+    private boolean isLocked = false;
     private final Map<String, ConfigKey> configKeys;
 
     /**
@@ -45,6 +46,15 @@ public class ConfigDefinition {
      */
     public ConfigDefinition() {
         configKeys = new LinkedHashMap<>();
+    }
+
+    /**
+     * Constructor.
+     * Create instance using a parent definition as a base.
+     * @param parentDefinition base definition to extend.
+     */
+    public ConfigDefinition(final ConfigDefinition parentDefinition) {
+        configKeys = new LinkedHashMap<>(parentDefinition.configKeys);
     }
 
     /**
@@ -60,9 +70,8 @@ public class ConfigDefinition {
      * @return ConfigDefinition instance.
      */
     public ConfigDefinition define(ConfigKey key) {
-        if (configKeys.containsKey(key.name)) {
-            // TODO handle?
-            //throw new ConfigException("Configuration " + key.name + " is defined twice.");
+        if (isLocked) {
+            throw new IllegalStateException("Cannot modify after being locked.");
         }
         configKeys.put(key.name, key);
         return this;
@@ -108,6 +117,30 @@ public class ConfigDefinition {
         return null;
     }
 
+    public ConfigDefinition setDefaultValue(final String name, final Object defaultValue) {
+        if (isLocked) {
+            throw new IllegalStateException("Cannot modify after being locked.");
+        }
+
+        if (!configKeys.containsKey(name)) {
+            // TODO Handle in some way?
+            return this;
+        }
+        final ConfigKey configKey = configKeys.get(name);
+
+        // Re-define key with new default value.
+        define(
+            configKey.name,
+            configKey.type,
+            defaultValue,
+            configKey.importance,
+            configKey.category,
+            configKey.description
+        );
+
+        return this;
+    }
+
     /**
      * The importance level for a configuration.
      */
@@ -121,6 +154,11 @@ public class ConfigDefinition {
     public String toHtmlTable() {
         // todo
         return "";
+    }
+
+    public ConfigDefinition lock() {
+        isLocked = true;
+        return this;
     }
 
     /**

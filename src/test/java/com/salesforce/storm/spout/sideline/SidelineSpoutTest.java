@@ -135,15 +135,15 @@ public class SidelineSpoutTest {
         final VirtualSpoutIdentifier firehoseIdentifier = new DefaultVirtualSpoutIdentifier(consumerIdPrefix + ":main");
 
         // Create our Config
-        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix);
+        final SidelineConfig sidelineConfig = getDefaultSidelineConfig(consumerIdPrefix);
 
         // Create some stand-in mocks.
         final TopologyContext topologyContext = new MockTopologyContext();
         final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        final SidelineSpout spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        final SidelineSpout spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // wait for firehose vspout to start
         waitForVirtualSpouts(spout, 1);
@@ -255,14 +255,15 @@ public class SidelineSpoutTest {
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName()
         );
+        final SidelineConfig sidelineConfig = new SidelineConfig(config);
 
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        SidelineSpout spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        SidelineSpout spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Call next tuple 6 times, getting offsets 0,1,2,3,4,5
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 6);
@@ -321,9 +322,8 @@ public class SidelineSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        spout = new SidelineSpout(config);
-
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Wait 3 seconds, then verify we have a single virtual spouts running
         Thread.sleep(3000L);
@@ -378,8 +378,8 @@ public class SidelineSpoutTest {
         spoutOutputCollector = new MockSpoutOutputCollector();
 
         // Create our spout, add references to our static trigger, and call open().
-        spout = new SidelineSpout(config);
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Verify we have a 2 virtual spouts running
         waitForVirtualSpouts(spout, 2);
@@ -441,9 +441,8 @@ public class SidelineSpoutTest {
 
 
         // Create our spout, add references to our static trigger, and call open().
-        spout = new SidelineSpout(config);
-
-        spout.open(config, topologyContext, spoutOutputCollector);
+        spout = new SidelineSpout(sidelineConfig);
+        spout.open(new HashMap(), topologyContext, spoutOutputCollector);
 
         // Verify we have a single 1 virtual spouts running,
         // This makes sure that we don't resume a previously completed sideline request.
@@ -692,6 +691,10 @@ public class SidelineSpoutTest {
     private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords, int partitionId) {
         KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(getKafkaTestServer());
         return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
+    }
+
+    private SidelineConfig getDefaultSidelineConfig(final String consumerIdPrefix) {
+        return new SidelineConfig(getDefaultConfig(consumerIdPrefix));
     }
 
     /**
