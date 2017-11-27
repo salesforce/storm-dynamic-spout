@@ -41,7 +41,7 @@ import java.util.Map;
 /**
  * Dynamic Spout Configuration Directives.
  */
-public class DynamicSpoutConfig extends SpoutConfig {
+public final class DynamicSpoutConfig extends SpoutConfig {
     /**
      * Holds our Configuration Definition.
      */

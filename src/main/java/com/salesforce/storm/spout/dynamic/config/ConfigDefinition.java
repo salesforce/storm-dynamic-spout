@@ -117,6 +117,12 @@ public class ConfigDefinition {
         return null;
     }
 
+    /**
+     * Allows for updating a default value.
+     * @param name Name of property to update
+     * @param defaultValue Updated default value.
+     * @return ConfigDefinition instance.
+     */
     public ConfigDefinition setDefaultValue(final String name, final Object defaultValue) {
         if (isLocked) {
             throw new IllegalStateException("Cannot modify after being locked.");
@@ -156,6 +162,9 @@ public class ConfigDefinition {
         return "";
     }
 
+    /**
+     * Lock the ConfigDefinition from future changes.
+     */
     public ConfigDefinition lock() {
         isLocked = true;
         return this;

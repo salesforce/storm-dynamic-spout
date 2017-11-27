@@ -54,7 +54,7 @@ import java.util.Map;
  * through a set of handlers.  This is done in such a way that Storm does not have to be aware of all the contributing
  * spouts in the implementation.
  */
-public final class DynamicSpout extends BaseRichSpout {
+public class DynamicSpout extends BaseRichSpout {
 
     // Logging
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpout.class);
