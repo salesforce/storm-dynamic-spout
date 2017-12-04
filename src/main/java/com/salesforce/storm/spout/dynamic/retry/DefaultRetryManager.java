@@ -164,22 +164,45 @@ public class DefaultRetryManager implements RetryManager {
 
     @Override
     public MessageId nextFailedMessageToRetry() {
-        final long now = getClock().millis();
-        final Long lowestKey = failedMessageIds.floorKey(now);
-        if (lowestKey == null) {
-            // Nothing has expired
+        // If our map is empty
+        if (failedMessageIds.isEmpty()) {
+            // Then we have nothing to expire!
             return null;
         }
-        Queue<MessageId> queue = failedMessageIds.get(lowestKey);
+
+        // Grab current timestamp
+        final long now = getClock().millis();
+
+        // Grab the lowest key from the sorted map.
+        // Because of the empty check above, we're confident this will NOT return null.
+        final Map.Entry<Long, Queue<MessageId>> entry = failedMessageIds.firstEntry();
+
+        // But lets be safe.
+        if (entry == null) {
+            // Nothing to expire
+            return null;
+        }
+
+        // Populate the values
+        final Long lowestTimestampKey = entry.getKey();
+        final Queue<MessageId> queue = entry.getValue();
+
+        // Determine if the key (timestamp) has expired (is less than now)
+        if (lowestTimestampKey > now) {
+            // Nothing has expired.
+            return null;
+        }
+
+        // Pop a message from the queue.
         final MessageId messageId = queue.poll();
 
         // If our queue is now empty
         if (queue.isEmpty()) {
             // remove it
-            failedMessageIds.remove(lowestKey);
+            failedMessageIds.remove(lowestTimestampKey);
         }
 
-        // Mark it as in flight.
+        // Mark this tuple as now in flight.
         retriesInFlight.add(messageId);
         return messageId;
     }
