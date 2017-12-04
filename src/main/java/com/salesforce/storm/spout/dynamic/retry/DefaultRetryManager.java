@@ -184,10 +184,11 @@ public class DefaultRetryManager implements RetryManager {
         }
 
         // Populate the values
-        final Long lowestTimestampKey = entry.getKey();
+        final long lowestTimestampKey = entry.getKey();
         final Queue<MessageId> queue = entry.getValue();
 
-        // Determine if the key (timestamp) has expired (is less than now)
+        // Determine if the key (timestamp) has expired or not
+        // Here we define 'expired' as having a timestamp less than or equal to now.
         if (lowestTimestampKey > now) {
             // Nothing has expired.
             return null;
@@ -202,7 +203,7 @@ public class DefaultRetryManager implements RetryManager {
             failedMessageIds.remove(lowestTimestampKey);
         }
 
-        // Mark this tuple as now in flight.
+        // Mark this messageId as now in flight.
         retriesInFlight.add(messageId);
         return messageId;
     }
