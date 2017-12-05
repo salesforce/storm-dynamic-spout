@@ -429,6 +429,16 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
             logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
 
+            if (sidelinePayload == null) {
+                logger.error("Attempting to load sideline {} for partition {} and it was null.", id, consumerPartition.partition());
+                continue;
+            }
+
+            if (sidelinePayload.startingOffset == null) {
+                logger.error("Loaded sideline {} for partition {} but the starting offset was null", id, consumerPartition.partition());
+                continue;
+            }
+
             // Add this partition to the starting consumer state
             startingStateBuilder.withPartition(consumerPartition, sidelinePayload.startingOffset);
 
