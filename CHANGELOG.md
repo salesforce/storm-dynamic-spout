@@ -2,6 +2,10 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.9.1 (RELEASE DATE TBD)
+### Bug Fixes
+- [PR-85](https://github.com/salesforce/storm-dynamic-spout/pull/85) Fix ordering bug in DefaultRetryManager. Always retry the earliest messageId.
+
 ## 0.9.0 (2017-10-26)
 ### Improvements
 - [PR-14](https://github.com/salesforce/storm-dynamic-spout/pull/14) Update Kafka dependencies to 0.11.0.1

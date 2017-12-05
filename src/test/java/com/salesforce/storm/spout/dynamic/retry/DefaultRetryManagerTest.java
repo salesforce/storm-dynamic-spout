@@ -583,6 +583,54 @@ public class DefaultRetryManagerTest {
         validateExpectedFailedMessageId(retryManager, messageId2, 3, thirdRetryTime, false);
     }
 
+    /**
+     * Validates that when we have multiple failed tuples that need to be retried,
+     * we retry the earliest ones first.
+     */
+    @Test
+    public void testRetryEarliestFailed() {
+        // construct manager
+        final int expectedMaxRetries = 3;
+        final long expectedMinRetryTimeMs = 0;
+        final double expectedDelayMultiplier = 0.5;
+
+        // Build config.
+        Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
+
+        // Create instance, inject our mock clock,  and call open.
+        DefaultRetryManager retryManager = new DefaultRetryManager();
+        retryManager.setClock(mockClock);
+        retryManager.open(stormConfig);
+
+        final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
+
+        // Define our tuple message id
+        final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
+        final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
+        final MessageId messageId3 = new MessageId("MyTopic", 0, 103L, consumerId);
+
+        // Fail messageId 1 @ T0
+        retryManager.failed(messageId1);
+
+        // Increment clock to T1 and fail messageId 2
+        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + 100), ZoneId.of("UTC")));
+        retryManager.failed(messageId2);
+
+        // Increment clock to T2 and fail messageId 3
+        retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + 200), ZoneId.of("UTC")));
+        retryManager.failed(messageId3);
+
+        // call 3 times, see what comes out.
+        // We'd expect to get messageId1 since its the oldest, followed by messageId2, and then messageId3
+        final MessageId result1 = retryManager.nextFailedMessageToRetry();
+        final MessageId result2 = retryManager.nextFailedMessageToRetry();
+        final MessageId result3 = retryManager.nextFailedMessageToRetry();
+
+        assertEquals("Result1 should be messageId1", messageId1, result1);
+        assertEquals("Result2 should be messageId1", messageId2, result2);
+        assertEquals("Result3 should be messageId1", messageId3, result3);
+    }
+
     private void validateExpectedFailedMessageId(
         DefaultRetryManager retryManager,
         MessageId messageId,
