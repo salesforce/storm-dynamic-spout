@@ -31,8 +31,8 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.salesforce.storm</groupId>
     <artifactId>dynamic-spout</artifactId>
-    <!-- Last release was 0.9.0 on 2017-10-26 -->
-    <version>0.9.0</version>
+    <!-- Last release was 0.9.1 on 2017-12-05 -->
+    <version>0.9.1</version>
     <packaging>jar</packaging>
     <name>dynamic-spout</name>
     <description>A framework for building spouts for Apache Storm and a Kafka based spout for dynamically skipping messages to be processed later.</description>
