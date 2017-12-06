@@ -71,7 +71,7 @@ public class PartitionDistributor {
         final Map<Integer,List<Integer>> partitionByConsumer = Maps.newHashMap();
 
         // Add a list for each consumer
-        for (int i=0; i<totalConsumers; i++) {
+        for (int i = 0; i < totalConsumers; i++) {
             partitionByConsumer.put(i, Lists.newArrayList());
         }
 
