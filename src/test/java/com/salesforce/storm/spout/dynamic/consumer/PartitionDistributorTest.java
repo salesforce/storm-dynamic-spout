@@ -32,6 +32,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -40,6 +42,9 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @RunWith(DataProviderRunner.class)
 public class PartitionDistributorTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(PartitionDistributorTest.class);
+
 
     /**
      * Test that given a number of consumer instances the current instance gets distributed the correct set of partition ids.
@@ -60,6 +65,8 @@ public class PartitionDistributorTest {
             allPartitionIds
         );
 
+        logger.info("Expected = {}, Actual = {}", expectedPartitionIds, actualPartitionIds);
+
         assertArrayEquals(
             "Partition ids match",
             expectedPartitionIds,
@@ -73,6 +80,8 @@ public class PartitionDistributorTest {
      */
     @DataProvider
     public static Object[][] dataProvider() {
+        final int[] partitions35 = new int[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34 };
+
         return new Object[][]{
             // Two instances, first instance, two partitions, first partition
             { 2, 0, new int[]{ 0 , 1 }, new int[]{ 0 } },
@@ -84,6 +93,12 @@ public class PartitionDistributorTest {
             { 1, 0, new int[]{ 0, 1, 2 }, new int[]{ 0, 1, 2 } },
             // One instance, first instance, three partitions not in order, all partitions
             { 1, 0, new int[]{ 2, 0, 1 }, new int[]{ 0, 1, 2 } },
+            // Three instances, first instance, four partitions, first two partitions
+            { 3, 0, new int[]{ 0, 1, 2, 3 }, new int[]{ 0, 1 } },
+            // Three instances, second instance, four partitions, third partition
+            { 3, 1, new int[]{ 0, 1, 2, 3 }, new int[]{ 2 } },
+            // Three instances, third instance, four partitions, fourth partition
+            { 3, 2, new int[]{ 0, 1, 2, 3 }, new int[]{ 3 } },
         };
     }
 
