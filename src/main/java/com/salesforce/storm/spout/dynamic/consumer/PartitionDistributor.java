@@ -94,13 +94,13 @@ public class PartitionDistributor {
             }
 
             // How many consumer instances remain?
-            final int reaminingConsumerSlots = totalConsumers - consumerInstance;
+            final int remainingConsumerSlots = totalConsumers - consumerInstance;
 
             // We we have more slots than remaining partitions we advance to the next consumer.
             // This usually means that we have a weird number of partitions to balance across instances, like four partitions
             // across three instances, which means that last two instances will have only one partition, though the maximum
             // could be two instances. If this part confuses you, check out the test for this class.
-            if (reaminingConsumerSlots > remainingPartitions) {
+            if (remainingConsumerSlots > remainingPartitions) {
                 consumerInstance++;
             }
         }
