@@ -26,9 +26,11 @@
 package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utility for calculating the distribution of a set of partition ids to a given consumer.
@@ -62,25 +64,48 @@ public class PartitionDistributor {
         // Sort our partitions
         Arrays.sort(allPartitionIds);
 
-        // Determine the maximum number of partitions that a given consumer instance should have
-        final int partitionsPerInstance = (int) Math.ceil((double) allPartitionIds.length / totalConsumers);
+        // Determine the maximum number of partitions that a given consumer instance could have
+        final int maxPartitionsPerInstance = (int) Math.ceil((double) allPartitionIds.length / totalConsumers);
 
-        // Determine our starting point in the list of instances
-        final int startingPartition = consumerIndex == 0 ? 0 : partitionsPerInstance * consumerIndex;
+        // We are going to sort our partitions across all consumer indexes
+        final Map<Integer,List<Integer>> partitionByConsumer = Maps.newHashMap();
 
-        // Determine our ending point in the list of instances
-        final int endingPartition = startingPartition + partitionsPerInstance > allPartitionIds.length
-            ? allPartitionIds.length : startingPartition + partitionsPerInstance;
-
-        // Make a new array of integers for the partition ids
-        List<Integer> partitionIds = Lists.newArrayList();
-
-        // Loop over our segment of all the partitions and add just the ones we need to our array
-        for (int i = startingPartition; i < endingPartition; i++) {
-            partitionIds.add(allPartitionIds[i]);
+        // Add a list for each consumer
+        for (int i = 0; i < totalConsumers; i++) {
+            partitionByConsumer.put(i, Lists.newArrayList());
         }
 
-        // Convert to an array of primitive ints and return them
-        return partitionIds.stream().mapToInt(i -> i).toArray();
+        // Tracks the current consumer instance we are handing partitions to
+        int consumerInstance = 0;
+        // Number of remaining partitions, we'll start with all of them
+        int remainingPartitions = allPartitionIds.length;
+
+        for (final int partitionId : allPartitionIds) {
+            // Add our current partition to the current consumer instance
+            partitionByConsumer.get(consumerInstance).add(partitionId);
+
+            // We now have one less partition to dole out
+            remainingPartitions--;
+
+            // If we've reached our maximum number of partitions per instance, advance to the next instance
+            // This means that an instance gets partitions in order, eg. [0, 1] and [2, 3], etc.
+            if (partitionByConsumer.get(consumerInstance).size() >= maxPartitionsPerInstance) {
+                consumerInstance++;
+            }
+
+            // How many consumer instances remain?
+            final int remainingConsumerSlots = totalConsumers - consumerInstance;
+
+            // We we have more slots than remaining partitions we advance to the next consumer.
+            // This usually means that we have a weird number of partitions to balance across instances, like four partitions
+            // across three instances, which means that last two instances will have only one partition, though the maximum
+            // could be two instances. If this part confuses you, check out the test for this class.
+            if (remainingConsumerSlots > remainingPartitions) {
+                consumerInstance++;
+            }
+        }
+
+        // Grab the partitions for our current consumer and make an array of primitives of them
+        return partitionByConsumer.get(consumerIndex).stream().mapToInt(i -> i).toArray();
     }
 }
