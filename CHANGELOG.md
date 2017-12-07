@@ -54,6 +54,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Added lag, currentOffset, endOffset metrics to Kafka Consumer.
 - [PR-43](https://github.com/salesforce/storm-dynamic-spout/pull/43) Fixed unbounded recursion when calling fillBuffer() in the KafkaConsumer.
 
+## 0.9.1 (2017-12-05)
+### Bug Fixes
+- [PR-85](https://github.com/salesforce/storm-dynamic-spout/pull/85) Fix ordering bug in DefaultRetryManager. Always retry the earliest messageId.
 
 ## 0.9.0 (2017-10-26)
 ### Improvements
