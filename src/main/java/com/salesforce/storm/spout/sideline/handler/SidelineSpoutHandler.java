@@ -179,6 +179,12 @@ public class SidelineSpoutHandler implements SpoutHandler {
                 continue;
             }
 
+            // Most likely would occur if there's a problem deserializing data from the persistence adapter
+            if (payload.id == null || payload.request == null || payload.request.step == null) {
+                logger.error("Sideline request is malformed, skipping it. {}", payload);
+                continue;
+            }
+
             // Resuming a start request means we apply the previous filter chain to the fire hose
             if (payload.type.equals(SidelineType.START)) {
                 logger.info("Resuming START sideline {} {}", payload.id, payload.request.step);
