@@ -399,12 +399,9 @@ public class VirtualSpout implements DelegateSpout {
         if (!retryManager.retryFurther(messageId)) {
             logger.warn("Not retrying failed msgId any further {}", messageId);
 
-            // Mark it as acked in retryManager
-            retryManager.acked(messageId);
-
-            // Ack it in the consumer
-            consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
-
+            // Call ack to ensure it gets cleaned up
+            ack(messageId);
+            
             // Update metric
             getMetricsRecorder()
                 .count(SpoutMetrics.VIRTUAL_SPOUT_EXCEEDED_RETRY_LIMIT, getVirtualSpoutId().toString());
