@@ -113,6 +113,12 @@ public class DynamicSpout extends BaseRichSpout {
     private String outputStreamId = null;
 
     /**
+     * Determines which output stream to emit permanently failed tuples out.
+     * Gets set during open().
+     */
+    private String failedOutputStreamId = null;
+
+    /**
      * Whether or not the spout has been previously opened.
      */
     private boolean isOpen = false;
@@ -224,7 +230,16 @@ public class DynamicSpout extends BaseRichSpout {
             return;
         }
 
+        // If this is a failed message
+        if (message.isHasFailed()) {
+            // Emit tuple via the output collector down the failed stream.
+            // Do not attach a messageId because this should be untracked.
+            getOutputCollector().emit(getFailedOutputStreamId(), message.getValues());
+            return;
+        }
+
         // Emit tuple via the output collector.
+        // Attach the appropriate messageId so it can be tracked.
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());
 
         // Update emit count metric for VirtualSpout this tuple originated from
@@ -263,6 +278,10 @@ public class DynamicSpout extends BaseRichSpout {
 
         logger.debug("Declaring stream name {} with fields {}", streamId, fields);
         declarer.declareStream(streamId, fields);
+
+        // Declare a fail stream using the same fields.
+        // Hardcoded for now.
+        declarer.declareStream(streamId + "_failed", fields);
     }
 
     /**
@@ -489,6 +508,13 @@ public class DynamicSpout extends BaseRichSpout {
             }
         }
         return outputStreamId;
+    }
+
+    String getFailedOutputStreamId() {
+        if (failedOutputStreamId == null) {
+            failedOutputStreamId = getOutputStreamId() + "_failed";
+        }
+        return failedOutputStreamId;
     }
 
     /**

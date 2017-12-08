@@ -38,11 +38,14 @@ import com.salesforce.storm.spout.dynamic.metrics.SpoutMetrics;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
+import org.apache.storm.shade.org.eclipse.jetty.util.ArrayQueue;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * VirtualSpout is a Spout that exists within another Spout instance. It doesn't fully implement the
@@ -122,6 +125,11 @@ public class VirtualSpout implements DelegateSpout {
      */
     private RetryManager retryManager;
     private final Map<MessageId, Message> trackedMessages = Maps.newHashMap();
+
+    /**
+     * Contains messages that have permanently failed.
+     */
+    private final Queue<Message> permanentlyFailedMessages = new LinkedList<>();
 
     /**
      * For metric reporting.
@@ -274,6 +282,12 @@ public class VirtualSpout implements DelegateSpout {
             }
         }
 
+        // Determine if we have any permanently failed messages queued.
+        if (!permanentlyFailedMessages.isEmpty()) {
+            // Emit a failed message
+            return Message.createFailedMessage(permanentlyFailedMessages.poll());
+        }
+
         // Grab the next message from Consumer instance.
         final Record record = consumer.nextRecord();
         if (record == null) {
@@ -399,11 +413,15 @@ public class VirtualSpout implements DelegateSpout {
         if (!retryManager.retryFurther(messageId)) {
             logger.warn("Not retrying failed msgId any further {}", messageId);
 
-            // Mark it as acked in retryManager
-            retryManager.acked(messageId);
+            // Grab message
+            final Message message = trackedMessages.get(messageId);
+            if (message != null) {
+                // Add to permanently failed queue.
+                permanentlyFailedMessages.add(message);
+            }
 
-            // Ack it in the consumer
-            consumer.commitOffset(messageId.getNamespace(), messageId.getPartition(), messageId.getOffset());
+            // Call ack on the messageId
+            ack(messageId);
 
             // Update metric
             getMetricsRecorder()

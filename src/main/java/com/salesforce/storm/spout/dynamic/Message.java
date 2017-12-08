@@ -43,14 +43,21 @@ public class Message {
      */
     private final Values values;
 
+    private final boolean hasFailed;
+
     /**
-     * Constructor.
-     * @param messageId - contains information about what Topic, Partition, Offset, and Consumer this
-     * @param values - contains the values that will be emitted out to the Storm Topology.
+     * Constructor for non-failed messages.
+     * @param messageId contains information about what Topic, Partition, Offset, and Consumer this
+     * @param values contains the values that will be emitted out to the Storm Topology.
      */
-    public Message(MessageId messageId, Values values) {
+    public Message(final MessageId messageId, final Values values) {
+        this(messageId, values, false);
+    }
+
+    private Message(final MessageId messageId, final Values values, final boolean hasFailed) {
         this.messageId = messageId;
         this.values = values;
+        this.hasFailed = hasFailed;
     }
 
     public MessageId getMessageId() {
@@ -73,12 +80,17 @@ public class Message {
         return values;
     }
 
+    public boolean isHasFailed() {
+        return hasFailed;
+    }
+
     @Override
     public String toString() {
         return "Message{"
-                + "messageId=" + messageId
-                + ", values=" + values
-                + '}';
+            + "messageId=" + messageId
+            + ", values=" + values
+            + ", hasFailed=" + hasFailed
+            + '}';
     }
 
     @Override
@@ -103,5 +115,9 @@ public class Message {
         int result = getMessageId().hashCode();
         result = 31 * result + getValues().hashCode();
         return result;
+    }
+
+    public static Message createFailedMessage(final Message message) {
+        return new Message(message.getMessageId(), message.getValues(), true);
     }
 }
