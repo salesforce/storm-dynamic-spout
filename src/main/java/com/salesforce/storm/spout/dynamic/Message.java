@@ -43,10 +43,10 @@ public class Message {
      */
     private final Values values;
 
-    private final boolean hasFailed;
+    private final boolean isPermanentlyFailed;
 
     /**
-     * Constructor for non-failed messages.
+     * Constructor.
      * @param messageId contains information about what Topic, Partition, Offset, and Consumer this
      * @param values contains the values that will be emitted out to the Storm Topology.
      */
@@ -54,10 +54,18 @@ public class Message {
         this(messageId, values, false);
     }
 
-    private Message(final MessageId messageId, final Values values, final boolean hasFailed) {
+    /**
+     * Private constructor.  Allows for creating permanently failed messages.
+     * Use the Factory method to create permanently failed messages.
+     *
+     * @param messageId contains information about what Topic, Partition, Offset, and Consumer this
+     * @param values contains the values that will be emitted out to the Storm Topology.
+     * @param hasPermanentlyFailed True if it has failed permanently, false if not.
+     */
+    private Message(final MessageId messageId, final Values values, final boolean hasPermanentlyFailed) {
         this.messageId = messageId;
         this.values = values;
-        this.hasFailed = hasFailed;
+        this.isPermanentlyFailed = hasPermanentlyFailed;
     }
 
     public MessageId getMessageId() {
@@ -80,8 +88,8 @@ public class Message {
         return values;
     }
 
-    public boolean isHasFailed() {
-        return hasFailed;
+    public boolean isPermanentlyFailed() {
+        return isPermanentlyFailed;
     }
 
     @Override
@@ -89,7 +97,7 @@ public class Message {
         return "Message{"
             + "messageId=" + messageId
             + ", values=" + values
-            + ", hasFailed=" + hasFailed
+            + ", isPermanentlyFailed=" + isPermanentlyFailed
             + '}';
     }
 
@@ -117,7 +125,12 @@ public class Message {
         return result;
     }
 
-    public static Message createFailedMessage(final Message message) {
+    /**
+     * Factory method to create a permanently failed message from an existing message.
+     * @param message Message to make permanently failed.
+     * @return A new Message object that is marked as permanently failed.
+     */
+    public static Message createPermanentlyFailedMessage(final Message message) {
         return new Message(message.getMessageId(), message.getValues(), true);
     }
 }

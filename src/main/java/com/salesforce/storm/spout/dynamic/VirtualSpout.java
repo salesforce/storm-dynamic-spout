@@ -284,8 +284,8 @@ public class VirtualSpout implements DelegateSpout {
 
         // Determine if we have any permanently failed messages queued.
         if (!permanentlyFailedMessages.isEmpty()) {
-            // Emit a failed message
-            return Message.createFailedMessage(permanentlyFailedMessages.poll());
+            // Emit the permanently failed message
+            return permanentlyFailedMessages.poll();
         }
 
         // Grab the next message from Consumer instance.
@@ -417,7 +417,7 @@ public class VirtualSpout implements DelegateSpout {
             final Message message = trackedMessages.get(messageId);
             if (message != null) {
                 // Add to permanently failed queue.
-                permanentlyFailedMessages.add(message);
+                permanentlyFailedMessages.add(Message.createPermanentlyFailedMessage(message));
             }
 
             // Call ack on the messageId
