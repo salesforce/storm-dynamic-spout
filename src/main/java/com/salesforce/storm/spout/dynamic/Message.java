@@ -43,6 +43,12 @@ public class Message {
      */
     private final Values values;
 
+    /**
+     * Determines if this message should be considered 'Permanently Failed.'
+     * We're defining "permanently failed" meaning that the topology attempted to process the tuple at least once and the RetryManager
+     * implementation has determined that the tuple should never be retried. When this occurs, the tuple will be emitted un-anchored out
+     * a "failed" stream. Bolts within the topology can subscribe to this "failed" stream and do its own error handling.
+     */
     private final boolean isPermanentlyFailed;
 
     /**
@@ -113,6 +119,9 @@ public class Message {
         Message that = (Message) other;
 
         if (!getMessageId().equals(that.getMessageId())) {
+            return false;
+        }
+        if (isPermanentlyFailed() != that.isPermanentlyFailed()) {
             return false;
         }
         return getValues().equals(that.getValues());
