@@ -41,7 +41,6 @@ import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
@@ -272,7 +271,7 @@ public class VirtualSpoutTest {
             anyMap(),
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
-            any(ZookeeperPersistenceAdapter.class),
+            any(PersistenceAdapter.class),
             eq(metricsRecorder),
             eq(null)
         );
@@ -341,7 +340,7 @@ public class VirtualSpoutTest {
             anyMap(),
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
-            any(ZookeeperPersistenceAdapter.class),
+            any(PersistenceAdapter.class),
             eq(metricsRecorder),
             eq(null)
         );
