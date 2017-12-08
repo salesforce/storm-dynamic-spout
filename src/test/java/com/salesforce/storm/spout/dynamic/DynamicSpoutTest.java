@@ -70,6 +70,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -131,7 +132,11 @@ public class DynamicSpoutTest {
         expectedException.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Call open
-        spout.open(config, topologyContext, spoutOutputCollector);
+        try {
+            spout.open(config, topologyContext, spoutOutputCollector);
+        } finally {
+            spout.close();
+        }
     }
 
     /**
@@ -294,7 +299,7 @@ public class DynamicSpoutTest {
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Validate the tuples that got emitted are what we expect based on what we published into kafka
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier, false);
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 3, 0L);
@@ -376,7 +381,7 @@ public class DynamicSpoutTest {
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Now lets validate that what we got out of the spout is what we actually expected.
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier, false);
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
@@ -387,7 +392,7 @@ public class DynamicSpoutTest {
         // And lets call nextTuple, and we should get the same emissions back out because we called fail on them
         // And our retry manager should replay them first chance it gets.
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier, false);
 
         // Now lets ack 2 different offsets, entries 0 and 3.
         // This means they should never get replayed.
@@ -416,13 +421,106 @@ public class DynamicSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
         // Validate the replayed tuples were our failed ones
-        validateTuplesFromSourceMessages(producedRecords, replayedEmissions, expectedStreamId, virtualSpoutIdentifier);
+        validateTuplesFromSourceMessages(producedRecords, replayedEmissions, expectedStreamId, virtualSpoutIdentifier, false);
 
         // Now lets ack these
         ackTuples(spout, replayedEmissions);
 
         // And validate nextTuple gives us nothing new
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Cleanup.
+        spout.close();
+    }
+
+    /**
+     * End-to-End test over the fail() method using the {@link NeverRetryManager}
+     * retry manager.
+     *
+     * This test stands up our DynamicSpout with a single VirtualSpout using a "Mock Consumer"
+     * We inject some data into mock consumer, and validate that when we call nextTuple() on
+     * our spout that we get out our messages.
+     *
+     * We then fail some of those tuples and validate that they get marked as permanently failed.
+     * This means that they should be emitted out the "failed" stream and should never be replayed
+     * out the standard output stream.
+     */
+    @Test
+    public void doFailWithPermanentlyFailedMessagesTest() throws InterruptedException {
+        // Define how many tuples we should push into the namespace, and then consume back out.
+        final int emitTupleCount = 10;
+
+        // Define our ConsumerId prefix
+        final String consumerIdPrefix = "DynamicSpout";
+
+        // Define our output stream id
+        final String expectedStreamId = "default";
+        final String expectedFailedStreamId = "default_failed";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Configure to use our FailedTuplesFirstRetryManager retry manager.
+        // This implementation will always replay failed tuples first.
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+
+        // Some mock stuff to get going
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals("Should be using appropriate failed output stream id", expectedFailedStreamId, spout.getPermanentlyFailedOutputStreamId());
+
+        // Create new unique VSpoutId
+        final VirtualSpoutIdentifier virtualSpoutIdentifier =
+            new DefaultVirtualSpoutIdentifier("MyVSpoutId" + System.currentTimeMillis());
+
+        // Add a VirtualSpout.
+        final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutIdentifier,
+            config,
+            topologyContext,
+            new FactoryManager(config),
+            new LogRecorder(),
+            null,
+            null
+        );
+        spout.addVirtualSpout(virtualSpout);
+
+        // Wait for VirtualSpout to start
+        waitForVirtualSpouts(spout, 1);
+
+        // Call next tuple, consumer is empty, so nothing should get emitted.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 2, 0L);
+
+        // Lets produce some data into the mock consumer
+        final List<Record> producedRecords = produceRecords(emitTupleCount, topicName, virtualSpout.getVirtualSpoutId());
+
+        // Now loop and get our tuples
+        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
+
+        // Now lets validate that what we got out of the spout is what we actually expected.
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutIdentifier, false);
+
+        // Call next tuple a few more times to make sure nothing unexpected shows up.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Now lets fail our tuples.
+        failTuples(spout, spoutEmissions);
+
+        // And lets call nextTuple, Our retry manager should permanently fail them.
+        // This means we should get more or less the same emissions, but out the permanently failed stream.
+        // They should also be un anchored.
+        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedFailedStreamId, virtualSpoutIdentifier, true);
+
+        // Validate we don't get anything else
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
         // Cleanup.
         spout.close();
@@ -478,12 +576,12 @@ public class DynamicSpoutTest {
         final List<SpoutEmission> spoutEmissions = Collections.unmodifiableList(consumeTuplesFromSpout(spout, spoutOutputCollector, 6));
 
         // Validate its the messages we expected
-        validateEmission(producedRecords.get(0), spoutEmissions.get(0), virtualSpoutIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(1), spoutEmissions.get(1), virtualSpoutIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(2), spoutEmissions.get(2), virtualSpoutIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(3), spoutEmissions.get(3), virtualSpoutIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(4), spoutEmissions.get(4), virtualSpoutIdentifier, expectedStreamId);
-        validateEmission(producedRecords.get(5), spoutEmissions.get(5), virtualSpoutIdentifier, expectedStreamId);
+        validateEmission(producedRecords.get(0), spoutEmissions.get(0), virtualSpoutIdentifier, expectedStreamId, false);
+        validateEmission(producedRecords.get(1), spoutEmissions.get(1), virtualSpoutIdentifier, expectedStreamId, false);
+        validateEmission(producedRecords.get(2), spoutEmissions.get(2), virtualSpoutIdentifier, expectedStreamId, false);
+        validateEmission(producedRecords.get(3), spoutEmissions.get(3), virtualSpoutIdentifier, expectedStreamId, false);
+        validateEmission(producedRecords.get(4), spoutEmissions.get(4), virtualSpoutIdentifier, expectedStreamId, false);
+        validateEmission(producedRecords.get(5), spoutEmissions.get(5), virtualSpoutIdentifier, expectedStreamId, false);
 
         // We will ack offsets 0-4
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
@@ -695,12 +793,25 @@ public class DynamicSpoutTest {
         // Validate results.
         final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
 
+        // Validate standard output stream
         assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
         assertEquals(
             fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
             Lists.newArrayList(expectedFields)
         );
 
+        // Validate permanently failed output stream
+        final String defaultFailedStreamId = Utils.DEFAULT_STREAM_ID + "_failed";
+        assertTrue(fieldsDeclaration.containsKey(defaultFailedStreamId));
+        assertEquals(
+            fieldsDeclaration.get(defaultFailedStreamId).get_output_fields(),
+            Lists.newArrayList(expectedFields)
+        );
+
+        // Should only have 2 streams defined
+        assertEquals("Should only have 2 streams defined", 2, fieldsDeclaration.size());
+
+        // Call close on spout
         spout.close();
     }
 
@@ -712,6 +823,7 @@ public class DynamicSpoutTest {
     @UseDataProvider("provideOutputFields")
     public void testDeclareOutputFields_with_stream(final Object inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
+        final String failedStreamId = streamId + "_failed";
         final Map<String,Object> config = getDefaultConfig("DynamicSpout-", streamId);
 
         // Define our output fields as key and value.
@@ -732,6 +844,16 @@ public class DynamicSpoutTest {
             fieldsDeclaration.get(streamId).get_output_fields(),
             Lists.newArrayList(expectedFields)
         );
+
+        // Validate permanently failed output stream
+        assertTrue(fieldsDeclaration.containsKey(failedStreamId));
+        assertEquals(
+            fieldsDeclaration.get(failedStreamId).get_output_fields(),
+            Lists.newArrayList(expectedFields)
+        );
+
+        // Should only have 2 streams defined
+        assertEquals("Should only have 2 streams defined", 2, fieldsDeclaration.size());
 
         spout.close();
     }
@@ -834,22 +956,30 @@ public class DynamicSpoutTest {
         final Record sourceRecord,
         final SpoutEmission spoutEmission,
         final VirtualSpoutIdentifier expectedVirtualSpoutId,
-        final String expectedOutputStreamId
+        final String expectedOutputStreamId,
+        final boolean shouldBePermanentlyFailed
     ) {
         // Now find its corresponding tuple
         assertNotNull("Not null sanity check", spoutEmission);
         assertNotNull("Not null sanity check", sourceRecord);
 
-        // Validate Message Id
-        assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
-        assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
-
         // Grab the messageId and validate it
         final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-        assertEquals("Expected Topic Name in MessageId", sourceRecord.getNamespace(), messageId.getNamespace());
-        assertEquals("Expected PartitionId found", sourceRecord.getPartition(), messageId.getPartition());
-        assertEquals("Expected MessageOffset found", sourceRecord.getOffset(), messageId.getOffset());
-        assertEquals("Expected Source Consumer Id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
+
+        // If we are permanently failed
+        if (shouldBePermanentlyFailed) {
+            // Then we should have no messageId associated.
+            assertNull("Permanently failed messages should have null messageId", messageId);
+        } else {
+            // Validate Message Id
+            assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
+            assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
+
+            assertEquals("Expected Topic Name in MessageId", sourceRecord.getNamespace(), messageId.getNamespace());
+            assertEquals("Expected PartitionId found", sourceRecord.getPartition(), messageId.getPartition());
+            assertEquals("Expected MessageOffset found", sourceRecord.getOffset(), messageId.getOffset());
+            assertEquals("Expected Source Consumer Id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
+        }
 
         // Validate Tuple Contents
         List<Object> tupleValues = spoutEmission.getTuple();
@@ -1041,7 +1171,8 @@ public class DynamicSpoutTest {
         final List<Record> producedRecords,
         final List<SpoutEmission> spoutEmissions,
         final String expectedStreamId,
-        final VirtualSpoutIdentifier expectedVirtualSpoutId
+        final VirtualSpoutIdentifier expectedVirtualSpoutId,
+        final boolean shouldBePermanentlyFailed
     ) {
         // Sanity check, make sure we have the same number of each.
         assertEquals(
@@ -1060,7 +1191,7 @@ public class DynamicSpoutTest {
             final SpoutEmission spoutEmission = emissionIterator.next();
 
             // validate that they match
-            validateEmission(producedRecord, spoutEmission, expectedVirtualSpoutId, expectedStreamId);
+            validateEmission(producedRecord, spoutEmission, expectedVirtualSpoutId, expectedStreamId, shouldBePermanentlyFailed);
         }
     }
 
