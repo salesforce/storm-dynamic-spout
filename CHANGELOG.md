@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Replaced `SidelineRequestIdentifier` with `FilterChainStepIdentifier` in the FilterChain.
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added `isSidelineStarted()` and `isSidelineStopped()` to the `SidelineController`
 - [PR-47](https://github.com/salesforce/storm-dynamic-spout/pull/47) Sidelining periodically checks to ensure `VirtualSpout` instances are running and have the proper `FilterChainStep` objects applied to them.
-- [PR-85](https://github.com/salesforce/storm-dynamic-spout/pull/85) Fix ordering bug in DefaultRetryManager. Always retry the earliest messageId. 
+- [PR-85](https://github.com/salesforce/storm-dynamic-spout/pull/85) Fix ordering bug in DefaultRetryManager. Always retry the earliest messageId.
+- [PR-90](https://github.com/salesforce/storm-dynamic-spout/pull/90) Adds new 'Permanently Failed' output stream.  Tuples that exceed the configured retry limit will now be emitted out a 'failed' stream un-anchored. This allows you to do your own error handling within the topology by subscribing to this stream. The name of this output stream defaults to 'failed', but is configurable via the `spout.permanently_failed_output_stream_id` configuration item.
 
 #### Removed
 - [PR-45](https://github.com/salesforce/storm-dynamic-spout/pull/45) Removed getMaxLag() from Consumer interface.

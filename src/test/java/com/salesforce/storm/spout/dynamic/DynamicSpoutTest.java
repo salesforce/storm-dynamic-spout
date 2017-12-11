@@ -455,7 +455,7 @@ public class DynamicSpoutTest {
 
         // Define our output stream id
         final String expectedStreamId = "default";
-        final String expectedFailedStreamId = "default_failed";
+        final String expectedFailedStreamId = "failed";
 
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
@@ -801,7 +801,7 @@ public class DynamicSpoutTest {
         );
 
         // Validate permanently failed output stream
-        final String defaultFailedStreamId = Utils.DEFAULT_STREAM_ID + "_failed";
+        final String defaultFailedStreamId = "failed";
         assertTrue(fieldsDeclaration.containsKey(defaultFailedStreamId));
         assertEquals(
             fieldsDeclaration.get(defaultFailedStreamId).get_output_fields(),
@@ -823,7 +823,7 @@ public class DynamicSpoutTest {
     @UseDataProvider("provideOutputFields")
     public void testDeclareOutputFields_with_stream(final Object inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
-        final String failedStreamId = streamId + "_failed";
+        final String failedStreamId = "failed";
         final Map<String,Object> config = getDefaultConfig("DynamicSpout-", streamId);
 
         // Define our output fields as key and value.

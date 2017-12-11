@@ -516,7 +516,13 @@ public class DynamicSpout extends BaseRichSpout {
      */
     String getPermanentlyFailedOutputStreamId() {
         if (permanentlyFailedOutputStreamId == null) {
-            permanentlyFailedOutputStreamId = getOutputStreamId() + "_failed";
+            if (spoutConfig == null) {
+                throw new IllegalStateException("Missing required configuration! SpoutConfig not defined!");
+            }
+            permanentlyFailedOutputStreamId = (String) getSpoutConfigItem(SpoutConfig.PERMANENTLY_FAILED_OUTPUT_STREAM_ID);
+            if (Strings.isNullOrEmpty(permanentlyFailedOutputStreamId)) {
+                permanentlyFailedOutputStreamId = "failed";
+            }
         }
         return permanentlyFailedOutputStreamId;
     }
