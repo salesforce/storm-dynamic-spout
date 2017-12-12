@@ -474,7 +474,11 @@ public class DynamicSpoutTest {
 
         // validate our streamId
         assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
-        assertEquals("Should be using appropriate failed output stream id", expectedFailedStreamId, spout.getPermanentlyFailedOutputStreamId());
+        assertEquals(
+            "Should be using appropriate failed output stream id",
+            expectedFailedStreamId,
+            spout.getPermanentlyFailedOutputStreamId()
+        );
 
         // Create new unique VSpoutId
         final VirtualSpoutIdentifier virtualSpoutIdentifier =
