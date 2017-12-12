@@ -124,6 +124,12 @@ public class VirtualSpout implements DelegateSpout {
      * For tracking failed messages, and knowing when to replay them.
      */
     private RetryManager retryManager;
+
+    /**
+     * Contains a map of MessageId => Full message object that it represents.
+     * This map tracks all messages considered "in flight" and allows us to correlate
+     * messages from messageIds passed to fail() and ack()
+     */
     private final Map<MessageId, Message> trackedMessages = Maps.newHashMap();
 
     /**
@@ -305,7 +311,7 @@ public class VirtualSpout implements DelegateSpout {
             // Unsubscribe partition this tuple belongs to.
             unsubscribeTopicPartition(messageId.getNamespace(), messageId.getPartition());
 
-            // We don't need to ack the tuple because it never got emitted out.
+            // We don't need to ack the tuple because we never tracked/emitted it out.
             // Simply return null.
             return null;
         }
@@ -317,7 +323,7 @@ public class VirtualSpout implements DelegateSpout {
         // Loops through each step in the chain to filter a filter before emitting
         final boolean isFiltered  = getFilterChain().filter(message);
 
-        // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
+        // If the tuple is filtered
         if (isFiltered) {
             // Increment filtered metric
             getMetricsRecorder()
