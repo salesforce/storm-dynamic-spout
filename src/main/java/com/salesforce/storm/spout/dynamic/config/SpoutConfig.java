@@ -69,6 +69,15 @@ public class SpoutConfig {
     )
     public static final String OUTPUT_FIELDS = "spout.output_fields";
 
+    /**
+     * (String) Defines the name of the output stream tuples that have permanently failed will be emitted out of.
+     */
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
+        description = "Defines the name of the output stream tuples that have permanently failed be emitted out of.",
+        type = String.class
+    )
+    public static final String PERMANENTLY_FAILED_OUTPUT_STREAM_ID = "spout.permanently_failed_output_stream_id";
 
 
 ///////////////////////////////////
@@ -444,6 +453,14 @@ public class SpoutConfig {
                 "Unspecified configuration value for {} using default value {}",
                 OUTPUT_STREAM_ID,
                 clonedConfig.get(OUTPUT_STREAM_ID)
+            );
+        }
+        if (!clonedConfig.containsKey(PERMANENTLY_FAILED_OUTPUT_STREAM_ID)) {
+            clonedConfig.put(PERMANENTLY_FAILED_OUTPUT_STREAM_ID, "failed");
+            logger.info(
+                "Unspecified configuration value for {} using default value {}",
+                PERMANENTLY_FAILED_OUTPUT_STREAM_ID,
+                clonedConfig.get(PERMANENTLY_FAILED_OUTPUT_STREAM_ID)
             );
         }
         if (!clonedConfig.containsKey(CONSUMER_CLASS)) {

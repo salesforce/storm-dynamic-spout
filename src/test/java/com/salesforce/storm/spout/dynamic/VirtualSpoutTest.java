@@ -41,7 +41,6 @@ import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
@@ -272,14 +271,19 @@ public class VirtualSpoutTest {
             anyMap(),
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
-            any(ZookeeperPersistenceAdapter.class),
+            any(PersistenceAdapter.class),
             eq(metricsRecorder),
             eq(null)
         );
 
         // Set expected exception
-        expectedExceptionCallingOpenTwiceThrowsException.expect(IllegalStateException.class);
-        virtualSpout.open();
+        try {
+            expectedExceptionCallingOpenTwiceThrowsException.expect(IllegalStateException.class);
+            virtualSpout.open();
+        } finally {
+            // Ensure that we call close.
+            virtualSpout.close();
+        }
     }
 
     /**
@@ -336,10 +340,13 @@ public class VirtualSpoutTest {
             anyMap(),
             eq(virtualSpoutIdentifier),
             any(ConsumerPeerContext.class),
-            any(ZookeeperPersistenceAdapter.class),
+            any(PersistenceAdapter.class),
             eq(metricsRecorder),
             eq(null)
         );
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -387,6 +394,9 @@ public class VirtualSpoutTest {
 
         // Verify ack is never called on underlying mock consumer
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -429,6 +439,9 @@ public class VirtualSpoutTest {
 
         // Verify its null
         assertNull("Should be null",  result);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -491,6 +504,9 @@ public class VirtualSpoutTest {
 
         // Verify ack was called on the tuple
         verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -558,6 +574,9 @@ public class VirtualSpoutTest {
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
         assertEquals("Got expected Message", expectedMessage, result);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -686,6 +705,9 @@ public class VirtualSpoutTest {
         // Validate that we never called ack on the tuples that were filtered because they exceeded the max offset
         verify(mockConsumer, times(0)).commitOffset(topic, partition, afterOffset);
         verify(mockConsumer, times(0)).commitOffset(topic, partition, afterOffset + 1);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -749,7 +771,7 @@ public class VirtualSpoutTest {
         final Consumer mockConsumer = mock(Consumer.class);
 
         // When nextRecord() is called on the mockSidelineConsumer, we need to return a value
-        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord);
+        when(mockConsumer.nextRecord()).thenReturn(expectedConsumerRecord, unexpectedConsumerRecord, null);
 
         // Create a mock RetryManager
         final RetryManager mockRetryManager = mock(RetryManager.class);
@@ -790,6 +812,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
         assertEquals("Got expected Message", expectedMessage, result);
+        assertFalse("Should not be permanently failed", result.isPermanentlyFailed());
 
         // Now call fail on this
         final MessageId failedMessageId = result.getMessageId();
@@ -821,6 +844,7 @@ public class VirtualSpoutTest {
         assertEquals("Found expected offset", expectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
         assertEquals("Got expected Message", expectedMessage, result);
+        assertFalse("Should not be permanently failed", result.isPermanentlyFailed());
 
         // And call nextTuple() one more time, this time failed manager should return null
         // and consumer returns our unexpected result
@@ -839,6 +863,28 @@ public class VirtualSpoutTest {
         assertEquals("Found expected offset", unexpectedOffset, result.getOffset());
         assertEquals("Found expected values", new Values(unexpectedKey, unexpectedValue), result.getValues());
         assertEquals("Got expected Message", unexpectedMessage, result);
+
+        // Next Tuple should return null
+        assertNull("No more tuples queued", virtualSpout.nextTuple());
+
+        // Now test calling fail on our failed tuple, retry manager should say this is enough,
+        when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
+        virtualSpout.fail(failedMessageId);
+
+        // When we call next Tuple() we should get our failed message, marked as permanently failed
+        result = virtualSpout.nextTuple();
+        assertNotNull("Should have non-null message", result);
+
+        // Validate it
+        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
+        assertEquals("Found expected partition", expectedPartition, result.getPartition());
+        assertEquals("Found expected offset", expectedOffset, result.getOffset());
+        assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
+        assertEquals("Got expected MessageId", expectedMessage.getMessageId(), result.getMessageId());
+        assertTrue("Should be permanently failed", result.isPermanentlyFailed());
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -882,6 +928,9 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, never()).acked(anyObject());
         verify(mockRetryManager, never()).failed(anyObject());
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
+
+        // Call close
+        virtualSpout.close();
     }
 
     @Rule
@@ -918,8 +967,13 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
-        expectedExceptionFailWithInvalidMsgIdObject.expect(IllegalArgumentException.class);
-        virtualSpout.fail("This is a String!");
+        try {
+            expectedExceptionFailWithInvalidMsgIdObject.expect(IllegalArgumentException.class);
+            virtualSpout.fail("This is a String!");
+        } finally {
+            // Call close
+            virtualSpout.close();
+        }
     }
 
     /**
@@ -961,6 +1015,9 @@ public class VirtualSpoutTest {
         // No interactions w/ our mock consumer for committing offsets
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
         verify(mockRetryManager, never()).acked(anyObject());
+
+        // Call close
+        virtualSpout.close();
     }
 
     @Rule
@@ -997,8 +1054,13 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
-        expectedExceptionAckWithInvalidMsgIdObject.expect(IllegalArgumentException.class);
-        virtualSpout.ack("This is my String!");
+        try {
+            expectedExceptionAckWithInvalidMsgIdObject.expect(IllegalArgumentException.class);
+            virtualSpout.ack("This is my String!");
+        } finally {
+            // Call close
+            virtualSpout.close();
+        }
     }
 
     /**
@@ -1054,6 +1116,9 @@ public class VirtualSpoutTest {
 
         // Gets acked on the failed retry manager
         verify(mockRetryManager, times(1)).acked(messageId);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1097,6 +1162,9 @@ public class VirtualSpoutTest {
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertFalse("Should always be false", result);
+
+        // Close things out
+        virtualSpout.close();
     }
 
     /**
@@ -1141,6 +1209,9 @@ public class VirtualSpoutTest {
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertFalse("Should be false", result);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1184,6 +1255,9 @@ public class VirtualSpoutTest {
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertTrue("Should be true", result);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1227,6 +1301,9 @@ public class VirtualSpoutTest {
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
         assertFalse("Should be false", result);
+
+        // Call close
+        virtualSpout.close();
     }
 
     @Rule
@@ -1275,6 +1352,9 @@ public class VirtualSpoutTest {
         // Call our method & validate exception is thrown
         expectedExceptionDoesMessageExceedEndingOffsetForAnInvalidPartition.expect(IllegalStateException.class);
         virtualSpout.doesMessageExceedEndingOffset(messageId);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1319,6 +1399,9 @@ public class VirtualSpoutTest {
 
         // Validate mock call
         verify(mockConsumer, times(1)).unsubscribeConsumerPartition(eq(topicPartition));
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1473,16 +1556,12 @@ public class VirtualSpoutTest {
 
     /**
      * This test does the following:
-     *
-     * 1. Call nextTuple() -
-     *  a. the first time RetryManager should return null, saying it has no failed tuples to replay
-     *  b. consumer should return a consumer record, and it should be returned by nextTuple()
-     * 2. Call fail() with the message previously returned from nextTuple().
-     * 2. Call nextTuple()
-     *  a. This time RetryManager should return the failed tuple
-     * 3. Call nextTuple()
-     *  a. This time RetryManager should return null, saying it has no failed tuples to replay.
-     *  b. consumer should return a new consumer record.
+     *   Sets up a VirtualSpout with injected mock retry manager and consumer.
+     *   We instruct the mock consumer to return a Record when nextRecord() is called.
+     *   We ask VirtualSpout for nextTuple() and it should return us a Message wrapped around the record.
+     *   We call fail on this Message's MessageId.
+     *   We ask VirtualSpout for nextTuple() and it should return us the same message, but this time marked as permanently failed.
+     *   Also at this point it should be marked as acked.
      */
     @Test
     public void testCallingFailCallsAckOnWhenItShouldNotBeRetried() {
@@ -1494,11 +1573,11 @@ public class VirtualSpoutTest {
         final String expectedKey = "MyKey";
         final String expectedValue = "MyValue";
 
-        // Define expected result
-        final Message expectedMessage = new Message(
-            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
-            new Values(expectedKey, expectedValue)
-        );
+        // Define expected values
+        final Values expectedValues = new Values(expectedKey, expectedValue);
+
+        // Define expected Record
+        final Record expectedRecord = new Record(expectedTopic, expectedPartition, expectedOffset, expectedValues);
 
         // Create test config
         final Map topologyConfig = getDefaultConfig();
@@ -1516,6 +1595,9 @@ public class VirtualSpoutTest {
         final FactoryManager mockFactoryManager = createMockFactoryManager(null, mockRetryManager, null, null);
         when(mockFactoryManager.createNewConsumerInstance()).thenReturn(mockConsumer);
 
+        // When the underlying consumer is asked for the next record, it should return our record
+        when(mockConsumer.nextRecord()).thenReturn(expectedRecord);
+
         // Create spout & open
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
@@ -1528,10 +1610,16 @@ public class VirtualSpoutTest {
         );
         virtualSpout.open();
 
-        // Now call fail on this
-        final MessageId failedMessageId = expectedMessage.getMessageId();
+        // Ask for the next message, it should be our wrapped mockRecord.
+        final Message message = virtualSpout.nextTuple();
 
-        // Retry manager should retry this tuple.
+        // Verify its not permanently failed
+        assertFalse("Should not be permanently failed", message.isPermanentlyFailed());
+
+        // Grab messageId out
+        final MessageId failedMessageId = message.getMessageId();
+
+        // Retry manager should NOT retry this tuple.
         when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
 
         // call fail on our message id
@@ -1544,6 +1632,19 @@ public class VirtualSpoutTest {
             failedMessageId.getPartition(),
             failedMessageId.getOffset()
         );
+
+        // Calling nextMessage should give us the permanently failed message
+        final Message permanentlyFailedMessage = virtualSpout.nextTuple();
+        assertNotNull("Should be non-null", permanentlyFailedMessage);
+
+        // Should be the same messageId
+        assertEquals("Should have same messageId as previously", failedMessageId, permanentlyFailedMessage.getMessageId());
+
+        // Should be marked as permanently failed
+        assertTrue("Should be marked as permanently failed", permanentlyFailedMessage.isPermanentlyFailed());
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1594,6 +1695,9 @@ public class VirtualSpoutTest {
         // Verify result
         assertNotNull("result should not be null", result);
         assertEquals("Should be our expected instance", expectedConsumerState, result);
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1641,6 +1745,9 @@ public class VirtualSpoutTest {
             endingState,
             virtualSpout.getEndingState()
         );
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1656,9 +1763,7 @@ public class VirtualSpoutTest {
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         // DynamicSpout config items
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList("localhost:21811"));
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
         defaultConfig.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
