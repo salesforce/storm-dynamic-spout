@@ -476,7 +476,15 @@ public class KafkaConsumerSpoutTest {
 
         // Create and add virtualSpout
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+        final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutIdentifier,
+            config,
+            new ConsumerPeerContext(topologyContext.getComponentTasks("Test").size(), taskIndex),
+            new FactoryManager(config),
+            new LogRecorder(),
+            null,
+            null
+        );
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for our virtual spout to start
@@ -587,7 +595,15 @@ public class KafkaConsumerSpoutTest {
 
         // Create and add virtualSpout
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+        final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutIdentifier,
+            config,
+            new ConsumerPeerContext(topologyContext.getComponentTasks("Test").size(), taskIndex),
+            new FactoryManager(config),
+            new LogRecorder(),
+            null,
+            null
+        );
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for our virtual spout to start
