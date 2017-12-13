@@ -109,7 +109,7 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void stopTimer(final MetricDefinition metric, final Object... metricParameters) {
+    public long stopTimer(final MetricDefinition metric, final Object... metricParameters) {
         final long stopTime = Clock.systemUTC().millis();
 
         final String key = generateKey(metric, metricParameters);
@@ -117,14 +117,22 @@ public class LogRecorder implements MetricsRecorder {
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
-            return;
+            return -1;
         }
-        logger.debug("[TIMER] {} + {}", key, stopTime - startTime);
+        final long elapsedTimeMs = stopTime - startTime;
+        logger.debug("[TIMER] {} + {}ms", key, elapsedTimeMs);
+        return elapsedTimeMs;
     }
 
     @Override
-    public void stopTimer(final MetricDefinition metric) {
-        stopTimer(metric, new Object[0]);
+    public long stopTimer(final MetricDefinition metric) {
+        return stopTimer(metric, new Object[0]);
+    }
+
+    @Override
+    public void recordTimer(final MetricDefinition metric, final long elapsedTimeMs, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
+        logger.debug("[TIMER] {} + {}ms", key, elapsedTimeMs);
     }
 
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {

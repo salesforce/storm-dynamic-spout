@@ -25,14 +25,20 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
+import java.io.Serializable;
+
 /**
  * Custom metric.
  *
  * Take a simple string and adhere to the definition used by the {@link MetricsRecorder}.
  */
-public class CustomMetric implements MetricDefinition {
+public final class CustomMetric implements MetricDefinition, Serializable {
     private final String key;
 
+    /**
+     * Constructor.
+     * @param key Metric key name.
+     */
     public CustomMetric(final String key) {
         this.key = key;
     }
@@ -45,5 +51,22 @@ public class CustomMetric implements MetricDefinition {
     @Override
     public String toString() {
         return key;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final CustomMetric that = (CustomMetric) other;
+        return getKey().equals(that.getKey());
+    }
+
+    @Override
+    public int hashCode() {
+        return key.hashCode();
     }
 }

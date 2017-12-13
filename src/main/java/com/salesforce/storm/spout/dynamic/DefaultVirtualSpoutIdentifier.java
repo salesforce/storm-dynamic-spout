@@ -31,7 +31,7 @@ import com.google.common.base.Strings;
 /**
  * Identifier for a virtual spout.
  */
-public class DefaultVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
+public final class DefaultVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
 
     /**
      * The actual identifier.
@@ -81,6 +81,6 @@ public class DefaultVirtualSpoutIdentifier implements VirtualSpoutIdentifier {
      */
     @Override
     public int hashCode() {
-        return id != null ? id.hashCode() : 0;
+        return id.hashCode();
     }
 }

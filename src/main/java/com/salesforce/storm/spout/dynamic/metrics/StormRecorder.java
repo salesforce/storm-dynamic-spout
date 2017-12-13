@@ -163,28 +163,49 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void stopTimer(final MetricDefinition metric, final Object... metricParameters) {
+    public long stopTimer(final MetricDefinition metric, final Object... metricParameters) {
+        // Get current time.
         final long stopTime = Clock.systemUTC().millis();
 
+        // Build key from the metric
         final String key = generateKey(metric, metricParameters);
+
+        // Determine the starting time for the key
         final Long startTime = timerStartValues.get(key);
 
         if (startTime == null) {
             logger.warn("Could not find timer key {}", key);
-            return;
+            return -1;
         }
 
         // Record Difference.
         final long totalTimeMs = stopTime - startTime;
-        timers.scope(key).update(totalTimeMs);
-
-        // Increment counter
-        counters.scope(key + "_totalTimeMs").incrBy(totalTimeMs);
+        recordTimer(key, totalTimeMs);
+        return totalTimeMs;
     }
 
     @Override
-    public void stopTimer(final MetricDefinition metric) {
-        stopTimer(metric, new Object[0]);
+    public long stopTimer(final MetricDefinition metric) {
+        return stopTimer(metric, new Object[0]);
+    }
+
+    @Override
+    public void recordTimer(final MetricDefinition metric, final long elapsedTimeMs, final Object... metricParameters) {
+        final String key = generateKey(metric, metricParameters);
+        recordTimer(key, elapsedTimeMs);
+    }
+
+    /**
+     * Internal helper to record the value of a timer.
+     * @param key String representation of the key to record the timer under
+     * @param elapsedTimeMs How long the timer ran for, in milliseconds.
+     */
+    private void recordTimer(final String key, final long elapsedTimeMs) {
+        // Update averaged timer key
+        timers.scope(key).update(elapsedTimeMs);
+
+        // Increment total time counter, this keeps a running count of total time spent in this timer
+        counters.scope(key + "_totalTimeMs").incrBy(elapsedTimeMs);
     }
 
     /**
@@ -192,7 +213,6 @@ public class StormRecorder implements MetricsRecorder {
      *
      * @return in format of: "className.metricPrefix.metricName"
      */
-
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {
         final StringBuilder keyBuilder = new StringBuilder();
 

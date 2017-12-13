@@ -25,22 +25,21 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
+import com.google.common.base.Preconditions;
+
+import java.io.Serializable;
+
 /**
- * Custom metric.
+ * Class metric.
  *
- * Take a simple string and adhere to the definition used by the {@link MetricsRecorder}.
+ * Prefixes the metric by the name of the class given on the constructor.
  */
-public class ClassMetric implements MetricDefinition {
+public final class ClassMetric implements MetricDefinition, Serializable {
 
     /**
-     * Class of the metric.
+     * Metric key.
      */
-    private final Class clazz;
-
-    /**
-     * Name of the metric.
-     */
-    private final String name;
+    private final String key;
 
     /**
      * Defines a metric for a class.
@@ -48,20 +47,37 @@ public class ClassMetric implements MetricDefinition {
      * @param name Name of the metric.
      */
     public ClassMetric(final Class clazz, final String name) {
-        this.clazz = clazz;
-        this.name = name;
+        Preconditions.checkNotNull(clazz);
+        Preconditions.checkNotNull(name);
+
+        // Compute the key name once and store.
+        this.key = clazz.getSimpleName().concat(".").concat(name);
     }
 
     @Override
     public String getKey() {
-        return this.clazz.getSimpleName().concat(".").concat(name);
+        return this.key;
     }
 
     @Override
     public String toString() {
-        return "ClassMetric{"
-            + "clazz=" + clazz
-            + ", name='" + name + '\''
-            + '}';
+        return getKey();
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final ClassMetric that = (ClassMetric) other;
+        return getKey().equals(that.getKey());
+    }
+
+    @Override
+    public int hashCode() {
+        return key.hashCode();
     }
 }
