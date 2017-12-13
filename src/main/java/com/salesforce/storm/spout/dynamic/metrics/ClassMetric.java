@@ -28,7 +28,6 @@ package com.salesforce.storm.spout.dynamic.metrics;
 import com.google.common.base.Preconditions;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * Class metric.
