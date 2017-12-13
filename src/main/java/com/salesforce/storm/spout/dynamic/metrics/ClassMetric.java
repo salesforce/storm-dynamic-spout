@@ -79,7 +79,6 @@ public final class ClassMetric implements MetricDefinition, Serializable {
 
     @Override
     public int hashCode() {
-        super.hashCode();
         return key.hashCode();
     }
 }
