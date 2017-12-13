@@ -145,15 +145,8 @@ public class KafkaConsumerSpoutTest {
 
         // Add a VirtualSpout.
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            new ConsumerPeerContext(0, 1),
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
+        final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
+
         spout.addVirtualSpout(virtualSpout);
 
         // Wait for VirtualSpout to start
