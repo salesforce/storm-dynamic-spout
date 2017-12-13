@@ -30,12 +30,20 @@ import java.time.Clock;
 /**
  * This object is used as the MessageId for Tuples emitted to the Storm topology.
  */
-public class MessageId {
+public final class MessageId {
+    /**
+     * Class Properties.
+     */
     private final String namespace;
     private final int partition;
     private final long offset;
     private final VirtualSpoutIdentifier srcVirtualSpoutId;
     private final long timestamp;
+
+    /**
+     * Cached HashCode.
+     */
+    private int hash = 0;
 
     /**
      * Constructor.
@@ -93,11 +101,14 @@ public class MessageId {
 
     @Override
     public int hashCode() {
-        int result = getNamespace().hashCode();
-        result = 31 * result + getPartition();
-        result = 31 * result + (int) (getOffset() ^ (getOffset() >>> 32));
-        result = 31 * result + getSrcVirtualSpoutId().hashCode();
-        return result;
+        if (hash == 0) {
+            int result = getNamespace().hashCode();
+            result = 31 * result + getPartition();
+            result = 31 * result + (int) (getOffset() ^ (getOffset() >>> 32));
+            result = 31 * result + getSrcVirtualSpoutId().hashCode();
+            hash = result;
+        }
+        return hash;
     }
 
     @Override

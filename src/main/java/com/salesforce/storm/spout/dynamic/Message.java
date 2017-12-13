@@ -30,7 +30,7 @@ import org.apache.storm.tuple.Values;
 /**
  * Represents an abstracted view over MessageId and the Tuple values.
  */
-public class Message {
+public final class Message {
 
     /**
      * MessageId contains information about what Topic, Partition, Offset, and Consumer this

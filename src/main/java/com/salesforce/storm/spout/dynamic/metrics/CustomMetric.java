@@ -32,7 +32,7 @@ import java.io.Serializable;
  *
  * Take a simple string and adhere to the definition used by the {@link MetricsRecorder}.
  */
-public class CustomMetric implements MetricDefinition, Serializable {
+public final class CustomMetric implements MetricDefinition, Serializable {
     private final String key;
 
     /**
@@ -51,5 +51,22 @@ public class CustomMetric implements MetricDefinition, Serializable {
     @Override
     public String toString() {
         return key;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final CustomMetric that = (CustomMetric) other;
+        return getKey().equals(that.getKey());
+    }
+
+    @Override
+    public int hashCode() {
+        return key.hashCode();
     }
 }

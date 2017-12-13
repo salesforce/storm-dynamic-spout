@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.dynamic;
 /**
  * Namespace and partition number DTO object.
  */
-public class ConsumerPartition {
+public final class ConsumerPartition {
     private int hash = 0;
     private final String namespace;
     private final int partition;

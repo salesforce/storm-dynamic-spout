@@ -28,13 +28,14 @@ package com.salesforce.storm.spout.dynamic.metrics;
 import com.google.common.base.Preconditions;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Class metric.
  *
  * Prefixes the metric by the name of the class given on the constructor.
  */
-public class ClassMetric implements MetricDefinition, Serializable {
+public final class ClassMetric implements MetricDefinition, Serializable {
 
     /**
      * Metric key.
@@ -62,5 +63,23 @@ public class ClassMetric implements MetricDefinition, Serializable {
     @Override
     public String toString() {
         return getKey();
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        final ClassMetric that = (ClassMetric) other;
+        return getKey().equals(that.getKey());
+    }
+
+    @Override
+    public int hashCode() {
+        super.hashCode();
+        return key.hashCode();
     }
 }
