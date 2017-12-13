@@ -27,6 +27,7 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.utils.SharedKafkaTestResource;
@@ -85,6 +86,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -145,7 +147,11 @@ public class DynamicSpoutTest {
         expectedExceptionMissingRequiredConfigurationConsumerIdPrefix.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
 
         // Call open
-        spout.open(config, topologyContext, spoutOutputCollector);
+        try {
+            spout.open(config, topologyContext, spoutOutputCollector);
+        } finally {
+            spout.close();
+        }
     }
 
     /**
@@ -199,7 +205,7 @@ public class DynamicSpoutTest {
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Validate the tuples that got emitted are what we expect based on what we published into kafka
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 3, 0L);
@@ -260,7 +266,7 @@ public class DynamicSpoutTest {
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Now lets validate that what we got out of the spout is what we actually expected.
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
@@ -271,7 +277,7 @@ public class DynamicSpoutTest {
         // And lets call nextTuple, and we should get the same emissions back out because we called fail on them
         // And our retry manager should replay them first chance it gets.
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Now lets ack 2 different offsets, entries 0 and 3.
         // This means they should never get replayed.
@@ -300,13 +306,112 @@ public class DynamicSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
         // Validate the replayed tuples were our failed ones
-        validateTuplesFromSourceMessages(producedRecords, replayedEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, replayedEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Now lets ack these
         ackTuples(spout, replayedEmissions);
 
         // And validate nextTuple gives us nothing new
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Cleanup.
+        spout.close();
+    }
+
+    /**
+     * End-to-End test over the fail() method using the {@link NeverRetryManager}
+     * retry manager.
+     *
+     * This test stands up our DynamicSpout with a single VirtualSpout using a "Mock Consumer"
+     * We inject some data into mock consumer, and validate that when we call nextTuple() on
+     * our spout that we get out our messages.
+     *
+     * We then fail some of those tuples and validate that they get marked as permanently failed.
+     * This means that they should be emitted out the "failed" stream and should never be replayed
+     * out the standard output stream.
+     */
+    @Test
+    public void doFailWithPermanentlyFailedMessagesTest() throws InterruptedException {
+        // Define how many tuples we should push into the namespace, and then consume back out.
+        final int emitTupleCount = 10;
+
+        // Define our ConsumerId prefix
+        final String consumerIdPrefix = "DynamicSpout";
+
+        // Define our output stream id
+        final String expectedStreamId = "default";
+        final String expectedFailedStreamId = "failed";
+
+        // Create our config
+        final Map<String, Object> config = getDefaultConfig(consumerIdPrefix, expectedStreamId);
+
+        // Configure to use our FailedTuplesFirstRetryManager retry manager.
+        // This implementation will always replay failed tuples first.
+        config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
+
+        // Some mock stuff to get going
+        final TopologyContext topologyContext = new MockTopologyContext();
+        final MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
+
+        // Create spout and call open
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(config, topologyContext, spoutOutputCollector);
+
+        // validate our streamId
+        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(
+            "Should be using appropriate failed output stream id",
+            expectedFailedStreamId,
+            spout.getPermanentlyFailedOutputStreamId()
+        );
+
+        final String virtualSpoutName = "MyVSpoutId" + System.currentTimeMillis();
+
+        // Create new unique VSpoutId
+        final VirtualSpoutIdentifier virtualSpoutIdentifier =
+            new DefaultVirtualSpoutIdentifier(virtualSpoutName);
+
+        // Add a VirtualSpout.
+        final VirtualSpout virtualSpout = new VirtualSpout(
+            virtualSpoutIdentifier,
+            config,
+            topologyContext,
+            new FactoryManager(config),
+            new LogRecorder(),
+            null,
+            null
+        );
+        spout.addVirtualSpout(virtualSpout);
+
+        // Wait for VirtualSpout to start
+        waitForVirtualSpouts(spout, 1);
+
+        // Call next tuple, consumer is empty, so nothing should get emitted.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 2, 0L);
+
+        // Lets produce some data into the mock consumer
+        List<ProducedKafkaRecord<byte[], byte[]>> producedRecords = produceRecords(emitTupleCount, 0);
+
+        // Now loop and get our tuples
+        List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
+
+        // Now lets validate that what we got out of the spout is what we actually expected.
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutName, false);
+
+        // Call next tuple a few more times to make sure nothing unexpected shows up.
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
+
+        // Now lets fail our tuples.
+        failTuples(spout, spoutEmissions);
+
+        // And lets call nextTuple, Our retry manager should permanently fail them.
+        // This means we should get more or less the same emissions, but out the permanently failed stream.
+        // They should also be un anchored.
+        spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedFailedStreamId, virtualSpoutName, true);
+
+        // Validate we don't get anything else
+        validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
         // Cleanup.
         spout.close();
@@ -358,7 +463,7 @@ public class DynamicSpoutTest {
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // Validate the tuples are what we published into kafka
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Lets ack our tuples, this should commit offsets 0 -> 2. (0,1,2)
         ackTuples(spout, spoutEmissions);
@@ -397,7 +502,8 @@ public class DynamicSpoutTest {
             producedRecords,
             spoutEmissions,
             expectedStreamId,
-            consumerIdPrefix + ":sideline:" + StaticTrigger.getCurrentSidelineRequestIdentifier()
+            consumerIdPrefix + ":sideline:" + StaticTrigger.getCurrentSidelineRequestIdentifier(),
+            false
         );
 
         // Call next tuple a few more times to be safe nothing else comes in.
@@ -421,7 +527,7 @@ public class DynamicSpoutTest {
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, numberOfRecordsToPublish);
 
         // Loop over what we produced into kafka and validate them
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Close out
         spout.close();
@@ -470,16 +576,15 @@ public class DynamicSpoutTest {
         final List<SpoutEmission> spoutEmissions = Collections.unmodifiableList(consumeTuplesFromSpout(spout, spoutOutputCollector, 6));
 
         // Validate its the messages we expected
-        validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(1), spoutEmissions.get(1), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(2), spoutEmissions.get(2), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(3), spoutEmissions.get(3), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(4), spoutEmissions.get(4), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(5), spoutEmissions.get(5), consumerIdPrefix + ":main", expectedStreamId);
+        validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(1), spoutEmissions.get(1), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(2), spoutEmissions.get(2), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(3), spoutEmissions.get(3), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(4), spoutEmissions.get(4), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(5), spoutEmissions.get(5), consumerIdPrefix + ":main", expectedStreamId, false);
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
@@ -507,12 +612,12 @@ public class DynamicSpoutTest {
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
 
         // Validate its the tuples we expect [4,5,6,7,8,9]
-        validateEmission(producedRecords.get(4), spoutEmissionsAfterResume.get(0), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(5), spoutEmissionsAfterResume.get(1), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(6), spoutEmissionsAfterResume.get(2), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(7), spoutEmissionsAfterResume.get(3), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(8), spoutEmissionsAfterResume.get(4), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(9), spoutEmissionsAfterResume.get(5), consumerIdPrefix + ":main", expectedStreamId);
+        validateEmission(producedRecords.get(4), spoutEmissionsAfterResume.get(0), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(5), spoutEmissionsAfterResume.get(1), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(6), spoutEmissionsAfterResume.get(2), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(7), spoutEmissionsAfterResume.get(3), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(8), spoutEmissionsAfterResume.get(4), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(9), spoutEmissionsAfterResume.get(5), consumerIdPrefix + ":main", expectedStreamId, false);
 
         // Ack all tuples.
         ackTuples(spout, spoutEmissionsAfterResume);
@@ -581,12 +686,12 @@ public class DynamicSpoutTest {
         final List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 6);
 
         // Validate its the messages we expected
-        validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(1), spoutEmissions.get(1), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(2), spoutEmissions.get(2), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(3), spoutEmissions.get(3), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(4), spoutEmissions.get(4), consumerIdPrefix + ":main", expectedStreamId);
-        validateEmission(producedRecords.get(5), spoutEmissions.get(5), consumerIdPrefix + ":main", expectedStreamId);
+        validateEmission(producedRecords.get(0), spoutEmissions.get(0), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(1), spoutEmissions.get(1), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(2), spoutEmissions.get(2), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(3), spoutEmissions.get(3), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(4), spoutEmissions.get(4), consumerIdPrefix + ":main", expectedStreamId, false);
+        validateEmission(producedRecords.get(5), spoutEmissions.get(5), consumerIdPrefix + ":main", expectedStreamId, false);
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
@@ -613,7 +718,7 @@ public class DynamicSpoutTest {
         spoutEmissions.addAll(consumeTuplesFromSpout(spout, spoutOutputCollector, 4));
 
         // We'll validate them
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // But if we call nextTuple() 5 more times, we should never get the additional 5 records we produced.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 5, 100L);
@@ -660,19 +765,22 @@ public class DynamicSpoutTest {
             producedRecords.get(4),
             sidelinedEmissions.get(0),
             consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier,
-            expectedStreamId
+            expectedStreamId,
+            false
         );
         validateEmission(
             producedRecords.get(5),
             sidelinedEmissions.get(1),
             consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier,
-            expectedStreamId
+            expectedStreamId,
+            false
         );
         validateEmission(
             producedRecords.get(6),
             sidelinedEmissions.get(2),
             consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier,
-            expectedStreamId
+            expectedStreamId,
+            false
         );
 
         // Ack offsets [4,5,6] => committed offset should be 6 now on sideline consumer.
@@ -711,7 +819,8 @@ public class DynamicSpoutTest {
             sidelineKafkaRecords,
             sidelinedEmissions,
             expectedStreamId,
-            consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier
+            consumerIdPrefix + ":sideline:" + sidelineRequestIdentifier,
+            false
         );
 
         // call nextTuple() several times, get nothing back
@@ -731,7 +840,7 @@ public class DynamicSpoutTest {
         List<SpoutEmission> lastSpoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, 5);
 
         // verify we get the tuples [15,16,17,18,19]
-        validateTuplesFromSourceMessages(lastProducedRecords, lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main");
+        validateTuplesFromSourceMessages(lastProducedRecords, lastSpoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Ack offsets [15,16,18] => Committed offset should be 16
         ackTuples(spout, Lists.newArrayList(
@@ -772,7 +881,8 @@ public class DynamicSpoutTest {
             lastProducedRecords.subList(2,5),
             lastSpoutEmissions,
             expectedStreamId,
-            consumerIdPrefix + ":main"
+            consumerIdPrefix + ":main",
+            false
         );
 
         // Verify no more tuples
@@ -1069,12 +1179,25 @@ public class DynamicSpoutTest {
         // Validate results.
         final Map<String, StreamInfo> fieldsDeclaration = declarer.getFieldsDeclaration();
 
+        // Validate standard output stream
         assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
         assertEquals(
             fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
             Lists.newArrayList(expectedFields)
         );
 
+        // Validate permanently failed output stream
+        final String defaultFailedStreamId = "failed";
+        assertTrue(fieldsDeclaration.containsKey(defaultFailedStreamId));
+        assertEquals(
+            fieldsDeclaration.get(defaultFailedStreamId).get_output_fields(),
+            Lists.newArrayList(expectedFields)
+        );
+
+        // Should only have 2 streams defined
+        assertEquals("Should only have 2 streams defined", 2, fieldsDeclaration.size());
+
+        // Call close on spout
         spout.close();
     }
 
@@ -1086,6 +1209,7 @@ public class DynamicSpoutTest {
     @UseDataProvider("provideOutputFields")
     public void testDeclareOutputFields_with_stream(final Object inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
+        final String failedStreamId = "failed";
         final Map<String,Object> config = getDefaultConfig("SidelineSpout-", streamId);
 
         // Define our output fields as key and value.
@@ -1106,6 +1230,16 @@ public class DynamicSpoutTest {
             fieldsDeclaration.get(streamId).get_output_fields(),
             Lists.newArrayList(expectedFields)
         );
+
+        // Validate permanently failed output stream
+        assertTrue(fieldsDeclaration.containsKey(failedStreamId));
+        assertEquals(
+            fieldsDeclaration.get(failedStreamId).get_output_fields(),
+            Lists.newArrayList(expectedFields)
+        );
+
+        // Should only have 2 streams defined
+        assertEquals("Should only have 2 streams defined", 2, fieldsDeclaration.size());
 
         spout.close();
     }
@@ -1168,24 +1302,32 @@ public class DynamicSpoutTest {
         final ProducedKafkaRecord<byte[], byte[]> sourceProducerRecord,
         final SpoutEmission spoutEmission,
         final String expectedConsumerId,
-        final String expectedOutputStreamId
+        final String expectedOutputStreamId,
+        final boolean shouldBePermanentlyFailed
     ) {
         // Now find its corresponding tuple
         assertNotNull("Not null sanity check", spoutEmission);
         assertNotNull("Not null sanity check", sourceProducerRecord);
 
-        // Validate Message Id
-        assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
-        assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
-
         // Grab the messageId and validate it
         final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-        assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getNamespace());
-        assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
-        assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
 
-        // TODO: Should revisit this and refactor the test to properly pass around identifiers for validation
-        assertEquals("Expected Source Consumer Id", expectedConsumerId, messageId.getSrcVirtualSpoutId().toString());
+        // If we are permanently failed
+        if (shouldBePermanentlyFailed) {
+            // Then we should have no messageId associated.
+            assertNull("Permanently failed messages should have null messageId", messageId);
+        } else {
+            // Validate Message Id
+            assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
+            assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
+
+            assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getNamespace());
+            assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
+            assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
+
+            // TODO: Should revisit this and refactor the test to properly pass around identifiers for validation
+            assertEquals("Expected Source Consumer Id", expectedConsumerId, messageId.getSrcVirtualSpoutId().toString());
+        }
 
         // Validate Tuple Contents
         List<Object> tupleValues = spoutEmission.getTuple();
@@ -1358,7 +1500,8 @@ public class DynamicSpoutTest {
         final List<ProducedKafkaRecord<byte[], byte[]>> producedRecords,
         final List<SpoutEmission> spoutEmissions,
         final String expectedStreamId,
-        final String expectedConsumerId
+        final String expectedConsumerId,
+        final boolean shouldBePermanentlyFailed
     ) {
         // Sanity check, make sure we have the same number of each.
         assertEquals(
@@ -1377,7 +1520,7 @@ public class DynamicSpoutTest {
             final SpoutEmission spoutEmission = emissionIterator.next();
 
             // validate that they match
-            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedStreamId);
+            validateEmission(producedRecord, spoutEmission, expectedConsumerId, expectedStreamId, shouldBePermanentlyFailed);
         }
     }
 

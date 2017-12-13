@@ -64,6 +64,7 @@ public class MessageTest {
         assertEquals("Got expected namespace", expectedTopic, message.getNamespace());
         assertEquals("Got expected partition", expectedPartition, message.getPartition());
         assertEquals("Got expected offset", expectedOffset, message.getOffset());
+        assertFalse("Should not be permanently failed", message.isPermanentlyFailed());
 
         // Validate Values
         assertEquals("Got expected Values", expectedValues, message.getValues());
@@ -71,6 +72,45 @@ public class MessageTest {
         assertEquals("Got expected Value1", expectedValue1, message.getValues().get(0));
         assertEquals("Got expected Value2", expectedValue2, message.getValues().get(1));
         assertEquals("Got expected Value3", expectedValue3, message.getValues().get(2));
+    }
+
+    /**
+     * Tests the constructor + getters.
+     */
+    @Test
+    public void testCreatePermanentlyFailedMessage() {
+        // Define TupleMessageId components
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 2;
+        final long expectedOffset = 31337L;
+        final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
+        final MessageId expectedMessageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId);
+
+        // Define expected values components
+        final String expectedValue1 = "This is value 1";
+        final String expectedValue2 = "This is value 2";
+        final Long expectedValue3 = 42L;
+        final Values expectedValues = new Values(expectedValue1, expectedValue2, expectedValue3);
+
+        // Create Message
+        final Message message = new Message(expectedMessageId, expectedValues);
+
+        // Mark it as permanently failed
+        final Message failedMessage = Message.createPermanentlyFailedMessage(message);
+
+        // Validate TupleMessageId
+        assertEquals("Got expected TupleMessageId", expectedMessageId, failedMessage.getMessageId());
+        assertEquals("Got expected namespace", expectedTopic, failedMessage.getNamespace());
+        assertEquals("Got expected partition", expectedPartition, failedMessage.getPartition());
+        assertEquals("Got expected offset", expectedOffset, failedMessage.getOffset());
+        assertTrue("Should be permanently failed", failedMessage.isPermanentlyFailed());
+
+        // Validate Values
+        assertEquals("Got expected Values", expectedValues, failedMessage.getValues());
+        assertEquals("Got expected Values count", 3, failedMessage.getValues().size());
+        assertEquals("Got expected Value1", expectedValue1, failedMessage.getValues().get(0));
+        assertEquals("Got expected Value2", expectedValue2, failedMessage.getValues().get(1));
+        assertEquals("Got expected Value3", expectedValue3, failedMessage.getValues().get(2));
     }
 
     /**
@@ -217,6 +257,72 @@ public class MessageTest {
         // Validate
         assertTrue("Should be equal", message1.equals(message2));
         assertTrue("Should be equal", message2.equals(message1));
+    }
+
+    /**
+     * Tests equality.
+     */
+    @Test
+    public void testNotEqualsOneIsFailedDifferentInstances() {
+        // Define TupleMessageId components
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 2;
+        final long expectedOffset = 31337L;
+        final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
+
+        // Define expected values components
+        final String expectedValue1 = "This is value 1";
+        final String expectedValue2 = "This is value 2";
+        final Long expectedValue3 = 42L;
+
+        // Create Message
+        final Message message1 = new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedValue1, expectedValue2, expectedValue3)
+        );
+
+        // Create Message
+        final Message message2 = Message.createPermanentlyFailedMessage(new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedValue1, expectedValue2, expectedValue3)
+        ));
+
+        // Validate
+        assertFalse("Should not be equal", message1.equals(message2));
+        assertFalse("Should not be equal", message2.equals(message1));
+    }
+
+    /**
+     * Tests equality.
+     */
+    @Test
+    public void testEqualsBothAreFailedDifferentInstances() {
+        // Define TupleMessageId components
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 2;
+        final long expectedOffset = 31337L;
+        final DefaultVirtualSpoutIdentifier expectedConsumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
+
+        // Define expected values components
+        final String expectedValue1 = "This is value 1";
+        final String expectedValue2 = "This is value 2";
+        final Long expectedValue3 = 42L;
+
+        // Create Message
+        final Message message1 = Message.createPermanentlyFailedMessage(new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedValue1, expectedValue2, expectedValue3)
+        ));
+
+        // Create Message
+        final Message message2 = Message.createPermanentlyFailedMessage(new Message(
+            new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedConsumerId),
+            new Values(expectedValue1, expectedValue2, expectedValue3)
+        ));
+
+        // Validate
+        assertTrue("Should not be equal", message1.equals(message2));
+        assertTrue("Should not be equal", message2.equals(message1));
     }
 
     /**

@@ -102,6 +102,12 @@ public class DynamicSpout extends BaseRichSpout {
     private String outputStreamId = null;
 
     /**
+     * Determines which output stream to emit permanently failed tuples out.
+     * Gets set during open().
+     */
+    private String permanentlyFailedOutputStreamId = null;
+
+    /**
      * Whether or not the spout has been previously opened.
      */
     private boolean isOpen = false;
@@ -198,7 +204,17 @@ public class DynamicSpout extends BaseRichSpout {
             return;
         }
 
+        // If this is a permanently failed message.
+        if (message.isPermanentlyFailed()) {
+            // Emit tuple via the output collector down the failed stream.
+            // Do not attach a messageId because this should be untracked.  We won't listen for
+            // any acks, fails, for messages on this stream.
+            getOutputCollector().emit(getPermanentlyFailedOutputStreamId(), message.getValues());
+            return;
+        }
+
         // Emit tuple via the output collector.
+        // Attach the appropriate messageId so it can be tracked.
         getOutputCollector().emit(getOutputStreamId(), message.getValues(), message.getMessageId());
 
         // Update emit count metric for VirtualSpout this tuple originated from
@@ -233,6 +249,7 @@ public class DynamicSpout extends BaseRichSpout {
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
         // Handles both explicitly defined and default stream definitions.
         final String streamId = getOutputStreamId();
+        final String permanentlyFailedStreamId = getPermanentlyFailedOutputStreamId();
 
         // Construct fields from config
         final Object fieldsCfgValue = getSpoutConfigItem(SpoutConfig.OUTPUT_FIELDS);
@@ -256,6 +273,9 @@ public class DynamicSpout extends BaseRichSpout {
 
         logger.debug("Declaring stream name {} with fields {}", streamId, fields);
         declarer.declareStream(streamId, fields);
+
+        // Declare a fail stream using the same fields.
+        declarer.declareStream(permanentlyFailedStreamId, fields);
     }
 
     /**
@@ -439,6 +459,22 @@ public class DynamicSpout extends BaseRichSpout {
             }
         }
         return outputStreamId;
+    }
+
+    /**
+     * @return The stream that tuples that have permanently failed will be emitted out.
+     */
+    String getPermanentlyFailedOutputStreamId() {
+        if (permanentlyFailedOutputStreamId == null) {
+            if (spoutConfig == null) {
+                throw new IllegalStateException("Missing required configuration! SpoutConfig not defined!");
+            }
+            permanentlyFailedOutputStreamId = (String) getSpoutConfigItem(SpoutConfig.PERMANENTLY_FAILED_OUTPUT_STREAM_ID);
+            if (Strings.isNullOrEmpty(permanentlyFailedOutputStreamId)) {
+                permanentlyFailedOutputStreamId = "failed";
+            }
+        }
+        return permanentlyFailedOutputStreamId;
     }
 
     /**
