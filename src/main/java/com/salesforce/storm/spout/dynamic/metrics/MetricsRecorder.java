@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.dynamic.metrics;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Any implementation of this should be written to be thread safe.  This instance
@@ -114,12 +115,23 @@ public interface MetricsRecorder {
      * @param metric metric definition.
      * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
      *                         can be replace with the supplied parameters.
+     * @return How long elapsed in the timer, in milliseconds.
      */
-    void stopTimer(final MetricDefinition metric, final Object... metricParameters);
+    long stopTimer(final MetricDefinition metric, final Object... metricParameters);
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
      * @param metric metric definition.
+     * @return How long elapsed in the timer, in milliseconds.
      */
-    void stopTimer(final MetricDefinition metric);
+    long stopTimer(final MetricDefinition metric);
+
+    /**
+     * Record a timer passing in the elapsed time.
+     * @param metric metric definition
+     * @param elapsedTimeMs how much time has passed, in milliseconds,
+     * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
+     *                         can be replace with the supplied parameters.
+     */
+    void recordTimer(final MetricDefinition metric, final long elapsedTimeMs, final Object... metricParameters);
 }

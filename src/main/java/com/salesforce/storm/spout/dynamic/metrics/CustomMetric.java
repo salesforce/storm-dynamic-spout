@@ -25,14 +25,20 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
+import java.io.Serializable;
+
 /**
  * Custom metric.
  *
  * Take a simple string and adhere to the definition used by the {@link MetricsRecorder}.
  */
-public class CustomMetric implements MetricDefinition {
+public class CustomMetric implements MetricDefinition, Serializable {
     private final String key;
 
+    /**
+     * Constructor.
+     * @param key Metric key name.
+     */
     public CustomMetric(final String key) {
         this.key = key;
     }
