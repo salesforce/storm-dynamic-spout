@@ -75,17 +75,6 @@ public interface DelegateSpout {
     void flushState();
 
     /**
-     * Request that the current spout stop running for async shutdown.
-     */
-    void requestStop();
-
-    /**
-     * Has the current spout been told to stop?
-     * @return True if it has, false if it has not.
-     */
-    boolean isStopRequested();
-
-    /**
      * Get the current ConsumerState from this spout's Consumer instance.
      * @return Current ConsumerState.
      */
@@ -121,4 +110,12 @@ public interface DelegateSpout {
      * @return filter chain instance.
      */
     FilterChain getFilterChain();
+
+    /**
+     * Whether or not this {@link VirtualSpout} has completed it's processing, which typically means that the data from {@link Consumer},
+     * specifically {@link #getCurrentState()} is now at or beyond {@link #getEndingState()}.
+     *
+     * @return true is the spout is finished processing, false if it is not.
+     */
+    boolean isCompleted();
 }
