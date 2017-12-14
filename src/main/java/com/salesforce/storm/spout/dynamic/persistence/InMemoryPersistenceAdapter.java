@@ -35,27 +35,23 @@ import java.util.Map;
 public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
     /**
-     * Used within tests to more easily validate assertions.
+     * In memory store for this adapter's data.
      */
-    public static PersistConsumerStateCallback<String, Integer, Long> persistConsumerStateCallback = (consumerId, partitionId, offset) -> {
-        // No-op by default.
-    };
+    public static Map<String, Long> storedConsumerState = Maps.newHashMap();
 
-    // "Persists" consumer state in memory.
-    private Map<String, Long> storedConsumerState;
+    /**
+     * Reset the internal memory store.
+     */
+    public static void reset() {
+        storedConsumerState = Maps.newHashMap();
+    }
 
     @Override
     public void open(Map spoutConfig) {
-        // Allow non-destructive re-opening
-        if (storedConsumerState == null) {
-            storedConsumerState = Maps.newHashMap();
-        }
     }
 
     @Override
     public void close() {
-        // Cleanup
-        storedConsumerState.clear();
     }
 
     /**
@@ -67,7 +63,6 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     @Override
     public void persistConsumerState(String consumerId, int partitionId, long offset) {
         storedConsumerState.put(getConsumerStateKey(consumerId, partitionId), offset);
-        persistConsumerStateCallback.apply(consumerId, partitionId, offset);
     }
 
     /**
@@ -84,18 +79,13 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
         storedConsumerState.remove(getConsumerStateKey(consumerId, partitionId));
     }
 
-    private String getConsumerStateKey(final String consumerId, final int partitionId) {
-        return consumerId.concat("/").concat(String.valueOf(partitionId));
-    }
-
     /**
-     * Callback definition that can be used to hook into (and track) changes to state when testing.
-     * @param <String> consumerId
-     * @param <Integer> partitionId
-     * @param <Long> offset
+     * Generate the key used for the in memory store.  Use this if you need to manipulate the store outside of the normal flow.
+     * @param consumerId consumer id.
+     * @param partitionId partition.
+     * @return key for the in memory store.
      */
-    @FunctionalInterface
-    public interface PersistConsumerStateCallback<String, Integer, Long> {
-        void apply(String consumerId, Integer partitionId, Long offset);
+    public static String getConsumerStateKey(final String consumerId, final int partitionId) {
+        return consumerId.concat("/").concat(String.valueOf(partitionId));
     }
 }

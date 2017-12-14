@@ -51,6 +51,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import org.apache.storm.task.TopologyContext;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -75,6 +76,16 @@ import static org.junit.Assert.assertTrue;
 public class SidelineSpoutHandlerTest {
 
     private static String CONSUMER_ID_PREFIX = "VirtualSpoutPrefix";
+
+    /**
+     * Before we run that test...
+     */
+    @Before
+    public void beforeTest() {
+        // We are testing functionality with subsequent open() calls and we don't want our in memory persistence to clear out on close()
+        com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.reset();
+        com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.reset();
+    }
 
     /**
      * Test the open method properly stores the spout's config.

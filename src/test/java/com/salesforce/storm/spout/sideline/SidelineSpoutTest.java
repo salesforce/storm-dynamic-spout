@@ -48,7 +48,6 @@ import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.dynamic.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
@@ -107,12 +106,16 @@ public class SidelineSpoutTest {
      * Create a new empty namespace with randomly generated name.
      */
     @Before
-    public void beforeTest() throws InterruptedException {
+    public void beforeTest() {
         // Generate namespace name
         topicName = SidelineSpoutTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create namespace
         getKafkaTestServer().createTopic(topicName);
+
+        // We are testing functionality with subsequent open() calls and we don't want our in memory persistence to clear out on close()
+        com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.reset();
+        com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.reset();
     }
 
     /**
@@ -126,7 +129,7 @@ public class SidelineSpoutTest {
      * Call nextTuple() and we should get them out.
      */
     @Test
-    public void doTestWithSidelining() throws InterruptedException {
+    public void doTestWithSidelining() {
         // How many records to publish into kafka per go.
         final int numberOfRecordsToPublish = 3;
 
@@ -165,7 +168,8 @@ public class SidelineSpoutTest {
         ackTuples(spout, spoutEmissions);
 
         // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertTrue("Should have a single VirtualSpout instance", spout.hasVirtualSpout(firehoseIdentifier));
+        assertEquals("Should have a single VirtualSpout instance", 1, spout.getTotalVirtualSpouts());
+        assertTrue("Should have the firehose VirtualSpout instance", spout.hasVirtualSpout(firehoseIdentifier));
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -252,13 +256,6 @@ public class SidelineSpoutTest {
         // Create our config
         final Map<String, Object> config = getDefaultConfig(consumerIdPrefix);
 
-        // Use zookeeper persistence manager
-        config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
-        config.put(
-            SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
-            com.salesforce.storm.spout.sideline.persistence.ZookeeperPersistenceAdapter.class.getName()
-        );
-
         // Some mock stuff to get going
         TopologyContext topologyContext = new MockTopologyContext();
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
@@ -323,7 +320,6 @@ public class SidelineSpoutTest {
 
         // Create our spout, add references to our static trigger, and call open().
         spout = new SidelineSpout(config);
-
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // Wait 3 seconds, then verify we have a single virtual spouts running
@@ -672,18 +668,14 @@ public class SidelineSpoutTest {
      */
     private void waitForVirtualSpouts(final SidelineSpout spout, final int howManyVirtualSpoutsWeWantLeft) {
         try {
-            // TODO find better way to do this avoiding reflections
-            final Field field = DynamicSpout.class.getDeclaredField("spoutCoordinator");
-            field.setAccessible(true);
-            final SpoutCoordinator spoutCoordinator = (SpoutCoordinator) field.get(spout);
-
             await()
                 .atMost(5, TimeUnit.SECONDS)
-                .until(spoutCoordinator::getTotalSpouts, equalTo(howManyVirtualSpoutsWeWantLeft));
+                .until(spout::getTotalVirtualSpouts, equalTo(howManyVirtualSpoutsWeWantLeft));
+
             assertEquals(
                 "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
                 howManyVirtualSpoutsWeWantLeft,
-                spoutCoordinator.getTotalSpouts()
+                spout.getTotalVirtualSpouts()
             );
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -718,8 +710,6 @@ public class SidelineSpoutTest {
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
-        config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
@@ -735,8 +725,7 @@ public class SidelineSpoutTest {
 
         // Enable sideline options
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
-        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
-        config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
+
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,

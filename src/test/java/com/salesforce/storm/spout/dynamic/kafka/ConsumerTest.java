@@ -128,6 +128,10 @@ public class ConsumerTest {
 
         // Create namespace
         getKafkaTestServer().createTopic(topicName);
+
+        // We are testing functionality with subsequent open() calls and we don't want our in memory persistence to clear out on close()
+        com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter.reset();
+        com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.reset();
     }
 
     /**
