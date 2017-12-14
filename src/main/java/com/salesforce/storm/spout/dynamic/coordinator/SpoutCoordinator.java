@@ -247,7 +247,7 @@ public class SpoutCoordinator implements Runnable {
             // Wait up to MaxTerminationTime for it to finish
             final long endTime = getClock().millis() + getMaxTerminationWaitTimeMs();
             do {
-                Thread.sleep(500L);
+                Thread.sleep(100L);
                 if (spoutContext.getCompletableFuture().isDone()) {
                     // If its done, we're done!
                     return;

@@ -260,6 +260,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @param declarer The output field declarer
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
         // Handles both explicitly defined and default stream definitions.
         final String streamId = getOutputStreamId();

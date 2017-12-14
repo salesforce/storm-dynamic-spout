@@ -151,7 +151,8 @@ public class FactoryManager implements Serializable {
         }
 
         try {
-            Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);
+            @SuppressWarnings("unchecked")
+            final Class<? extends T> clazz = (Class<? extends T>) Class.forName(classStr);
             return clazz.newInstance();
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
