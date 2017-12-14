@@ -223,6 +223,7 @@ public class CuratorHelper {
             // race conditions between clients, especially when cleaning up state.
             // For more information see https://github.com/salesforce/storm-dynamic-spout/issues/92
             // Swallow and return.
+            logger.info("Requested to remove zookeeper node {} but that node did not exist.", path);
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
