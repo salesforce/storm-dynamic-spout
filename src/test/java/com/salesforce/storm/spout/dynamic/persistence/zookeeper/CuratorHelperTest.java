@@ -219,6 +219,9 @@ public class CuratorHelperTest {
         when(mockGetChildrenBuilder.forPath(eq(basePath))).thenReturn(new ArrayList<>());
         when(mockCurator.getChildren()).thenReturn(mockGetChildrenBuilder);
 
+        // When we go to delete the actual node, we toss a no-node exception.
+        // This effectively simulates a race condition between checking if the node exists (our mock above says yes)
+        // and it being removed before we call delete on it.
         final DeleteBuilder mockDeleteBuilder = mock(DeleteBuilder.class);
         when(mockDeleteBuilder.forPath(eq(basePath))).thenThrow(new KeeperException.NoNodeException());
         when(mockCurator.delete()).thenReturn(mockDeleteBuilder);
