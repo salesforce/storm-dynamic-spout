@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.9.2 (2017-12-13)
 ### Bug Fixes
-- [ISSUE-93](https://github.com/salesforce/storm-dynamic-spout/pull/93) Fix race condition while cleaning up consumer state.
+- [ISSUE-92](https://github.com/salesforce/storm-dynamic-spout/issues/92) Fix race condition while cleaning up consumer state.
 
 ## 0.9.1 (2017-12-05)
 ### Bug Fixes
