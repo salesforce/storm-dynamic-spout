@@ -38,7 +38,6 @@ import com.salesforce.storm.spout.dynamic.metrics.SpoutMetrics;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
-import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,14 +63,14 @@ public class VirtualSpout implements DelegateSpout {
     private static final Logger logger = LoggerFactory.getLogger(VirtualSpout.class);
 
     /**
-     * Holds reference to our topologyContext.
-     */
-    private final TopologyContext topologyContext;
-
-    /**
      * Holds reference to our spout configuration.
      */
     private final Map<String, Object> spoutConfig;
+
+    /**
+     * Consumer peer context.
+     */
+    private final ConsumerPeerContext consumerPeerContext;
 
     /**
      * Our Factory Manager.
@@ -150,8 +149,8 @@ public class VirtualSpout implements DelegateSpout {
      * Create a new VirtualSpout instance.
      *
      * @param virtualSpoutId Identifier for this VirtualSpout instance.
-     * @param spoutConfig Our topology config
-     * @param topologyContext Our topology context
+     * @param spoutConfig Our topology config.
+     * @param consumerPeerContext Consumer peer context.
      * @param factoryManager FactoryManager instance.
      * @param metricsRecorder MetricsRecorder instance.
      * @param startingState Where the underlying consumer should start from, Null if start from head.
@@ -160,7 +159,7 @@ public class VirtualSpout implements DelegateSpout {
     public VirtualSpout(
         final VirtualSpoutIdentifier virtualSpoutId,
         final Map<String, Object> spoutConfig,
-        final TopologyContext topologyContext,
+        final ConsumerPeerContext consumerPeerContext,
         final FactoryManager factoryManager,
         final MetricsRecorder metricsRecorder,
         final ConsumerState startingState,
@@ -168,16 +167,15 @@ public class VirtualSpout implements DelegateSpout {
     ) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(virtualSpoutId.toString()), "Consumer id cannot be null or empty!");
         Preconditions.checkNotNull(spoutConfig, "Spout configuration cannot be null!");
-        Preconditions.checkNotNull(topologyContext, "Topology context cannot be null!");
+        Preconditions.checkNotNull(consumerPeerContext, "Consumer peer context cannot be null!");
         Preconditions.checkNotNull(factoryManager, "Factory manager cannot be null!");
 
         this.virtualSpoutId = virtualSpoutId;
 
-        // Save reference to topology context
-        this.topologyContext = topologyContext;
-
         // Save an immutable clone of the config
         this.spoutConfig = Tools.immutableCopy(spoutConfig);
+
+        this.consumerPeerContext = consumerPeerContext;
 
         // Save factory manager instance
         this.factoryManager = factoryManager;
@@ -216,12 +214,6 @@ public class VirtualSpout implements DelegateSpout {
         // Create consumer dependencies
         final PersistenceAdapter persistenceAdapter = getFactoryManager().createNewPersistenceAdapterInstance();
         persistenceAdapter.open(getSpoutConfig());
-
-        // Define consumer cohort definition.
-        final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(
-            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size(),
-            topologyContext.getThisTaskIndex()
-        );
 
         // Open consumer
         consumer.open(spoutConfig, getVirtualSpoutId(), consumerPeerContext, persistenceAdapter, metricsRecorder, startingState);
@@ -533,14 +525,6 @@ public class VirtualSpout implements DelegateSpout {
 
     public Map<String, Object> getSpoutConfig() {
         return spoutConfig;
-    }
-
-    public TopologyContext getTopologyContext() {
-        return topologyContext;
-    }
-
-    public Object getSpoutConfigItem(final String key) {
-        return spoutConfig.get(key);
     }
 
     /**

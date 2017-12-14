@@ -97,9 +97,6 @@ public class VirtualSpoutTest {
         expectedTopologyConfig.put("Key2", "Value2");
         expectedTopologyConfig.put("Key3", "Value3");
 
-        // Create a mock topology context
-        final TopologyContext mockTopologyContext = new MockTopologyContext();
-
         // Create a factory manager
         final FactoryManager factoryManager = new FactoryManager(expectedTopologyConfig);
 
@@ -107,7 +104,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             expectedTopologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -116,7 +113,6 @@ public class VirtualSpoutTest {
 
         // Verify things got set
         assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
-        assertNotNull("TopologyContext should be non-null", virtualSpout.getTopologyContext());
 
         // Verify the config is correct (and not some empty map)
         assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size());
@@ -142,9 +138,6 @@ public class VirtualSpoutTest {
         expectedTopologyConfig.put("Key2", "Value2");
         expectedTopologyConfig.put("Key3", "Value3");
 
-        // Create a mock topology context
-        final TopologyContext mockTopologyContext = new MockTopologyContext();
-
         // Create a factory manager
         final FactoryManager factoryManager = new FactoryManager(expectedTopologyConfig);
 
@@ -152,7 +145,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             expectedTopologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -165,14 +158,6 @@ public class VirtualSpoutTest {
         // Verify the config is correct (and not some empty map)
         assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size());
         assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getSpoutConfig());
-
-        // Check each item
-        assertEquals("Value1", virtualSpout.getSpoutConfigItem("Key1"));
-        assertEquals("Value2", virtualSpout.getSpoutConfigItem("Key2"));
-        assertEquals("Value3", virtualSpout.getSpoutConfigItem("Key3"));
-
-        // Check a random key that doesn't exist
-        assertNull(virtualSpout.getSpoutConfigItem("Random Key"));
     }
 
     /**
@@ -190,7 +175,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
             config,
-            new MockTopologyContext(),
+            new ConsumerPeerContext(1, 0),
             new FactoryManager(config),
             new LogRecorder(),
             null,
@@ -211,7 +196,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             config,
-            new MockTopologyContext(),
+            new ConsumerPeerContext(1, 0),
             new FactoryManager(config),
             new LogRecorder(),
             null,
@@ -256,7 +241,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             metricsRecorder,
             null,
@@ -319,7 +304,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             virtualSpoutIdentifier,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             metricsRecorder,
             null,
@@ -378,7 +363,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -426,7 +411,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             null,
@@ -487,7 +472,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -554,7 +539,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -649,7 +634,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -789,7 +774,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             null,
@@ -912,7 +897,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             null,
@@ -958,7 +943,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1001,7 +986,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             null,
@@ -1045,7 +1030,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1096,7 +1081,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             null,
@@ -1144,7 +1129,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1198,7 +1183,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1244,7 +1229,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1290,7 +1275,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1341,7 +1326,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1380,7 +1365,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1425,7 +1410,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1479,7 +1464,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new SidelineVirtualSpoutIdentifier("MyConsumerId", sidelineRequestId),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             startingState,
@@ -1527,7 +1512,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new SidelineVirtualSpoutIdentifier("MyConsumerId", new SidelineRequestIdentifier("main")),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             factoryManager,
             new LogRecorder(),
             null,
@@ -1602,7 +1587,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             expectedConsumerId,
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             null,
@@ -1669,7 +1654,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             // We provide a dud of a starting state so that getConsumerState() is not called twice
@@ -1721,7 +1706,7 @@ public class VirtualSpoutTest {
         final VirtualSpout virtualSpout = new VirtualSpout(
             new DefaultVirtualSpoutIdentifier("MyConsumerId"),
             topologyConfig,
-            mockTopologyContext,
+            new ConsumerPeerContext(1, 0),
             mockFactoryManager,
             new LogRecorder(),
             ConsumerState.builder().build(),
@@ -1736,7 +1721,7 @@ public class VirtualSpoutTest {
             .builder()
             .withPartition("Test", 0, 100L)
             .build()
-        ;
+            ;
 
         virtualSpout.setEndingState(endingState);
 

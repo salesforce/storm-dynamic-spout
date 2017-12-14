@@ -29,6 +29,7 @@ import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
@@ -631,7 +632,7 @@ public class SidelineSpoutHandlerTest {
     }
 
     private VirtualSpoutFactory getVirtualSpoutFactory(final Map<String,Object> config) {
-        return new VirtualSpoutFactory(config, new MockTopologyContext(), new FactoryManager(config), new LogRecorder());
+        return new VirtualSpoutFactory(config, new ConsumerPeerContext(0, 1), new FactoryManager(config), new LogRecorder());
     }
 
     private Map<String, Object> getConfig() {

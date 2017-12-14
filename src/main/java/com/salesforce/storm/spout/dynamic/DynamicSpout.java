@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.dynamic;
 import com.google.common.base.Strings;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.coordinator.SpoutCoordinator;
 import com.salesforce.storm.spout.dynamic.coordinator.ThreadContext;
 import com.salesforce.storm.spout.dynamic.exception.SpoutAlreadyExistsException;
@@ -191,11 +192,17 @@ public class DynamicSpout extends BaseRichSpout {
         );
         spoutCoordinator.open();
 
+        // Define consumer cohort definition.
+        final ConsumerPeerContext consumerPeerContext = new ConsumerPeerContext(
+            topologyContext.getComponentTasks(topologyContext.getThisComponentId()).size(),
+            topologyContext.getThisTaskIndex()
+        );
+
         // TODO: This should be configurable and created dynamically, the problem is that right now we are still tightly
         // coupled to the VirtualSpout implementation.
         this.virtualSpoutFactory = new VirtualSpoutFactory(
             spoutConfig,
-            topologyContext,
+            consumerPeerContext,
             factoryManager,
             metricsRecorder
         );
