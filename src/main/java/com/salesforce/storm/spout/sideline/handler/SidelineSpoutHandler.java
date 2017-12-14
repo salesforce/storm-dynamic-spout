@@ -437,7 +437,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
             // Persist the side line request state with the new negated version of the steps.
             getPersistenceAdapter().persistSidelineRequestState(
-                SidelineType.RESOLVE,
+                SidelineType.RESUME,
                 id,
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
                 consumerPartition,
