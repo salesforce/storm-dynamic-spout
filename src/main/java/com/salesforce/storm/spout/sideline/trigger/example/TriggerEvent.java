@@ -53,8 +53,8 @@ public class TriggerEvent {
     private LocalDateTime updatedAt;
 
     /**
-     * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates the desired type of sideline state
-     * for the system.
+     * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates the desired type of
+     * sideline state for the system.
      *
      * When you create a TriggerEvent in Zookeeper always set processed = false, the trigger implementation will flip this to true
      * after it has been picked up and handled by the trigger. This allows you to distinguish an event that's been handled by the
