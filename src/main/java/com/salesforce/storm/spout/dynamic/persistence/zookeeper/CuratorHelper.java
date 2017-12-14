@@ -217,6 +217,12 @@ public class CuratorHelper {
                 logger.info("Removing empty path {}", path);
                 curator.delete().forPath(path);
             }
+        } catch (KeeperException.NoNodeException noNodeException) {
+            // We caught a no-node exception.  That means the node we wanted to delete didn't exist.
+            // Well, that's more or less the end result we wanted right?  Typically this may arise in certain
+            // race conditions between clients, especially when cleaning up state.
+            // For more information see https://github.com/salesforce/storm-dynamic-spout/issues/92
+            // Swallow and return.
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
