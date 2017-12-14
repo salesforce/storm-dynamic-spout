@@ -83,7 +83,7 @@ public class StaticTrigger implements SidelineTrigger {
      * Send a resolve sideline request.
      * @param request sideline request.
      */
-    public static void sendCompleteRequest(final SidelineRequest request) {
+    public static void sendResolveRequest(final SidelineRequest request) {
         StaticTrigger.sidelineController.resolve(request);
     }
 }

@@ -188,7 +188,7 @@ public class SidelineSpoutTest {
         StaticTrigger.sendResumeRequest(request);
 
         // Send a stop sideline request
-        StaticTrigger.sendCompleteRequest(request);
+        StaticTrigger.sendResolveRequest(request);
 
         // Wait for the sideline vspout to start,
         waitForVirtualSpouts(spout, 2);
@@ -338,7 +338,7 @@ public class SidelineSpoutTest {
         StaticTrigger.sendResumeRequest(request);
 
         // Send a stop sideline request
-        StaticTrigger.sendCompleteRequest(request);
+        StaticTrigger.sendResolveRequest(request);
         final SidelineVirtualSpoutIdentifier sidelineIdentifier = new SidelineVirtualSpoutIdentifier(consumerIdPrefix, request.id);
 
         // Verify 2 VirtualSpouts are running
