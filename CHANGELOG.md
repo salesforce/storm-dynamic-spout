@@ -2,14 +2,15 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 0.9.2 (####-##-##)
-- [PR=87](https://github.com/salesforce/storm-dynamic-spout/pull/87) More fair partition distribution 
-- [PR-86](https://github.com/salesforce/storm-dynamic-spout/pull/86) Sideline payload null checking
-- [PR-88](https://github.com/salesforce/storm-dynamic-spout/pull/88) Sideline payload null checking
-
 ## 0.9.2 (2017-12-13)
+
+### Improvement
+- [PR=87](https://github.com/salesforce/storm-dynamic-spout/pull/87) More fair partition distribution 
+
 ### Bug Fixes
 - [ISSUE-92](https://github.com/salesforce/storm-dynamic-spout/issues/92) Fix race condition while cleaning up consumer state.
+- [PR-86](https://github.com/salesforce/storm-dynamic-spout/pull/86) Sideline payload null checking
+- [PR-88](https://github.com/salesforce/storm-dynamic-spout/pull/88) Sideline payload null checking
 
 ## 0.9.1 (2017-12-05)
 ### Bug Fixes
