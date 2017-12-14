@@ -217,7 +217,13 @@ public class CuratorHelper {
                 logger.info("Removing empty path {}", path);
                 curator.delete().forPath(path);
             }
-        } catch (Exception e) {
+        } catch (final KeeperException.NoNodeException noNodeException) {
+            // We caught a no-node exception. That means the node we wanted to delete didn't exist.
+            // Well, that's more or less the end result we wanted right?  This happens because of a
+            // race conditions between checking if the node exists and actually removing it, some other client removed
+            // the node for us. For more information see https://github.com/salesforce/storm-dynamic-spout/issues/92
+            logger.info("Requested to remove zookeeper node {} but that node did not exist.", path);
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }

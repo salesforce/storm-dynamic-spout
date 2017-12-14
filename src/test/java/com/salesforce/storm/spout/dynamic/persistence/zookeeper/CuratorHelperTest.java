@@ -29,9 +29,15 @@ import com.google.common.base.Charsets;
 import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.DeleteBuilder;
+import org.apache.curator.framework.api.ExistsBuilder;
+import org.apache.curator.framework.api.GetChildrenBuilder;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +45,11 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Aims to provide integration testing over CuratorHelper and CuratorFactory against a 'live'
@@ -103,6 +114,123 @@ public class CuratorHelperTest {
             assertEquals("Has key 2", 2.0, resultMap.get("key2"));
             assertEquals("Has key 3", true, resultMap.get("key3"));
         }
+    }
+
+    /**
+     * Tests that if we attempt to delete a node with children, it won't delete it.
+     */
+    @Test
+    public void testDeleteNodeIfNoChildren_hasChildrenShouldNotDelete() throws Exception {
+        final String basePath = "/testDeleteNodeIfNoChildren_hasChildrenShouldNotDelete";
+        final String childPath = basePath + "/childNode";
+
+        try (final CuratorFramework curator = createCurator()) {
+            // Create basePath
+            curator
+                .create()
+                .creatingParentsIfNeeded()
+                .forPath(basePath);
+
+            // Create some child nodes
+            curator
+                .create()
+                .forPath(childPath);
+
+            // Now create our helper
+            final CuratorHelper curatorHelper = new CuratorHelper(curator);
+
+            // Call our method
+            curatorHelper.deleteNodeIfNoChildren(basePath);
+
+            // Validate child nodes still exist
+            Stat result = curator
+                .checkExists()
+                .forPath(childPath);
+            assertNotNull("Child path should exist", result);
+
+            // Validate base exists
+            result = curator
+                .checkExists()
+                .forPath(basePath);
+            assertNotNull("base path should exist", result);
+            assertEquals("Should have 1 child", 1, result.getNumChildren());
+
+            // Cleanup
+            curator
+                .delete()
+                .deletingChildrenIfNeeded()
+                .forPath(basePath);
+
+            // Validate is gone, sanity check.
+            result = curator
+                .checkExists()
+                .forPath(basePath);
+            assertNull("base path should be removed", result);
+        }
+    }
+
+    /**
+     * Tests that if we attempt to delete a node without any children, it will delete it.
+     */
+    @Test
+    public void testDeleteNodeIfNoChildren_hasNoChildrenShouldDelete() throws Exception {
+        final String basePath = "/testDeleteNodeIfNoChildren_hasNoChildrenShouldDelete";
+
+        try (final CuratorFramework curator = createCurator()) {
+            // Create basePath
+            curator
+                .create()
+                .creatingParentsIfNeeded()
+                .forPath(basePath);
+
+            // Now create our helper
+            final CuratorHelper curatorHelper = new CuratorHelper(curator);
+
+            // Call our method
+            curatorHelper.deleteNodeIfNoChildren(basePath);
+
+            // Validate is gone
+            final Stat result = curator
+                .checkExists()
+                .forPath(basePath);
+            assertNull("base path should be removed", result);
+        }
+    }
+
+    /**
+     * Tests that if we attempt to delete a node that doesnt actually exist
+     * just silently returns.
+     *
+     * To simulate a race condition we do this using mocks.
+     */
+    @Test
+    public void testDeleteNodeIfNoChildren_withNodeThatDoesntExist() throws Exception {
+        final String basePath = "/testDeleteNodeIfNoChildren_withNodeThatDoesntExist";
+
+        final CuratorFramework mockCurator = mock(CuratorFramework.class);
+
+        // Exists builder should return true saying our basePath exists.
+        final ExistsBuilder mockExistsBuilder = mock(ExistsBuilder.class);
+        when(mockExistsBuilder.forPath(eq(basePath))).thenReturn(new Stat());
+        when(mockCurator.checkExists()).thenReturn(mockExistsBuilder);
+
+        // When we look for children, make sure it returns an empty list.
+        final GetChildrenBuilder mockGetChildrenBuilder = mock(GetChildrenBuilder.class);
+        when(mockGetChildrenBuilder.forPath(eq(basePath))).thenReturn(new ArrayList<>());
+        when(mockCurator.getChildren()).thenReturn(mockGetChildrenBuilder);
+
+        // When we go to delete the actual node, we toss a no-node exception.
+        // This effectively simulates a race condition between checking if the node exists (our mock above says yes)
+        // and it being removed before we call delete on it.
+        final DeleteBuilder mockDeleteBuilder = mock(DeleteBuilder.class);
+        when(mockDeleteBuilder.forPath(eq(basePath))).thenThrow(new KeeperException.NoNodeException());
+        when(mockCurator.delete()).thenReturn(mockDeleteBuilder);
+
+        // Now create our helper
+        final CuratorHelper curatorHelper = new CuratorHelper(mockCurator);
+
+        // Call our method
+        curatorHelper.deleteNodeIfNoChildren(basePath);
     }
 
     /**
