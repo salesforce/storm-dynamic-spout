@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - [PR-86](https://github.com/salesforce/storm-dynamic-spout/pull/86) Sideline payload null checking
 - [PR-88](https://github.com/salesforce/storm-dynamic-spout/pull/88) Sideline payload null checking
 
+## 0.9.2 (2017-12-13)
+### Bug Fixes
+- [ISSUE-93](https://github.com/salesforce/storm-dynamic-spout/pull/93) Fix race condition while cleaning up consumer state.
+
 ## 0.9.1 (2017-12-05)
 ### Bug Fixes
 - [PR-85](https://github.com/salesforce/storm-dynamic-spout/pull/85) Fix ordering bug in DefaultRetryManager. Always retry the earliest messageId.
