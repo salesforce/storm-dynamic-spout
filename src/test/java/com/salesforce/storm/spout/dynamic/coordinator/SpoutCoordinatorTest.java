@@ -636,12 +636,12 @@ public class SpoutCoordinatorTest {
         final List<Message> expected = Lists.newArrayList();
 
         final MockDelegateSpout fireHoseSpout = new MockDelegateSpout();
-        final MockDelegateSpout sidelineSpout1 = new MockDelegateSpout();
-        final MockDelegateSpout sidelineSpout2 = new MockDelegateSpout();
+        final MockDelegateSpout virtualSpout1 = new MockDelegateSpout();
+        final MockDelegateSpout virtualSpout2 = new MockDelegateSpout();
 
         // Note: I set the topic here to different things largely to aide debugging the message ids later on
         final Message message1 = new Message(new MessageId("message1", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message1"));
-        final Message message2 = new Message(new MessageId("message2", 1, 1L, sidelineSpout1.getVirtualSpoutId()), new Values("message2"));
+        final Message message2 = new Message(new MessageId("message2", 1, 1L, virtualSpout1.getVirtualSpoutId()), new Values("message2"));
         final Message message3 = new Message(new MessageId("message3", 1, 1L, fireHoseSpout.getVirtualSpoutId()), new Values("message3"));
 
         final FifoBuffer buffer = FifoBuffer.createDefaultInstance();
@@ -671,8 +671,8 @@ public class SpoutCoordinatorTest {
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(spoutCoordinator::getTotalSpouts, equalTo(1));
 
         // Add Other VirtualSpouts
-        spoutCoordinator.addVirtualSpout(sidelineSpout1);
-        spoutCoordinator.addVirtualSpout(sidelineSpout2);
+        spoutCoordinator.addVirtualSpout(virtualSpout1);
+        spoutCoordinator.addVirtualSpout(virtualSpout2);
 
         logger.info("Waiting for SpoutCoordinator to detect and open() our spout instances");
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(spoutCoordinator::getTotalSpouts, equalTo(3));
@@ -683,7 +683,7 @@ public class SpoutCoordinatorTest {
         fireHoseSpout.emitQueue.add(message1);
         expected.add(message1);
 
-        sidelineSpout1.emitQueue.add(message2);
+        virtualSpout1.emitQueue.add(message2);
         expected.add(message2);
 
         fireHoseSpout.emitQueue.add(message3);
@@ -702,7 +702,7 @@ public class SpoutCoordinatorTest {
         // Wait for those to come through to the correct VirtualSpouts.
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(fireHoseSpout.ackedTupleIds::size, equalTo(1));
         await().atMost(waitTime, TimeUnit.MILLISECONDS).until(fireHoseSpout.failedTupleIds::size, equalTo(1));
-        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(sidelineSpout1.ackedTupleIds::size, equalTo(1));
+        await().atMost(waitTime, TimeUnit.MILLISECONDS).until(virtualSpout1.ackedTupleIds::size, equalTo(1));
 
         assertTrue(
             message1.getMessageId().equals(fireHoseSpout.ackedTupleIds.toArray()[0])
@@ -713,7 +713,7 @@ public class SpoutCoordinatorTest {
         );
 
         assertTrue(
-            message2.getMessageId().equals(sidelineSpout1.ackedTupleIds.toArray()[0])
+            message2.getMessageId().equals(virtualSpout1.ackedTupleIds.toArray()[0])
         );
 
         // Close spout coordinator

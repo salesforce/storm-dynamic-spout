@@ -242,7 +242,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
                 for (final String partition : partitions) {
                     consumerPartitions.add(
-                        new ConsumerPartition(namespace, Integer.valueOf(partition))
+                        new ConsumerPartition(namespace, Integer.parseInt(partition))
                     );
                 }
             }

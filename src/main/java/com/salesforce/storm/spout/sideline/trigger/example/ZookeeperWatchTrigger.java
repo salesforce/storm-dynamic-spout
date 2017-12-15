@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.sideline.trigger.example;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -165,7 +166,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
                     curator
                         .create()
                         .creatingParentsIfNeeded()
-                        .forPath(root, "".getBytes());
+                        .forPath(root, new byte[0]);
                 } else {
                     // Load the existing requests from it
                     final List<String> sidelineRequests = curator.getChildren().forPath(root);

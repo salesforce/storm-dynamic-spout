@@ -97,7 +97,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Validates that our SidelineConsumer works as we expect under various scenarios.
+ * Validates that our Kafka Consumer works as we expect under various scenarios.
  */
 @RunWith(DataProviderRunner.class)
 public class ConsumerTest {
@@ -1172,8 +1172,8 @@ public class ConsumerTest {
 
     /**
      * Produce 10 messages into a kafka topic: offsets [0-9]
-     * Setup our SidelineConsumer such that its pre-existing state says to start at offset 4
-     * Consume using the SidelineConsumer, verify we only get the last 5 messages back.
+     * Setup our Consumer such that its pre-existing state says to start at offset 4
+     * Consume using the Consumer, verify we only get the last 5 messages back.
      */
     @Test
     public void testConsumerWithInitialStateToSkipMessages() {
@@ -1344,7 +1344,7 @@ public class ConsumerTest {
     }
 
     /**
-     * This is an integration test of multiple SidelineConsumers.
+     * This is an integration test of multiple Consumers.
      * We stand up a topic with 4 partitions.
      * We then have a consumer size of 2.
      * We run the test once using consumerIndex 0
@@ -2510,7 +2510,7 @@ public class ConsumerTest {
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
 
         // Dynamic Spout config items
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/sideline-spout-test");
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/dynamic-spout-test");
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 

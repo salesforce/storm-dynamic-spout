@@ -29,7 +29,6 @@ import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.apache.storm.tuple.Values;
 import org.junit.Test;
 
@@ -98,9 +97,9 @@ public class FilterChainTest {
         );
 
         final FilterChain filterChain = new FilterChain()
-            .addStep(new SidelineRequestIdentifier("1"), new NumberFilter(2))
-            .addStep(new SidelineRequestIdentifier("2"), new NumberFilter(4))
-            .addStep(new SidelineRequestIdentifier("3"), new NumberFilter(5))
+            .addStep(new DefaultFilterChainStepIdentifier("1"), new NumberFilter(2))
+            .addStep(new DefaultFilterChainStepIdentifier("2"), new NumberFilter(4))
+            .addStep(new DefaultFilterChainStepIdentifier("3"), new NumberFilter(5))
         ;
 
         assertTrue("Message 2 should be fitlered", filterChain.filter(message2));
@@ -129,7 +128,7 @@ public class FilterChainTest {
         );
 
         final FilterChain filterChain = new FilterChain()
-            .addStep(new SidelineRequestIdentifier("1"), new NegatingFilterChainStep(new NumberFilter(2)))
+            .addStep(new DefaultFilterChainStepIdentifier("1"), new NegatingFilterChainStep(new NumberFilter(2)))
         ;
 
         assertTrue("Message 1 should be filtered", filterChain.filter(message1));

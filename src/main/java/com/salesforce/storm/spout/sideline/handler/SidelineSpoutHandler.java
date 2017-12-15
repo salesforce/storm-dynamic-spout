@@ -429,16 +429,11 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             );
 
             if (sidelinePayload == null) {
-                logger.warn("Sideline {} on partition {} payload was null, this is probably a serialization problem.");
+                logger.error("Attempting to load sideline {} for partition {} and it was null.", id, consumerPartition.partition());
                 continue;
             }
 
             logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
-
-            if (sidelinePayload == null) {
-                logger.error("Attempting to load sideline {} for partition {} and it was null.", id, consumerPartition.partition());
-                continue;
-            }
 
             if (sidelinePayload.startingOffset == null) {
                 logger.error("Loaded sideline {} for partition {} but the starting offset was null", id, consumerPartition.partition());
