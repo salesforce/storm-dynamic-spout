@@ -37,13 +37,13 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     /**
      * In memory store for this adapter's data.
      */
-    public static Map<String, Long> storedConsumerState = Maps.newHashMap();
+    public static Map<String, Long> storedConsumerState = Maps.newConcurrentMap();
 
     /**
      * Reset the internal memory store.
      */
     public static void reset() {
-        storedConsumerState = Maps.newHashMap();
+        storedConsumerState = Maps.newConcurrentMap();
     }
 
     @Override

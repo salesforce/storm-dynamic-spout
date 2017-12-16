@@ -48,13 +48,13 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     /**
      * In memory store for this adapter's data.
      */
-    public static Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests = Maps.newHashMap();
+    public static Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests = Maps.newConcurrentMap();
 
     /**
      * Reset the internal memory store.
      */
     public static void reset() {
-        storedSidelineRequests = Maps.newHashMap();
+        storedSidelineRequests = Maps.newConcurrentMap();
     }
 
     @Override
