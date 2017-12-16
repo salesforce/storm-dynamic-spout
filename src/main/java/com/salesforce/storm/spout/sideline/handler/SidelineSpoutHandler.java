@@ -351,7 +351,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void start(SidelineRequest sidelineRequest) {
-        logger.info("Received START sideline request");
+        logger.info("Received START sideline request {}", sidelineRequest.id);
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
@@ -396,6 +396,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void resume(SidelineRequest sidelineRequest) {
+        logger.info("Received RESUME sideline request {}", sidelineRequest.id);
+
         final SidelineRequestIdentifier id = sidelineRequest.id;
 
         // Get the step that was applied to the firehose
@@ -480,9 +482,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      */
     @Override
     public void resolve(SidelineRequest sidelineRequest) {
-        final SidelineRequestIdentifier id = sidelineRequest.id;
+        logger.info("Received RESOLVE sideline request {}", sidelineRequest.id);
 
-        logger.info("Received FINISH sideline request");
+        final SidelineRequestIdentifier id = sidelineRequest.id;
 
         // Remove the steps associated with this sideline request
         fireHoseSpout.getFilterChain().removeStep(id);

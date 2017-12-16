@@ -453,7 +453,7 @@ public class DynamicSpout extends BaseRichSpout {
      * @param virtualSpoutIdentifier identifier for teh {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}.
      * @return {@link DelegateSpout} instance
      */
-    public DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+    public DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
         checkSpoutOpened();
         return getSpoutCoordinator().getVirtualSpout(virtualSpoutIdentifier);
     }

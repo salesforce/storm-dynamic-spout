@@ -218,6 +218,13 @@ public class SpoutCoordinator implements Runnable {
      * @return {@link DelegateSpout} instance
      */
     public synchronized DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
+        if (!hasVirtualSpout(virtualSpoutIdentifier)) {
+            throw new SpoutDoesNotExistException(
+                "VirtualSpout " + virtualSpoutIdentifier + " does not exist in the SpoutCoordinator.",
+                virtualSpoutIdentifier
+            );
+        }
+
         return runningSpouts.get(virtualSpoutIdentifier).getSpoutRunner().getSpout();
     }
 
