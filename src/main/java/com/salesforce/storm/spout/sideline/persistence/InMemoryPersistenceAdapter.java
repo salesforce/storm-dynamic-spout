@@ -45,20 +45,24 @@ import java.util.Set;
  */
 public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
-    // "Persists" side line request states in memory.
-    private Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests;
+    /**
+     * In memory store for this adapter's data.
+     */
+    public static Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests = Maps.newConcurrentMap();
+
+    /**
+     * Reset the internal memory store.
+     */
+    public static void reset() {
+        storedSidelineRequests = Maps.newConcurrentMap();
+    }
 
     @Override
     public void open(Map spoutConfig) {
-        if (storedSidelineRequests == null) {
-            storedSidelineRequests = Maps.newHashMap();
-        }
     }
 
     @Override
     public void close() {
-        // Cleanup
-        storedSidelineRequests.clear();
     }
 
     @Override
@@ -110,19 +114,28 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
         return Collections.unmodifiableSet(partitions);
     }
 
-    private SidelineRequestStateKey getSidelineRequestStateKey(
+    /**
+     * Generate the key used for the in memory store.  Use this if you need to manipulate the store outside of the normal flow.
+     * @param id sideline request id.
+     * @param consumerPartition consumer partition.
+     * @return key for the in memory store.
+     */
+    public static SidelineRequestStateKey getSidelineRequestStateKey(
         final SidelineRequestIdentifier id,
         final ConsumerPartition consumerPartition
     ) {
         return new SidelineRequestStateKey(id, consumerPartition);
     }
 
-    private static class SidelineRequestStateKey {
+    /**
+     * Object used for keying the memory store.
+     */
+    public static class SidelineRequestStateKey {
 
         public final SidelineRequestIdentifier id;
         public final ConsumerPartition consumerPartition;
 
-        SidelineRequestStateKey(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
+        private SidelineRequestStateKey(final SidelineRequestIdentifier id, final ConsumerPartition consumerPartition) {
             this.id = id;
             this.consumerPartition = consumerPartition;
         }

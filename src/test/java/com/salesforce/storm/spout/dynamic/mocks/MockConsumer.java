@@ -53,7 +53,6 @@ public class MockConsumer implements Consumer {
     public static String topic = "MyTopic";
     public static List<Integer> partitions = Collections.singletonList(1);
 
-    private PersistenceAdapter persistenceAdapter;
     private VirtualSpoutIdentifier activeVirtualSpoutIdentifier;
 
     @Override
@@ -65,7 +64,6 @@ public class MockConsumer implements Consumer {
         MetricsRecorder metricsRecorder,
         ConsumerState startingState
     ) {
-        this.persistenceAdapter = persistenceAdapter;
         this.activeVirtualSpoutIdentifier = virtualSpoutIdentifier;
 
         // Create empty queue.
@@ -153,7 +151,8 @@ public class MockConsumer implements Consumer {
      */
     public static void injectRecords(
         final VirtualSpoutIdentifier virtualSpoutIdentifier,
-        final Collection<Record> injectedRecords) {
+        final Collection<Record> injectedRecords
+    ) {
         synchronized (MockConsumer.class) {
             if (!recordHolder.containsKey(virtualSpoutIdentifier)) {
                 recordHolder.put(virtualSpoutIdentifier, new LinkedBlockingQueue<>(10_000));
