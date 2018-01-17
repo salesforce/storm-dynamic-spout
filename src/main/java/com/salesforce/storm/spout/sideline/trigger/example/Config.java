@@ -49,7 +49,7 @@ public class Config {
     public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_class";
 
     /**
-     * (List<String>) Holds a list of Zookeeper server Hostnames + Ports in the following format:
+     * (List[String]) Holds a list of Zookeeper server Hostnames + Ports in the following format:
      * ["zkhost1:2181", "zkhost2:2181", ...]
      */
     @ConfigDocumentation(
@@ -60,7 +60,7 @@ public class Config {
     public static final String ZK_SERVERS = "sideline.zookeeper_watch_trigger.servers";
 
     /**
-     * (List<String></String>) Defines the root paths to watch for events under.
+     * (List[String]) Defines the root paths to watch for events under.
      * Example: "/sideline-trigger"
      */
     @ConfigDocumentation(
