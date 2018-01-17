@@ -61,7 +61,7 @@ public class TriggerEvent {
      * trigger and one that has not.
      *
      * @param type sideline type.
-     * @param data data bag, key => values.
+     * @param data data bag of key value pairs.
      * @param createdAt when the event was created.
      * @param createdBy who created the event.
      * @param description a description of the reason for the sideline request.
