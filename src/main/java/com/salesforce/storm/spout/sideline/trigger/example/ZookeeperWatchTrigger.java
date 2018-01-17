@@ -230,7 +230,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
     }
 
     /**
-     * Using a trigger event process a START/STOP sideline request.
+     * Using a trigger event process a sideline request.
      * @param triggerEvent trigger event.
      */
     private void handleSidelining(final String path, final TriggerEvent triggerEvent) {
@@ -258,12 +258,17 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
 
         if (triggerEvent.getType().equals(SidelineType.START)) {
             logger.info("Starting sideline request {} from event {}", sidelineRequest, triggerEvent);
-            sidelineController.startSidelining(sidelineRequest);
+            sidelineController.start(sidelineRequest);
         }
 
-        if (triggerEvent.getType().equals(SidelineType.STOP)) {
+        if (triggerEvent.getType().equals(SidelineType.RESUME)) {
+            logger.info("Starting sideline request {} from event {}", sidelineRequest, triggerEvent);
+            sidelineController.resume(sidelineRequest);
+        }
+
+        if (triggerEvent.getType().equals(SidelineType.RESOLVE)) {
             logger.info("Stopping sideline request {} from event {}", sidelineRequest, triggerEvent);
-            sidelineController.stopSidelining(sidelineRequest);
+            sidelineController.resolve(sidelineRequest);
         }
 
         // Write the trigger event back to its path and flip the processed bit to true
@@ -273,7 +278,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             triggerEvent.getCreatedAt(),
             triggerEvent.getCreatedBy(),
             triggerEvent.getDescription(),
-            // Explicit set this as processed
+            // Explicitly set this as processed
             true,
             // Update the updated at date to right now
             LocalDateTime.now()

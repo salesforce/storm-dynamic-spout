@@ -35,7 +35,6 @@ import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.dynamic.VirtualSpout;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
@@ -83,11 +82,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * The Spout configuration map.
      */
     private Map<String, Object> spoutConfig;
-
-    /**
-     * The Topology Context object.
-     */
-    private TopologyContext topologyContext;
 
     /**
      * Timer for periodically checking the state of the VirtualSpouts being managed.
@@ -186,7 +180,6 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
         final TopologyContext topologyContext
     ) {
         this.spout = spout;
-        this.topologyContext = topologyContext;
 
         createSidelineTriggers();
 
@@ -268,7 +261,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
                 startingStateBuilder.withPartition(partition, payload.startingOffset);
 
-                // We only have an ending offset on STOP requests
+                // We do not necessarily have an ending offset, it all depends where we are at in the sideline lifecycle
                 if (payload.endingOffset != null) {
                     endingStateStateBuilder.withPartition(partition, payload.endingOffset);
                 }
@@ -285,9 +278,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 continue;
             }
 
-            // Resuming a start request means we apply the previous filter chain to the fire hose
-            if (payload.type.equals(SidelineType.START)) {
-                logger.info("Resuming START sideline {} {}", payload.id, payload.request.step);
+            // Loading a request in these states means we apply the previous filter chain to the fire hose
+            if (payload.type.equals(SidelineType.START) || payload.type.equals(SidelineType.RESUME)) {
+                logger.info("Handling {} request for sideline {} {}", payload.type, payload.id, payload.request.step);
 
                 // Only add the step if the id isn't already in the chain.  Note that we do NOT check for the step here, it's possible
                 // though very unusual to have the exact same step used in different requests. While that's silly, we don't want to choke
@@ -300,8 +293,10 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 }
             }
 
-            // Resuming a stopped request means we spin up a new sideline spout
-            if (payload.type.equals(SidelineType.STOP)) {
+            // Loading a request in these states means we spin up a new sideline spout
+            if (payload.type.equals(SidelineType.RESUME) || payload.type.equals(SidelineType.RESOLVE)) {
+                logger.info("Handling {} request for sideline {} {}", payload.type, payload.id, payload.request.step);
+
                 // This method will check to see that the VirtualSpout isn't already in the SpoutCoordinator before adding it
                 addSidelineVirtualSpout(
                     payload.id,
@@ -344,16 +339,19 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
      * @param sidelineRequest sideline request.
      * @return true it does, false it does not.
      */
-    public boolean isSidelineStarted(SidelineRequest sidelineRequest) {
+    @Override
+    public boolean isStarted(SidelineRequest sidelineRequest) {
         return fireHoseSpout.getFilterChain().hasStep(sidelineRequest.id);
     }
 
     /**
-     * Starts a sideline request.
-     * @param sidelineRequest representation of the request that is being started.
+     * Start processing on the firehose for a future sideline.
+     *
+     * @param sidelineRequest sideline request.
      */
-    public void startSidelining(SidelineRequest sidelineRequest) {
-        logger.info("Received START sideline request");
+    @Override
+    public void start(SidelineRequest sidelineRequest) {
+        logger.info("Received START sideline request {}", sidelineRequest.id);
 
         // Store the offset that this request was made at, when the sideline stops we will begin processing at
         // this offset
@@ -379,49 +377,40 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     }
 
     /**
-     * Does a sideline exist in the stopped state?
+     * To be in the resumed state, does the {@link SidelineRequest} have a {@link com.salesforce.storm.spout.dynamic.VirtualSpout}
+     * for it's window and a {@link FilterChainStep} on the firehose?
+
      * @param sidelineRequest sideline request.
      * @return true it has, false it has not.
      */
-    public boolean isSidelineStopped(SidelineRequest sidelineRequest) {
+    @Override
+    public boolean isResumed(SidelineRequest sidelineRequest) {
         return spout.hasVirtualSpout(
             generateSidelineVirtualSpoutId(sidelineRequest.id)
-        );
+        ) && fireHoseSpout.getFilterChain().hasStep(sidelineRequest.id);
     }
 
     /**
-     * Stops a sideline request.
-     * @param sidelineRequest A representation of the request that is being stopped
+     * Resumes processing of messages that were sidelined.
+     * @param sidelineRequest sideline request.
      */
-    public void stopSidelining(SidelineRequest sidelineRequest) {
-        final SidelineRequestIdentifier id = (SidelineRequestIdentifier) fireHoseSpout.getFilterChain().findStep(sidelineRequest.step);
+    @Override
+    public void resume(SidelineRequest sidelineRequest) {
+        logger.info("Received RESUME sideline request {}", sidelineRequest.id);
 
-        if (id == null) {
-            logger.error(
-                "Received STOP sideline request, but I don't actually have any filter chain steps for it! Make sure "
-                + "you check that your filter implements an equals() method. {} {}",
-                sidelineRequest.step,
-                fireHoseSpout.getFilterChain().getSteps()
-            );
-            return;
-        }
+        final SidelineRequestIdentifier id = sidelineRequest.id;
 
-        logger.info("Received STOP sideline request");
+        // Get the step that was applied to the firehose
+        final FilterChainStep step = fireHoseSpout.getFilterChain().getStep(id);
 
-        // Remove the steps associated with this sideline request
-        final FilterChainStep step = fireHoseSpout.getFilterChain().removeStep(id);
         // Create a negated version of the step we just pulled from the firehose
         final FilterChainStep negatedStep = new NegatingFilterChainStep(step);
-
-        // This is the state that the VirtualSpout should end with
-        final ConsumerState endingState = getFireHoseCurrentState();
 
         // We'll construct a consumer state from the various partition data stored for this sideline request
         final ConsumerState.ConsumerStateBuilder startingStateBuilder = ConsumerState.builder();
 
-        // We are looping over the current partitions for the firehose, functionally this is the collection of partitions
-        // assigned to this particular sideline spout instance
-        for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
+        // We are looping over the current partitions for the firehose
+        for (final ConsumerPartition consumerPartition : fireHoseSpout.getCurrentState().getConsumerPartitions()) {
             // This is the state that the VirtualSpout should start with
             final SidelinePayload sidelinePayload = retrieveSidelinePayload(
                 id,
@@ -445,12 +434,12 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
             // Persist the side line request state with the new negated version of the steps.
             getPersistenceAdapter().persistSidelineRequestState(
-                SidelineType.STOP,
+                SidelineType.RESUME,
                 id,
                 new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
                 consumerPartition,
                 sidelinePayload.startingOffset,
-                endingState.getOffsetForNamespaceAndPartition(consumerPartition)
+                null
             );
         }
 
@@ -461,11 +450,81 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             id,
             negatedStep,
             startingState,
-            endingState
+            null
         );
 
         // Update stop countBy metric
-        spout.getMetricsRecorder().count(SidelineMetrics.STOP);
+        spout.getMetricsRecorder().count(SidelineMetrics.RESUME);
+    }
+
+    /**
+     * To be in the completing state, does the {@link SidelineRequest} have a {@link com.salesforce.storm.spout.dynamic.VirtualSpout}
+     * for it's window and a {@link FilterChainStep} absent from the firehose?
+     *
+     * @param sidelineRequest sideline request.
+     * @return true it has, false it has not.
+     */
+    @Override
+    public boolean isResolving(SidelineRequest sidelineRequest) {
+        return spout.hasVirtualSpout(
+            generateSidelineVirtualSpoutId(sidelineRequest.id)
+        ) &&  !fireHoseSpout.getFilterChain().hasStep(sidelineRequest.id);
+    }
+
+    /**
+     * Completes processing of messages that have been resumed.
+     * @param sidelineRequest sideline request.
+     */
+    @Override
+    public void resolve(SidelineRequest sidelineRequest) {
+        logger.info("Received RESOLVE sideline request {}", sidelineRequest.id);
+
+        final SidelineRequestIdentifier id = sidelineRequest.id;
+
+        // Remove the steps associated with this sideline request
+        fireHoseSpout.getFilterChain().removeStep(id);
+
+        final ConsumerState endingState = fireHoseSpout.getCurrentState();
+
+        // Identifier based off of the id of the sideline request
+        final VirtualSpoutIdentifier virtualSpoutIdentifier = generateSidelineVirtualSpoutId(id);
+
+        // If we can't find this VirtualSpout we should bail and not proceed any further.
+        if (!spout.hasVirtualSpout(virtualSpoutIdentifier)) {
+            logger.error("SidelineRequest to resolve {} was made, but the correspond VirtualSpout does not exist.", sidelineRequest.id);
+            return;
+        }
+
+        // Once the filter chain has been removed from the firehose, mark our sideline with an ending offset
+        spout.getVirtualSpout(generateSidelineVirtualSpoutId(id)).setEndingState(endingState);
+
+        // We are looping over the current partitions for the firehose
+        for (final ConsumerPartition consumerPartition : endingState.getConsumerPartitions()) {
+            // This is the state that the VirtualSpout should start with
+            final SidelinePayload sidelinePayload = retrieveSidelinePayload(
+                id,
+                consumerPartition
+            );
+
+            if (sidelinePayload == null) {
+                logger.warn("Sideline {} on partition {} payload was null, this is probably a serialization problem.");
+                continue;
+            }
+
+            logger.info("Loaded sideline payload for {} = {}", consumerPartition, sidelinePayload);
+
+            // Update the sideline request with our ending offset
+            getPersistenceAdapter().persistSidelineRequestState(
+                SidelineType.RESOLVE,
+                id,
+                sidelinePayload.request,
+                consumerPartition,
+                sidelinePayload.startingOffset,
+                endingState.getOffsetForNamespaceAndPartition(consumerPartition)
+            );
+        }
+
+        spout.getMetricsRecorder().count(SidelineMetrics.RESOLVE);
     }
 
     /**

@@ -139,14 +139,14 @@ public class ZookeeperWatchTriggerTest {
         await()
             .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());
 
-        Mockito.verify(sidelineSpoutHandler).startSidelining(
+        Mockito.verify(sidelineSpoutHandler).start(
             findSidelineRequest("start", trigger.getSidelineRequests())
         );
 
         final Map<String,Object> stopData = new HashMap<>();
         stopData.put("id", "stop");
         final TriggerEvent stopTriggerEvent = new TriggerEvent(
-            SidelineType.STOP,
+            SidelineType.RESOLVE,
             stopData,
             LocalDateTime.now(),
             CREATED_BY,
@@ -169,7 +169,7 @@ public class ZookeeperWatchTriggerTest {
         await()
             .until(() -> findSidelineRequest("stop", trigger.getSidelineRequests()), notNullValue());
 
-        Mockito.verify(sidelineSpoutHandler).stopSidelining(
+        Mockito.verify(sidelineSpoutHandler).resolve(
             findSidelineRequest("stop", trigger.getSidelineRequests())
         );
 
@@ -252,7 +252,7 @@ public class ZookeeperWatchTriggerTest {
         final Map<String,Object> stopData = new HashMap<>();
         stopData.put("id", "stop");
         final TriggerEvent stopTriggerEvent = new TriggerEvent(
-            SidelineType.STOP,
+            SidelineType.RESOLVE,
             stopData,
             LocalDateTime.now(),
             CREATED_BY,
@@ -282,14 +282,14 @@ public class ZookeeperWatchTriggerTest {
         await()
             .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());
 
-        Mockito.verify(sidelineSpoutHandler).startSidelining(
+        Mockito.verify(sidelineSpoutHandler).start(
             findSidelineRequest("start", trigger.getSidelineRequests())
         );
 
         await()
             .until(() -> findSidelineRequest("stop", trigger.getSidelineRequests()), notNullValue());
 
-        Mockito.verify(sidelineSpoutHandler).stopSidelining(
+        Mockito.verify(sidelineSpoutHandler).resolve(
             findSidelineRequest("stop", trigger.getSidelineRequests())
         );
 

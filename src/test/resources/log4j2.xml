@@ -39,6 +39,11 @@
             <AppenderRef ref="File"/>
         </Logger>
 
+        <Logger name="com.salesforce.storm.spout.sideline">
+            <AppenderRef ref="Console" level="ERROR"/>
+            <AppenderRef ref="File" level="INFO"/>
+        </Logger>
+
         <!-- Define our loggers -->
         <Root level="INFO">
             <!-- Only Errors go to console, except for the specific classpaths defined above -->

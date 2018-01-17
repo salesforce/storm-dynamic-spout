@@ -76,7 +76,7 @@ public class SidelineVirtualSpoutHandlerTest {
 
         // Persist some stopping requests that we cleanup upon completion
         sidelineVirtualSpoutHandler.getPersistenceAdapter().persistSidelineRequestState(
-            SidelineType.STOP,
+            SidelineType.RESOLVE,
             sidelineRequestIdentifier,
             sidelineRequest,
             new ConsumerPartition(namespace, 0), // partition

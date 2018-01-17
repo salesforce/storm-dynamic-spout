@@ -33,8 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates whether or not a START or STOP
- * request should be processed.
+ * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates the desired type of sideline state
+ * for the system.
  */
 public class TriggerEvent {
 
@@ -53,15 +53,15 @@ public class TriggerEvent {
     private LocalDateTime updatedAt;
 
     /**
-     * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates whether or not a START or STOP
-     * request should be processed.
+     * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates the desired type of
+     * sideline state for the system.
      *
      * When you create a TriggerEvent in Zookeeper always set processed = false, the trigger implementation will flip this to true
      * after it has been picked up and handled by the trigger. This allows you to distinguish an event that's been handled by the
      * trigger and one that has not.
      *
-     * @param type sideline type, either start of stop.
-     * @param data data bag, maps keys to values.
+     * @param type sideline type.
+     * @param data data bag, key => values.
      * @param createdAt when the event was created.
      * @param createdBy who created the event.
      * @param description a description of the reason for the sideline request.

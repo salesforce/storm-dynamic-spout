@@ -64,18 +64,26 @@ public class StaticTrigger implements SidelineTrigger {
     }
 
     /**
-     * Start a sideline request.
+     * Send a start sideline request.
      * @param request sideline request.
      */
     public static void sendStartRequest(final SidelineRequest request) {
-        StaticTrigger.sidelineController.startSidelining(request);
+        StaticTrigger.sidelineController.start(request);
     }
 
     /**
-     * Stop a sideline request.
+     * Send a resume sideline request.
      * @param request sideline request.
      */
-    public static void sendStopRequest(final SidelineRequest request) {
-        StaticTrigger.sidelineController.stopSidelining(request);
+    public static void sendResumeRequest(final SidelineRequest request) {
+        StaticTrigger.sidelineController.resume(request);
+    }
+
+    /**
+     * Send a resolve sideline request.
+     * @param request sideline request.
+     */
+    public static void sendResolveRequest(final SidelineRequest request) {
+        StaticTrigger.sidelineController.resolve(request);
     }
 }

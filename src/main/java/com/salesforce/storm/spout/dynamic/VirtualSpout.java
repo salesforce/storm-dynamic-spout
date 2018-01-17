@@ -486,9 +486,9 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * Set the ending state of the {@link DelegateSpout}.for when it should be marked as complete.
+     * Set the ending state of the {@link DelegateSpout} for when it should finish consuming.
      *
-     * @param endingState ending consumer state for when the {@link DelegateSpout} should be marked as complete.
+     * @param endingState ending consumer state for when the {@link DelegateSpout} should finish consuming.
      */
     @Override
     public void setEndingState(final ConsumerState endingState) {

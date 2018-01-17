@@ -26,10 +26,12 @@
 package com.salesforce.storm.spout.sideline.handler;
 
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
+import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpout;
@@ -56,9 +58,11 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
@@ -163,7 +167,7 @@ public class SidelineSpoutHandlerTest {
         );
         // Make a stopping request that we expect to resume
         persistenceAdapter.persistSidelineRequestState(
-            SidelineType.STOP,
+            SidelineType.RESOLVE,
             stopRequestId,
             stopRequest,
             new ConsumerPartition(namespace, 1),
@@ -200,7 +204,7 @@ public class SidelineSpoutHandlerTest {
     }
 
     /**
-     * Test that when start sidelining is called the firehose gets a new filter from the sideline request.
+     * Test that when a sideline is started the firehose gets a new filter from the sideline request.
      */
     @Test
     public void testStartSidelining() {
@@ -228,11 +232,11 @@ public class SidelineSpoutHandlerTest {
         MockConsumer.partitions = Arrays.asList(0, 5);
 
         // Finally, start a sideline with out given request
-        sidelineSpoutHandler.startSidelining(startRequest);
+        sidelineSpoutHandler.start(startRequest);
 
         assertTrue(
             "Sideline should be started",
-            sidelineSpoutHandler.isSidelineStarted(startRequest)
+            sidelineSpoutHandler.isStarted(startRequest)
         );
 
         // Make sure we have a firehose
@@ -265,20 +269,124 @@ public class SidelineSpoutHandlerTest {
         // close things out.
         sidelineSpoutHandler.close();
         spout.close();
+
+        // Put this back to our default
+        MockConsumer.partitions = Arrays.asList(1);
     }
 
     /**
-     * Test that when a sideline is stopped, the filter is removed from the firehose and a virtual spout
-     * is spun up with the negated filter and correct offsets.
+     * Test resuming a sideline.
      */
     @Test
-    public void testStopSidelining() {
+    public void testResumeSidelining() {
+        final Map<String, Object> config = getConfig();
+
+        final String namespace = MockConsumer.topic;
+        // Wondering why 1? Checkout the MockConsumer and the partitions that it starts with.
+        final int partitionId = 1;
+
+        final StaticMessageFilter filter = new StaticMessageFilter();
+        final SidelineRequestIdentifier requestId = new SidelineRequestIdentifier("SidelineRequest");
+        final SidelineRequest request = new SidelineRequest(requestId, filter);
+
+        final DynamicSpout spout = new DynamicSpout(config);
+        spout.open(null, new MockTopologyContext(), null);
+
+        final VirtualSpoutFactory virtualSpoutFactory = getVirtualSpoutFactory(config);
+
+        final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
+        sidelineSpoutHandler.open(config, virtualSpoutFactory);
+
+        final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
+
+        // Note that we are doing this AFTER the spout has opened because we are NOT testing the resume logic
+        persistenceAdapter.persistSidelineRequestState(
+            SidelineType.START,
+            requestId,
+            request,
+            new ConsumerPartition(namespace, partitionId),
+            1L, // starting offset
+            null // ending offset
+        );
+
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
+
+        // In case stuff opens up really fast, we want to wait until the VirtualSpout has a current state before
+        // attempting to resolve a sideline.
+        await()
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> sidelineSpoutHandler.getFireHoseSpout().getCurrentState(), notNullValue());
+
+        sidelineSpoutHandler.resume(request);
+
+        assertTrue(
+            "Sideline should be in the resume state",
+            sidelineSpoutHandler.isResumed(request)
+        );
+
+        assertEquals(
+            "We should have two virtual spouts, the fire hose and the sideline",
+            2,
+            spout.getTotalVirtualSpouts()
+        );
+
+        assertEquals(
+            "Firehose should still have it's filter for the tenant being sidelined",
+            1,
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+        );
+
+        final DelegateSpout sidelineVirtualSpout = spout.getVirtualSpout(new SidelineVirtualSpoutIdentifier(CONSUMER_ID_PREFIX, requestId));
+
+        assertNotNull(
+            "We should have a virtual spout for the sideline",
+            sidelineVirtualSpout
+        );
+
+        assertEquals(
+            "Sideline spout should have one filter",
+            1,
+            sidelineVirtualSpout.getFilterChain().getSteps().size()
+        );
+
+        assertEquals(
+            "The negation of the firehose's filter should be the filter on the sideline spout",
+            new NegatingFilterChainStep(sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getStep(requestId)),
+            sidelineVirtualSpout.getFilterChain().getStep(requestId)
+        );
+
+        final SidelinePayload sidelinePayload = persistenceAdapter.retrieveSidelineRequest(
+            requestId,
+            new ConsumerPartition(namespace, partitionId)
+        );
+
+        assertEquals("Sideline type should match", SidelineType.RESUME, sidelinePayload.type);
+        assertEquals("Sideline request id should match", request.id, sidelinePayload.id);
+        assertEquals(
+            "Sideline payload should have a negated copy of the request filter step",
+            new NegatingFilterChainStep(request.step),
+            sidelinePayload.request.step
+        );
+        assertEquals("Sideline starting offset should be at 1", Long.valueOf(1L), sidelinePayload.startingOffset);
+        assertNull("Sideline ending offset should not be set", sidelinePayload.endingOffset);
+
+        // Close everything up
+        sidelineSpoutHandler.close();
+        spout.close();
+    }
+
+    /**
+     * Test that when a sideline is resolved, the filter is removed from the firehose and the virtual spout is provided with an
+     * ending offset.
+     */
+    @Test
+    public void testResolveSidelining() {
         final Map<String, Object> config = getConfig();
 
         final String namespace = MockConsumer.topic;
 
         final SidelineRequestIdentifier stopRequestId = new SidelineRequestIdentifier("StopRequest");
-        final StaticMessageFilter stopFilter = new StaticMessageFilter();
+        final FilterChainStep stopFilter = new NegatingFilterChainStep(new StaticMessageFilter());
         final SidelineRequest stopRequest = new SidelineRequest(stopRequestId, stopFilter);
 
         final DynamicSpout spout = new DynamicSpout(config);
@@ -291,12 +399,10 @@ public class SidelineSpoutHandlerTest {
 
         final PersistenceAdapter persistenceAdapter = sidelineSpoutHandler.getPersistenceAdapter();
 
-        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
-
         // Persist our stop request as a start, so that when we stop it, it can be found
         // Note that we are doing this AFTER the spout has opened because we are NOT testing the resume logic
         persistenceAdapter.persistSidelineRequestState(
-            SidelineType.START,
+            SidelineType.RESUME,
             stopRequestId,
             stopRequest,
             new ConsumerPartition(namespace, 0),
@@ -304,7 +410,7 @@ public class SidelineSpoutHandlerTest {
             null // ending offset
         );
         persistenceAdapter.persistSidelineRequestState(
-            SidelineType.START,
+            SidelineType.RESUME,
             stopRequestId,
             stopRequest,
             new ConsumerPartition(namespace, 5),
@@ -312,18 +418,23 @@ public class SidelineSpoutHandlerTest {
             null // ending offset
         );
 
-        // Stick the filter onto the fire hose, it should be removed when we stop the sideline request
-        sidelineSpoutHandler.getFireHoseSpout().getFilterChain().addStep(stopRequestId, stopFilter);
+        sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
+
+        // In case stuff opens up really fast, we want to wait until the VirtualSpout has a current state before
+        // attempting to resolve a sideline.
+        await()
+            .atMost(5, TimeUnit.SECONDS)
+            .until(() -> sidelineSpoutHandler.getFireHoseSpout().getCurrentState(), notNullValue());
 
         // Tell our mock consumer that these are the partitions we're working with
         MockConsumer.partitions = Arrays.asList(0, 5);
 
         // Finally, start a sideline with out given request
-        sidelineSpoutHandler.stopSidelining(stopRequest);
+        sidelineSpoutHandler.resolve(stopRequest);
 
         assertTrue(
             "Sideline should be stopped",
-            sidelineSpoutHandler.isSidelineStopped(stopRequest)
+            sidelineSpoutHandler.isResolving(stopRequest)
         );
 
         // Firehose no longer has any filters
@@ -334,23 +445,26 @@ public class SidelineSpoutHandlerTest {
 
         final SidelinePayload partition0 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, new ConsumerPartition(namespace, 0));
 
-        assertEquals(SidelineType.STOP, partition0.type);
+        assertEquals(SidelineType.RESOLVE, partition0.type);
         assertEquals(stopRequestId, partition0.id);
-        assertEquals(new NegatingFilterChainStep(stopRequest.step), partition0.request.step);
+        assertEquals(stopRequest.step, partition0.request.step);
         assertEquals(Long.valueOf(1L), partition0.startingOffset);
         assertEquals(Long.valueOf(1L), partition0.endingOffset);
 
         final SidelinePayload partition5 = persistenceAdapter.retrieveSidelineRequest(stopRequestId, new ConsumerPartition(namespace, 5));
 
-        assertEquals(SidelineType.STOP, partition5.type);
+        assertEquals(SidelineType.RESOLVE, partition5.type);
         assertEquals(stopRequestId, partition5.id);
-        assertEquals(new NegatingFilterChainStep(stopRequest.step), partition5.request.step);
+        assertEquals(stopRequest.step, partition5.request.step);
         assertEquals(Long.valueOf(3L), partition5.startingOffset);
         assertEquals(Long.valueOf(1L), partition5.endingOffset);
 
         // close things out.
         sidelineSpoutHandler.close();
         spout.close();
+
+        // Put this back to normal
+        MockConsumer.partitions = Arrays.asList(1);
     }
 
     /**
@@ -502,7 +616,7 @@ public class SidelineSpoutHandlerTest {
         );
         // Make a stopping request that we expect to be loaded
         persistenceAdapter.persistSidelineRequestState(
-            SidelineType.STOP,
+            SidelineType.RESOLVE,
             stopRequestId,
             stopRequest,
             new ConsumerPartition(namespace, 1),
