@@ -46,7 +46,7 @@ public class Config {
         description = "Class name for the class of the FilterChainStepBuilder instance.",
         type = String.class
     )
-    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_cass";
+    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_class";
 
     /**
      * (List[String) Holds a list of Zookeeper server Hostnames + Ports in the following format:
@@ -71,7 +71,7 @@ public class Config {
         description = "Defines the root path to watch for events under. Example: \"/sideline-trigger\"",
         type = String.class
     )
-    public static final String ZK_ROOTS = "sideline.zookeeper_watch_trigger.roost";
+    public static final String ZK_ROOTS = "sideline.zookeeper_watch_trigger.root";
 
     /**
      * (Integer) Zookeeper session timeout.
