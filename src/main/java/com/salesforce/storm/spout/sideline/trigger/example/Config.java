@@ -46,13 +46,11 @@ public class Config {
         description = "Class name for the class of the FilterChainStepBuilder instance.",
         type = String.class
     )
-    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_cass";
+    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_class";
 
     /**
-     * (List[String) Holds a list of Zookeeper server Hostnames + Ports in the following format:
+     * (List[String]) Holds a list of Zookeeper server Hostnames + Ports in the following format:
      * ["zkhost1:2181", "zkhost2:2181", ...]
-     *
-     * Optional - Only required if you use the Zookeeper persistence implementation.
      */
     @ConfigDocumentation(
         description = "Holds a list of Zookeeper server Hostnames + Ports in the following format: "
@@ -62,16 +60,14 @@ public class Config {
     public static final String ZK_SERVERS = "sideline.zookeeper_watch_trigger.servers";
 
     /**
-     * (String) Defines the root path to watch for events under.
-     * Example: "/consumer-state"
-     *
-     * Optional - Only required if you use the Zookeeper persistence implementation.
+     * (List[String]) Defines the root paths to watch for events under.
+     * Example: "/sideline-trigger"
      */
     @ConfigDocumentation(
-        description = "Defines the root path to watch for events under. Example: \"/sideline-trigger\"",
-        type = String.class
+        description = "Defines the root paths to watch for events under. Example: \"/sideline-trigger\"",
+        type = List.class
     )
-    public static final String ZK_ROOTS = "sideline.zookeeper_watch_trigger.roost";
+    public static final String ZK_ROOTS = "sideline.zookeeper_watch_trigger.roots";
 
     /**
      * (Integer) Zookeeper session timeout.

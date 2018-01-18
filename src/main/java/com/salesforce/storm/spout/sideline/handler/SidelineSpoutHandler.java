@@ -126,7 +126,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
 
         isOpen = true;
 
-        this.spoutConfig = spoutConfig;
+        this.spoutConfig = Collections.unmodifiableMap(SidelineConfig.setDefaults(spoutConfig));
 
         final String persistenceAdapterClass = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ADAPTER_CLASS);
 
