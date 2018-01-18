@@ -64,4 +64,30 @@ public class Utf8StringDeserializerTest {
         assertEquals("Got expected key", expectedKey, deserializedValues.get(0));
         assertEquals("Got expected value", expectedValue, deserializedValues.get(1));
     }
+
+    /**
+     * Validate that when a message has a null key it doesn't end violently with a NPE.
+     */
+    @Test
+    public void testDeserializeWithNullKey() {
+        final byte[] expectedKey = null;
+        final String expectedValue = "Value";
+        final String expectedTopic = "MyTopic";
+        final int expectedPartition = 34;
+        final long expectedOffset = 31337L;
+
+        // Attempt to deserialize.
+        final Deserializer deserializer = new Utf8StringDeserializer();
+        final Values deserializedValues = deserializer.deserialize(
+            expectedTopic,
+            expectedPartition,
+            expectedOffset,
+            expectedKey,
+            expectedValue.getBytes(Charsets.UTF_8)
+        );
+
+        assertEquals("Values has 2 entries", 2, deserializedValues.size());
+        assertEquals("Got expected key", expectedKey, deserializedValues.get(0));
+        assertEquals("Got expected value", expectedValue, deserializedValues.get(1));
+    }
 }
