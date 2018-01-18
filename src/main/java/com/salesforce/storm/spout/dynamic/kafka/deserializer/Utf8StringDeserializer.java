@@ -35,6 +35,11 @@ public class Utf8StringDeserializer implements Deserializer {
 
     @Override
     public Values deserialize(String topic, int partition, long offset, byte[] key, byte[] value) {
+        // If the value is null we wholesale abandon and don't return anything.
+        if (value == null) {
+            return null;
+        }
+
         return new Values(
             // Kafka messages can have null keys.
             key == null ? null : new String(key, Charsets.UTF_8),
