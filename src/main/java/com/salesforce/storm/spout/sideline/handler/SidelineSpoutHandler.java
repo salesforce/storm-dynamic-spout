@@ -297,12 +297,16 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             if (payload.type.equals(SidelineType.RESUME) || payload.type.equals(SidelineType.RESOLVE)) {
                 logger.info("Handling {} request for sideline {} {}", payload.type, payload.id, payload.request.step);
 
+                final ConsumerState startingState = startingStateBuilder.build();
+                final ConsumerState endingState = endingStateStateBuilder.build();
+
                 // This method will check to see that the VirtualSpout isn't already in the SpoutCoordinator before adding it
                 addSidelineVirtualSpout(
                     payload.id,
                     payload.request.step,
-                    startingStateBuilder.build(),
-                    endingStateStateBuilder.build()
+                    startingState,
+                    // Only pass ending state if it's not empty
+                    endingState.isEmpty() ? null : endingStateStateBuilder.build()
                 );
             }
         }
