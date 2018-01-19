@@ -355,6 +355,8 @@ public class SidelineSpoutHandlerTest {
             sidelineVirtualSpout.getFilterChain().getStep(requestId)
         );
 
+        assertNull("Ending state should be null", sidelineVirtualSpout.getEndingState());
+
         final SidelinePayload sidelinePayload = persistenceAdapter.retrieveSidelineRequest(
             requestId,
             new ConsumerPartition(namespace, partitionId)
