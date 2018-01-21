@@ -44,6 +44,7 @@ In this release the 'stop' sideline state was split into 'resume' and 'resolve',
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added `is*()` methods to the `SidelineController` for the respective sideline states.
 - [PR-47](https://github.com/salesforce/storm-dynamic-spout/pull/47) Sidelining periodically checks to ensure `VirtualSpout` instances are running and have the proper `FilterChainStep` objects applied to them.
 - [PR-97](https://github.com/salesforce/storm-dynamic-spout/pull/97) Sideline config defaults are now set properly.
+- [PR-99](https://github.com/salesforce/storm-dynamic-spout/pull/99) Do not pass empty ending state when loading sidelines.
 
 ### Kafka Consumer
 #### Removed
