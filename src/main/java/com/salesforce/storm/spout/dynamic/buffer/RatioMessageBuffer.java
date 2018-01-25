@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -109,9 +110,6 @@ public class RatioMessageBuffer implements MessageBuffer {
     private Pattern regexPattern = Pattern.compile(".*");
 
     private NextVirtualSpoutIdGenerator nextVirtualSpoutIdGenerator;
-
-    public RatioMessageBuffer() {
-    }
 
     /**
      * Helper method for creating a default instance.
@@ -220,7 +218,22 @@ public class RatioMessageBuffer implements MessageBuffer {
     @Override
     public Message poll() {
         final VirtualSpoutIdentifier nextIndentifier = nextVirtualSpoutIdGenerator.nextVirtualSpoutId();
-        return messageBuffer.get(nextIndentifier).poll();
+
+        // If no identifier found
+        if (nextIndentifier == null) {
+            // Nothing to poll against, so return null.
+            return null;
+        }
+
+        // Grab the next queue
+        final BlockingQueue<Message> nextQueue = messageBuffer.get(nextIndentifier);
+        if (nextQueue == null) {
+            // Doesn't exist. return null
+            return null;
+        }
+
+        // Poll for next message.
+        return nextQueue.poll();
     }
 
     /**
@@ -273,20 +286,24 @@ public class RatioMessageBuffer implements MessageBuffer {
         /**
          * An iterator over the Keys in buffer.  Used to Round Robin through the VirtualSpouts.
          */
-        private Iterator<VirtualSpoutIdentifier> consumerIdIterator = null;
+        private Iterator<VirtualSpoutIdentifier> virtualSpoutIdentifierIterator = Iterators.cycle(order);
 
-        public NextVirtualSpoutIdGenerator(final int ratio) {
+        /**
+         * Constructor.
+         * @param ratio Defines the ratio of throttled virtualspouts.
+         */
+        NextVirtualSpoutIdGenerator(final int ratio) {
             this.ratio = ratio;
         }
 
-        public void addNewVirtualSpout(final VirtualSpoutIdentifier identifier, final boolean isThrottled) {
+        void addNewVirtualSpout(final VirtualSpoutIdentifier identifier, final boolean isThrottled) {
             if (!allIds.containsKey(identifier)) {
                 allIds.put(identifier, isThrottled);
                 recalculateOrdering();
             }
         }
 
-        public void removeVirtualSpout(final VirtualSpoutIdentifier identifier) {
+        void removeVirtualSpout(final VirtualSpoutIdentifier identifier) {
             if (allIds.containsKey(identifier)) {
                 allIds.remove(identifier);
                 recalculateOrdering();
@@ -311,11 +328,20 @@ public class RatioMessageBuffer implements MessageBuffer {
             }
 
             // create new iterator that cycles endlessly
-            consumerIdIterator = Iterators.cycle(order);
+            virtualSpoutIdentifierIterator = Iterators.cycle(order);
         }
 
-        public VirtualSpoutIdentifier nextVirtualSpoutId() {
-            return consumerIdIterator.next();
+        /**
+         * Get the next VirtualSpoutId we should pop a record for.
+         * @return Next virtualSpoutId we should pop a record for.
+         */
+        private VirtualSpoutIdentifier nextVirtualSpoutId() {
+            try {
+                return virtualSpoutIdentifierIterator.next();
+            } catch (final NoSuchElementException exception) {
+                // This means we have nothing to iterate over, so return null.
+                return null;
+            }
         }
 
         /**
@@ -328,7 +354,7 @@ public class RatioMessageBuffer implements MessageBuffer {
         /**
          * @return All tracked VirtualSpoutIdentifiers that ARE throttled.
          */
-        public Set<VirtualSpoutIdentifier> getAllThrottledVirtualSpoutIds() {
+        Set<VirtualSpoutIdentifier> getAllThrottledVirtualSpoutIds() {
             Set<VirtualSpoutIdentifier> throttledVirtualSpoutIds = new HashSet<>();
             for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry : allIds.entrySet()) {
                 if (entry.getValue()) {
@@ -341,7 +367,7 @@ public class RatioMessageBuffer implements MessageBuffer {
         /**
          * @return All tracked VirtualSpoutIdentifiers that are NOT throttled.
          */
-        public Set<VirtualSpoutIdentifier> getAllNonThrottledVirtualSpoutIds() {
+        Set<VirtualSpoutIdentifier> getAllNonThrottledVirtualSpoutIds() {
             Set<VirtualSpoutIdentifier> notThrottledVirtualSpoutIds = new HashSet<>();
             for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry : allIds.entrySet()) {
                 if (!entry.getValue()) {
