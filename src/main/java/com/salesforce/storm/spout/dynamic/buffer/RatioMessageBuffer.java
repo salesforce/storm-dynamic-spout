@@ -278,6 +278,9 @@ public class RatioMessageBuffer implements MessageBuffer {
         return nextVirtualSpoutIdGenerator.getAllNonThrottledVirtualSpoutIds();
     }
 
+    /**
+     * Internal helper class for determining which VirtualSpoutId is up to be consumed from next.
+     */
     private static class NextVirtualSpoutIdGenerator {
         private final int ratio;
         private final List<VirtualSpoutIdentifier> order = new ArrayList<>();
@@ -296,6 +299,11 @@ public class RatioMessageBuffer implements MessageBuffer {
             this.ratio = ratio;
         }
 
+        /**
+         * Notify instance of a new VirtualSpoutIdentifier.
+         * @param identifier VirtualSpoutIdentifier to be added.
+         * @param isThrottled True if the virtual spout should be considered throttled.
+         */
         void addNewVirtualSpout(final VirtualSpoutIdentifier identifier, final boolean isThrottled) {
             if (!allIds.containsKey(identifier)) {
                 allIds.put(identifier, isThrottled);
@@ -303,6 +311,10 @@ public class RatioMessageBuffer implements MessageBuffer {
             }
         }
 
+        /**
+         * Notify instance of a VirtualSpoutIdentifier being removed.
+         * @param identifier VirtualSpoutIdentifier to be removed.
+         */
         void removeVirtualSpout(final VirtualSpoutIdentifier identifier) {
             if (allIds.containsKey(identifier)) {
                 allIds.remove(identifier);
