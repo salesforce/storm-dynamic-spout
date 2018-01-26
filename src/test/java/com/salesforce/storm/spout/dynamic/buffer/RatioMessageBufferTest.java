@@ -105,6 +105,20 @@ public class RatioMessageBufferTest {
     }
 
     /**
+     * Validate that if you call poll when no virtualspouts are registered, things behave.
+     */
+    @Test
+    public void testPollWithNoVirtualSpouts() {
+        final String regexPattern = "^Throttled.*";
+
+        // Create instance & open
+        final RatioMessageBuffer buffer = createDefaultBuffer(10, 3, regexPattern);
+
+        // Call poll, should get null.
+        assertNull("Should be null return value", buffer.poll());
+    }
+
+    /**
      * Tests that we return messages from the poll() method based on configured ratio
      * with two VirtualSpouts -- 1 throttled and 1 not throttled.
      */
@@ -115,7 +129,7 @@ public class RatioMessageBufferTest {
         final String regexPattern = "^Throttled.*";
 
         // Create instance & open
-        RatioMessageBuffer buffer = createDefaultBuffer(bufferSize, throttleRatio, regexPattern);
+        final RatioMessageBuffer buffer = createDefaultBuffer(bufferSize, throttleRatio, regexPattern);
 
         // Create 2 VSpout Ids
         VirtualSpoutIdentifier virtualSpoutId1 = new DefaultVirtualSpoutIdentifier("Identifier1");
