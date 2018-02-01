@@ -86,35 +86,37 @@ public class CuratorFactory {
         final String zkConnectionString = zkServers.stream()
             .collect(Collectors.joining(","));
 
+        // Create new ThreadFactory with named threads.
+        // TODO allow pushing in better naming.
+        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setNameFormat("[" + DynamicSpout.class.getSimpleName() + ":" + context + "] Curator Pool %d")
+            .setDaemon(false)
+            .build();
+
+        // Use builder to create new curator
+        final CuratorFramework curator = CuratorFrameworkFactory
+            .builder()
+            .connectString(zkConnectionString)
+            .connectionTimeoutMs(getConnectionTimeoutMs(config))
+            .sessionTimeoutMs(getSessionTimeoutMs(config))
+            .retryPolicy(new RetryNTimes(getRetryAttempts(config), getRetryIntervalMs(config)))
+            .threadFactory(threadFactory)
+            .build();
+
+        // Call start
+        curator.start();
+
         try {
-            // Create new ThreadFactory with named threads.
-            // TODO allow pushing in better naming.
-            final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("[" + DynamicSpout.class.getSimpleName() + ":" + context + "] Curator Pool %d")
-                .setDaemon(false)
-                .build();
-
-            // Use builder to create new curator
-            final CuratorFramework curator = CuratorFrameworkFactory
-                .builder()
-                .connectString(zkConnectionString)
-                .connectionTimeoutMs(getConnectionTimeoutMs(config))
-                .sessionTimeoutMs(getSessionTimeoutMs(config))
-                .retryPolicy(new RetryNTimes(getRetryAttempts(config), getRetryIntervalMs(config)))
-                .threadFactory(threadFactory)
-                .build();
-
-            // Call start
-            curator.start();
-
-            // Block until connected
+            // Block until connected for up to max connection timeout MS
+            // If we exceed this, it'll throw an interrupted exception, which we bubble up.
             curator.blockUntilConnected(
                 getConnectionTimeoutMs(config),
                 TimeUnit.MILLISECONDS
             );
 
             return curator;
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            // This means the connection failed.
             throw new RuntimeException(e);
         }
     }
