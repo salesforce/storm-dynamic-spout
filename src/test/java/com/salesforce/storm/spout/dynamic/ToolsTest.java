@@ -47,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 public class ToolsTest {
 
     /**
-     * Expect no expections by default.
+     * Expect no exceptions by default.
      */
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
