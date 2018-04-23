@@ -214,7 +214,7 @@ public class SpoutCoordinator implements Runnable {
      * This is useful is you want to manipulate the filter chain or alter the ending state after a {@link DelegateSpout} has
      * been added to the {@link SpoutCoordinator}.
      *
-     * @param virtualSpoutIdentifier identifier for teh {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}.
+     * @param virtualSpoutIdentifier identifier for the {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}.
      * @return {@link DelegateSpout} instance
      */
     public synchronized DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) {
@@ -285,7 +285,7 @@ public class SpoutCoordinator implements Runnable {
 
     /**
      * Add a new VirtualSpout to the coordinator, this will get picked up by the coordinator's monitor, opened and
-     * managed with teh other currently running spouts.
+     * managed with the other currently running spouts.
      *
      * This method is asynchronous.  After calling this method you simply know that the VirtualSpout has been
      * queued to start.  There is no garuntee that it has actually started after calling this method.
