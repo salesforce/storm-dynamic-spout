@@ -33,7 +33,7 @@ import com.google.common.collect.Sets;
 import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
-import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
+import com.salesforce.kafka.test.junit4.SharedKafkaTestResource;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
