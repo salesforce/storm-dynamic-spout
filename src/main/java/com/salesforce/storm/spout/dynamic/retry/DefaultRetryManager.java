@@ -121,7 +121,7 @@ public class DefaultRetryManager implements RetryManager {
 
         // Determine when we should retry this msg next
         // Calculate how many milliseconds to wait until the next retry
-        long additionalTime = (long) (getInitialRetryDelayMs() * Math.pow(getRetryDelayMultiplier(), failCount));
+        long additionalTime = (long) (getInitialRetryDelayMs() * Math.pow(getRetryDelayMultiplier(), failCount - 1));
         if (additionalTime > getRetryDelayMaxMs()) {
             // If its over our configured max delay, use max delay
             additionalTime = getRetryDelayMaxMs();
