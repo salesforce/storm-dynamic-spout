@@ -540,10 +540,9 @@ public class DefaultRetryManagerTest {
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
         retryManager.setClock(
             Clock.fixed(
-                Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0))),
-                ZoneId.of("UTC")
-            )
-        );
+            Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0))),
+            ZoneId.of("UTC")
+        ));
 
         // Now messageId1 should expire next,
         MessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
