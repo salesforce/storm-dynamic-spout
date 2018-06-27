@@ -365,25 +365,7 @@ public class DynamicSpoutTest {
             spout.getPermanentlyFailedOutputStreamId()
         );
 
-        final String virtualSpoutName = "MyVSpoutId" + System.currentTimeMillis();
-
-        // Create new unique VSpoutId
-        final VirtualSpoutIdentifier virtualSpoutIdentifier =
-            new DefaultVirtualSpoutIdentifier(virtualSpoutName);
-
-        // Add a VirtualSpout.
-        final VirtualSpout virtualSpout = new VirtualSpout(
-            virtualSpoutIdentifier,
-            config,
-            topologyContext,
-            new FactoryManager(config),
-            new LogRecorder(),
-            null,
-            null
-        );
-        spout.addVirtualSpout(virtualSpout);
-
-        // Wait for VirtualSpout to start
+        // Sideline handlers will add the main VirtualSpout after it is opened, we wait for it to start
         waitForVirtualSpouts(spout, 1);
 
         // Call next tuple, consumer is empty, so nothing should get emitted.
@@ -396,7 +378,7 @@ public class DynamicSpoutTest {
         List<SpoutEmission> spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
 
         // Now lets validate that what we got out of the spout is what we actually expected.
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, virtualSpoutName, false);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedStreamId, consumerIdPrefix + ":main", false);
 
         // Call next tuple a few more times to make sure nothing unexpected shows up.
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 100L);
@@ -408,7 +390,7 @@ public class DynamicSpoutTest {
         // This means we should get more or less the same emissions, but out the permanently failed stream.
         // They should also be un anchored.
         spoutEmissions = consumeTuplesFromSpout(spout, spoutOutputCollector, emitTupleCount);
-        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedFailedStreamId, virtualSpoutName, true);
+        validateTuplesFromSourceMessages(producedRecords, spoutEmissions, expectedFailedStreamId, consumerIdPrefix + ":main", true);
 
         // Validate we don't get anything else
         validateNextTupleEmitsNothing(spout, spoutOutputCollector, 10, 0L);
@@ -585,6 +567,7 @@ public class DynamicSpoutTest {
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
+        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
         ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
