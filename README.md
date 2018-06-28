@@ -215,6 +215,11 @@ The following implementations of previously mentioned interfaces are provided wi
 
 [NeverRetryManager](src/main/java/com/salesforce/storm/spout/dynamic/retry/NeverRetryManager.java) - This implementation will never retry failed messages.  One and done.
 
+A tuple is considered "permanently failed" when the topology has attempted to process the tuple at least once and the RetryManager
+implementation has determined that the tuple should not be retried. When this occurs, the tuple will be emitted un-anchored out
+a "failed" stream. Bolts within the topology can subscribe to this "failed" stream and do its own error handling. The name of this stream is
+configured via the `spout.permanently_failed_output_stream_id` setting, and if undefined defaults simply to `failed` 
+
 ### MessageBuffer Implementations
 [RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/dynamic/buffer/RoundRobinBuffer.java) - This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added to.  A very chatty virtual spout will not block/overrun less chatty ones.  The `poll()` method will round robin through all the available queues to get the next msg.
  

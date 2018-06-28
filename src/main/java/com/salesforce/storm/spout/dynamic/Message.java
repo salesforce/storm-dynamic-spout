@@ -44,13 +44,34 @@ public class Message {
     private final Values values;
 
     /**
-     * Constructor.
-     * @param messageId - contains information about what Topic, Partition, Offset, and Consumer this
-     * @param values - contains the values that will be emitted out to the Storm Topology.
+     * Determines if this message should be considered 'Permanently Failed.'
+     * We're defining "permanently failed" meaning that the topology attempted to process the tuple at least once and the RetryManager
+     * implementation has determined that the tuple should never be retried. When this occurs, the tuple will be emitted un-anchored out
+     * a "failed" stream. Bolts within the topology can subscribe to this "failed" stream and do its own error handling.
      */
-    public Message(MessageId messageId, Values values) {
+    private final boolean isPermanentlyFailed;
+
+    /**
+     * Constructor.
+     * @param messageId contains information about what Topic, Partition, Offset, and Consumer this
+     * @param values contains the values that will be emitted out to the Storm Topology.
+     */
+    public Message(final MessageId messageId, final Values values) {
+        this(messageId, values, false);
+    }
+
+    /**
+     * Private constructor.  Allows for creating permanently failed messages.
+     * Use the Factory method to create permanently failed messages.
+     *
+     * @param messageId contains information about what Topic, Partition, Offset, and Consumer this
+     * @param values contains the values that will be emitted out to the Storm Topology.
+     * @param hasPermanentlyFailed True if it has failed permanently, false if not.
+     */
+    private Message(final MessageId messageId, final Values values, final boolean hasPermanentlyFailed) {
         this.messageId = messageId;
         this.values = values;
+        this.isPermanentlyFailed = hasPermanentlyFailed;
     }
 
     public MessageId getMessageId() {
@@ -73,12 +94,17 @@ public class Message {
         return values;
     }
 
+    public boolean isPermanentlyFailed() {
+        return isPermanentlyFailed;
+    }
+
     @Override
     public String toString() {
         return "Message{"
-                + "messageId=" + messageId
-                + ", values=" + values
-                + '}';
+            + "messageId=" + messageId
+            + ", values=" + values
+            + ", isPermanentlyFailed=" + isPermanentlyFailed
+            + '}';
     }
 
     @Override
@@ -95,6 +121,9 @@ public class Message {
         if (!getMessageId().equals(that.getMessageId())) {
             return false;
         }
+        if (isPermanentlyFailed() != that.isPermanentlyFailed()) {
+            return false;
+        }
         return getValues().equals(that.getValues());
     }
 
@@ -103,5 +132,14 @@ public class Message {
         int result = getMessageId().hashCode();
         result = 31 * result + getValues().hashCode();
         return result;
+    }
+
+    /**
+     * Factory method to create a permanently failed message from an existing message.
+     * @param message Message to make permanently failed.
+     * @return A new Message object that is marked as permanently failed.
+     */
+    public static Message createPermanentlyFailedMessage(final Message message) {
+        return new Message(message.getMessageId(), message.getValues(), true);
     }
 }

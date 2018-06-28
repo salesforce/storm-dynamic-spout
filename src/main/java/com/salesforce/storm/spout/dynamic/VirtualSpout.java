@@ -37,11 +37,14 @@ import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.MetricsRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
+import org.apache.storm.shade.org.eclipse.jetty.util.ArrayQueue;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * VirtualSpout is a Spout that exists within another Spout instance. It doesn't fully implement the
@@ -120,7 +123,18 @@ public class VirtualSpout implements DelegateSpout {
      * For tracking failed messages, and knowing when to replay them.
      */
     private RetryManager retryManager;
+
+    /**
+     * Contains a map of MessageId => Full message object that it represents.
+     * This map tracks all messages considered "in flight" and allows us to correlate
+     * messages from messageIds passed to fail() and ack()
+     */
     private final Map<MessageId, Message> trackedMessages = Maps.newHashMap();
+
+    /**
+     * Contains messages that have permanently failed.
+     */
+    private final Queue<Message> permanentlyFailedMessages = new LinkedList<>();
 
     /**
      * For metric reporting.
@@ -300,6 +314,12 @@ public class VirtualSpout implements DelegateSpout {
         }
         nextTupleTimeBuckets.put("failedRetry", nextTupleTimeBuckets.get("failedRetry") + (System.currentTimeMillis() - startTime));
 
+        // Determine if we have any permanently failed messages queued.
+        if (!permanentlyFailedMessages.isEmpty()) {
+            // Emit the permanently failed message
+            return permanentlyFailedMessages.poll();
+        }
+
         // Grab the next message from Consumer instance.
         startTime = System.currentTimeMillis();
         final Record record = consumer.nextRecord();
@@ -322,7 +342,7 @@ public class VirtualSpout implements DelegateSpout {
             // Unsubscribe partition this tuple belongs to.
             unsubscribeTopicPartition(messageId.getNamespace(), messageId.getPartition());
 
-            // We don't need to ack the tuple because it never got emitted out.
+            // We don't need to ack the tuple because we never tracked/emitted it out.
             // Simply return null.
             return null;
         }
@@ -342,7 +362,7 @@ public class VirtualSpout implements DelegateSpout {
         final boolean isFiltered  = getFilterChain().filter(message);
         nextTupleTimeBuckets.put("isFiltered", nextTupleTimeBuckets.get("isFiltered") + (System.currentTimeMillis() - startTime));
 
-        // Keep Track of the tuple in this spout somewhere so we can replay it if it happens to fail.
+        // If the tuple is filtered
         if (isFiltered) {
             // Increment filtered metric
             getMetricsRecorder().count(VirtualSpout.class, getVirtualSpoutId() + ".filtered");
@@ -473,6 +493,13 @@ public class VirtualSpout implements DelegateSpout {
         // If this tuple shouldn't be replayed again
         if (!retryManager.retryFurther(messageId)) {
             logger.warn("Not retrying failed msgId any further {}", messageId);
+
+            // Grab message
+            final Message message = trackedMessages.get(messageId);
+            if (message != null) {
+                // Add to permanently failed queue.
+                permanentlyFailedMessages.add(Message.createPermanentlyFailedMessage(message));
+            }
 
             // Mark it as acked in retryManager
             retryManager.acked(messageId);
