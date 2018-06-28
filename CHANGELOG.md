@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and adhere
 - [PR-37](https://github.com/salesforce/storm-dynamic-spout/pull/37) Added hasStep() and getStep() to `FilterChain` and added a specific exception for serializing/deserializing `FilterChainStep` objects. 
 - [PR-85](https://github.com/salesforce/storm-dynamic-spout/pull/85) Fix ordering bug in DefaultRetryManager. Always retry the earliest messageId.
 - [PR-90](https://github.com/salesforce/storm-dynamic-spout/pull/90) Adds new 'Permanently Failed' output stream.  Tuples that exceed the configured retry limit will now be emitted out a 'failed' stream un-anchored. This allows you to do your own error handling within the topology by subscribing to this stream. The name of this output stream defaults to 'failed', but is configurable via the `spout.permanently_failed_output_stream_id` configuration item.
+- [PR-110](https://github.com/salesforce/storm-dynamic-spout/pull/110) Fix exponential retry delay growth in DefaultRetryManager.
 - [ISSUE-100](https://github.com/salesforce/storm-dynamic-spout/issues/100) Fix NPE in RatioMessageBuffer on Spout deploy.
 
 #### Removed

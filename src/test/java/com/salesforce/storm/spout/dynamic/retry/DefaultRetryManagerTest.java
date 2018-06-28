@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Queue;
 
@@ -541,7 +542,7 @@ public class DefaultRetryManagerTest {
         retryManager.setClock(
             Clock.fixed(
             Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0))),
-            ZoneId.of("UTC")
+            ZoneOffset.UTC
         ));
 
         // Now messageId1 should expire next,
@@ -559,7 +560,7 @@ public class DefaultRetryManagerTest {
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
 
-        // Advance time again, by 2x expected retry time, plus a few MS
+        // Advance time again, by expected retry time, plus a few MS
         final long newFixedTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1)) + 10;
         retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(newFixedTime), ZoneId.of("UTC")));
 
@@ -576,7 +577,7 @@ public class DefaultRetryManagerTest {
         validateTupleIsNotBeingTracked(retryManager, messageId1);
         validateTupleNotInFailedSetButIsInFlight(retryManager, messageId2);
 
-        // Calculate time for 3rd fail, against new fixed time
+        // Calculate retry time for 3rd fail against new fixed time
         final long thirdRetryTime = newFixedTime + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 2));
 
         // Mark tuple2 as having failed
