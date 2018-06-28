@@ -2,10 +2,16 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.9.3 (2018-06-28)
+
+### Improvement
+- [PR-107](https://github.com/salesforce/storm-dynamic-spout/pull/107) Backport fail stream to 0.9 (from 0.10)
+- [PR-93](https://github.com/salesforce/storm-dynamic-spout/pull/94) Catch and swallow no-node exceptions
+
 ## 0.9.2 (2017-12-13)
 
 ### Improvement
-- [PR=87](https://github.com/salesforce/storm-dynamic-spout/pull/87) More fair partition distribution 
+- [PR-87](https://github.com/salesforce/storm-dynamic-spout/pull/87) More fair partition distribution 
 
 ### Bug Fixes
 - [ISSUE-92](https://github.com/salesforce/storm-dynamic-spout/issues/92) Fix race condition while cleaning up consumer state.
