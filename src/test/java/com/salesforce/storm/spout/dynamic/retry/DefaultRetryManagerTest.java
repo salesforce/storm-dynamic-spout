@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Queue;
 
@@ -125,7 +126,7 @@ public class DefaultRetryManagerTest {
         retryManager.open(stormConfig);
 
         // Calculate the 1st retry times
-        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long firstRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0));
 
         final DefaultVirtualSpoutIdentifier consumerId = new DefaultVirtualSpoutIdentifier("MyConsumerId");
 
@@ -166,7 +167,7 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Use a wacky multiplier, because why not?
-        final double expectedDelayMultiplier = 11.25;
+        final double expectedDelayMultiplier = 7.25;
 
         // Build config.
         Map stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
@@ -183,9 +184,9 @@ public class DefaultRetryManagerTest {
         final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
-        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
-        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
-        final long thirdRetryTime = FIXED_TIME + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long firstRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0));
+        final long secondRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1));
+        final long thirdRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 2));
 
         // Mark first as having failed
         retryManager.failed(messageId1);
@@ -232,7 +233,7 @@ public class DefaultRetryManagerTest {
         final long expectedMinRetryTimeMs = 1000;
 
         // Use a multiplier of 10
-        final double expectedDelayMultiplier = 5;
+        final double expectedDelayMultiplier = 10;
 
         // Set a max delay of 12 seconds
         final long expectedMaxDelay = 12000;
@@ -251,8 +252,8 @@ public class DefaultRetryManagerTest {
         final MessageId messageId1 = new MessageId("MyTopic", 0, 101L, consumerId);
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
-        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
-        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long firstRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0)); // 1 second
+        final long secondRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1)); // 10 seconds
         final long thirdRetryTime = FIXED_TIME + expectedMaxDelay;
 
         // Mark first as having failed
@@ -393,9 +394,9 @@ public class DefaultRetryManagerTest {
         final MessageId messageId2 = new MessageId("MyTopic", 0, 102L, consumerId);
 
         // Calculate the 1st, 2nd, and 3rd fail retry times
-        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
-        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
-        final long thirdRetryTime = FIXED_TIME + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long firstRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0));
+        final long secondRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1));
+        final long thirdRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 2));
 
         // Mark first as having failed
         retryManager.failed(messageId1);
@@ -472,14 +473,14 @@ public class DefaultRetryManagerTest {
             retryManager,
             messageId1,
             1,
-            (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)),
+            (FIXED_TIME + (long) expectedMinRetryTimeMs),
             false
         );
         validateExpectedFailedMessageId(
             retryManager,
             messageId2,
             1,
-            (FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)),
+            (FIXED_TIME + (long) expectedMinRetryTimeMs),
             false
         );
 
@@ -524,8 +525,8 @@ public class DefaultRetryManagerTest {
         retryManager.failed(messageId2);
 
         // Calculate the first and 2nd fail retry times
-        final long firstRetryTime = FIXED_TIME + (long) (1 * expectedMinRetryTimeMs * expectedDelayMultiplier);
-        final long secondRetryTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        final long firstRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0));
+        final long secondRetryTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1));
 
         // Validate it has first two as failed
         validateExpectedFailedMessageId(retryManager, messageId1, 1, firstRetryTime, false);
@@ -539,8 +540,10 @@ public class DefaultRetryManagerTest {
 
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
         retryManager.setClock(
-            Clock.fixed(Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * expectedDelayMultiplier)), ZoneId.of("UTC"))
-        );
+            Clock.fixed(
+            Instant.ofEpochMilli(FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 0))),
+            ZoneOffset.UTC
+        ));
 
         // Now messageId1 should expire next,
         MessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
@@ -557,8 +560,8 @@ public class DefaultRetryManagerTest {
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
         assertNull("Should be null", retryManager.nextFailedMessageToRetry());
 
-        // Advance time again, by 2x expected retry time, plus a few MS
-        final long newFixedTime = FIXED_TIME + (long) (2 * expectedMinRetryTimeMs * expectedDelayMultiplier) + 10;
+        // Advance time again, by expected retry time, plus a few MS
+        final long newFixedTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1)) + 10;
         retryManager.setClock(Clock.fixed(Instant.ofEpochMilli(newFixedTime), ZoneId.of("UTC")));
 
         // Now messageId1 should expire next,
@@ -574,8 +577,8 @@ public class DefaultRetryManagerTest {
         validateTupleIsNotBeingTracked(retryManager, messageId1);
         validateTupleNotInFailedSetButIsInFlight(retryManager, messageId2);
 
-        // Calculate time for 3rd fail, against new fixed time
-        final long thirdRetryTime = newFixedTime + (long) (3 * expectedMinRetryTimeMs * expectedDelayMultiplier);
+        // Calculate retry time for 3rd fail against new fixed time
+        final long thirdRetryTime = newFixedTime + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 2));
 
         // Mark tuple2 as having failed
         retryManager.failed(messageId2);
