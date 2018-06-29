@@ -2,6 +2,12 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
+## 0.9.4 (2018-07-05)
+
+### Improvement
+- [PR-110](https://github.com/salesforce/storm-dynamic-spout/pull/110) Fix exponential retry delay growth in DefaultRetryManager. (Back ported from 0.10)
+
 ## 0.9.3 (2018-06-28)
 
 ### Improvement
