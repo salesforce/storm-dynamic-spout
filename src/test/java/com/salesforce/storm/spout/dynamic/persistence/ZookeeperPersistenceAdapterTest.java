@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.dynamic.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.salesforce.kafka.test.junit4.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.curator.test.TestingServer;

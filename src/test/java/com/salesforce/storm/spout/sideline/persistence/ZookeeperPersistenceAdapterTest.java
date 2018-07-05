@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
-import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.salesforce.kafka.test.junit4.SharedZookeeperTestResource;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
