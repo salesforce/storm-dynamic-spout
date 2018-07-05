@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.metrics;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
     private final Map<String, Long> counters = Maps.newConcurrentMap();
-    private final Map<String, CircularFifoBuffer> averages = Maps.newConcurrentMap();
+    private final Map<String, CircularFifoQueue> averages = Maps.newConcurrentMap();
     private final Map<String, Object> assignedValues = Maps.newConcurrentMap();
 
     // For storing timer start values

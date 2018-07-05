@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.sideline.trigger.example;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
@@ -41,9 +41,8 @@ import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapte
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.test.TestingServer;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
@@ -67,7 +66,7 @@ public class ZookeeperWatchTriggerTest {
     /**
      * Create shared zookeeper test server.
      */
-    @ClassRule
+    @RegisterExtension
     public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
     /**
@@ -82,7 +81,7 @@ public class ZookeeperWatchTriggerTest {
 
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
-        config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
+        config.put(Config.ZK_SERVERS, Collections.singletonList(getZookeeperConnectionString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(
@@ -200,7 +199,7 @@ public class ZookeeperWatchTriggerTest {
 
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
-        config.put(Config.ZK_SERVERS, Collections.singletonList(getZkServer().getConnectString()));
+        config.put(Config.ZK_SERVERS, Collections.singletonList(getZookeeperConnectionString()));
         config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(
@@ -320,8 +319,8 @@ public class ZookeeperWatchTriggerTest {
         return null;
     }
 
-    private TestingServer getZkServer() {
-        return sharedZookeeperTestResource.getZookeeperTestServer();
+    private String getZookeeperConnectionString() {
+        return sharedZookeeperTestResource.getZookeeperTestServer().getConnectString();
     }
 
     /**

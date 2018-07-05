@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -46,7 +46,8 @@ public class MultiAssignableMetric implements IMetric {
     }
 
     /**
-     * @return - Returns values stored and resets internal values.
+     * Get the values stored and resets internal values.
+     * @return values stored and resets internal values
      */
     public Object getValueAndReset() {
         HashMap ret = Maps.newHashMap();

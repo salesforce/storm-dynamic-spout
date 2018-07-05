@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -339,7 +339,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     }
 
     /**
-     * Does a sideline exist in the started state?
+     * Determines if a sideline exists in the started state.
      * @param sidelineRequest sideline request.
      * @return true it does, false it does not.
      */
@@ -381,8 +381,8 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     }
 
     /**
-     * To be in the resumed state, does the {@link SidelineRequest} have a {@link com.salesforce.storm.spout.dynamic.VirtualSpout}
-     * for it's window and a {@link FilterChainStep} on the firehose?
+     * To be in the resumed state, determines if the {@link SidelineRequest} has a {@link com.salesforce.storm.spout.dynamic.VirtualSpout}
+     * for it's window and a {@link FilterChainStep} on the firehose.
 
      * @param sidelineRequest sideline request.
      * @return true it has, false it has not.
@@ -462,8 +462,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     }
 
     /**
-     * To be in the completing state, does the {@link SidelineRequest} have a {@link com.salesforce.storm.spout.dynamic.VirtualSpout}
-     * for it's window and a {@link FilterChainStep} absent from the firehose?
+     * To be in the completing state, determines if the {@link SidelineRequest} has a
+     * {@link com.salesforce.storm.spout.dynamic.VirtualSpout} for it's window and a {@link FilterChainStep} absent
+     * from the firehose.
      *
      * @param sidelineRequest sideline request.
      * @return true it has, false it has not.
@@ -563,8 +564,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 // Log the error, but we're going to take another attempt at this before we give up
                 logger.error("Trying to get the current state from the firehose and I got interrupted {}", ex);
             }
-        }
-        while (currentState == null && trips < 10);
+        } while (currentState == null && trips < 10);
 
         logger.error("We've tried 10 times to pull the current state from the fire hose consumer and are now giving up.");
 
@@ -668,7 +668,7 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
     }
 
     /**
-     * Get the firehose virtual spout
+     * Get the firehose virtual spout.
      * @return Firehose virtual spout.
      */
     DelegateSpout getFireHoseSpout() {

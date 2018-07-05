@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,9 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.filter;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
 
@@ -38,9 +37,6 @@ import static org.junit.Assert.assertTrue;
  * Test that the serializer handles FilterChainStep instances correctly.
  */
 public class SerializerTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Test that we can serialize a FilterChainStep and deserialize it successfully.
@@ -82,11 +78,10 @@ public class SerializerTest {
     public void deserializeInvalidBase64String() {
         final String invalidSerializedFilterChainStep = Base64.getEncoder().encodeToString("FooBar".getBytes());
 
-        expectedException.expect(InvalidFilterChainStepException.class);
-
-        Serializer.deserialize(invalidSerializedFilterChainStep);
+        Assertions.assertThrows(InvalidFilterChainStepException.class, () ->
+            Serializer.deserialize(invalidSerializedFilterChainStep)
+        );
     }
-
 
     /**
      * Tests that a non base64 string that does not correspond to a FilterChainStep chokes at the right point.
@@ -96,8 +91,8 @@ public class SerializerTest {
         // This will throw an IllegalArgumentException when passed to the base64 decoder, which is different then the previous test.
         final String invalidSerializedFilterChainStep = "FooBar";
 
-        expectedException.expect(InvalidFilterChainStepException.class);
-
-        Serializer.deserialize(invalidSerializedFilterChainStep);
+        Assertions.assertThrows(InvalidFilterChainStepException.class, () ->
+            Serializer.deserialize(invalidSerializedFilterChainStep)
+        );
     }
 }

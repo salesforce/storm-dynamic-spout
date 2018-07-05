@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -39,20 +39,19 @@ import com.salesforce.storm.spout.dynamic.mocks.output.MockSpoutOutputCollector;
 import com.salesforce.storm.spout.dynamic.mocks.output.SpoutEmission;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.test.TestHelper;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.generated.StreamInfo;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsGetter;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.apache.storm.utils.Utils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +76,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * End to End integration testing of DynamicSpout under various scenarios.
  */
-@RunWith(DataProviderRunner.class)
 public class DynamicSpoutTest {
     // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(DynamicSpoutTest.class);
@@ -96,20 +94,14 @@ public class DynamicSpoutTest {
      * This happens once before every test method.
      * Create a new empty namespace with randomly generated name.
      */
-    @Before
-    public void beforeTest() throws InterruptedException {
+    @BeforeEach
+    public void beforeTest() {
         // Generate namespace name
         topicName = DynamicSpoutTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Reset our MockConsumer
         MockConsumer.reset();
     }
-
-    /**
-     * By default expect no exceptions.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Validates that we require the ConsumerIdPrefix configuration value.
@@ -128,23 +120,21 @@ public class DynamicSpoutTest {
         // Create spout and call open
         final DynamicSpout spout = new DynamicSpout(config);
 
-        // When we call open, we expect illegal state exception about our missing configuration item
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
+        final Throwable thrown = Assertions.assertThrows(IllegalStateException.class, () ->
+            // When we call open, we expect illegal state exception about our missing configuration item
+            spout.open(config, topologyContext, spoutOutputCollector)
+        );
 
-        // Call open
-        try {
-            spout.open(config, topologyContext, spoutOutputCollector);
-        } finally {
-            spout.close();
-        }
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX));
+
+        spout.close();
     }
 
     /**
      * Test you cannot open DynamicSpout multiple times.
      */
     @Test
-    public void testCannotOpenMultipleTimes() throws InterruptedException {
+    public void testCannotOpenMultipleTimes() {
         // Define our ConsumerId prefix
         final String consumerIdPrefix = "TestDynamicSpout";
 
@@ -159,14 +149,14 @@ public class DynamicSpoutTest {
         final DynamicSpout spout = new DynamicSpout(config);
         spout.open(config, topologyContext, spoutOutputCollector);
 
-        try {
-            expectedException.expect(IllegalStateException.class);
-            expectedException.expectMessage("opened");
-            spout.open(config, topologyContext, spoutOutputCollector);
-        } finally {
-            // Cleanup.
-            spout.close();
-        }
+        final Throwable thrown = Assertions.assertThrows(IllegalStateException.class, () ->
+            spout.open(config, topologyContext, spoutOutputCollector)
+        );
+
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("opened"));
+
+        // Cleanup.
+        spout.close();
     }
 
     /**
@@ -235,8 +225,8 @@ public class DynamicSpoutTest {
      * We run this test multiple times using a DataProvider to test using but an implicit/unconfigured
      * output stream name (default), as well as an explicitly configured stream name.
      */
-    @Test
-    @UseDataProvider("provideStreamIds")
+    @ParameterizedTest
+    @MethodSource("provideStreamIds")
     public void doBasicNextTupleTest(final String configuredStreamId, final String expectedStreamId) throws InterruptedException {
         // Define how many tuples we should push into the namespace, and then consume back out.
         final int emitTupleCount = 10;
@@ -726,8 +716,8 @@ public class DynamicSpoutTest {
      * Verifies that you do not define an output stream via the SpoutConfig
      * declareOutputFields() method with default to using 'default' stream.
      */
-    @Test
-    @UseDataProvider("provideOutputFields")
+    @ParameterizedTest
+    @MethodSource("provideOutputFields")
     public void testDeclareOutputFields_without_stream(final Object inputFields, final String[] expectedFields) {
         // Create config with null stream id config option.
         final Map<String,Object> config = getDefaultConfig("DynamicSpout-", null);
@@ -772,8 +762,8 @@ public class DynamicSpoutTest {
      * Verifies that you can define an output stream via the SpoutConfig and it gets used
      * in the declareOutputFields() method.
      */
-    @Test
-    @UseDataProvider("provideOutputFields")
+    @ParameterizedTest
+    @MethodSource("provideOutputFields")
     public void testDeclareOutputFields_with_stream(final Object inputFields, final String[] expectedFields) {
         final String streamId = "foobar";
         final String failedStreamId = "failed";
@@ -814,7 +804,6 @@ public class DynamicSpoutTest {
     /**
      * Provides various inputs to be split.
      */
-    @DataProvider
     public static Object[][] provideOutputFields() throws InstantiationException, IllegalAccessException {
         return new Object[][] {
             // String inputs, these get split and trimmed.
@@ -961,7 +950,7 @@ public class DynamicSpoutTest {
         }
 
         // Ack each one.
-        for (SpoutEmission emission: spoutEmissions) {
+        for (SpoutEmission emission : spoutEmissions) {
             spout.ack(emission.getMessageId());
         }
 
@@ -1021,7 +1010,7 @@ public class DynamicSpoutTest {
         }
 
         // Fail each one.
-        for (SpoutEmission emission: spoutEmissions) {
+        for (SpoutEmission emission : spoutEmissions) {
             spout.fail(emission.getMessageId());
         }
 
@@ -1139,7 +1128,7 @@ public class DynamicSpoutTest {
         final Iterator<SpoutEmission> emissionIterator = spoutEmissions.iterator();
 
         // Loop over what we produced into kafka
-        for (Record producedRecord: producedRecords) {
+        for (Record producedRecord : producedRecords) {
             // Now find its corresponding tuple from our iterator
             final SpoutEmission spoutEmission = emissionIterator.next();
 
@@ -1229,7 +1218,6 @@ public class DynamicSpoutTest {
     /**
      * Provides various StreamIds to test emitting out of.
      */
-    @DataProvider
     public static Object[][] provideStreamIds() {
         return new Object[][]{
                 // No explicitly defined streamId should use the default streamId.

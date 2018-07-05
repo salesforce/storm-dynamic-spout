@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -41,19 +41,15 @@ import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import com.salesforce.storm.spout.dynamic.buffer.FifoBuffer;
 import org.apache.storm.tuple.Values;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,17 +83,11 @@ public class SpoutCoordinatorTest {
     private ThreadPoolExecutor executorService;
 
     /**
-     * Expect no exceptions by default.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    /**
      * Shutdown the thread executor service when the test is all over.
      * @throws InterruptedException something went wrong.
      */
-    @After
-    public void shutDown() throws InterruptedException {
+    @AfterEach
+    public void shutDown() {
         // Shut down our executor service if it exists
         if (executorService == null) {
             return;
@@ -768,16 +758,11 @@ public class SpoutCoordinatorTest {
 
         spoutCoordinator.addVirtualSpout(spout1);
 
-        try {
-            expectedException.expect(SpoutAlreadyExistsException.class);
-            spoutCoordinator.addVirtualSpout(spout2);
-        } catch (Exception exception) {
-            // Ensure we cleanup appropriately.
-            spoutCoordinator.close();
+        Assertions.assertThrows(SpoutAlreadyExistsException.class, () ->
+            spoutCoordinator.addVirtualSpout(spout2)
+        );
 
-            // Re-throw the expected exception so the test passes.
-            throw exception;
-        }
+        spoutCoordinator.close();
     }
 
 
@@ -876,18 +861,14 @@ public class SpoutCoordinatorTest {
 
         assertFalse("Spout is still in the SpoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
-        try {
+        Assertions.assertThrows(SpoutDoesNotExistException.class, () ->
             // We are going to try to remove it again, at this point it does not exist, so we expect to get an
             // exception thrown at us indicating so
-            expectedException.expect(SpoutDoesNotExistException.class);
-            spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier);
-        } catch (Exception exception) {
-            // Make sure to close out SpoutCoordinator
-            spoutCoordinator.close();
+            spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier)
+        );
 
-            // Rethrow expected exception.
-            throw exception;
-        }
+        // Make sure to close out SpoutCoordinator
+        spoutCoordinator.close();
     }
 
     private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {

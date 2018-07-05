@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -272,8 +272,7 @@ public class SpoutCoordinator implements Runnable {
                     // If its done, we're done!
                     return;
                 }
-            }
-            while (getClock().millis() <= endTime);
+            } while (getClock().millis() <= endTime);
 
             // We exceeded our max wait time, just cancel it.
             spoutContext.getCompletableFuture().cancel(true);
@@ -516,43 +515,51 @@ public class SpoutCoordinator implements Runnable {
     }
 
     /**
-     * @return - return the number of spout runner instances.
-     *           *note* it doesn't mean all of these are actually running, some may be queued.
+     * Get the number of spout instances.
+     *
+     * This number is *not* the number of actively running spouts, it is possible that some have been queued.
+     *
+     * @return number of spout instances
      */
     public int getTotalSpouts() {
         return runningSpouts.size();
     }
 
     /**
-     * @return - Our system clock instance.
+     * Get clock instance.
+     * @return clock instance
      */
     Clock getClock() {
         return clock;
     }
 
     /**
-     * @return - Storm topology configuration.
+     * Get topology configuration.
+     * @return topology configuration.
      */
     Map<String, Object> getTopologyConfig() {
         return topologyConfig;
     }
 
     /**
-     * @return - how often our monitor thread should run through its maintenance loop, in milliseconds.
+     * Get how the interval that  the spout monitor thread should run through it's maintenance loop, in milliseconds.
+     * @return spout monitor thread maintenance loop interval, in milliseconds
      */
     long getMonitorThreadIntervalMs() {
         return ((Number) getTopologyConfig().get(SpoutConfig.MONITOR_THREAD_INTERVAL_MS)).longValue();
     }
 
     /**
-     * @return - the maximum amount of time we'll wait for spouts to terminate before forcing them to stop, in milliseconds.
+     * Get the maximum amount of time in milliseconds to wait for a spout to terminate before forcing it to stop.
+     * @return maximum amount of time in milliseconds to wait for a spout to terminate before forcing it to stop
      */
     long getMaxTerminationWaitTimeMs() {
         return ((Number) getTopologyConfig().get(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS)).longValue();
     }
 
     /**
-     * @return - the maximum amount of concurrently running VirtualSpouts we'll start.
+     * Get the maximum amount of concurrently running VirtualSpouts allowed.
+     * @return maximum amount of concurrently running VirtualSpouts allowed
      */
     int getMaxConcurrentVirtualSpouts() {
         return ((Number) getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS)).intValue();
@@ -560,7 +567,7 @@ public class SpoutCoordinator implements Runnable {
 
     /**
      * Get the spout partition progress monitor so we can track and report spout progress.
-     * @return the spout partition progress monitor.
+     * @return spout partition progress monitor
      */
     private SpoutPartitionProgressMonitor getSpoutPartitionProgressMonitor() {
         if (spoutPartitionProgressMonitor == null) {
@@ -571,37 +578,43 @@ public class SpoutCoordinator implements Runnable {
     }
 
     /**
-     * @return ThreadSafe message bus for passing messages between DynamicSpout and VirtualSpouts.
+     * Get the thread safe message bus.
+     *
+     * This is used for passing messages between DynamicSpout and VirtualSpouts.
+     *
+     * @return message bus
      */
     private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
         return virtualSpoutMessageBus;
     }
 
     /**
-     * Adds an error to the reported errors queue.  These will get pushed up and reported
-     * to the topology.
-     * @param throwable The error to be reported.
+     * Adds an error to the reported errors queue.  These will get pushed up and reported to the topology.
+     * @param throwable The error to be reported
      */
     private void reportError(final Throwable throwable) {
         getVirtualSpoutMessageBus().publishError(throwable);
     }
 
     /**
-     * @return Spouts metrics recorder.
+     * Get the metrics recorder.
+     * @return metrics recorder
      */
     MetricsRecorder getMetricsRecorder() {
         return metricsRecorder;
     }
 
     /**
-     * @return ThreadPoolExecutor Service that runs VirtualSpout instances.
+     * Get the thread pool executor for spout instances.
+     * @return thread pool executor for spout instances
      */
     ThreadPoolExecutor getExecutor() {
         return executor;
     }
 
     /**
-     * @return How many VirtualSpout tasks have terminated abnormally.
+     * Get the number of failed spout instances.
+     * @return number of failed spout instances.
      */
     int getNumberOfFailedTasks() {
         return failedTaskCounter.get();
@@ -609,7 +622,7 @@ public class SpoutCoordinator implements Runnable {
 
     /**
      * Increments the failed task counter metric.
-     * @return The new number of failed tasks.
+     * @return new number of failed tasks
      */
     private int incrementFailedTaskCounter() {
         return failedTaskCounter.incrementAndGet();
@@ -617,7 +630,7 @@ public class SpoutCoordinator implements Runnable {
 
     /**
      * Flag to know if we should keep running, or shut down.
-     * @return - true if we should keep running, false if we should be stopping/stopped.
+     * @return true if we should keep running, false if we should be stopping/stopped
      */
     boolean keepRunning() {
         return keepRunning && !Thread.interrupted();

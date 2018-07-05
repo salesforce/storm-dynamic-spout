@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -49,9 +49,8 @@ import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -80,9 +79,6 @@ import static org.mockito.Mockito.when;
  * Test that a {@link VirtualSpout} properly acks, fails and emits data from it's consumer.
  */
 public class VirtualSpoutTest {
-
-    @Rule
-    public ExpectedException expectedExceptionConstructor = ExpectedException.none();
 
     /**
      * Verify that constructor args get set appropriately.
@@ -121,8 +117,9 @@ public class VirtualSpoutTest {
         assertEquals("Should be our instance passed in", factoryManager, virtualSpout.getFactoryManager());
 
         // Verify the config is immutable and throws exception when you try to modify it
-        expectedExceptionConstructor.expect(UnsupportedOperationException.class);
-        virtualSpout.getSpoutConfig().put("MyKey", "MyValue");
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            virtualSpout.getSpoutConfig().put("MyKey", "MyValue")
+        );
     }
 
     /**
@@ -224,9 +221,6 @@ public class VirtualSpoutTest {
         assertTrue("Should be true", virtualSpout.isCompleted());
     }
 
-    @Rule
-    public ExpectedException expectedExceptionCallingOpenTwiceThrowsException = ExpectedException.none();
-
     /**
      * Calling open() more than once should throw an exception.
      */
@@ -271,14 +265,12 @@ public class VirtualSpoutTest {
             eq(null)
         );
 
-        // Set expected exception
-        try {
-            expectedExceptionCallingOpenTwiceThrowsException.expect(IllegalStateException.class);
-            virtualSpout.open();
-        } finally {
-            // Ensure that we call close.
-            virtualSpout.close();
-        }
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            virtualSpout.open()
+        );
+
+        // Ensure that we call close.
+        virtualSpout.close();
     }
 
     /**
@@ -907,9 +899,6 @@ public class VirtualSpoutTest {
         virtualSpout.close();
     }
 
-    @Rule
-    public ExpectedException expectedExceptionFailWithInvalidMsgIdObject = ExpectedException.none();
-
     /**
      * Call fail() with invalid msg type should throw an exception.
      */
@@ -938,13 +927,11 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
-        try {
-            expectedExceptionFailWithInvalidMsgIdObject.expect(IllegalArgumentException.class);
-            virtualSpout.fail("This is a String!");
-        } finally {
-            // Call close
-            virtualSpout.close();
-        }
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            virtualSpout.fail("This is a String!")
+        );
+
+        virtualSpout.close();
     }
 
     /**
@@ -988,9 +975,6 @@ public class VirtualSpoutTest {
         virtualSpout.close();
     }
 
-    @Rule
-    public ExpectedException expectedExceptionAckWithInvalidMsgIdObject = ExpectedException.none();
-
     /**
      * Call ack() with invalid msg type should throw an exception.
      */
@@ -1019,13 +1003,12 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call ack with a string object, it should throw an exception.
-        try {
-            expectedExceptionAckWithInvalidMsgIdObject.expect(IllegalArgumentException.class);
-            virtualSpout.ack("This is my String!");
-        } finally {
-            // Call close
-            virtualSpout.close();
-        }
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            virtualSpout.ack("This is my String!")
+        );
+
+        // Call close
+        virtualSpout.close();
     }
 
     /**
@@ -1267,9 +1250,6 @@ public class VirtualSpoutTest {
         virtualSpout.close();
     }
 
-    @Rule
-    public ExpectedException expectedExceptionDoesMessageExceedEndingOffsetForAnInvalidPartition = ExpectedException.none();
-
     /**
      * Test calling this method with a defined endingState, and then send in a MessageId
      * associated with a partition that doesn't exist in the ending state.  It should throw
@@ -1311,8 +1291,9 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Call our method & validate exception is thrown
-        expectedExceptionDoesMessageExceedEndingOffsetForAnInvalidPartition.expect(IllegalStateException.class);
-        virtualSpout.doesMessageExceedEndingOffset(messageId);
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            virtualSpout.doesMessageExceedEndingOffset(messageId)
+        );
 
         // Call close
         virtualSpout.close();

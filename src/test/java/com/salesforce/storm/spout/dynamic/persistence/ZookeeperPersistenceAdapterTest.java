@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -28,17 +28,15 @@ package com.salesforce.storm.spout.dynamic.persistence;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,14 +66,8 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Create shared zookeeper test server.
      */
-    @ClassRule
+    @RegisterExtension
     public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
-
-    /**
-     * By default no expected exceptions.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Tests that if you're missing the configuration item for ZkRootNode it will throw
@@ -91,9 +83,9 @@ public class ZookeeperPersistenceAdapterTest {
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("root is required");
-        persistenceAdapter.open(topologyConfig);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            persistenceAdapter.open(topologyConfig)
+        );
     }
 
     /**
@@ -109,7 +101,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId + "/" + String.valueOf(partitionId);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -146,7 +138,7 @@ public class ZookeeperPersistenceAdapterTest {
         final int partitionId2 = 2;
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -234,7 +226,7 @@ public class ZookeeperPersistenceAdapterTest {
         final int partitionId = 1;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -251,7 +243,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -353,7 +345,7 @@ public class ZookeeperPersistenceAdapterTest {
         final long partition2Offset = 300L;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -370,7 +362,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -481,9 +473,6 @@ public class ZookeeperPersistenceAdapterTest {
         zookeeperClient.close();
     }
 
-    @Rule
-    public ExpectedException expectedExceptionPersistConsumerStateBeforeBeingOpened = ExpectedException.none();
-
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
@@ -495,12 +484,10 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedExceptionPersistConsumerStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.persistConsumerState("MyConsumerId", partitionId, 100L);
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            persistenceAdapter.persistConsumerState("MyConsumerId", partitionId, 100L)
+        );
     }
-
-    @Rule
-    public ExpectedException expectedExceptionRetrieveConsumerStateBeforeBeingOpened = ExpectedException.none();
 
     /**
      * Verify we get an exception if you try to retrieve before calling open().
@@ -513,12 +500,10 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedExceptionRetrieveConsumerStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.retrieveConsumerState("MyConsumerId", partitionId);
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            persistenceAdapter.retrieveConsumerState("MyConsumerId", partitionId)
+        );
     }
-
-    @Rule
-    public ExpectedException expectedExceptionClearConsumerStateBeforeBeingOpened = ExpectedException.none();
 
     /**
      * Verify we get an exception if you try to persist before calling open().
@@ -531,8 +516,9 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedExceptionClearConsumerStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.clearConsumerState("MyConsumerId", partitionId);
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            persistenceAdapter.clearConsumerState("MyConsumerId", partitionId)
+        );
     }
 
     /**
@@ -564,7 +550,7 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Simple accessor.
      */
-    private TestingServer getZkServer() {
-        return sharedZookeeperTestResource.getZookeeperTestServer();
+    private String getZookeeperConnectionString() {
+        return sharedZookeeperTestResource.getZookeeperTestServer().getConnectString();
     }
 }

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -64,7 +64,8 @@ public interface Consumer {
     void close();
 
     /**
-     * @return The next Record that should be processed.
+     * Retrieve the next record that should be processed.
+     * @return next record that should be processed.
      */
     Record nextRecord();
 
@@ -76,16 +77,15 @@ public interface Consumer {
      */
     void commitOffset(final String namespace, final int partition, final long offset);
 
-    // State related methods
-
     /**
-     * @return The Consumer's current state.
+     * Get the consumer's current state.
+     * @return consumer's current state.
      */
     ConsumerState getCurrentState();
 
     /**
      * Requests the consumer to persist state to the Persistence adapter.
-     * @return The Consumer's current state.
+     * @return consumer's current state.
      */
     ConsumerState flushConsumerState();
 

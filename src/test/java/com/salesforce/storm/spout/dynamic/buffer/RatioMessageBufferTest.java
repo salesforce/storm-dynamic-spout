@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -31,7 +31,7 @@ import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import org.apache.storm.tuple.Values;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,12 +152,12 @@ public class RatioMessageBufferTest {
 
         // Because order of adding messages shouldn't make a difference.
         // Add Spout2's messages first
-        for (Message message: spout2Messages) {
+        for (Message message : spout2Messages) {
             buffer.put(message);
         }
 
         // Then add Spout1's messages second
-        for (Message message: spout1Messages) {
+        for (Message message : spout1Messages) {
             buffer.put(message);
         }
 
@@ -168,8 +168,7 @@ public class RatioMessageBufferTest {
         List<Message> returnedMessages = new ArrayList<>();
         do {
             returnedMessages.add(buffer.poll());
-        }
-        while (buffer.size() > 0);
+        } while (buffer.size() > 0);
 
         // Now validate we have no more messages
         assertEquals("Empty buffer", 0, buffer.size());
@@ -268,8 +267,7 @@ public class RatioMessageBufferTest {
         List<Message> returnedMessages = new ArrayList<>();
         do {
             returnedMessages.add(buffer.poll());
-        }
-        while (buffer.size() > 0);
+        } while (buffer.size() > 0);
 
         // Now validate we have no more messages
         assertEquals("Empty buffer", 0, buffer.size());

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -38,14 +38,15 @@ import java.util.List;
 public abstract class AbstractScheme implements Deserializer {
 
     /**
-     * @return - Define the fields that you will deserialize into.
+     * Define the fields that you will deserialize into.
+     * @return the fields that you will deserialize into.
      */
     public abstract Fields getOutputFields();
 
     /**
      * Implement deserialization logic and return List of objects/tuple values.
-     * @param ser - byte buffer to deserialize.
-     * @return - List of objects/tuple values.
+     * @param ser byte buffer to deserialize.
+     * @return list of objects/tuple values.
      */
     public abstract List<Object> deserialize(ByteBuffer ser);
 

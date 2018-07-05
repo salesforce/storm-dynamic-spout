@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -51,9 +51,8 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import com.salesforce.storm.spout.sideline.trigger.StaticTrigger;
 import org.apache.storm.task.TopologyContext;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -501,9 +500,6 @@ public class SidelineSpoutHandlerTest {
         spout.close();
     }
 
-    @Rule
-    public ExpectedException expectedExceptionMisconfiguredCreateStartingTrigger = ExpectedException.none();
-
     /**
      * Test that we get a runtime exception when we configure a class that doesn't utilize our interfaces.
      */
@@ -518,9 +514,9 @@ public class SidelineSpoutHandlerTest {
         final SidelineSpoutHandler sidelineSpoutHandler = new SidelineSpoutHandler();
         sidelineSpoutHandler.open(config, virtualSpoutFactory);
 
-        expectedExceptionMisconfiguredCreateStartingTrigger.expect(RuntimeException.class);
-
-        sidelineSpoutHandler.createSidelineTriggers();
+        Assertions.assertThrows(RuntimeException.class, () ->
+            sidelineSpoutHandler.createSidelineTriggers()
+        );
 
         // close things out.
         sidelineSpoutHandler.close();

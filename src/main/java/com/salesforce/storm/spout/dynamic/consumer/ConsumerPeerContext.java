@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -55,14 +55,19 @@ public class ConsumerPeerContext {
     }
 
     /**
-     * @return How many consumer instances are running.
+     * Get the total number of consumer instances.
+     * @return total number of consumer instances.
      */
     public int getTotalInstances() {
         return totalInstances;
     }
 
      /**
-     * @return Instance number the current instance is out of the total number of instances, indexed at 0.
+      * Get the instance number for the current instance.
+      *
+      * This is take out of the total number of instances. Indexing begins at 0.
+      *
+     * @return instance number for the current instance.
      */
     public int getInstanceNumber() {
         return instanceNumber;

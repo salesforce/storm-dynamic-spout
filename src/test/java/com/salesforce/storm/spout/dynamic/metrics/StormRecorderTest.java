@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -30,7 +30,7 @@ import com.salesforce.storm.spout.dynamic.mocks.MockTopologyContext;
 import org.apache.storm.metric.api.MultiCountMetric;
 import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,9 +72,9 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiAssignableMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
-        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiCountMetric.class), eq(defaultTimeWindow));
 
         assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
         assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
@@ -104,9 +104,9 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiAssignableMetric.class), eq(timeBucket.intValue()));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
-        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(timeBucket.intValue()));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiCountMetric.class), eq(timeBucket.intValue()));
     }
 
     /**
@@ -133,9 +133,9 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(timeBucket));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiAssignableMetric.class), eq(timeBucket));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(timeBucket));
-        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(timeBucket));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiCountMetric.class), eq(timeBucket));
     }
 
     /**
@@ -162,9 +162,9 @@ public class StormRecorderTest {
         verify(mockTopologyContext, never()).getThisTaskIndex();
 
         // Should have registered 4 metrics.
-        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("GAUGES"), any(MultiAssignableMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
-        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
+        verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiCountMetric.class), eq(defaultTimeWindow));
     }
 
     /**

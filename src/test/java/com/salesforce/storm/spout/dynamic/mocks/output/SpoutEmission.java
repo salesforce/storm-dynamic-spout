@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.dynamic.mocks.output;
 import java.util.List;
 
 /**
- * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}
+ * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}.
  */
 public class SpoutEmission {
     private final Object messageId;
@@ -37,7 +37,7 @@ public class SpoutEmission {
     private final Integer taskId;
 
     /**
-     * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}
+     * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}.
      * @param messageId message id.
      * @param streamId stream id.
      * @param tuple tuple.
@@ -47,7 +47,7 @@ public class SpoutEmission {
     }
 
     /**
-     * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}
+     * Wrapper for tracking emissions from a {@link com.salesforce.storm.spout.dynamic.DynamicSpout}.
      * @param messageId message id.
      * @param streamId stream id.
      * @param tuple tuple.

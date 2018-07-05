@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -27,7 +27,7 @@ package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
 import com.google.common.base.Charsets;
 import org.apache.storm.tuple.Values;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -44,9 +44,8 @@ public class Utf8StringDeserializerTest {
     public void testDeserializeWithConsumerRecord() {
         // Define inputs
         final String expectedKey = "This is My Key";
-        //CHECKSTYLE:OFF: AvoidEscapedUnicodeCharacters - We actually want unicode here...
+        @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
         final String expectedValue = "This is my message \uD83D\uDCA9";
-        //CHECKSTYLE:ON
         final String expectedTopic = "MyTopic";
         final int expectedPartition = 34;
         final long expectedOffset = 31337L;

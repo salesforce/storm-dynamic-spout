@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -206,14 +206,15 @@ public class RatioMessageBuffer implements MessageBuffer {
     @Override
     public int size() {
         int total = 0;
-        for (final Queue queue: messageBuffer.values()) {
+        for (final Queue queue : messageBuffer.values()) {
             total += queue.size();
         }
         return total;
     }
 
     /**
-     * @return returns the next Message to be processed out of the queue.
+     * Get the next Message to be processed out of the queue.
+     * @return next Message to be processed out of the queue
      */
     @Override
     public Message poll() {
@@ -237,42 +238,48 @@ public class RatioMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * Get a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return new LinkedBlockingQueue instance with a max size of our configured buffer
      */
     private BlockingQueue<Message> createNewQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSize());
     }
 
     /**
-     * @return The configured maximum buffer size.
+     * Get the maximum buffer size.
+     * @return maximum buffer size
      */
     public int getMaxBufferSize() {
         return maxBufferSize;
     }
 
     /**
-     * @return The configured Regex pattern to match throttled VirtualSpoutIds against.
+     * Get the regex pattern to match throttled VirtualSpoutIds against.
+     * @return regex pattern to match throttled VirtualSpoutIds against
      */
     public Pattern getRegexPattern() {
         return regexPattern;
     }
 
     /**
-     * @return The configured throttle ratio.
+     * Get the throttle ratio.
+     * @return throttle ratio
      */
     public int getThrottleRatio() {
         return throttleRatio;
     }
 
     /**
-     * @return Set of all VirtualSpoutIds that ARE throttled.
+     * Get the set of all VirtualSpoutIds that have been throttled.
+     * @return set of all VirtualSpoutIds that have been throttled
      */
     public Set<VirtualSpoutIdentifier> getThrottledVirtualSpoutIdentifiers() {
         return nextVirtualSpoutIdGenerator.getAllThrottledVirtualSpoutIds();
     }
 
     /**
-     * @return Set of all VirtualSpoutIds that are NOT throttled.
+     * Get the set of all VirtualSpoutIds that have not been throttled.
+     * @return set of all VirtualSpoutIds that have not been throttled
      */
     public Set<VirtualSpoutIdentifier> getNonThrottledVirtualSpoutIdentifiers() {
         return nextVirtualSpoutIdGenerator.getAllNonThrottledVirtualSpoutIds();
@@ -327,7 +334,7 @@ public class RatioMessageBuffer implements MessageBuffer {
             order.clear();
 
             // Create new ordering, probably a better way to do this...
-            for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry: allIds.entrySet()) {
+            for (Map.Entry<VirtualSpoutIdentifier, Boolean> entry : allIds.entrySet()) {
                 // If throttled
                 if (entry.getValue()) {
                     order.add(entry.getKey());
@@ -357,14 +364,16 @@ public class RatioMessageBuffer implements MessageBuffer {
         }
 
         /**
-         * @return All tracked VirtualSpoutIdentifiers.
+         * Get all all tracked VirtualSpoutIdentifiers.
+         * @return all tracked VirtualSpoutIdentifiers
          */
         public Set<VirtualSpoutIdentifier> getAllVirtualSpoutIds() {
             return allIds.keySet();
         }
 
         /**
-         * @return All tracked VirtualSpoutIdentifiers that ARE throttled.
+         * Get all tracked VirtualSpoutIdentifiers that ARE throttled.
+         * @return all tracked VirtualSpoutIdentifiers that ARE throttled
          */
         Set<VirtualSpoutIdentifier> getAllThrottledVirtualSpoutIds() {
             Set<VirtualSpoutIdentifier> throttledVirtualSpoutIds = new HashSet<>();
@@ -377,7 +386,8 @@ public class RatioMessageBuffer implements MessageBuffer {
         }
 
         /**
-         * @return All tracked VirtualSpoutIdentifiers that are NOT throttled.
+         * Get all tracked VirtualSpoutIdentifiers that are NOT throttled.
+         * @return all tracked VirtualSpoutIdentifiers that are NOT throttled
          */
         Set<VirtualSpoutIdentifier> getAllNonThrottledVirtualSpoutIds() {
             Set<VirtualSpoutIdentifier> notThrottledVirtualSpoutIds = new HashSet<>();

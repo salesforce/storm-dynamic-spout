@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -36,25 +36,19 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.mocks.MockDelegateSpout;
 import com.salesforce.storm.spout.dynamic.buffer.FifoBuffer;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.tuple.Values;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -66,9 +60,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -79,7 +71,6 @@ import static org.mockito.Mockito.when;
 /**
  * Test that the {@link SpoutRunner} starts spouts when passed in and handles their lifecycle correctly.
  */
-@RunWith(DataProviderRunner.class)
 public class SpoutRunnerTest {
 
     private static final Logger logger = LoggerFactory.getLogger(SpoutRunnerTest.class);
@@ -91,7 +82,7 @@ public class SpoutRunnerTest {
      * Shutdown the thread executor service when the test is all over.
      * @throws InterruptedException something went wrong.
      */
-    @After
+    @AfterEach
     public void shutDown() throws InterruptedException {
         // Shut down our executor service if it exists
         if (executorService == null) {
@@ -158,8 +149,8 @@ public class SpoutRunnerTest {
      *   - spoutRunner.requestStop() shuts down the instance.
      *   - spoutDelegate.requestStop() shuts down the instance.
      */
-    @Test
-    @UseDataProvider("provideTrueAndFalse")
+    @ParameterizedTest
+    @MethodSource("provideTrueAndFalse")
     public void testOpenandCloseOnSpoutIsCalled(final boolean shutdownViaSpout) throws InterruptedException {
         // Define inputs
         final Clock clock = Clock.systemUTC();
@@ -232,7 +223,6 @@ public class SpoutRunnerTest {
     /**
      * Provides various tuple buffer implementation.
      */
-    @DataProvider
     public static Object[][] provideTrueAndFalse() {
         return new Object[][]{
             { true },

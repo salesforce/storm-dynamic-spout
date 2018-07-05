@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -35,7 +35,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -171,14 +170,16 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     }
 
     /**
-     * @return full zookeeper path to where our consumer state is stored for the given partition.
+     * Get the full zookeeper path to where our consumer state is stored for the given partition.
+     * @return full zookeeper path to where our consumer state is stored for the given partition
      */
     String getZkConsumerStatePathForPartition(final String consumerId, final int partitionId) {
         return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
     }
 
     /**
-     * @return configured zookeeper root path.
+     * Get the zookeeper root path.
+     * @return zookeeper root path
      */
     String getZkRoot() {
         return zkRoot;

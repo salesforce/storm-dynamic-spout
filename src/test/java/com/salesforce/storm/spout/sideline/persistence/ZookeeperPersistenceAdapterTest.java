@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
-import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
@@ -42,14 +42,14 @@ import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
-import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,14 +79,8 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Create shared zookeeper test server.
      */
-    @ClassRule
+    @RegisterExtension
     public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
-
-    /**
-     * By default no expected exceptions.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Tests that if you're missing the configuration item for ZkRootNode it will throw
@@ -102,9 +96,11 @@ public class ZookeeperPersistenceAdapterTest {
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("root is required");
-        persistenceAdapter.open(topologyConfig);
+        final Throwable thrown = Assertions.assertThrows(IllegalArgumentException.class, () ->
+            persistenceAdapter.open(topologyConfig)
+        );
+
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("root is required"));
     }
 
     /**
@@ -122,7 +118,7 @@ public class ZookeeperPersistenceAdapterTest {
             + String.valueOf(partitionId);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -161,7 +157,7 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -304,7 +300,7 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(getZkServer().getConnectString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event));
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -321,7 +317,7 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -438,9 +434,6 @@ public class ZookeeperPersistenceAdapterTest {
         zookeeperClient.close();
     }
 
-    @Rule
-    public ExpectedException expectedExceptionPersistSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
-
     /**
      * Verify we get an exception if you try to persist before calling open().
      */
@@ -452,19 +445,17 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(new SidelineRequestIdentifier("test"), null);
 
         // Call method and watch for exception
-        expectedExceptionPersistSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.persistSidelineRequestState(
-            SidelineType.START,
-            new SidelineRequestIdentifier("test"),
-            sidelineRequest,
-            new ConsumerPartition("Foobar", 0),
-            1L,
-            2L
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            persistenceAdapter.persistSidelineRequestState(
+                SidelineType.START,
+                new SidelineRequestIdentifier("test"),
+                sidelineRequest,
+                new ConsumerPartition("Foobar", 0),
+                1L,
+                2L
+            )
         );
     }
-
-    @Rule
-    public ExpectedException expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened = ExpectedException.none();
 
     /**
      * Verify we get an exception if you try to retrieve before calling open().
@@ -475,12 +466,10 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedExceptionRetrieveSidelineRequestStateBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier("test"), new ConsumerPartition("Foobar", 0));
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            persistenceAdapter.retrieveSidelineRequest(new SidelineRequestIdentifier("test"), new ConsumerPartition("Foobar", 0))
+        );
     }
-
-    @Rule
-    public ExpectedException expectedExceptionClearSidelineRequestBeforeBeingOpened = ExpectedException.none();
 
     /**
      * Verify we get an exception if you try to persist before calling open().
@@ -491,8 +480,9 @@ public class ZookeeperPersistenceAdapterTest {
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
 
         // Call method and watch for exception
-        expectedExceptionClearSidelineRequestBeforeBeingOpened.expect(IllegalStateException.class);
-        persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier("test"), new ConsumerPartition("Foobar", 0));
+        Assertions.assertThrows(IllegalStateException.class, () ->
+            persistenceAdapter.clearSidelineRequest(new SidelineRequestIdentifier("test"), new ConsumerPartition("Foobar", 0))
+        );
     }
 
     @Test
@@ -501,7 +491,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -588,7 +578,7 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
         final String topicName = "MyTopic";
 
-        final Map topologyConfig = createDefaultConfig(getZkServer().getConnectString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
 
         // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -674,7 +664,7 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Simple accessor.
      */
-    private TestingServer getZkServer() {
-        return sharedZookeeperTestResource.getZookeeperTestServer();
+    private String getZookeeperConnectionString() {
+        return sharedZookeeperTestResource.getZookeeperTestServer().getConnectString();
     }
 }

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -30,10 +30,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
-import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
+import com.salesforce.kafka.test.junit5.SharedKafkaTestResource;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
@@ -48,20 +47,19 @@ import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.persistence.InMemoryPersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapter;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetOutOfRangeException;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -99,7 +97,6 @@ import static org.mockito.Mockito.when;
 /**
  * Validates that our Kafka Consumer works as we expect under various scenarios.
  */
-@RunWith(DataProviderRunner.class)
 public class ConsumerTest {
     // TODO: these test cases
     // test calling open() w/ a starting state.
@@ -114,20 +111,20 @@ public class ConsumerTest {
     /**
      * Create shared kafka test server.
      */
-    @ClassRule
+    @RegisterExtension
     public static final SharedKafkaTestResource sharedKafkaTestResource = new SharedKafkaTestResource();
 
     /**
      * This happens once before every test method.
      * Create a new empty namespace with randomly generated name.
      */
-    @Before
+    @BeforeEach
     public void beforeTest() {
         // Generate unique namespace name
         topicName = ConsumerTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create namespace
-        getKafkaTestServer().createTopic(topicName);
+        getKafkaTestUtils().createTopic(topicName, 1, (short) 1);
     }
 
     /**
@@ -149,7 +146,7 @@ public class ConsumerTest {
         final ConsumerPeerContext consumerPeerContext = getDefaultConsumerCohortDefinition();
 
         // Define expected kafka brokers
-        final String expectedKafkaBrokers = getKafkaTestServer().getKafkaConnectString();
+        final String expectedKafkaBrokers = sharedKafkaTestResource.getKafkaConnectString();
 
         // Call constructor
         final Consumer consumer = new Consumer();
@@ -186,9 +183,6 @@ public class ConsumerTest {
 
         consumer.close();
     }
-
-    @Rule
-    public ExpectedException expectedExceptionCallConnectMultipleTimes = ExpectedException.none();
 
     /**
      * test calling connect twice throws exception.
@@ -231,14 +225,28 @@ public class ConsumerTest {
         final Consumer consumer = new Consumer(mockKafkaConsumer);
 
         // Now call open
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(), mockPersistenceAdapter, new LogRecorder(), null);
+        consumer.open(
+            config,
+            getDefaultVSpoutId(),
+            getDefaultConsumerCohortDefinition(),
+            mockPersistenceAdapter,
+            new LogRecorder(),
+            null
+        );
 
-        // Now call open again, we expect this to throw an exception
-        expectedExceptionCallConnectMultipleTimes.expect(IllegalStateException.class);
-        expectedExceptionCallConnectMultipleTimes.expectMessage("open more than once");
+        final Throwable thrown = Assertions.assertThrows(IllegalStateException.class, () ->
+            // Now call open again, we expect this to throw an exception
+            consumer.open(
+                config,
+                getDefaultVSpoutId(),
+                getDefaultConsumerCohortDefinition(),
+                mockPersistenceAdapter,
+                new LogRecorder(),
+                null
+            )
+        );
 
-        // Call it
-        consumer.open(config, getDefaultVSpoutId(), getDefaultConsumerCohortDefinition(),mockPersistenceAdapter, new LogRecorder(), null);
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("open more than once"));
     }
 
     /**
@@ -736,7 +744,7 @@ public class ConsumerTest {
         // Define and create our namespace
         final String expectedTopicName = "testGetAssignedPartitionsWithMultiplePartitions" + System.currentTimeMillis();
         final int expectedNumberOfPartitions = 5;
-        getKafkaTestServer().createTopic(expectedTopicName, expectedNumberOfPartitions);
+        getKafkaTestUtils().createTopic(expectedTopicName, expectedNumberOfPartitions, (short) 1);
 
         // Create our consumer
         final Consumer consumer = getDefaultConsumerInstanceAndOpen(expectedTopicName);
@@ -822,7 +830,7 @@ public class ConsumerTest {
         // Define and create our namespace
         final String expectedTopicName = "testUnsubscribeTopicPartitionMultiplePartitions" + System.currentTimeMillis();
         final int expectedNumberOfPartitions = 5;
-        getKafkaTestServer().createTopic(expectedTopicName, expectedNumberOfPartitions);
+        getKafkaTestUtils().createTopic(expectedTopicName, expectedNumberOfPartitions, (short) 1);
 
         // Create our consumer
         final Consumer consumer = getDefaultConsumerInstanceAndOpen(expectedTopicName);
@@ -1207,7 +1215,7 @@ public class ConsumerTest {
         // Read from namespace, verify we get what we expect, we should only get the last 5 records.
         final List<Record> consumedRecords = asyncConsumeMessages(consumer, 5);
         final Iterator<ProducedKafkaRecord<byte[], byte[]>> expectedProducedRecordsIterator = expectedProducedRecords.iterator();
-        for (final Record foundRecord: consumedRecords) {
+        for (final Record foundRecord : consumedRecords) {
             // Get the produced record we expected to get back.
             final ProducedKafkaRecord<byte[], byte[]> expectedRecord = expectedProducedRecordsIterator.next();
 
@@ -1238,7 +1246,7 @@ public class ConsumerTest {
         final int expectedNumberOfPartitions = 2;
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, expectedNumberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, expectedNumberOfPartitions, (short) 1);
 
         // Define our expected namespace/partitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -1353,14 +1361,14 @@ public class ConsumerTest {
      *   - Verify we only consume from partitions 2 and 3
      * @param consumerIndex What consumerIndex to run the test with.
      */
-    @Test
-    @UseDataProvider("providerOfConsumerIndexes")
+    @ParameterizedTest
+    @MethodSource("providerOfConsumerIndexes")
     public void testConsumeWithConsumerGroupEvenNumberOfPartitions(final int consumerIndex) {
         final int numberOfMsgsPerPartition = 10;
 
         // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
-        getKafkaTestServer().createTopic(topicName, 4);
+        getKafkaTestUtils().createTopic(topicName, 4, (short) 1);
 
         // Define some topicPartitions
         final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
@@ -1496,14 +1504,14 @@ public class ConsumerTest {
      *   - Verify we only consume from partitions 3 and 4
      * @param consumerIndex What consumerIndex to run the test with.
      */
-    @Test
-    @UseDataProvider("providerOfConsumerIndexes")
+    @ParameterizedTest
+    @MethodSource("providerOfConsumerIndexes")
     public void testConsumeWithConsumerGroupOddNumberOfPartitions(final int consumerIndex) {
         final int numberOfMsgsPerPartition = 10;
 
         // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
-        getKafkaTestServer().createTopic(topicName, 5);
+        getKafkaTestUtils().createTopic(topicName, 5, (short) 1);
 
         // Define some topicPartitions
         final TopicPartition kafkaTopicPartition0 = new TopicPartition(topicName, 0);
@@ -1606,7 +1614,7 @@ public class ConsumerTest {
         assertNotNull("Should not be null", consumerState);
         assertEquals("Should only have correct number of entries", expectedPartitions.size(), consumerState.size());
 
-        for (final ConsumerPartition expectedPartition: expectedPartitions) {
+        for (final ConsumerPartition expectedPartition : expectedPartitions) {
             assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartition));
 
             if (expectedPartition.partition() % 2 == 0) {
@@ -1657,7 +1665,6 @@ public class ConsumerTest {
     /**
      * Provides consumer indexes 0 and 1.
      */
-    @DataProvider
     public static Object[][] providerOfConsumerIndexes() {
         return new Object[][]{
             {0},
@@ -1738,7 +1745,7 @@ public class ConsumerTest {
         final int expectedNumberOfPartitions = 2;
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, expectedNumberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, expectedNumberOfPartitions, (short) 1);
 
         // Define our expected namespace/partitions
         final ConsumerPartition expectedTopicPartition0 = new ConsumerPartition(topicName, 0);
@@ -1863,7 +1870,7 @@ public class ConsumerTest {
         final long partition1StartingOffset = 20L;
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, numberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, numberOfPartitions, (short) 1);
 
         // Produce messages into both topics
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -1980,7 +1987,7 @@ public class ConsumerTest {
         final long partition1StartingOffset = -1L;
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, numberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, numberOfPartitions, (short) 1);
 
         // Produce messages into both topics
         produceRecords(numberOfMsgsPerPartition, 0);
@@ -2039,8 +2046,7 @@ public class ConsumerTest {
             } else {
                 attempts++;
             }
-        }
-        while (attempts <= 2);
+        } while (attempts <= 2);
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
@@ -2085,8 +2091,7 @@ public class ConsumerTest {
             } else {
                 attempts++;
             }
-        }
-        while (attempts <= 2);
+        } while (attempts <= 2);
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
@@ -2156,7 +2161,7 @@ public class ConsumerTest {
         final long partition1StartingOffset = 100L;
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, numberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, numberOfPartitions, (short) 1);
 
         // Produce messages into partition1
         produceRecords(numberOfMsgsOnPartition1, partition1.partition());
@@ -2197,7 +2202,7 @@ public class ConsumerTest {
         assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
 
         // Ack all of our messages in consumer
-        for (final Record record: records) {
+        for (final Record record : records) {
             consumer.commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
         }
 
@@ -2253,7 +2258,7 @@ public class ConsumerTest {
         final long partition1StartingOffset = 100L;
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, numberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, numberOfPartitions, (short) 1);
 
         // Produce messages into partition0 and partition1
         produceRecords(numberOfMsgsOnPartition0, 0);
@@ -2285,7 +2290,7 @@ public class ConsumerTest {
         assertEquals("We should have 2 records", numberOfExpectedMessages, records.size());
 
         // Validate only partition 0
-        for (final Record record: records) {
+        for (final Record record : records) {
             assertEquals("Should have come from partition0 only", 0, record.getPartition());
         }
 
@@ -2305,7 +2310,7 @@ public class ConsumerTest {
         );
 
         // Ack all of our messages in consumer
-        for (final Record record: records) {
+        for (final Record record : records) {
             consumer.commitOffset(record.getNamespace(), record.getPartition(), record.getOffset());
         }
 
@@ -2349,7 +2354,7 @@ public class ConsumerTest {
         final TopicPartition topicPartition1 = new TopicPartition(partition1.namespace(), partition1.partition());
 
         // Create our multi-partition namespace.
-        getKafkaTestServer().createTopic(topicName, numberOfPartitions);
+        getKafkaTestUtils().createTopic(topicName, numberOfPartitions, (short) 1);
 
         // Produce messages into partition1
         produceRecords(numberOfMsgsOnPartition1, partition1.partition());
@@ -2468,8 +2473,7 @@ public class ConsumerTest {
      * helper method to produce records into kafka.
      */
     private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(final int numberOfRecords, final int partitionId) {
-        final KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(getKafkaTestServer());
-        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
+        return getKafkaTestUtils().produceRecords(numberOfRecords, topicName, partitionId);
     }
 
     /**
@@ -2503,7 +2507,7 @@ public class ConsumerTest {
         // Kafka Consumer config items
         defaultConfig.put(
             KafkaConsumerConfig.KAFKA_BROKERS,
-            Lists.newArrayList(getKafkaTestServer().getKafkaConnectString())
+            Lists.newArrayList(sharedKafkaTestResource.getKafkaConnectString())
         );
         defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");
@@ -2511,7 +2515,7 @@ public class ConsumerTest {
 
         // Dynamic Spout config items
         defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_ROOT, "/dynamic-spout-test");
-        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        defaultConfig.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
         defaultConfig.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
 
         return SpoutConfig.setDefaults(defaultConfig);
@@ -2584,7 +2588,7 @@ public class ConsumerTest {
     /**
      * Simple accessor.
      */
-    private KafkaTestServer getKafkaTestServer() {
-        return sharedKafkaTestResource.getKafkaTestServer();
+    private KafkaTestUtils getKafkaTestUtils() {
+        return sharedKafkaTestResource.getKafkaTestUtils();
     }
 }

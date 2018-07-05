@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -31,12 +31,10 @@ import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.tuple.Values;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +48,6 @@ import static org.junit.Assert.assertNull;
 /**
  * Kind of silly.  Basically just testing a FIFO buffer.
  */
-@RunWith(DataProviderRunner.class)
 public class FifoBufferTest {
 
     /**
@@ -104,7 +101,7 @@ public class FifoBufferTest {
         assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
 
         // Now pop them, order should be maintained
-        for (Message originalKafkaMsg: submittedOrder) {
+        for (Message originalKafkaMsg : submittedOrder) {
             final Message bufferedMsg = messageBuffer.poll();
 
             // Validate it
@@ -132,8 +129,8 @@ public class FifoBufferTest {
     /**
      * Makes sure that we can properly parse long config values on open().
      */
-    @Test
-    @UseDataProvider("provideConfigObjects")
+    @ParameterizedTest
+    @MethodSource("provideConfigObjects")
     public void testConstructorWithConfigValue(Number inputValue) throws InterruptedException {
         // Create config
         Map<String, Object> config = Maps.newHashMap();
@@ -150,7 +147,6 @@ public class FifoBufferTest {
     /**
      * Provides various tuple buffer implementation.
      */
-    @DataProvider
     public static Object[][] provideConfigObjects() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
                 // Integer

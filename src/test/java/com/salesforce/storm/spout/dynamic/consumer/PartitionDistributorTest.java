@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,26 +25,19 @@
 
 package com.salesforce.storm.spout.dynamic.consumer;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test that {@link PartitionDistributor} properly distributes partitions across a set of instances.
  */
-@RunWith(DataProviderRunner.class)
 public class PartitionDistributorTest {
-
-    private static final Logger logger = LoggerFactory.getLogger(PartitionDistributorTest.class);
-
 
     /**
      * Test that given a number of consumer instances the current instance gets distributed the correct set of partition ids.
@@ -53,8 +46,8 @@ public class PartitionDistributorTest {
      * @param allPartitionIds All partition ids to be distributed from
      * @param expectedPartitionIds Expected partition ids for the given consumer
      */
-    @Test
-    @UseDataProvider("dataProvider")
+    @ParameterizedTest
+    @MethodSource("dataProvider")
     public void testCalculatePartitionAssignment(int totalConsumers, int consumerIndex, int[] allPartitionIds, int[] expectedPartitionIds) {
         final int[] actualPartitionIds = PartitionDistributor.calculatePartitionAssignment(
             // Number of consumer instances
@@ -64,8 +57,6 @@ public class PartitionDistributorTest {
             // Partition ids to distribute
             allPartitionIds
         );
-
-        logger.info("Expected = {}, Actual = {}", expectedPartitionIds, actualPartitionIds);
 
         assertArrayEquals(
             "Partition ids match",
@@ -78,7 +69,6 @@ public class PartitionDistributorTest {
      * Provide test data.
      * @return test data.
      */
-    @DataProvider
     public static Object[][] dataProvider() {
         return new Object[][]{
             // Two instances, first instance, two partitions, first partition
@@ -100,118 +90,99 @@ public class PartitionDistributorTest {
         };
     }
 
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances = ExpectedException.none();
-
     /**
      * Test that when we have more consumer instances than partition ids that an exception is thrown.
      */
     @Test
     public void testCalculatePartitionAssignmentWithMorePartitionsThanInstances() {
-        // We expect exceptions on this one.
-        expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances.expect(IllegalArgumentException.class);
-        expectedExceptionCalculatePartitionAssignmentWithMorePartitionsThanInstances.expectMessage("partitions");
+        final Throwable thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                4,
+                // Current instance index
+                0,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2 }
+            );
+        });
 
-        PartitionDistributor.calculatePartitionAssignment(
-            // Number of consumer instances
-            4,
-            // Current instance index
-            0,
-            // Partition ids to distribute
-            new int[] { 0, 1, 2 }
-        );
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("partitions"));
     }
 
-    @Rule
-    @SuppressWarnings("checkstyle:linelength")
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers = ExpectedException.none();
 
     /**
      * Test that when we have an invalid consumerIndex, we toss an exception.
      */
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers() {
+        final Throwable thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            PartitionDistributor.calculatePartitionAssignment(
+                    // Number of consumer instances
+                    4,
+                    // Current instance index
+                    5,
+                    // Partition ids to distribute
+                    new int[]{0, 1, 2, 3}
+            );
+        });
 
-        // We expect exceptions on this one.
-        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers.expect(IllegalArgumentException.class);
-        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexHigherThanTotalConsumers.expectMessage("consumerIndex");
-
-        PartitionDistributor.calculatePartitionAssignment(
-            // Number of consumer instances
-            4,
-            // Current instance index
-            5,
-            // Partition ids to distribute
-            new int[] { 0, 1, 2, 3 }
-        );
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("consumerIndex"));
     }
-
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero = ExpectedException.none();
 
     /**
      * Test that when we have a negative consumerIndex value we toss an exception.
      */
     @Test
     public void testCalculatePartitionAssignmentWithConsumerIndexBelowZero() {
+        final Throwable thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                4,
+                // Current instance index
+                -2,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+            );
+        });
 
-        // We expect exceptions on this one.
-        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero.expect(IllegalArgumentException.class);
-        expectedExceptionCalculatePartitionAssignmentWithConsumerIndexBelowZero.expectMessage("consumerIndex");
-
-        PartitionDistributor.calculatePartitionAssignment(
-            // Number of consumer instances
-            4,
-            // Current instance index
-            -2,
-            // Partition ids to distribute
-            new int[] { 0, 1, 2, 3 }
-        );
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("consumerIndex"));
     }
-
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero = ExpectedException.none();
 
     /**
      * Test that when we have a zero total consumers value that we toss an exception.
      */
     @Test
     public void testCalculatePartitionAssignmentWithTotalConsumersZero() {
+        final Throwable thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                0,
+                // Current instance index
+                2,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+            );
+        });
 
-        // We expect exceptions on this one.
-        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero.expect(IllegalArgumentException.class);
-        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersZero.expectMessage("totalConsumers");
-
-        PartitionDistributor.calculatePartitionAssignment(
-            // Number of consumer instances
-            0,
-            // Current instance index
-            2,
-            // Partition ids to distribute
-            new int[] { 0, 1, 2, 3 }
-        );
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("totalConsumers"));
     }
-
-    @Rule
-    public ExpectedException expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative = ExpectedException.none();
 
     /**
      * Test that when we have a negative total consumers value that we toss an exception.
      */
     @Test
     public void testCalculatePartitionAssignmentWithTotalConsumersNegative() {
+        final Throwable thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            PartitionDistributor.calculatePartitionAssignment(
+                // Number of consumer instances
+                -2,
+                // Current instance index
+                2,
+                // Partition ids to distribute
+                new int[] { 0, 1, 2, 3 }
+            );
+        });
 
-        // We expect exceptions on this one.
-        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative.expect(IllegalArgumentException.class);
-        expectedExceptionCalculatePartitionAssignmentWithTotalConsumersNegative.expectMessage("totalConsumers");
-
-        PartitionDistributor.calculatePartitionAssignment(
-            // Number of consumer instances
-            -2,
-            // Current instance index
-            2,
-            // Partition ids to distribute
-            new int[] { 0, 1, 2, 3 }
-        );
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("totalConsumers"));
     }
 }

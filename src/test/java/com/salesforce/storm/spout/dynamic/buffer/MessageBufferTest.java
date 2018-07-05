@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -31,12 +31,9 @@ import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.tuple.Values;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +54,6 @@ import static org.junit.Assert.assertNull;
 /**
  * Generally test the {@link MessageBuffer} interface's surface area.
  */
-@RunWith(DataProviderRunner.class)
 public class MessageBufferTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageBufferTest.class);
@@ -65,7 +61,6 @@ public class MessageBufferTest {
     /**
      * Provides various tuple buffer implementation.
      */
-    @DataProvider
     public static Object[][] provideMessageBuffers() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
                 { createInstance(FifoBuffer.class, 10000) },
@@ -89,8 +84,8 @@ public class MessageBufferTest {
     /**
      * Tests this instance against multiple threads for weirdness.
      */
-    @Test
-    @UseDataProvider("provideMessageBuffers")
+    @ParameterizedTest
+    @MethodSource("provideMessageBuffers")
     public void testConcurrentModification(final MessageBuffer messageBuffer) throws InterruptedException {
         // Settings for test
         final int numberOfVSpoutIds = 10;
@@ -160,7 +155,7 @@ public class MessageBufferTest {
             }
 
             // See if any problems with our futures
-            for (CompletableFuture future: futures) {
+            for (CompletableFuture future : futures) {
                 if (future.isCompletedExceptionally()) {
                     throw new RuntimeException("Failed to complete due to exception");
                 }
@@ -174,7 +169,7 @@ public class MessageBufferTest {
             .atMost(5, TimeUnit.SECONDS)
             .until(() -> {
                 // Validate the futures are completed
-                for (Future future: futures) {
+                for (Future future : futures) {
                     if (!future.isDone()) {
                         return false;
                     }

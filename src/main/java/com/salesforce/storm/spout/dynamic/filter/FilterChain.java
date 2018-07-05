@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -111,7 +111,7 @@ public class FilterChain {
     }
 
     /**
-     * Does the current filter chain step have a filter chain step?
+     * Determines if the current filter chain step has a filter chain step.
      * @param filterChainStepIdentifier filter chain step identifier.
      * @return true, the filter chain step exists, false it does not.
      */

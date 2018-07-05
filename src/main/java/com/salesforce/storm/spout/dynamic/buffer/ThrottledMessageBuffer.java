@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -195,15 +195,12 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     @Override
     public int size() {
         int total = 0;
-        for (final Queue queue: messageBuffer.values()) {
+        for (final Queue queue : messageBuffer.values()) {
             total += queue.size();
         }
         return total;
     }
 
-    /**
-     * @return returns the next Message to be processed out of the queue.
-     */
     @Override
     public Message poll() {
         // If its null, or we hit the end, reset it.
@@ -233,48 +230,56 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * Create a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return a new LinkedBlockingQueue instance with a max size of our configured buffer
      */
     private BlockingQueue<Message> createNewThrottledQueue() {
         return new LinkedBlockingQueue<>(getThrottledBufferSize());
     }
 
     /**
-     * @return return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * Create a a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return a new LinkedBlockingQueue instance with a max size of our configured buffer
      */
     private BlockingQueue<Message> createNewNonThrottledQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSize());
     }
 
     /**
-     * @return The configured buffer size for non-throttled VirtualSpouts.
+     * Get the maximum buffer size for non-throttled VirtualSpouts.
+     * @return maximum buffer size for non-throttled VirtualSpouts
      */
     public int getMaxBufferSize() {
         return maxBufferSize;
     }
 
     /**
-     * @return The configured buffer size for throttled VirtualSpouts.
+     * Get the buffer size for throttled VirtualSpouts.
+     * @return buffer size for throttled VirtualSpouts
      */
     public int getThrottledBufferSize() {
         return throttledBufferSize;
     }
 
     /**
-     * @return The configured Regex pattern to match throttled VirtualSpoutIds against.
+     * Get the regex pattern to match throttled VirtualSpoutIds against.
+     * @return regex pattern to match throttled VirtualSpoutIds against
      */
     public Pattern getRegexPattern() {
         return regexPattern;
     }
 
     /**
-     * Internal method used *ONLY* within tests.  Hacky implementation -- could have race-conditions in other use-cases.
-     * @return Set of all VirtualSpoutIds that ARE throttled.
+     * Internal method used *ONLY* within tests.
+     *
+     * This is a hacky implementation. It could have race-conditions in other use-cases.
+     *
+     * @return set of all VirtualSpoutIds that ARE throttled
      */
     Set<VirtualSpoutIdentifier> getThrottledVirtualSpoutIdentifiers() {
         Set<VirtualSpoutIdentifier> throttledVirtualSpoutIds = new HashSet<>();
 
-        for (Map.Entry<VirtualSpoutIdentifier, BlockingQueue<Message>> entry: messageBuffer.entrySet()) {
+        for (Map.Entry<VirtualSpoutIdentifier, BlockingQueue<Message>> entry : messageBuffer.entrySet()) {
             BlockingQueue<Message> queue = entry.getValue();
             if (queue.remainingCapacity() + queue.size() == getThrottledBufferSize()) {
                 throttledVirtualSpoutIds.add(entry.getKey());
@@ -284,13 +289,16 @@ public class ThrottledMessageBuffer implements MessageBuffer {
     }
 
     /**
-     * Internal method used *ONLY* within tests.  Hacky implementation -- could have race-conditions in other use-cases.
-     * @return Set of all VirtualSpoutIds that are NOT throttled.
+     * Internal method used *ONLY* within tests.
+     *
+     * This is a hacky implementation. It could have race-conditions in other use-cases.
+     *
+     * @return set of all VirtualSpoutIds that are NOT throttled.
      */
     Set<VirtualSpoutIdentifier> getNonThrottledVirtualSpoutIdentifiers() {
         Set<VirtualSpoutIdentifier> nonThrottledVirtualSpoutIds = new HashSet<>();
 
-        for (Map.Entry<VirtualSpoutIdentifier, BlockingQueue<Message>> entry: messageBuffer.entrySet()) {
+        for (Map.Entry<VirtualSpoutIdentifier, BlockingQueue<Message>> entry : messageBuffer.entrySet()) {
             BlockingQueue<Message> queue = entry.getValue();
             if (queue.remainingCapacity() + queue.size() > getThrottledBufferSize()) {
                 nonThrottledVirtualSpoutIds.add(entry.getKey());

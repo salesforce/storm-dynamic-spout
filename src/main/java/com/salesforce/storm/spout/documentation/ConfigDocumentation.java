@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -63,22 +63,26 @@ public @interface ConfigDocumentation {
     }
 
     /**
-     * @return Description of the configuration setting.
+     * Get the description of the configuration setting.
+     * @return description of the configuration setting.
      */
     String description() default "";
 
     /**
-     * @return Whether or not the configuration setting is required.
+     * Get whether or not the configuration setting is required.
+     * @return whether or not the configuration setting is required.
      */
     boolean required() default false;
 
     /**
-     * @return Category of the configuration setting.
+     * Get the category of the configuration setting.
+     * @return category of the configuration setting.
      */
     Category category() default Category.NONE;
 
     /**
-     * @return Type of the value for the configuration setting.
+     * Get the type of the value for the configuration setting.
+     * @return type of the value for the configuration setting.
      */
     Class type() default Default.class;
 

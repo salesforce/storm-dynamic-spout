@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -49,7 +49,8 @@ public class NeverRetryManager implements RetryManager {
     }
 
     /**
-     * @return - always null, never retry any messages.
+     * The next failed message to retry is always null in this implementation.
+     * @return always null
      */
     @Override
     public MessageId nextFailedMessageToRetry() {
@@ -57,7 +58,8 @@ public class NeverRetryManager implements RetryManager {
     }
 
     /**
-     * @return Always return false.  Never want to replay messages.
+     * This implementation will never retry further.
+     * @return always false
      */
     @Override
     public boolean retryFurther(MessageId messageId) {

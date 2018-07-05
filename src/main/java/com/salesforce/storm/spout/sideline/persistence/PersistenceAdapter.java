@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -52,6 +52,7 @@ public interface PersistenceAdapter {
     void close();
 
     /**
+     * Persist a sideline request.
      * @param type type of the sideline (Start/Stop).
      * @param id unique identifier for the sideline request.
      * @param request sideline request.

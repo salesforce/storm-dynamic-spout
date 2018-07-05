@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -77,14 +77,16 @@ public class PartitionOffsetManager {
     }
 
     /**
-     * @return - The namespace associated with this instance.
+     * Get the namespace associated with this instance.
+     * @return namespace associated with this instance
      */
     private String getNamespace() {
         return namespace;
     }
 
     /**
-     * @return - The partition this instance represents.
+     * Get the partition this instance represents.
+     * @return partition this instance represents
      */
     private int getPartitionId() {
         return partitionId;
@@ -92,8 +94,10 @@ public class PartitionOffsetManager {
 
     /**
      * Mark this offset as being emitted into the topology, but not yet confirmed/completed.
-     * Not thread safe
-     * @param offset - The offset we want to start tracking.
+     *
+     * Not thread safe.
+     *
+     * @param offset offset to start tracking
      */
     public void startOffset(final long offset) {
         trackedOffsets.add(offset);
@@ -107,8 +111,10 @@ public class PartitionOffsetManager {
 
     /**
      * Mark this offset as having completed processing.
+     *
      * Not thread safe.
-     * @param offset - The offset we want to mark as completed.
+     *
+     * @param offset offset to mark as completed
      */
     public void finishOffset(final long offset) {
         if (!trackedOffsets.contains(offset)) {
@@ -159,16 +165,22 @@ public class PartitionOffsetManager {
     }
 
     /**
-     * @return - return the last offset considered "finished".
-     *           Here a "finished" offset is the highest continuous offset.
+     * Get the last finished offset.
+     *
+     * Here a "finished" offset is the highest continuous offset.
+     *
+     * @return last offset considered "finished"
      */
     public long lastFinishedOffset() {
         return lastFinishedOffset;
     }
 
     /**
-     * @return - return the largest offset we have started tracking.
-     *           This is NOT the same as the "Last Finished Offset"
+     * Get the largest offset whose tracking has been started.
+     *
+     * This is NOT the same as the "Last Finished Offset"
+     *
+     * @return largest offset whose tracking has been started
      */
     public long lastStartedOffset() {
         // If the last started offset is -1 that means we haven't started tracking any offsets yet.

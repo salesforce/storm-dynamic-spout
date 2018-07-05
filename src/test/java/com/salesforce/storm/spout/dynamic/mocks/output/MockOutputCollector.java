@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -59,7 +59,7 @@ public class MockOutputCollector implements IOutputCollector {
      */
     public List<Emission> getEmissionsByStreamId(String streamId) {
         List<Emission> matched = Lists.newArrayList();
-        for (Emission emission: getEmissions()) {
+        for (Emission emission : getEmissions()) {
             if (emission.getStreamId() != null && emission.getStreamId().equals(streamId)) {
                 matched.add(emission);
             }

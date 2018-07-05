@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -252,7 +252,8 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * @return - The next Message that should be played into the topology.
+     * Get the next Message that should be played into the topology.
+     * @return next Message that should be played into the topology
      */
     @Override
     public Message nextTuple() {
@@ -329,7 +330,7 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * For the given MessageId, does it exceed any defined ending offsets?
+     * For the given MessageId, determine if it exceed any defined ending offsets.
      * @param messageId - The MessageId to check.
      * @return - Boolean - True if it does, false if it does not.
      */
@@ -449,9 +450,6 @@ public class VirtualSpout implements DelegateSpout {
         isCompleted = true;
     }
 
-    /**
-     * @return - Return this instance's unique virtual spout it.
-     */
     @Override
     public VirtualSpoutIdentifier getVirtualSpoutId() {
         return virtualSpoutId;
@@ -531,7 +529,8 @@ public class VirtualSpout implements DelegateSpout {
     }
 
     /**
-     * @return configured metric record instance.
+     * Get the metrics recorder.
+     * @return metrics recorder
      */
     MetricsRecorder getMetricsRecorder() {
         return metricsRecorder;
@@ -569,7 +568,7 @@ public class VirtualSpout implements DelegateSpout {
         final ConsumerState currentState = consumer.getCurrentState();
 
         // Compare it against our ending state
-        for (final ConsumerPartition consumerPartition: currentState.getConsumerPartitions()) {
+        for (final ConsumerPartition consumerPartition : currentState.getConsumerPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
             final long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
 

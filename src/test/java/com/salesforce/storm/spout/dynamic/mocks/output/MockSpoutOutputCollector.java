@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -60,21 +60,9 @@ public class MockSpoutOutputCollector extends SpoutOutputCollector {
         super(delegate);
     }
 
-    // Required Interface methods.
-
-    /**
-     *
-     * @param streamId - the stream the tuple should be emitted down.
-     * @param tuple - the tuple to emit
-     * @param messageId - the tuple's message Id.
-     * @return The interface is supposed to return the list of task ids that this tuple was sent to,
-     *         but here since we have no task ids to send the tuples to, no idea what to return.
-     */
     @Override
     public List<Integer> emit(String streamId, List<Object> tuple, Object messageId) {
         emissions.add(new SpoutEmission(messageId, streamId, tuple));
-
-        // WTF BBQ?
         return Lists.newArrayList();
     }
 
@@ -94,17 +82,17 @@ public class MockSpoutOutputCollector extends SpoutOutputCollector {
         reportedErrors.add(error);
     }
 
-    // Helper Methods
-
     /**
-     * @return Return a clone of our Emissions in an unmodifiable list.
+     * Get a clone of our Emissions in an unmodifiable list.
+     * @return clone of our Emissions in an unmodifiable list
      */
     public List<SpoutEmission> getEmissions() {
         return ImmutableList.copyOf(emissions);
     }
 
     /**
-     * @return Return a clone of reported errors in an unmodifiable list.
+     * Get a clone of reported errors in an unmodifiable list.
+     * @return clone of reported errors in an unmodifiable list
      */
     public List<Throwable> getReportedErrors() {
         return ImmutableList.copyOf(reportedErrors);
