@@ -49,7 +49,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<SidelineRequestStateKey, SidelinePayload> storedSidelineRequests;
 
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         if (storedSidelineRequests == null) {
             storedSidelineRequests = Maps.newHashMap();
         }

@@ -212,6 +212,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         isOpen = true;
 
         // Build KafkaConsumerConfig from spoutConfig
+        @SuppressWarnings("unchecked")
         final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
         final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
 

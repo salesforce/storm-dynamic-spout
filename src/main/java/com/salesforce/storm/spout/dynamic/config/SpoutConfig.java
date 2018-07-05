@@ -441,7 +441,7 @@ public class SpoutConfig {
      * @param config config to update.
      * @return cloned copy of the config that is updated.
      */
-    public static Map<String, Object> setDefaults(Map config) {
+    public static Map<String, Object> setDefaults(final Map<String, Object> config) {
         // Clone the map
         Map<String, Object> clonedConfig = Maps.newHashMap();
         clonedConfig.putAll(config);

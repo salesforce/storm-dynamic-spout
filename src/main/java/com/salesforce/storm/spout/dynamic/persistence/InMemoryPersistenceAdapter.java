@@ -45,7 +45,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<String, Long> storedConsumerState;
 
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         // Allow non-destructive re-opening
         if (storedConsumerState == null) {
             storedConsumerState = Maps.newHashMap();

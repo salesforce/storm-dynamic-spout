@@ -47,7 +47,7 @@ public interface SidelineTrigger {
      * Open the trigger.
      * @param spoutConfig Spout configuration.
      */
-    default void open(Map spoutConfig) {
+    default void open(Map<String, Object> spoutConfig) {
     }
 
     /**

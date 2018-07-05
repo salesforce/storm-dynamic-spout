@@ -68,7 +68,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         // Root node / prefix to write entries under.
         final String zkRoot = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_ROOT);
         final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
@@ -86,9 +86,12 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         // The root we'll use for this instance is our configured root + our consumer id
         this.zkRoot = zkRoot + "/" + consumerId;
 
+        // Take out spout persistence config and strip the key from it for our factory.
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> strippedConfig = Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig);
+
         this.curator = CuratorFactory.createNewCuratorInstance(
-            // Take out spout persistence config and strip the key from it for our factory.
-            Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig),
+            strippedConfig,
             getClass().getSimpleName()
         );
 

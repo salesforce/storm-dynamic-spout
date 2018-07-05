@@ -44,7 +44,7 @@ public class StaticTrigger implements SidelineTrigger {
      * @param config spout configuration.
      */
     @Override
-    public void open(final Map config) {
+    public void open(final Map<String, Object> config) {
     }
 
     /**

@@ -79,7 +79,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(final Map spoutConfig) {
+    public void open(final Map<String, Object> spoutConfig) {
         // Root node / prefix to write entries under.
         final String zkRoot = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ZK_ROOT);
         final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);

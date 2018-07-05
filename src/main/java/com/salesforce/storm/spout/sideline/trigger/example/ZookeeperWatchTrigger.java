@@ -124,7 +124,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      * @param config spout configuration
      */
     @Override
-    public void open(final Map config) {
+    public void open(final Map<String, Object> config) {
         if (isOpen) {
             // If this happens something is configured wrong, so we're going to kill the topology violently at this point
             logger.error("Trigger already opened!");
@@ -149,6 +149,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             (String) config.get(Config.FILTER_CHAIN_STEP_BUILDER_CLASS)
         );
 
+        @SuppressWarnings("unchecked")
         final List<String> roots = (List<String>) config.get(Config.ZK_ROOTS);
 
         // Starting and stopping triggers fire off at almost the exact same time so we need to do this here rather
