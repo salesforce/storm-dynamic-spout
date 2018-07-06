@@ -53,7 +53,7 @@ import java.util.Set;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that the reference implementation for sideline triggers works correctly.
@@ -173,13 +173,13 @@ public class ZookeeperWatchTriggerTest {
         );
 
         assertTrue(
-            "Starting trigger has been processed",
-            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed()
+            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed(),
+            "Starting trigger has been processed"
         );
 
         assertTrue(
-            "Stopping trigger has been processed",
-            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed()
+            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed(),
+            "Stopping trigger has been processed"
         );
 
         // Clean it all up
@@ -293,13 +293,13 @@ public class ZookeeperWatchTriggerTest {
         );
 
         assertTrue(
-            "Starting trigger has been processed",
-            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed()
+            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed(),
+            "Starting trigger has been processed"
         );
 
         assertTrue(
-            "Stopping trigger has been processed",
-            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed()
+            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed(),
+            "Stopping trigger has been processed"
         );
 
         // Clean it all up

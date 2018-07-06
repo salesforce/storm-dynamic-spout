@@ -66,11 +66,12 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * End to End integration testing of DynamicSpout under various scenarios.
@@ -185,8 +186,8 @@ public class DynamicSpoutTest {
             new DefaultVirtualSpoutIdentifier("Fake" + System.currentTimeMillis());
 
         // We shouldn't have the spout yet
-        assertFalse("Should not have spout yet", spout.hasVirtualSpout(virtualSpoutIdentifier));
-        assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
+        assertFalse(spout.hasVirtualSpout(virtualSpoutIdentifier), "Should not have spout yet");
+        assertFalse(spout.hasVirtualSpout(fakeSpoutIdentifier), "Should not have fake spout");
 
         // Add a VirtualSpout.
         final VirtualSpout virtualSpout = TestHelper.createVirtualSpout(config, virtualSpoutIdentifier);
@@ -197,8 +198,8 @@ public class DynamicSpoutTest {
         waitForVirtualSpouts(spout, 1);
 
         // We should have the spout now
-        assertTrue("Should have spout", spout.hasVirtualSpout(virtualSpoutIdentifier));
-        assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
+        assertTrue(spout.hasVirtualSpout(virtualSpoutIdentifier), "Should have spout");
+        assertFalse(spout.hasVirtualSpout(fakeSpoutIdentifier), "Should not have fake spout");
 
         // Now lets remove it
         spout.removeVirtualSpout(virtualSpoutIdentifier);
@@ -207,8 +208,8 @@ public class DynamicSpoutTest {
         waitForVirtualSpouts(spout, 0);
 
         // We should no longer have the spout
-        assertFalse("Should not have spout", spout.hasVirtualSpout(virtualSpoutIdentifier));
-        assertFalse("Should not have fake spout", spout.hasVirtualSpout(fakeSpoutIdentifier));
+        assertFalse(spout.hasVirtualSpout(virtualSpoutIdentifier), "Should not have spout");
+        assertFalse(spout.hasVirtualSpout(fakeSpoutIdentifier), "Should not have fake spout");
 
         // Cleanup.
         spout.close();
@@ -250,7 +251,7 @@ public class DynamicSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Create new unique VSpoutId
         final VirtualSpoutIdentifier virtualSpoutIdentifier =
@@ -325,7 +326,7 @@ public class DynamicSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Create new unique VSpoutId
         final VirtualSpoutIdentifier virtualSpoutIdentifier =
@@ -441,11 +442,11 @@ public class DynamicSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
         assertEquals(
-            "Should be using appropriate failed output stream id",
             expectedFailedStreamId,
-            spout.getPermanentlyFailedOutputStreamId()
+            spout.getPermanentlyFailedOutputStreamId(),
+            "Should be using appropriate failed output stream id"
         );
 
         // Create new unique VSpoutId
@@ -602,7 +603,7 @@ public class DynamicSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Create two virtual Spouts
         final VirtualSpout virtualSpout1 = TestHelper.createVirtualSpout(config, vspoutId1);
@@ -620,22 +621,21 @@ public class DynamicSpoutTest {
 
         // Validate they all came from the correct virtualSpouts
         for (SpoutEmission spoutEmission : spoutEmissions) {
-            assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
+            assertNotNull(spoutEmission.getMessageId(), "Has non-null tupleId");
 
             // Validate it came from the right place
             final MessageId messageId = (MessageId) spoutEmission.getMessageId();
 
             if (messageId.getSrcVirtualSpoutId() == vspoutId1) {
-                assertTrue("Should have offset >= 0 and <= 4", messageId.getOffset() >= 0 && messageId.getOffset() <= 4);
-                assertEquals("Should come from partition 0", 0, messageId.getPartition());
-                assertEquals("Should come from our namespace", topic1, messageId.getNamespace());
+                assertTrue(messageId.getOffset() >= 0 && messageId.getOffset() <= 4, "Should have offset >= 0 and <= 4");
+                assertEquals(0, messageId.getPartition(), "Should come from partition 0");
+                assertEquals(topic1, messageId.getNamespace(), "Should come from our namespace");
             } else if (messageId.getSrcVirtualSpoutId() == vspoutId2) {
-                assertTrue("Should have offset >= 5 and <= 9", messageId.getOffset() >= 5 && messageId.getOffset() <= 9);
-                assertEquals("Should come from partition 0", 0, messageId.getPartition());
-                assertEquals("Should come from our namespace", topic2, messageId.getNamespace());
+                assertTrue(messageId.getOffset() >= 5 && messageId.getOffset() <= 9, "Should have offset >= 5 and <= 9");
+                assertEquals(0, messageId.getPartition(), "Should come from partition 0");
+                assertEquals(topic2, messageId.getNamespace(), "Should come from our namespace");
             } else {
-                // Fail
-                assertFalse("Got unknown VirtualSpoutId! " + messageId.getSrcVirtualSpoutId(), true);
+                fail("Got unknown VirtualSpoutId! " + messageId.getSrcVirtualSpoutId());
             }
         }
 
@@ -702,9 +702,9 @@ public class DynamicSpoutTest {
 
         // Validate
         final List<Throwable> reportedErrors = mockSpoutOutputCollector.getReportedErrors();
-        assertEquals("Should have 2 reported errors", 2, reportedErrors.size());
-        assertTrue("Contains first exception", reportedErrors.contains(exception1));
-        assertTrue("Contains second exception", reportedErrors.contains(exception2));
+        assertEquals(2, reportedErrors.size(), "Should have 2 reported errors");
+        assertTrue(reportedErrors.contains(exception1), "Contains first exception");
+        assertTrue(reportedErrors.contains(exception2), "Contains second exception");
 
         // Call close
         spout.close();
@@ -750,7 +750,7 @@ public class DynamicSpoutTest {
         );
 
         // Should only have 2 streams defined
-        assertEquals("Should only have 2 streams defined", 2, fieldsDeclaration.size());
+        assertEquals(2, fieldsDeclaration.size(), "Should only have 2 streams defined");
 
         // Call close on spout
         spout.close();
@@ -794,7 +794,7 @@ public class DynamicSpoutTest {
         );
 
         // Should only have 2 streams defined
-        assertEquals("Should only have 2 streams defined", 2, fieldsDeclaration.size());
+        assertEquals(2, fieldsDeclaration.size(), "Should only have 2 streams defined");
 
         spout.close();
     }
@@ -843,42 +843,42 @@ public class DynamicSpoutTest {
 
         // Grab our SpoutHandler
         final MockSpoutHandler mockSpoutHandler = (MockSpoutHandler) spout.getSpoutHandler();
-        assertNotNull("Should have created SpoutHandler", mockSpoutHandler);
+        assertNotNull(mockSpoutHandler, "Should have created SpoutHandler");
 
         // Ensure that open() hook was called with appropriate config
-        assertTrue("Should have called open() hook", mockSpoutHandler.isHasCalledOpen());
-        assertEquals("Appropriate SpoutConfig passed", spoutConfig, mockSpoutHandler.getSpoutConfig());
+        assertTrue(mockSpoutHandler.isHasCalledOpen(), "Should have called open() hook");
+        assertEquals(spoutConfig, mockSpoutHandler.getSpoutConfig(), "Appropriate SpoutConfig passed");
 
         // Validate onSpoutOpen() hook was called
-        assertEquals("Should have been called once", 1, mockSpoutHandler.getOpenedSpouts().size());
+        assertEquals(1, mockSpoutHandler.getOpenedSpouts().size(), "Should have been called once");
         final MockSpoutHandler.OpenedSpoutParams parameters = mockSpoutHandler.getOpenedSpouts().get(0);
-        assertEquals("Got called with right spout", spout, parameters.getSpout());
-        assertEquals("Got called with right topology config", topologyConfig, parameters.getConfig());
-        assertEquals("Got called with right topology context", topologyContext, parameters.getTopologyContext());
+        assertEquals(spout, parameters.getSpout(), "Got called with right spout");
+        assertEquals(topologyConfig, parameters.getConfig(), "Got called with right topology config");
+        assertEquals(topologyContext, parameters.getTopologyContext(), "Got called with right topology context");
 
         // Call activate on spout
-        assertEquals("Never called", 0, mockSpoutHandler.getActivatedSpouts().size());
+        assertEquals(0, mockSpoutHandler.getActivatedSpouts().size(), "Never called");
         spout.activate();
 
         // Ensure activate hook called.
-        assertEquals("Activated Spout called once", 1, mockSpoutHandler.getActivatedSpouts().size());
-        assertEquals("Called with appropriate argument", spout, mockSpoutHandler.getActivatedSpouts().get(0));
+        assertEquals(1, mockSpoutHandler.getActivatedSpouts().size(), "Activated Spout called once");
+        assertEquals(spout, mockSpoutHandler.getActivatedSpouts().get(0), "Called with appropriate argument");
 
         // Call deactivate on spout
-        assertEquals("Never called deactivate hook", 0, mockSpoutHandler.getDeactivatedSpouts().size());
+        assertEquals(0, mockSpoutHandler.getDeactivatedSpouts().size(), "Never called deactivate hook");
         spout.deactivate();
 
         // Ensure deactivate hook called.
-        assertEquals("Deactivated Spout called once", 1, mockSpoutHandler.getDeactivatedSpouts().size());
-        assertEquals("Called with appropriate argument", spout, mockSpoutHandler.getDeactivatedSpouts().get(0));
+        assertEquals(1, mockSpoutHandler.getDeactivatedSpouts().size(), "Deactivated Spout called once");
+        assertEquals(spout, mockSpoutHandler.getDeactivatedSpouts().get(0), "Called with appropriate argument");
 
         // Call close
-        assertFalse("Should not have called close yet", mockSpoutHandler.isHasCalledClosed());
+        assertFalse(mockSpoutHandler.isHasCalledClosed(), "Should not have called close yet");
         spout.close();
 
         // Ensure close hook called.
-        assertTrue("Close hook called", mockSpoutHandler.isHasCalledClosed());
-        assertEquals("Called with appropriate argument", spout, mockSpoutHandler.getClosedSpouts().get(0));
+        assertTrue(mockSpoutHandler.isHasCalledClosed(), "Close hook called");
+        assertEquals(spout, mockSpoutHandler.getClosedSpouts().get(0), "Called with appropriate argument");
     }
 
     // Helper methods
@@ -900,8 +900,8 @@ public class DynamicSpoutTest {
         final boolean shouldBePermanentlyFailed
     ) {
         // Now find its corresponding tuple
-        assertNotNull("Not null sanity check", spoutEmission);
-        assertNotNull("Not null sanity check", sourceRecord);
+        assertNotNull(spoutEmission, "Not null sanity check");
+        assertNotNull(sourceRecord, "Not null sanity check");
 
         // Grab the messageId and validate it
         final MessageId messageId = (MessageId) spoutEmission.getMessageId();
@@ -909,30 +909,30 @@ public class DynamicSpoutTest {
         // If we are permanently failed
         if (shouldBePermanentlyFailed) {
             // Then we should have no messageId associated.
-            assertNull("Permanently failed messages should have null messageId", messageId);
+            assertNull(messageId, "Permanently failed messages should have null messageId");
         } else {
             // Validate Message Id
-            assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
-            assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
+            assertNotNull(spoutEmission.getMessageId(), "Should have non-null messageId");
+            assertTrue(spoutEmission.getMessageId() instanceof MessageId, "Should be instance of MessageId");
 
-            assertEquals("Expected Topic Name in MessageId", sourceRecord.getNamespace(), messageId.getNamespace());
-            assertEquals("Expected PartitionId found", sourceRecord.getPartition(), messageId.getPartition());
-            assertEquals("Expected MessageOffset found", sourceRecord.getOffset(), messageId.getOffset());
-            assertEquals("Expected Source Consumer Id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
+            assertEquals(sourceRecord.getNamespace(), messageId.getNamespace(), "Expected Topic Name in MessageId");
+            assertEquals(sourceRecord.getPartition(), messageId.getPartition(), "Expected PartitionId found");
+            assertEquals(sourceRecord.getOffset(), messageId.getOffset(), "Expected MessageOffset found");
+            assertEquals(expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId(), "Expected Source Consumer Id");
         }
 
         // Validate Tuple Contents
         List<Object> tupleValues = spoutEmission.getTuple();
-        assertNotNull("Tuple Values should not be null", tupleValues);
-        assertFalse("Tuple Values should not be empty", tupleValues.isEmpty());
+        assertNotNull(tupleValues, "Tuple Values should not be null");
+        assertFalse(tupleValues.isEmpty(), "Tuple Values should not be empty");
 
         // For now the values in the tuple should be 'key' and 'value', this may change.
-        assertEquals("Should have 2 values in the tuple", 2, tupleValues.size());
-        assertEquals("Found expected 'key' value", sourceRecord.getValues().get(0), tupleValues.get(0));
-        assertEquals("Found expected 'value' value", sourceRecord.getValues().get(1), tupleValues.get(1));
+        assertEquals(2, tupleValues.size(), "Should have 2 values in the tuple");
+        assertEquals(sourceRecord.getValues().get(0), tupleValues.get(0), "Found expected 'key' value");
+        assertEquals(sourceRecord.getValues().get(1), tupleValues.get(1), "Found expected 'value' value");
 
         // Validate Emit Parameters
-        assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
+        assertEquals(expectedOutputStreamId, spoutEmission.getStreamId(), "Got expected streamId");
     }
 
     /**
@@ -978,7 +978,7 @@ public class DynamicSpoutTest {
         final long... offsets) {
         // Validate that we've committed the appropriate offsets.
         final List<MockConsumer.CommittedState> committed = MockConsumer.getCommitted(virtualSpoutIdentifier);
-        assertEquals("Should have right number of offsets", committed.size(), offsets.length);
+        assertEquals(committed.size(), offsets.length, "Should have right number of offsets");
         for (final long expectedOffset : offsets) {
             boolean found = false;
             for (final MockConsumer.CommittedState committedState : committed) {
@@ -991,7 +991,7 @@ public class DynamicSpoutTest {
                     break;
                 }
             }
-            assertTrue("Found correct offset", found);
+            assertTrue(found, "Found correct offset");
         }
     }
 
@@ -1054,7 +1054,7 @@ public class DynamicSpoutTest {
                 // Lets log it
                 logger.error("Got an unexpected emission: {}", collector.getEmissions().get(collector.getEmissions().size() - 1));
             }
-            assertEquals("No new tuple emits on iteration " + (x + 1), originalSize, collector.getEmissions().size());
+            assertEquals(originalSize, collector.getEmissions().size(), "No new tuple emits on iteration " + (x + 1));
         }
     }
 
@@ -1088,7 +1088,7 @@ public class DynamicSpoutTest {
                 }, equalTo(existingEmissionsCount + x + 1));
 
             // Should have some emissions
-            assertEquals("SpoutOutputCollector should have emissions", (existingEmissionsCount + x + 1), collector.getEmissions().size());
+            assertEquals((existingEmissionsCount + x + 1), collector.getEmissions().size(), "SpoutOutputCollector should have emissions");
 
             // Add our new emission to our return list
             newEmissions.add(collector.getEmissions().get(existingEmissionsCount + x));
@@ -1116,10 +1116,10 @@ public class DynamicSpoutTest {
     ) {
         // Sanity check, make sure we have the same number of each.
         assertEquals(
-            "Should have same number of tuples as original messages, Produced Count: " + producedRecords.size()
-            + " Emissions Count: " + spoutEmissions.size(),
             producedRecords.size(),
-            spoutEmissions.size()
+            spoutEmissions.size(),
+            "Should have same number of tuples as original messages, Produced Count: " + producedRecords.size()
+                    + " Emissions Count: " + spoutEmissions.size()
         );
 
         // Iterator over what got emitted
@@ -1145,9 +1145,9 @@ public class DynamicSpoutTest {
             .atMost(5, TimeUnit.SECONDS)
             .until(() -> spout.getSpoutCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
         assertEquals(
-            "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
             howManyVirtualSpoutsWeWantLeft,
-            spout.getSpoutCoordinator().getTotalSpouts()
+            spout.getSpoutCoordinator().getTotalSpouts(),
+            "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running"
         );
     }
 

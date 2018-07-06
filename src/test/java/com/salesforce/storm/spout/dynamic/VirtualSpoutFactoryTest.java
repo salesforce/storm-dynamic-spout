@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test that the factory correctly create {@link VirtualSpout instances}.
@@ -70,33 +70,33 @@ public class VirtualSpoutFactoryTest {
         final VirtualSpout virtualSpout = (VirtualSpout) virtualSpoutFactory.create(identifier, startingState, endingState);
 
         assertEquals(
-            "Config doesn't match",
             config,
-            virtualSpout.getSpoutConfig()
+            virtualSpout.getSpoutConfig(),
+            "Config doesn't match"
         );
 
         assertEquals(
-            "Factory manager does not match",
             factoryManager,
-            virtualSpout.getFactoryManager()
+            virtualSpout.getFactoryManager(),
+            "Factory manager does not match"
         );
 
         assertEquals(
-            "Metrics recorder does not match",
             metricsRecorder,
-            virtualSpout.getMetricsRecorder()
+            virtualSpout.getMetricsRecorder(),
+            "Metrics recorder does not match"
         );
 
         assertEquals(
-            "Starting state does not match",
             startingState,
-            virtualSpout.getStartingState()
+            virtualSpout.getStartingState(),
+            "Starting state does not match"
         );
 
         assertEquals(
-            "Ending state does not match",
             endingState,
-            virtualSpout.getEndingState()
+            virtualSpout.getEndingState(),
+            "Ending state does not match"
         );
     }
 }

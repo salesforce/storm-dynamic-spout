@@ -62,11 +62,11 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that {@link SidelineSpoutHandler} opens, closes  and resumes sidelines correctly.
@@ -177,24 +177,24 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         // Make sure we have a firehose
-        assertNotNull("Firehose should not be null", sidelineSpoutHandler.getFireHoseSpout());
+        assertNotNull(sidelineSpoutHandler.getFireHoseSpout(), "Firehose should not be null");
 
         // Our firehose should have gotten a filter chain step on resume
         assertEquals(
-            "FilterChain should have one step for the start request",
             1,
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size(),
+            "FilterChain should have one step for the start request"
         );
         // When we fetch that step by startRequestId it should be our start filter
         assertEquals(
-            "FilterChain should have the start filter on it",
             startFilter,
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().get(startRequestId)
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().get(startRequestId),
+            "FilterChain should have the start filter on it"
         );
 
         assertTrue(
-            "The stop request should have created a new VirtualSpout instance",
-            spout.hasVirtualSpout(virtualSpoutIdentifier2)
+            spout.hasVirtualSpout(virtualSpoutIdentifier2),
+            "The stop request should have created a new VirtualSpout instance"
         );
 
         // close things out.
@@ -234,8 +234,8 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.start(startRequest);
 
         assertTrue(
-            "Sideline should be started",
-            sidelineSpoutHandler.isStarted(startRequest)
+            sidelineSpoutHandler.isStarted(startRequest),
+            "Sideline should be started"
         );
 
         // Make sure we have a firehose
@@ -319,57 +319,57 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.resume(request);
 
         assertTrue(
-            "Sideline should be in the resume state",
-            sidelineSpoutHandler.isResumed(request)
+            sidelineSpoutHandler.isResumed(request),
+            "Sideline should be in the resume state"
         );
 
         assertEquals(
-            "We should have two virtual spouts, the fire hose and the sideline",
             2,
-            spout.getTotalVirtualSpouts()
+            spout.getTotalVirtualSpouts(),
+            "We should have two virtual spouts, the fire hose and the sideline"
         );
 
         assertEquals(
-            "Firehose should still have it's filter for the tenant being sidelined",
             1,
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size(),
+            "Firehose should still have it's filter for the tenant being sidelined"
         );
 
         final DelegateSpout sidelineVirtualSpout = spout.getVirtualSpout(new SidelineVirtualSpoutIdentifier(CONSUMER_ID_PREFIX, requestId));
 
         assertNotNull(
-            "We should have a virtual spout for the sideline",
-            sidelineVirtualSpout
+            sidelineVirtualSpout,
+            "We should have a virtual spout for the sideline"
         );
 
         assertEquals(
-            "Sideline spout should have one filter",
             1,
-            sidelineVirtualSpout.getFilterChain().getSteps().size()
+            sidelineVirtualSpout.getFilterChain().getSteps().size(),
+            "Sideline spout should have one filter"
         );
 
         assertEquals(
-            "The negation of the firehose's filter should be the filter on the sideline spout",
             new NegatingFilterChainStep(sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getStep(requestId)),
-            sidelineVirtualSpout.getFilterChain().getStep(requestId)
+            sidelineVirtualSpout.getFilterChain().getStep(requestId),
+            "The negation of the firehose's filter should be the filter on the sideline spout"
         );
 
-        assertNull("Ending state should be null", sidelineVirtualSpout.getEndingState());
+        assertNull(sidelineVirtualSpout.getEndingState(), "Ending state should be null");
 
         final SidelinePayload sidelinePayload = persistenceAdapter.retrieveSidelineRequest(
             requestId,
             new ConsumerPartition(namespace, partitionId)
         );
 
-        assertEquals("Sideline type should match", SidelineType.RESUME, sidelinePayload.type);
-        assertEquals("Sideline request id should match", request.id, sidelinePayload.id);
+        assertEquals(SidelineType.RESUME, sidelinePayload.type, "Sideline type should match");
+        assertEquals(request.id, sidelinePayload.id, "Sideline request id should match");
         assertEquals(
-            "Sideline payload should have a negated copy of the request filter step",
             new NegatingFilterChainStep(request.step),
-            sidelinePayload.request.step
+            sidelinePayload.request.step,
+            "Sideline payload should have a negated copy of the request filter step"
         );
-        assertEquals("Sideline starting offset should be at 1", Long.valueOf(1L), sidelinePayload.startingOffset);
-        assertNull("Sideline ending offset should not be set", sidelinePayload.endingOffset);
+        assertEquals(Long.valueOf(1L), sidelinePayload.startingOffset, "Sideline starting offset should be at 1");
+        assertNull(sidelinePayload.endingOffset, "Sideline ending offset should not be set");
 
         // Close everything up
         sidelineSpoutHandler.close();
@@ -434,8 +434,8 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.resolve(stopRequest);
 
         assertTrue(
-            "Sideline should be stopped",
-            sidelineSpoutHandler.isResolving(stopRequest)
+            sidelineSpoutHandler.isResolving(stopRequest),
+            "Sideline should be stopped"
         );
 
         // Firehose no longer has any filters
@@ -584,15 +584,15 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.onSpoutOpen(spout, new HashMap(), new MockTopologyContext());
 
         assertTrue(
-            "There should not be any filters on the firehose",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().isEmpty()
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().isEmpty(),
+            "There should not be any filters on the firehose"
         );
 
         // The firehose has to move from the queue to a SpoutRunner, and this happens in a separate thread so we wait a bit.
         await()
             .until(spout::getTotalVirtualSpouts, equalTo(1));
 
-        assertEquals("Only the firehose should be on the spout", 1, spout.getTotalVirtualSpouts());
+        assertEquals(1, spout.getTotalVirtualSpouts(), "Only the firehose should be on the spout");
 
         final SidelineRequestIdentifier startRequestId = new SidelineRequestIdentifier("StartRequest");
         final StaticMessageFilter startFilter = new StaticMessageFilter();
@@ -636,19 +636,19 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.loadSidelines();
 
         assertEquals(
-            "There should be a filter on the firehose for our start request",
             1,
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size(),
+            "There should be a filter on the firehose for our start request"
         );
 
         assertTrue(
-            "Start request should be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId),
+            "Start request should be on the filter chain"
         );
 
         assertFalse(
-            "Stop request should not be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(stopRequestId)
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(stopRequestId),
+            "Stop request should not be on the filter chain"
         );
 
         // A new sideline spout should be added for our stopped request
@@ -656,13 +656,13 @@ public class SidelineSpoutHandlerTest {
             .until(spout::getTotalVirtualSpouts, equalTo(2));
 
         assertTrue(
-            "Spout should have a VirtualSpout for the stop request",
-            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier),
+            "Spout should have a VirtualSpout for the stop request"
         );
 
         assertFalse(
-            "Spout should not have a VirtualSpout for the start request",
-            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier)
+            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier),
+            "Spout should not have a VirtualSpout for the start request"
         );
 
         // Call this again, basically we want to be able to call this without messing with state and nothing else should change,
@@ -670,30 +670,30 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.loadSidelines();
 
         assertEquals(
-            "Spout should have two virtual spouts",
             2,
-            spout.getTotalVirtualSpouts()
+            spout.getTotalVirtualSpouts(),
+            "Spout should have two virtual spouts"
         );
 
         assertTrue(
-            "Spout should have the firehose VirtualSpout",
-            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier()),
+            "Spout should have the firehose VirtualSpout"
         );
 
         assertTrue(
-            "Spout should have a VirtualSpout for the stop request",
-            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier),
+            "Spout should have a VirtualSpout for the stop request"
         );
 
         assertFalse(
-            "Spout should not have a VirtualSpout for the start request",
-            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier)
+            spout.hasVirtualSpout(startRequestVirtualSpoutIdentifier),
+            "Spout should not have a VirtualSpout for the start request"
         );
 
         assertEquals(
-            "Firehose only has 1 filter",
             1,
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size()
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().getSteps().size(),
+            "Firehose only has 1 filter"
         );
 
         // Now we're going to mess with the state of the spout and filter chain and see if things reload properly
@@ -702,37 +702,37 @@ public class SidelineSpoutHandlerTest {
         sidelineSpoutHandler.getFireHoseSpout().getFilterChain().removeStep(startRequestId);
 
         assertFalse(
-            "Spout should not have a VirtualSpout for the stop request",
-            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier),
+            "Spout should not have a VirtualSpout for the stop request"
         );
 
         assertFalse(
-            "Spout should not have a VirtualSpout for the firehose",
-            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier()),
+            "Spout should not have a VirtualSpout for the firehose"
         );
 
         assertFalse(
-            "Start request should not be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId),
+            "Start request should not be on the filter chain"
         );
 
         // The missing spout and filter chain step should be restored after this
         sidelineSpoutHandler.loadSidelines();
 
         assertTrue(
-            "Spout should have a VirtualSpout for the stop request",
             // Note that this will be in the starting queue, not in the runners at this point and that's OK for this test
-            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier)
+            spout.hasVirtualSpout(stopRequestVirtualSpoutIdentifier),
+            "Spout should have a VirtualSpout for the stop request"
         );
 
         assertTrue(
-            "Spout should have a VirtualSpout for the firehose",
-            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier())
+            spout.hasVirtualSpout(sidelineSpoutHandler.getFireHoseSpoutIdentifier()),
+            "Spout should have a VirtualSpout for the firehose"
         );
 
         assertTrue(
-            "Start request should be on the filter chain",
-            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId)
+            sidelineSpoutHandler.getFireHoseSpout().getFilterChain().hasStep(startRequestId),
+            "Start request should be on the filter chain"
         );
 
         // Note that I would love to mess with the filter chain on an existing VirtualSpout that isn't the FireHose, but there's no real way

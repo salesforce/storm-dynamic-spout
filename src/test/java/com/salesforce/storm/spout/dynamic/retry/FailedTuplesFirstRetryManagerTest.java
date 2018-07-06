@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that failed tuples are retried as soon as they can be.
@@ -82,20 +82,20 @@ public class FailedTuplesFirstRetryManagerTest {
         // Now try to get them
         // Get first
         final MessageId firstRetry = retryManager.nextFailedMessageToRetry();
-        assertNotNull("Should be not null", firstRetry);
-        assertEquals("Should be our first messageId", messageId1, firstRetry);
+        assertNotNull(firstRetry, "Should be not null");
+        assertEquals(messageId1, firstRetry, "Should be our first messageId");
         validateTupleNotInFailedSetButIsInFlight(retryManager, firstRetry);
 
         // Get 2nd
         final MessageId secondRetry = retryManager.nextFailedMessageToRetry();
-        assertNotNull("Should be not null", secondRetry);
-        assertEquals("Should be our first messageId", messageId2, secondRetry);
+        assertNotNull(secondRetry, "Should be not null");
+        assertEquals(messageId2, secondRetry, "Should be our first messageId");
         validateTupleNotInFailedSetButIsInFlight(retryManager, secondRetry);
 
         // Get 3rd
         final MessageId thirdRetry = retryManager.nextFailedMessageToRetry();
-        assertNotNull("Should be not null", thirdRetry);
-        assertEquals("Should be our first messageId", messageId3, thirdRetry);
+        assertNotNull(thirdRetry, "Should be not null");
+        assertEquals(messageId3, thirdRetry, "Should be our first messageId");
         validateTupleNotInFailedSetButIsInFlight(retryManager, thirdRetry);
 
         // Call next failed 3 times, should be null cuz all are in flight
@@ -117,8 +117,8 @@ public class FailedTuplesFirstRetryManagerTest {
 
         // Call next failed tuple, should be tuple id 3
         final MessageId finalRetry = retryManager.nextFailedMessageToRetry();
-        assertNotNull("Should be not null", finalRetry);
-        assertEquals("Should be our first messageId", messageId3, finalRetry);
+        assertNotNull(finalRetry, "Should be not null");
+        assertEquals(messageId3, finalRetry, "Should be our first messageId");
         validateTupleNotInFailedSetButIsInFlight(retryManager, finalRetry);
 
         // Call next failed 3 times, should be null cuz all are in flight
@@ -139,10 +139,10 @@ public class FailedTuplesFirstRetryManagerTest {
         assertNull(retryManager.nextFailedMessageToRetry());
 
         // And we always retry further.
-        assertTrue("Should always be true regardless of input", retryManager.retryFurther(null));
-        assertTrue("Should always be true regardless of input", retryManager.retryFurther(messageId1));
-        assertTrue("Should always be true regardless of input", retryManager.retryFurther(messageId2));
-        assertTrue("Should always be true regardless of input", retryManager.retryFurther(messageId3));
+        assertTrue(retryManager.retryFurther(null), "Should always be true regardless of input");
+        assertTrue(retryManager.retryFurther(messageId1), "Should always be true regardless of input");
+        assertTrue(retryManager.retryFurther(messageId2), "Should always be true regardless of input");
+        assertTrue(retryManager.retryFurther(messageId3), "Should always be true regardless of input");
     }
 
     /**
@@ -157,19 +157,19 @@ public class FailedTuplesFirstRetryManagerTest {
         boolean expectedToBeInFlight
     ) {
         // Find its queue
-        assertTrue("Queue should contain our tuple messageId", retryManager.getFailedMessageIds().contains(messageId));
+        assertTrue(retryManager.getFailedMessageIds().contains(messageId), "Queue should contain our tuple messageId");
 
         // Should this be marked as in flight?
-        assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getMessageIdsInFlight().contains(messageId));
+        assertEquals(expectedToBeInFlight, retryManager.getMessageIdsInFlight().contains(messageId), "Should or should not be in flight");
     }
 
     private void validateTupleNotInFailedSetButIsInFlight(FailedTuplesFirstRetryManager retryManager, MessageId messageId) {
-        assertFalse("Should not contain our messageId", retryManager.getFailedMessageIds().contains(messageId));
-        assertTrue("Should be tracked as in flight", retryManager.getMessageIdsInFlight().contains(messageId));
+        assertFalse(retryManager.getFailedMessageIds().contains(messageId), "Should not contain our messageId");
+        assertTrue(retryManager.getMessageIdsInFlight().contains(messageId), "Should be tracked as in flight");
     }
 
     private void validateTupleIsNotBeingTracked(FailedTuplesFirstRetryManager retryManager, MessageId messageId) {
-        assertFalse("Should not contain our messageId", retryManager.getFailedMessageIds().contains(messageId));
-        assertFalse("Should not be tracked as in flight", retryManager.getMessageIdsInFlight().contains(messageId));
+        assertFalse(retryManager.getFailedMessageIds().contains(messageId), "Should not contain our messageId");
+        assertFalse(retryManager.getMessageIdsInFlight().contains(messageId), "Should not be tracked as in flight");
     }
 }

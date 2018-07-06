@@ -34,10 +34,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that a {@link FilterChain} processes a set of filters correctly.
@@ -53,15 +53,15 @@ public class FilterChainTest {
 
         final FilterChain filterChain = new FilterChain();
 
-        assertFalse("There shouldn't be a step for the identifier", filterChain.hasStep(filterChainStepIdentifier));
+        assertFalse(filterChain.hasStep(filterChainStepIdentifier), "There shouldn't be a step for the identifier");
 
         filterChain.addStep(filterChainStepIdentifier, new NumberFilter(2));
 
-        assertTrue("There should be a step for the identifier", filterChain.hasStep(filterChainStepIdentifier));
+        assertTrue(filterChain.hasStep(filterChainStepIdentifier), "There should be a step for the identifier");
 
         filterChain.removeStep(filterChainStepIdentifier);
 
-        assertFalse("There shouldn't be a step for the identifier", filterChain.hasStep(filterChainStepIdentifier));
+        assertFalse(filterChain.hasStep(filterChainStepIdentifier), "There shouldn't be a step for the identifier");
     }
 
     /**
@@ -102,12 +102,12 @@ public class FilterChainTest {
             .addStep(new DefaultFilterChainStepIdentifier("3"), new NumberFilter(5))
         ;
 
-        assertTrue("Message 2 should be fitlered", filterChain.filter(message2));
-        assertTrue("Message 4 should be fitlered", filterChain.filter(message4));
-        assertTrue("Message 4 should be fitlered", filterChain.filter(message5));
+        assertTrue(filterChain.filter(message2), "Message 2 should be fitlered");
+        assertTrue(filterChain.filter(message4), "Message 4 should be fitlered");
+        assertTrue(filterChain.filter(message5), "Message 4 should be fitlered");
 
-        assertFalse("Message 1 shouldn't be fitlered", filterChain.filter(message1));
-        assertFalse("Message 3 shouldn't be fitlered", filterChain.filter(message3));
+        assertFalse(filterChain.filter(message1), "Message 1 shouldn't be fitlered");
+        assertFalse(filterChain.filter(message3), "Message 3 shouldn't be fitlered");
     }
 
     /**
@@ -131,9 +131,9 @@ public class FilterChainTest {
             .addStep(new DefaultFilterChainStepIdentifier("1"), new NegatingFilterChainStep(new NumberFilter(2)))
         ;
 
-        assertTrue("Message 1 should be filtered", filterChain.filter(message1));
+        assertTrue(filterChain.filter(message1), "Message 1 should be filtered");
 
-        assertFalse("Message 2 shouldn't be filtered", filterChain.filter(message2));
+        assertFalse(filterChain.filter(message2), "Message 2 shouldn't be filtered");
     }
 
     /**
@@ -153,15 +153,15 @@ public class FilterChainTest {
         ;
 
         assertEquals(
-            "Identifier 1 does not match step 1",
             filterChainStepIdentifier,
-            filterChain.findStep(filterChainStep1)
+            filterChain.findStep(filterChainStep1),
+            "Identifier 1 does not match step 1"
         );
 
         assertEquals(
-            "Identifier 2 does not match step 2",
             filterChainStepIdentifier2,
-            filterChain.findStep(filterChainStep2)
+            filterChain.findStep(filterChainStep2),
+            "Identifier 2 does not match step 2"
         );
     }
 
@@ -183,26 +183,27 @@ public class FilterChainTest {
 
         final Map<FilterChainStepIdentifier,FilterChainStep> steps = filterChain.getSteps();
 
-        assertNotNull("Steps should not be null", filterChain.getSteps());
+        assertNotNull(filterChain.getSteps(), "Steps should not be null");
 
         assertTrue(
-            "Identifier 1 should be in the map",
-            steps.containsKey(filterChainStepIdentifier)
+            steps.containsKey(filterChainStepIdentifier),
+            "Identifier 1 should be in the map"
         );
+
         assertEquals(
-            "Step 1 should match",
             filterChainStep1,
-            steps.get(filterChainStepIdentifier)
+            steps.get(filterChainStepIdentifier),
+            "Step 1 should match"
         );
 
         assertTrue(
-            "Identifier 2 should be in the map",
-            steps.containsKey(filterChainStepIdentifier2)
+            steps.containsKey(filterChainStepIdentifier2),
+            "Identifier 2 should be in the map"
         );
         assertEquals(
-            "Step 2 should match",
             filterChainStep2,
-            steps.get(filterChainStepIdentifier2)
+            steps.get(filterChainStepIdentifier2),
+            "Step 2 should match"
         );
     }
 
@@ -223,15 +224,15 @@ public class FilterChainTest {
         ;
 
         assertEquals(
-            "Identifier 1 should yield step 1",
             filterChainStep1,
-            filterChain.getStep(filterChainStepIdentifier)
+            filterChain.getStep(filterChainStepIdentifier),
+            "Identifier 1 should yield step 1"
         );
 
         assertEquals(
-            "Identifier 2 should yield step 2",
             filterChainStep2,
-            filterChain.getStep(filterChainStepIdentifier2)
+            filterChain.getStep(filterChainStepIdentifier2),
+            "Identifier 2 should yield step 2"
         );
     }
 }

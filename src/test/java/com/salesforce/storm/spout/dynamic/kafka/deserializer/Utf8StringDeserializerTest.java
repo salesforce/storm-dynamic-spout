@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test over Utf8StringDeserializer.
@@ -61,9 +61,9 @@ public class Utf8StringDeserializerTest {
             expectedValue.getBytes(StandardCharsets.UTF_8)
         );
 
-        assertEquals("Values has 2 entries", 2, deserializedValues.size());
-        assertEquals("Got expected key", expectedKey, deserializedValues.get(0));
-        assertEquals("Got expected value", expectedValue, deserializedValues.get(1));
+        assertEquals(2, deserializedValues.size(), "Values has 2 entries");
+        assertEquals(expectedKey, deserializedValues.get(0), "Got expected key");
+        assertEquals(expectedValue, deserializedValues.get(1), "Got expected value");
     }
 
     /**
@@ -87,9 +87,9 @@ public class Utf8StringDeserializerTest {
             expectedValue.getBytes(StandardCharsets.UTF_8)
         );
 
-        assertEquals("Values has 2 entries", 2, deserializedValues.size());
-        assertEquals("Got expected key", expectedKey, deserializedValues.get(0));
-        assertEquals("Got expected value", expectedValue, deserializedValues.get(1));
+        assertEquals(2, deserializedValues.size(), "Values has 2 entries");
+        assertEquals(expectedKey, deserializedValues.get(0), "Got expected key");
+        assertEquals(expectedValue, deserializedValues.get(1), "Got expected value");
     }
 
     /**
@@ -113,6 +113,6 @@ public class Utf8StringDeserializerTest {
             expectedValue
         );
 
-        assertNull("Should have gotten null", deserializedValues);
+        assertNull(deserializedValues, "Should have gotten null");
     }
 }

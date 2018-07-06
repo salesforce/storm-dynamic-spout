@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Generally test the {@link MessageBuffer} interface's surface area.
@@ -181,7 +181,7 @@ public class MessageBufferTest {
 
         // Poll a bunch, validating nothing else returned
         for (int x = 0; x < 1024; x++) {
-            assertNull("Should be null", messageBuffer.poll());
+            assertNull(messageBuffer.poll(), "Should be null");
         }
 
         // Shutdown executor service

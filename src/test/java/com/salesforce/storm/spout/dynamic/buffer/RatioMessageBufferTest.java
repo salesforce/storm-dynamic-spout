@@ -42,9 +42,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test that {@link RatioMessageBuffer} distributes messages from the buffer according to configured ratios.
@@ -65,9 +65,9 @@ public class RatioMessageBufferTest {
         RatioMessageBuffer buffer = createDefaultBuffer(bufferSize, throttleRatio, regexPattern);
 
         // Check properties
-        assertEquals("Buffer size configured", bufferSize, buffer.getMaxBufferSize());
-        assertEquals("Throttled Buffer size configured", throttleRatio, buffer.getThrottleRatio());
-        assertEquals("Regex Pattern set correctly", regexPattern, buffer.getRegexPattern().pattern());
+        assertEquals(bufferSize, buffer.getMaxBufferSize(), "Buffer size configured");
+        assertEquals(throttleRatio, buffer.getThrottleRatio(), "Throttled Buffer size configured");
+        assertEquals(regexPattern, buffer.getRegexPattern().pattern(), "Regex Pattern set correctly");
     }
 
     /**
@@ -97,8 +97,8 @@ public class RatioMessageBufferTest {
         buffer.addVirtualSpoutId(id4);
 
         // Validate
-        assertEquals("All non throttled Ids match expected", nonThrottledIds, buffer.getNonThrottledVirtualSpoutIdentifiers());
-        assertEquals("All throttled Ids match expected", throttledIds, buffer.getThrottledVirtualSpoutIdentifiers());
+        assertEquals(nonThrottledIds, buffer.getNonThrottledVirtualSpoutIdentifiers(), "All non throttled Ids match expected");
+        assertEquals(throttledIds, buffer.getThrottledVirtualSpoutIdentifiers(), "All throttled Ids match expected");
     }
 
     /**
@@ -112,7 +112,7 @@ public class RatioMessageBufferTest {
         final RatioMessageBuffer buffer = createDefaultBuffer(10, 3, regexPattern);
 
         // Call poll, should get null.
-        assertNull("Should be null return value", buffer.poll());
+        assertNull(buffer.poll(), "Should be null return value");
     }
 
     /**
@@ -159,7 +159,7 @@ public class RatioMessageBufferTest {
         }
 
         // Validate that we have the expected buffer size of 10 now
-        assertEquals("Should have expected number of messages in buffer",(spout1Messages.size() + spout2Messages.size()), buffer.size());
+        assertEquals((spout1Messages.size() + spout2Messages.size()), buffer.size(), "Should have expected number of messages in buffer");
 
         // Now hit poll() 20 times, adding results to an arrayList
         List<Message> returnedMessages = new ArrayList<>();
@@ -168,7 +168,7 @@ public class RatioMessageBufferTest {
         } while (buffer.size() > 0);
 
         // Now validate we have no more messages
-        assertEquals("Empty buffer", 0, buffer.size());
+        assertEquals(0, buffer.size(), "Empty buffer");
 
         // Validate we got the expected results.  This is kind of painful :/
         // First one should be from vspout 2
@@ -256,9 +256,10 @@ public class RatioMessageBufferTest {
 
         // Validate that we have the expected buffer size of 21 now
         assertEquals(
-            "Should have expected number of messages in buffer",
-            (spout1Messages.size() + spout2Messages.size() + spout3Messages.size()), buffer.size())
-        ;
+            (spout1Messages.size() + spout2Messages.size() + spout3Messages.size()),
+            buffer.size(),
+            "Should have expected number of messages in buffer"
+        );
 
         // Now hit poll() until we're empty
         List<Message> returnedMessages = new ArrayList<>();
@@ -267,7 +268,7 @@ public class RatioMessageBufferTest {
         } while (buffer.size() > 0);
 
         // Now validate we have no more messages
-        assertEquals("Empty buffer", 0, buffer.size());
+        assertEquals(0, buffer.size(), "Empty buffer");
 
         // Validate we got the expected results.  This is kind of painful :/
         // First one should be from vspout 2, our throttled spout
@@ -322,15 +323,15 @@ public class RatioMessageBufferTest {
         // If we expected a null value
         if (isNull) {
             // validate & return
-            assertNull("Message should be null", message);
+            assertNull(message, "Message should be null");
             return;
         }
 
         // Validate
-        assertNotNull("Message should not be null", message);
-        assertEquals("Should be from our expected Spout", expectedVSpoutId, message.getMessageId().getSrcVirtualSpoutId());
-        assertEquals("Should have 1st value", expectedVSpoutId.toString(), message.getValues().get(0));
-        assertEquals("Should have 2nd value", expectedIndex, message.getValues().get(1));
+        assertNotNull(message, "Message should not be null");
+        assertEquals(expectedVSpoutId, message.getMessageId().getSrcVirtualSpoutId(), "Should be from our expected Spout");
+        assertEquals(expectedVSpoutId.toString(), message.getValues().get(0), "Should have 1st value");
+        assertEquals(expectedIndex, message.getValues().get(1), "Should have 2nd value");
     }
 
     private RatioMessageBuffer createDefaultBuffer(final int bufferSize, final int throttleRatio, final String regexPattern) {

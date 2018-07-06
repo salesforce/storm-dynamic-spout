@@ -41,9 +41,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Kind of silly.  Basically just testing a FIFO buffer.
@@ -98,31 +98,31 @@ public class FifoBufferTest {
         }
 
         // Validate size
-        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
+        assertEquals((numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size(), "Size should be known");
 
         // Now pop them, order should be maintained
         for (Message originalKafkaMsg : submittedOrder) {
             final Message bufferedMsg = messageBuffer.poll();
 
             // Validate it
-            assertNotNull("Should not be null", bufferedMsg);
-            assertEquals("Objects should be the same", originalKafkaMsg, bufferedMsg);
+            assertNotNull(bufferedMsg, "Should not be null");
+            assertEquals(originalKafkaMsg, bufferedMsg, "Objects should be the same");
 
             // Validate the contents are the same
             assertEquals(
-                "Source Spout Id should be equal",
-                originalKafkaMsg.getMessageId().getSrcVirtualSpoutId(), bufferedMsg.getMessageId().getSrcVirtualSpoutId()
+                originalKafkaMsg.getMessageId().getSrcVirtualSpoutId(), bufferedMsg.getMessageId().getSrcVirtualSpoutId(),
+                "Source Spout Id should be equal"
             );
-            assertEquals("partitions should be equal", originalKafkaMsg.getPartition(), bufferedMsg.getPartition());
-            assertEquals("offsets should be equal", originalKafkaMsg.getOffset(), bufferedMsg.getOffset());
-            assertEquals("namespace should be equal", originalKafkaMsg.getNamespace(), bufferedMsg.getNamespace());
-            assertEquals("messageIds should be equal", originalKafkaMsg.getMessageId(), bufferedMsg.getMessageId());
-            assertEquals("Values should be equal", originalKafkaMsg.getValues(), bufferedMsg.getValues());
+            assertEquals(originalKafkaMsg.getPartition(), bufferedMsg.getPartition(), "partitions should be equal");
+            assertEquals(originalKafkaMsg.getOffset(), bufferedMsg.getOffset(), "offsets should be equal");
+            assertEquals(originalKafkaMsg.getNamespace(), bufferedMsg.getNamespace(), "namespace should be equal");
+            assertEquals(originalKafkaMsg.getMessageId(), bufferedMsg.getMessageId(), "messageIds should be equal");
+            assertEquals(originalKafkaMsg.getValues(), bufferedMsg.getValues(), "Values should be equal");
         }
 
         // Validate that the next polls are all null
         for (int x = 0; x < 64; x++) {
-            assertNull("Should be null", messageBuffer.poll());
+            assertNull(messageBuffer.poll(), "Should be null");
         }
     }
 
@@ -141,7 +141,7 @@ public class FifoBufferTest {
         messageBuffer.open(config);
 
         // Validate
-        assertEquals("Set correct", inputValue.intValue(), ((LinkedBlockingQueue)messageBuffer.getUnderlyingQueue()).remainingCapacity());
+        assertEquals(inputValue.intValue(), ((LinkedBlockingQueue)messageBuffer.getUnderlyingQueue()).remainingCapacity(), "Set correct");
     }
 
     /**

@@ -41,9 +41,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test that {@link ThrottledMessageBuffer} throttles messages between virtual spouts.
@@ -63,9 +63,9 @@ public class ThrottledMessageBufferTest {
         ThrottledMessageBuffer buffer = createDefaultBuffer(bufferSize, throttledBufferSize, regexPattern);
 
         // Check properties
-        assertEquals("Buffer size configured", bufferSize, buffer.getMaxBufferSize());
-        assertEquals("Throttled Buffer size configured", throttledBufferSize, buffer.getThrottledBufferSize());
-        assertEquals("Regex Pattern set correctly", regexPattern, buffer.getRegexPattern().pattern());
+        assertEquals(bufferSize, buffer.getMaxBufferSize(), "Buffer size configured");
+        assertEquals(throttledBufferSize, buffer.getThrottledBufferSize(), "Throttled Buffer size configured");
+        assertEquals(regexPattern, buffer.getRegexPattern().pattern(), "Regex Pattern set correctly");
     }
 
     /**
@@ -95,8 +95,8 @@ public class ThrottledMessageBufferTest {
         buffer.addVirtualSpoutId(id4);
 
         // Validate
-        assertEquals("All non throttled Ids match expected", nonThrottledIds, buffer.getNonThrottledVirtualSpoutIdentifiers());
-        assertEquals("All throttled Ids match expected", throttledIds, buffer.getThrottledVirtualSpoutIdentifiers());
+        assertEquals(nonThrottledIds, buffer.getNonThrottledVirtualSpoutIdentifiers(), "All non throttled Ids match expected");
+        assertEquals(throttledIds, buffer.getThrottledVirtualSpoutIdentifiers(), "All throttled Ids match expected");
     }
 
     /**
@@ -158,24 +158,24 @@ public class ThrottledMessageBufferTest {
             timedOut = true;
         }
 
-        assertTrue("Timed out trying to put onto the buffer.", timedOut);
+        assertTrue(timedOut, "Timed out trying to put onto the buffer.");
 
         Message resultMessage1 = buffer.poll();
 
         assertEquals(3, buffer.size());
 
-        assertNotNull("First message we put is not null", message1);
-        assertEquals("First message we put matches the first resulting message", message1, resultMessage1);
+        assertNotNull(message1, "First message we put is not null");
+        assertEquals(message1, resultMessage1, "First message we put matches the first resulting message");
 
         // We should be able to put the message that timed out back onto the buffer now
         buffer.put(message5);
 
         assertEquals(4, buffer.size());
 
-        assertEquals("Second message we put matches the first resulting message", message2, buffer.poll());
-        assertEquals("Third message we put matches the first resulting message", message3, buffer.poll());
-        assertEquals("Fourth message we put matches the first resulting message", message4, buffer.poll());
-        assertEquals("Fifth message (the one that was blocked) we put matches the first resulting message", message5, buffer.poll());
+        assertEquals(message2, buffer.poll(), "Second message we put matches the first resulting message");
+        assertEquals(message3, buffer.poll(), "Third message we put matches the first resulting message");
+        assertEquals(message4, buffer.poll(), "Fourth message we put matches the first resulting message");
+        assertEquals(message5, buffer.poll(), "Fifth message (the one that was blocked) we put matches the first resulting message");
     }
 
     private Message createMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier, Values values) {

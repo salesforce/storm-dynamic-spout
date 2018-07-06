@@ -66,10 +66,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Provides End-To-End integration testing of DynamicSpout + Kafka Consumer.
@@ -207,7 +207,7 @@ public class KafkaConsumerSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Add a VirtualSpout.
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
@@ -313,7 +313,7 @@ public class KafkaConsumerSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Add a VirtualSpout.
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
@@ -469,7 +469,7 @@ public class KafkaConsumerSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Create and add virtualSpout
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
@@ -492,12 +492,12 @@ public class KafkaConsumerSpoutTest {
 
         // Validate they all came from the correct partitions
         for (SpoutEmission spoutEmission : spoutEmissions) {
-            assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
+            assertNotNull(spoutEmission.getMessageId(), "Has non-null tupleId");
 
             // Validate it came from the right place
             final MessageId messageId = (MessageId) spoutEmission.getMessageId();
             final ConsumerPartition consumerPartition = new ConsumerPartition(messageId.getNamespace(), messageId.getPartition());
-            assertTrue("Came from expected partition", expectedPartitions.contains(consumerPartition));
+            assertTrue(expectedPartitions.contains(consumerPartition), "Came from expected partition");
         }
 
         // Validate we don't have any other emissions
@@ -588,7 +588,7 @@ public class KafkaConsumerSpoutTest {
         spout.open(config, topologyContext, spoutOutputCollector);
 
         // validate our streamId
-        assertEquals("Should be using appropriate output stream id", expectedStreamId, spout.getOutputStreamId());
+        assertEquals(expectedStreamId, spout.getOutputStreamId(), "Should be using appropriate output stream id");
 
         // Create and add virtualSpout
         final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("Main");
@@ -611,12 +611,12 @@ public class KafkaConsumerSpoutTest {
 
         // Validate they all came from the correct partitions
         for (SpoutEmission spoutEmission : spoutEmissions) {
-            assertNotNull("Has non-null tupleId", spoutEmission.getMessageId());
+            assertNotNull(spoutEmission.getMessageId(), "Has non-null tupleId");
 
             // Validate it came from the right place
             final MessageId messageId = (MessageId) spoutEmission.getMessageId();
             final ConsumerPartition consumerPartition = new ConsumerPartition(messageId.getNamespace(), messageId.getPartition());
-            assertTrue("Came from expected partition", expectedPartitions.contains(consumerPartition));
+            assertTrue(expectedPartitions.contains(consumerPartition), "Came from expected partition");
         }
 
         // Validate we don't have any other emissions
@@ -657,36 +657,36 @@ public class KafkaConsumerSpoutTest {
         final String expectedOutputStreamId
     ) {
         // Now find its corresponding tuple
-        assertNotNull("Not null sanity check", spoutEmission);
-        assertNotNull("Not null sanity check", sourceProducerRecord);
+        assertNotNull(spoutEmission, "Not null sanity check");
+        assertNotNull(sourceProducerRecord, "Not null sanity check");
 
         // Validate Message Id
-        assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
-        assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
+        assertNotNull(spoutEmission.getMessageId(), "Should have non-null messageId");
+        assertTrue(spoutEmission.getMessageId() instanceof MessageId, "Should be instance of MessageId");
 
         // Grab the messageId and validate it
         final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-        assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getNamespace());
-        assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
-        assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
-        assertEquals("Expected Source Consumer Id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
+        assertEquals(sourceProducerRecord.getTopic(), messageId.getNamespace(), "Expected Topic Name in MessageId");
+        assertEquals(sourceProducerRecord.getPartition(), messageId.getPartition(), "Expected PartitionId found");
+        assertEquals(sourceProducerRecord.getOffset(), messageId.getOffset(), "Expected MessageOffset found");
+        assertEquals(expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId(), "Expected Source Consumer Id");
 
         // Validate Tuple Contents
         List<Object> tupleValues = spoutEmission.getTuple();
-        assertNotNull("Tuple Values should not be null", tupleValues);
-        assertFalse("Tuple Values should not be empty", tupleValues.isEmpty());
+        assertNotNull(tupleValues, "Tuple Values should not be null");
+        assertFalse(tupleValues.isEmpty(), "Tuple Values should not be empty");
 
         // For now the values in the tuple should be 'key' and 'value', this may change.
-        assertEquals("Should have 2 values in the tuple", 2, tupleValues.size());
-        assertEquals("Found expected 'key' value", new String(sourceProducerRecord.getKey(), StandardCharsets.UTF_8), tupleValues.get(0));
+        assertEquals(2, tupleValues.size(), "Should have 2 values in the tuple");
+        assertEquals(new String(sourceProducerRecord.getKey(), StandardCharsets.UTF_8), tupleValues.get(0), "Found expected 'key' value");
         assertEquals(
-            "Found expected 'value' value",
             new String(sourceProducerRecord.getValue(),
-            StandardCharsets.UTF_8), tupleValues.get(1)
+            StandardCharsets.UTF_8), tupleValues.get(1),
+            "Found expected 'value' value"
         );
 
         // Validate Emit Parameters
-        assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
+        assertEquals(expectedOutputStreamId, spoutEmission.getStreamId(), "Got expected streamId");
     }
 
     /**
@@ -778,7 +778,7 @@ public class KafkaConsumerSpoutTest {
                 // Lets log it
                 logger.error("Got an unexpected emission: {}", collector.getEmissions().get(collector.getEmissions().size() - 1));
             }
-            assertEquals("No new tuple emits on iteration " + (x + 1), originalSize, collector.getEmissions().size());
+            assertEquals(originalSize, collector.getEmissions().size(), "No new tuple emits on iteration " + (x + 1));
         }
     }
 
@@ -812,7 +812,7 @@ public class KafkaConsumerSpoutTest {
                 }, equalTo(existingEmissionsCount + x + 1));
 
             // Should have some emissions
-            assertEquals("SpoutOutputCollector should have emissions", (existingEmissionsCount + x + 1), collector.getEmissions().size());
+            assertEquals((existingEmissionsCount + x + 1), collector.getEmissions().size(), "SpoutOutputCollector should have emissions");
 
             // Add our new emission to our return list
             newEmissions.add(collector.getEmissions().get(existingEmissionsCount + x));
@@ -839,10 +839,10 @@ public class KafkaConsumerSpoutTest {
     ) {
         // Sanity check, make sure we have the same number of each.
         assertEquals(
-            "Should have same number of tuples as original messages, Produced Count: "
-            + producedRecords.size() + " Emissions Count: " + spoutEmissions.size(),
             producedRecords.size(),
-            spoutEmissions.size()
+            spoutEmissions.size(),
+            "Should have same number of tuples as original messages, Produced Count: "
+                    + producedRecords.size() + " Emissions Count: " + spoutEmissions.size()
         );
 
         // Iterator over what got emitted
@@ -868,9 +868,9 @@ public class KafkaConsumerSpoutTest {
             .atMost(5, TimeUnit.SECONDS)
             .until(() -> spout.getSpoutCoordinator().getTotalSpouts(), equalTo(howManyVirtualSpoutsWeWantLeft));
         assertEquals(
-            "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
             howManyVirtualSpoutsWeWantLeft,
-            spout.getSpoutCoordinator().getTotalSpouts()
+            spout.getSpoutCoordinator().getTotalSpouts(),
+            "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running"
         );
     }
 

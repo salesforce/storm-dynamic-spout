@@ -76,11 +76,11 @@ import java.util.stream.Stream;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
@@ -152,32 +152,32 @@ public class ConsumerTest {
         consumer.open(config, virtualSpoutIdentifier, consumerPeerContext, persistenceAdapter, new LogRecorder(), null);
 
         // Validate our instances got set
-        assertNotNull("Config is not null", consumer.getConsumerConfig());
+        assertNotNull(consumer.getConsumerConfig(), "Config is not null");
 
         // Deeper validation of generated ConsumerConfig
         final KafkaConsumerConfig foundConsumerConfig = consumer.getConsumerConfig();
-        assertEquals("ConsumerIdSet as expected", virtualSpoutIdentifier.toString(), foundConsumerConfig.getConsumerId());
-        assertEquals("Topic set correctly", topicName, foundConsumerConfig.getTopic());
+        assertEquals(virtualSpoutIdentifier.toString(), foundConsumerConfig.getConsumerId(), "ConsumerIdSet as expected");
+        assertEquals(topicName, foundConsumerConfig.getTopic(), "Topic set correctly");
         assertEquals(
-            "KafkaBrokers set correctly",
             expectedKafkaBrokers,
-            foundConsumerConfig.getKafkaConsumerProperties().getProperty(BOOTSTRAP_SERVERS_CONFIG)
+            foundConsumerConfig.getKafkaConsumerProperties().getProperty(BOOTSTRAP_SERVERS_CONFIG),
+            "KafkaBrokers set correctly"
         );
         assertEquals(
-            "Set Number of Consumers as expected",
             consumerPeerContext.getTotalInstances(),
-            consumer.getConsumerConfig().getNumberOfConsumers()
+            consumer.getConsumerConfig().getNumberOfConsumers(),
+            "Set Number of Consumers as expected"
         );
         assertEquals(
-            "Set Index of OUR Consumer is set as expected",
             consumerPeerContext.getInstanceNumber(),
-            consumer.getConsumerConfig().getIndexOfConsumer()
+            consumer.getConsumerConfig().getIndexOfConsumer(),
+            "Set Index of OUR Consumer is set as expected"
         );
 
         // Additional properties set correctly
-        assertNotNull("PersistenceAdapter is not null", consumer.getPersistenceAdapter());
+        assertNotNull(consumer.getPersistenceAdapter(), "PersistenceAdapter is not null");
         assertEquals(persistenceAdapter, consumer.getPersistenceAdapter());
-        assertNotNull("Deserializer is not null", consumer.getDeserializer());
+        assertNotNull(consumer.getDeserializer(), "Deserializer is not null");
         assertTrue(consumer.getDeserializer() instanceof Utf8StringDeserializer);
 
         consumer.close();
@@ -307,16 +307,16 @@ public class ConsumerTest {
 
         // Verify ConsumerStateManager returns the correct values
         final ConsumerState currentState = consumer.getCurrentState();
-        assertNotNull("Should be non-null", currentState);
+        assertNotNull(currentState, "Should be non-null");
 
         // State should have one entry
-        assertEquals("Should have 1 entry", 1, currentState.size());
+        assertEquals(1, currentState.size(), "Should have 1 entry");
 
         // Offset should have offset 1000L - 1 for completed offset.
         assertEquals(
-            "Expected value should be 999",
             (earliestPosition - 1),
-            (long) currentState.getOffsetForNamespaceAndPartition(partition0)
+            (long) currentState.getOffsetForNamespaceAndPartition(partition0),
+            "Expected value should be 999"
         );
     }
 
@@ -403,26 +403,26 @@ public class ConsumerTest {
 
         // Verify ConsumerStateManager returns the correct values
         final ConsumerState currentState = consumer.getCurrentState();
-        assertNotNull("Should be non-null", currentState);
+        assertNotNull(currentState, "Should be non-null");
 
         // State should have one entry
-        assertEquals("Should have 3 entries", 3, currentState.size());
+        assertEquals(3, currentState.size(), "Should have 3 entries");
 
         // Offsets should be the earliest position - 1
         assertEquals(
-            "Expected value for partition0",
             (earliestPositionPartition0 - 1),
-            (long) currentState.getOffsetForNamespaceAndPartition(partition0)
+            (long) currentState.getOffsetForNamespaceAndPartition(partition0),
+            "Expected value for partition0"
         );
         assertEquals(
-            "Expected value for partition1",
             (earliestPositionPartition1 - 1),
-            (long) currentState.getOffsetForNamespaceAndPartition(partition1)
+            (long) currentState.getOffsetForNamespaceAndPartition(partition1),
+            "Expected value for partition1"
         );
         assertEquals(
-            "Expected value for partition2",
             (earliestPositionPartition2 - 1),
-            (long) currentState.getOffsetForNamespaceAndPartition(partition2)
+            (long) currentState.getOffsetForNamespaceAndPartition(partition2),
+            "Expected value for partition2"
         );
     }
 
@@ -681,31 +681,31 @@ public class ConsumerTest {
         // Now validate the consumer state
         final ConsumerState resultingConsumerState = consumer.getCurrentState();
 
-        assertNotNull("Should be non-null", resultingConsumerState);
+        assertNotNull(resultingConsumerState, "Should be non-null");
 
         // State should have one entry
-        assertEquals("Should have 4 entries", 4, resultingConsumerState.size());
+        assertEquals(4, resultingConsumerState.size(), "Should have 4 entries");
 
         // Offsets should be set to what we expected.
         assertEquals(
-            "Expected value for partition0",
             expectedStateOffsetPartition0,
-            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition0)
+            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition0),
+            "Expected value for partition0"
         );
         assertEquals(
-            "Expected value for partition1",
             expectedStateOffsetPartition1,
-            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition1)
+            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition1),
+            "Expected value for partition1"
         );
         assertEquals(
-            "Expected value for partition2",
             expectedStateOffsetPartition2,
-            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition2)
+            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition2),
+            "Expected value for partition2"
         );
         assertEquals(
-            "Expected value for partition2",
             expectedStateOffsetPartition3,
-            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition3)
+            (long) resultingConsumerState.getOffsetForNamespaceAndPartition(partition3),
+            "Expected value for partition2"
         );
     }
 
@@ -728,12 +728,12 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate it
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 1 entry", 1, assignedPartitions.size());
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(1, assignedPartitions.size(), "Should contain 1 entry");
         assertTrue(
-            "Should contain our expected namespace/partition",
-            assignedPartitions.contains(new ConsumerPartition(topicName, expectedPartitionId))
+            assignedPartitions.contains(new ConsumerPartition(topicName, expectedPartitionId)),
+            "Should contain our expected namespace/partition"
         );
     }
 
@@ -756,13 +756,13 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate it
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 5 entries", expectedNumberOfPartitions, assignedPartitions.size());
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(expectedNumberOfPartitions, assignedPartitions.size(), "Should contain 5 entries");
         for (int x = 0; x < expectedNumberOfPartitions; x++) {
             assertTrue(
-                "Should contain our expected namespace/partition " + x,
-                assignedPartitions.contains(new ConsumerPartition(expectedTopicName, x))
+                assignedPartitions.contains(new ConsumerPartition(expectedTopicName, x)),
+                "Should contain our expected namespace/partition " + x
             );
         }
     }
@@ -787,14 +787,14 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 1 entries", 1, assignedPartitions.size());
-        assertTrue("Should contain our expected namespace/partition 0", assignedPartitions.contains(expectedTopicPartition));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(1, assignedPartitions.size(), "Should contain 1 entries");
+        assertTrue(assignedPartitions.contains(expectedTopicPartition), "Should contain our expected namespace/partition 0");
 
         // Now unsub from our namespace partition
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
-        assertTrue("Should have returned true", result);
+        assertTrue(result, "Should have returned true");
 
         // Now ask for assigned partitions, should have none
         // Ask the underlying consumer for our assigned partitions.
@@ -802,25 +802,25 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertTrue("Should be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 0 entries", 0, assignedPartitions.size());
-        assertFalse("Should NOT contain our expected namespace/partition 0", assignedPartitions.contains(expectedTopicPartition));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertTrue(assignedPartitions.isEmpty(), "Should be empty");
+        assertEquals(0, assignedPartitions.size(), "Should contain 0 entries");
+        assertFalse(assignedPartitions.contains(expectedTopicPartition), "Should NOT contain our expected namespace/partition 0");
 
         // Now we want to validate that removeConsumerState() removes all state, even for unassigned partitions.
 
         // Call flush and ensure we have persisted state on partition 0
         consumer.flushConsumerState();
         assertNotNull(
-            "Should have state persisted for this partition",
-            persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), 0)
+            persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), 0),
+            "Should have state persisted for this partition"
         );
 
         // If we call removeConsumerState, it should remove all state from the persistence layer
         consumer.removeConsumerState();
 
         // Validate no more state persisted for partition 0
-        assertNull("Should have null state", persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), 0));
+        assertNull(persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), 0), "Should have null state");
     }
 
     /**
@@ -845,13 +845,13 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain entries", expectedNumberOfPartitions, assignedPartitions.size());
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(expectedNumberOfPartitions, assignedPartitions.size(), "Should contain entries");
         for (int x = 0; x < expectedNumberOfPartitions; x++) {
             assertTrue(
-                "Should contain our expected namespace/partition " + x,
-                assignedPartitions.contains(new ConsumerPartition(expectedTopicName, x))
+                assignedPartitions.contains(new ConsumerPartition(expectedTopicName, x)),
+                "Should contain our expected namespace/partition " + x
             );
         }
 
@@ -860,7 +860,7 @@ public class ConsumerTest {
         final ConsumerPartition toRemoveTopicPartition = new ConsumerPartition(expectedTopicName, expectedRemovePartition);
 
         final boolean result = consumer.unsubscribeConsumerPartition(toRemoveTopicPartition);
-        assertTrue("Should have returned true", result);
+        assertTrue(result, "Should have returned true");
 
         // Now ask for assigned partitions, should have none
         // Ask the underlying consumer for our assigned partitions.
@@ -868,21 +868,21 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should be not empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain entries", (expectedNumberOfPartitions - 1), assignedPartitions.size());
-        assertFalse("Should NOT contain our removed namespace/partition 0", assignedPartitions.contains(toRemoveTopicPartition));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should be not empty");
+        assertEquals((expectedNumberOfPartitions - 1), assignedPartitions.size(), "Should contain entries");
+        assertFalse(assignedPartitions.contains(toRemoveTopicPartition), "Should NOT contain our removed namespace/partition 0");
 
         // Attempt to remove the same topicPartitionAgain, it should return false
         final boolean result2 = consumer.unsubscribeConsumerPartition(toRemoveTopicPartition);
-        assertFalse("Should return false the second time", result2);
+        assertFalse(result2, "Should return false the second time");
 
         // Now remove another namespace/partition
         final int expectedRemovePartition2 = 4;
         final ConsumerPartition toRemoveTopicPartition2 = new ConsumerPartition(expectedTopicName, expectedRemovePartition2);
 
         final boolean result3 = consumer.unsubscribeConsumerPartition(toRemoveTopicPartition2);
-        assertTrue("Should have returned true", result3);
+        assertTrue(result3, "Should have returned true");
 
         // Now ask for assigned partitions, should have none
         // Ask the underlying consumer for our assigned partitions.
@@ -890,11 +890,11 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should be not empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain entries", (expectedNumberOfPartitions - 2), assignedPartitions.size());
-        assertFalse("Should NOT contain our removed namespace/partition 1", assignedPartitions.contains(toRemoveTopicPartition));
-        assertFalse("Should NOT contain our removed namespace/partition 2", assignedPartitions.contains(toRemoveTopicPartition2));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should be not empty");
+        assertEquals((expectedNumberOfPartitions - 2), assignedPartitions.size(), "Should contain entries");
+        assertFalse(assignedPartitions.contains(toRemoveTopicPartition), "Should NOT contain our removed namespace/partition 1");
+        assertFalse(assignedPartitions.contains(toRemoveTopicPartition2), "Should NOT contain our removed namespace/partition 2");
 
         // Now we want to validate that removeConsumerState() removes all state, even for unassigned partitions.
 
@@ -902,8 +902,8 @@ public class ConsumerTest {
         consumer.flushConsumerState();
         for (int partitionId = 0; partitionId < expectedNumberOfPartitions; partitionId++) {
             assertNotNull(
-                "Should have state persisted for this partition",
-                persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), partitionId)
+                persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), partitionId),
+                "Should have state persisted for this partition"
             );
         }
 
@@ -913,8 +913,8 @@ public class ConsumerTest {
         // Validate we dont have state on any partitions now
         for (int partitionId = 0; partitionId < expectedNumberOfPartitions; partitionId++) {
             assertNull(
-                "Should not have state persisted for this partition",
-                persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), partitionId)
+                persistenceAdapter.retrieveConsumerState(consumer.getConsumerId(), partitionId),
+                "Should not have state persisted for this partition"
             );
         }
     }
@@ -948,7 +948,7 @@ public class ConsumerTest {
 
         // Next one should return null
         final Record foundRecord = consumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        assertNull(foundRecord, "Should have nothing new to consume and be null");
 
         // Close out consumer
         consumer.close();
@@ -1166,7 +1166,7 @@ public class ConsumerTest {
             final Record foundRecord = consumer.nextRecord();
 
             // It should be null
-            assertNull("Null Deserializer produced null return value", foundRecord);
+            assertNull(foundRecord, "Null Deserializer produced null return value");
 
             // Validate our consumer position should increase.
             validateConsumerState(consumer.flushConsumerState(), partition0, x);
@@ -1174,7 +1174,7 @@ public class ConsumerTest {
 
         // Next one should return null
         final Record foundRecord = consumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        assertNull(foundRecord, "Should have nothing new to consume and be null");
 
         // Close out consumer
         consumer.close();
@@ -1228,7 +1228,7 @@ public class ConsumerTest {
         // Additional calls to nextRecord() should return null
         for (int x = 0; x < 2; x++) {
             final Record foundRecord = consumer.nextRecord();
-            assertNull("Should have nothing new to consume and be null", foundRecord);
+            assertNull(foundRecord, "Should have nothing new to consume and be null");
         }
 
         // Close out consumer
@@ -1262,11 +1262,11 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 2 entries", expectedNumberOfPartitions, assignedPartitions.size());
-        assertTrue("Should contain our expected namespace/partition 0", assignedPartitions.contains(partition0));
-        assertTrue("Should contain our expected namespace/partition 1", assignedPartitions.contains(partition1));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(expectedNumberOfPartitions, assignedPartitions.size(), "Should contain 2 entries");
+        assertTrue(assignedPartitions.contains(partition0), "Should contain our expected namespace/partition 0");
+        assertTrue(assignedPartitions.contains(partition1), "Should contain our expected namespace/partition 1");
 
         // Now produce 5 msgs to each namespace (10 msgs total)
         final int expectedNumberOfMsgsPerPartition = 5;
@@ -1283,7 +1283,7 @@ public class ConsumerTest {
 
             // Determine which partition its from
             final int partitionSource = foundRecord.getPartition();
-            assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
+            assertTrue(partitionSource == 0 || partitionSource == 1, "Should be partition 0 or 1");
 
             ProducedKafkaRecord<byte[], byte[]> expectedRecord;
             if (partitionSource == 0) {
@@ -1299,7 +1299,7 @@ public class ConsumerTest {
         }
         // Next one should return null
         final Record foundRecord = consumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        assertNull(foundRecord, "Should have nothing new to consume and be null");
 
         logger.info("Consumer State {}", consumer.flushConsumerState());
 
@@ -1423,11 +1423,11 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should be assigned 2 partitions", 2, assignedPartitions.size());
-        assertTrue("Should contain first expected partition", assignedPartitions.contains(expectedPartitions.get(0)));
-        assertTrue("Should contain 2nd partition", assignedPartitions.contains(expectedPartitions.get(1)));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(2, assignedPartitions.size(), "Should be assigned 2 partitions");
+        assertTrue(assignedPartitions.contains(expectedPartitions.get(0)), "Should contain first expected partition");
+        assertTrue(assignedPartitions.contains(expectedPartitions.get(1)), "Should contain 2nd partition");
 
         // Attempt to consume 21 records
         // Read from topic, verify we get what we expect
@@ -1437,8 +1437,8 @@ public class ConsumerTest {
             // Validate its from partition 0 or 1
             final int foundPartitionId = foundRecord.getPartition();
             assertTrue(
-                "Should be from one of our expected partitions",
-                foundPartitionId == expectedPartitions.get(0).partition() || foundPartitionId == expectedPartitions.get(1).partition()
+                foundPartitionId == expectedPartitions.get(0).partition() || foundPartitionId == expectedPartitions.get(1).partition(),
+                "Should be from one of our expected partitions"
             );
 
             // Lets ack the tuple as we go
@@ -1448,24 +1448,24 @@ public class ConsumerTest {
         // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
         for (int x = 0; x < 2; x++) {
             final Record foundRecord = consumer.nextRecord();
-            assertNull("Should have nothing new to consume and be null", foundRecord);
+            assertNull(foundRecord, "Should have nothing new to consume and be null");
         }
 
         // Now lets flush state
         final ConsumerState consumerState = consumer.flushConsumerState();
 
         // validate the state only has data for our partitions
-        assertNotNull("Should not be null", consumerState);
-        assertEquals("Should only have 2 entries", 2, consumerState.size());
-        assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartitions.get(0)));
-        assertTrue("Should contain for 2nd expected partition", consumerState.containsKey(expectedPartitions.get(1)));
+        assertNotNull(consumerState, "Should not be null");
+        assertEquals(2, consumerState.size(), "Should only have 2 entries");
+        assertTrue(consumerState.containsKey(expectedPartitions.get(0)), "Should contain for first expected partition");
+        assertTrue(consumerState.containsKey(expectedPartitions.get(1)), "Should contain for 2nd expected partition");
         assertEquals(
-            "Offset stored should be 9 on first expected partition",
-            (Long) 9L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(0))
+            (Long) 9L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(0)),
+            "Offset stored should be 9 on first expected partition"
         );
         assertEquals(
-            "Offset stored should be 10 on 2nd expected partition",
-            (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(1))
+            (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartitions.get(1)),
+            "Offset stored should be 10 on 2nd expected partition"
         );
 
         // And double check w/ persistence manager directly
@@ -1475,21 +1475,21 @@ public class ConsumerTest {
         final Long partition3Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 3);
 
         if (consumerIndex == 0) {
-            assertNotNull("Partition0 offset should be not null", partition0Offset);
-            assertNotNull("Partition1 offset should be not null", partition1Offset);
-            assertNull("Partition2 offset should be null", partition2Offset);
-            assertNull("Partition3 offset should be null", partition3Offset);
+            assertNotNull(partition0Offset, "Partition0 offset should be not null");
+            assertNotNull(partition1Offset, "Partition1 offset should be not null");
+            assertNull(partition2Offset, "Partition2 offset should be null");
+            assertNull(partition3Offset, "Partition3 offset should be null");
 
-            assertEquals("Offset should be 9", (Long) 9L, partition0Offset);
-            assertEquals("Offset should be 10", (Long) 10L, partition1Offset);
+            assertEquals((Long) 9L, partition0Offset, "Offset should be 9");
+            assertEquals((Long) 10L, partition1Offset, "Offset should be 10");
         } else {
-            assertNotNull("Partition2 offset should be not null", partition2Offset);
-            assertNotNull("Partition3 offset should be not null", partition3Offset);
-            assertNull("Partition0 offset should be null", partition0Offset);
-            assertNull("Partition1 offset should be null", partition1Offset);
+            assertNotNull(partition2Offset, "Partition2 offset should be not null");
+            assertNotNull(partition3Offset, "Partition3 offset should be not null");
+            assertNull(partition0Offset, "Partition0 offset should be null");
+            assertNull(partition1Offset, "Partition1 offset should be null");
 
-            assertEquals("Offset should be 9", (Long) 9L, partition2Offset);
-            assertEquals("Offset should be 10", (Long) 10L, partition3Offset);
+            assertEquals((Long) 9L, partition2Offset, "Offset should be 9");
+            assertEquals((Long) 10L, partition3Offset, "Offset should be 10");
         }
 
         // Close it.
@@ -1576,13 +1576,13 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate we are assigned 2 partitions, and its partitionIds 0 and 1
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should be assigned correct number of partitions", expectedPartitions.size(), assignedPartitions.size());
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(expectedPartitions.size(), assignedPartitions.size(), "Should be assigned correct number of partitions");
         for (final ConsumerPartition expectedTopicPartition : expectedPartitions) {
             assertTrue(
-                "Should contain expected partition",
-                assignedPartitions.contains(new ConsumerPartition(expectedTopicPartition.namespace(), expectedTopicPartition.partition()))
+                assignedPartitions.contains(new ConsumerPartition(expectedTopicPartition.namespace(), expectedTopicPartition.partition())),
+                "Should contain expected partition"
             );
         }
 
@@ -1595,8 +1595,8 @@ public class ConsumerTest {
             // Validate its from a partition we expect
             final int foundPartitionId = foundRecord.getPartition();
             assertTrue(
-                "Should be from one of our expected partitions",
-                expectedPartitions.contains(new ConsumerPartition(topicName, foundPartitionId))
+                expectedPartitions.contains(new ConsumerPartition(topicName, foundPartitionId)),
+                "Should be from one of our expected partitions"
             );
 
             // Lets ack the tuple as we go
@@ -1606,28 +1606,28 @@ public class ConsumerTest {
         // Validate next calls all return null, as there is nothing left in those topics on partitions 0 and 1 to consume.
         for (int x = 0; x < 2; x++) {
             final Record foundRecord = consumer.nextRecord();
-            assertNull("Should have nothing new to consume and be null", foundRecord);
+            assertNull(foundRecord, "Should have nothing new to consume and be null");
         }
 
         // Now lets flush state
         final ConsumerState consumerState = consumer.flushConsumerState();
 
         // validate the state only has data for our partitions
-        assertNotNull("Should not be null", consumerState);
-        assertEquals("Should only have correct number of entries", expectedPartitions.size(), consumerState.size());
+        assertNotNull(consumerState, "Should not be null");
+        assertEquals(expectedPartitions.size(), consumerState.size(), "Should only have correct number of entries");
 
         for (final ConsumerPartition expectedPartition : expectedPartitions) {
-            assertTrue("Should contain for first expected partition", consumerState.containsKey(expectedPartition));
+            assertTrue(consumerState.containsKey(expectedPartition), "Should contain for first expected partition");
 
             if (expectedPartition.partition() % 2 == 0) {
                 assertEquals(
-                    "Offset stored should be 9 on even partitions",
-                    (Long) 9L, consumerState.getOffsetForNamespaceAndPartition(expectedPartition)
+                    (Long) 9L, consumerState.getOffsetForNamespaceAndPartition(expectedPartition),
+                    "Offset stored should be 9 on even partitions"
                 );
             } else {
                 assertEquals(
-                    "Offset stored should be 10 on odd partitions",
-                    (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartition)
+                    (Long) 10L, consumerState.getOffsetForNamespaceAndPartition(expectedPartition),
+                    "Offset stored should be 10 on odd partitions"
                 );
             }
         }
@@ -1640,24 +1640,24 @@ public class ConsumerTest {
         final Long partition4Offset = persistenceAdapter.retrieveConsumerState(virtualSpoutIdentifier.toString(), 4);
 
         if (consumerIndex == 0) {
-            assertNotNull("Partition0 offset should be not null", partition0Offset);
-            assertNotNull("Partition1 offset should be not null", partition1Offset);
-            assertNotNull("Partition2 offset should be not null", partition2Offset);
-            assertNull("Partition3 offset should be null", partition3Offset);
-            assertNull("Partition4 offset should be null", partition4Offset);
+            assertNotNull(partition0Offset, "Partition0 offset should be not null");
+            assertNotNull(partition1Offset, "Partition1 offset should be not null");
+            assertNotNull(partition2Offset, "Partition2 offset should be not null");
+            assertNull(partition3Offset, "Partition3 offset should be null");
+            assertNull(partition4Offset, "Partition4 offset should be null");
 
-            assertEquals("Offset should be 9", (Long) 9L, partition0Offset);
-            assertEquals("Offset should be 10", (Long) 10L, partition1Offset);
-            assertEquals("Offset should be 9", (Long) 9L, partition2Offset);
+            assertEquals((Long) 9L, partition0Offset, "Offset should be 9");
+            assertEquals((Long) 10L, partition1Offset, "Offset should be 10");
+            assertEquals((Long) 9L, partition2Offset, "Offset should be 9");
         } else {
-            assertNotNull("Partition3 offset should be not null", partition3Offset);
-            assertNotNull("Partition4 offset should be not null", partition4Offset);
-            assertNull("Partition0 offset should be null", partition0Offset);
-            assertNull("Partition1 offset should be null", partition1Offset);
-            assertNull("Partition2 offset should be null", partition2Offset);
+            assertNotNull(partition3Offset, "Partition3 offset should be not null");
+            assertNotNull(partition4Offset, "Partition4 offset should be not null");
+            assertNull(partition0Offset, "Partition0 offset should be null");
+            assertNull(partition1Offset, "Partition1 offset should be null");
+            assertNull(partition2Offset, "Partition2 offset should be null");
 
-            assertEquals("Offset should be 10", (Long) 10L, partition3Offset);
-            assertEquals("Offset should be 9", (Long) 9L, partition4Offset);
+            assertEquals((Long) 10L, partition3Offset, "Offset should be 10");
+            assertEquals((Long) 9L, partition4Offset, "Offset should be 9");
         }
 
         // Close it.
@@ -1695,10 +1695,10 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 1 entries", 1, assignedPartitions.size());
-        assertTrue("Should contain our expected namespace/partition 0", assignedPartitions.contains(expectedTopicPartition));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(1, assignedPartitions.size(), "Should contain 1 entries");
+        assertTrue(assignedPartitions.contains(expectedTopicPartition), "Should contain our expected namespace/partition 0");
 
         // Now produce 5 msgs
         final int expectedNumberOfMsgs = 5;
@@ -1714,14 +1714,14 @@ public class ConsumerTest {
 
         // Next one should return null
         Record foundRecord = consumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        assertNull(foundRecord, "Should have nothing new to consume and be null");
 
         // Now produce 5 more msgs
         produceRecords(expectedNumberOfMsgs, 0);
 
         // Now unsubscribe from the partition
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition);
-        assertTrue("Should be true", result);
+        assertTrue(result, "Should be true");
 
         // Attempt to consume, but nothing should be returned, because we unsubscribed.
         for (int x = 0; x < expectedNumberOfMsgs; x++) {
@@ -1761,11 +1761,11 @@ public class ConsumerTest {
         logger.info("Assigned partitions: {}", assignedPartitions);
 
         // Validate setup
-        assertNotNull("Should be non-null", assignedPartitions);
-        assertFalse("Should not be empty", assignedPartitions.isEmpty());
-        assertEquals("Should contain 2 entries", expectedNumberOfPartitions, assignedPartitions.size());
-        assertTrue("Should contain our expected namespace/partition 0", assignedPartitions.contains(expectedTopicPartition0));
-        assertTrue("Should contain our expected namespace/partition 1", assignedPartitions.contains(expectedTopicPartition1));
+        assertNotNull(assignedPartitions, "Should be non-null");
+        assertFalse(assignedPartitions.isEmpty(), "Should not be empty");
+        assertEquals(expectedNumberOfPartitions, assignedPartitions.size(), "Should contain 2 entries");
+        assertTrue(assignedPartitions.contains(expectedTopicPartition0), "Should contain our expected namespace/partition 0");
+        assertTrue(assignedPartitions.contains(expectedTopicPartition1), "Should contain our expected namespace/partition 1");
 
         // Now produce 5 msgs to each namespace (10 msgs total)
         final int expectedNumberOfMsgsPerPartition = 5;
@@ -1782,7 +1782,7 @@ public class ConsumerTest {
 
             // Determine which partition its from
             final int partitionSource = foundRecord.getPartition();
-            assertTrue("Should be partition 0 or 1", partitionSource == 0 || partitionSource == 1);
+            assertTrue(partitionSource == 0 || partitionSource == 1, "Should be partition 0 or 1");
 
             ProducedKafkaRecord<byte[], byte[]> expectedRecord;
             if (partitionSource == 0) {
@@ -1799,7 +1799,7 @@ public class ConsumerTest {
 
         // Next one should return null
         Record foundRecord = consumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        assertNull(foundRecord, "Should have nothing new to consume and be null");
 
         // Now produce 5 more msgs into each partition
         producedRecordsPartition0 = produceRecords(expectedNumberOfMsgsPerPartition, 0);
@@ -1807,7 +1807,7 @@ public class ConsumerTest {
 
         // Now unsub from the partition 0
         final boolean result = consumer.unsubscribeConsumerPartition(expectedTopicPartition0);
-        assertTrue("Should be true", result);
+        assertTrue(result, "Should be true");
 
         // Attempt to consume, but nothing should be returned from partition 0, only partition 1
         for (int x = 0; x < expectedNumberOfMsgsPerPartition; x++) {
@@ -1815,7 +1815,7 @@ public class ConsumerTest {
             assertNotNull(foundRecord);
 
             // Determine which partition its from, should be only 1
-            assertEquals("Should be partition 1", 1, foundRecord.getPartition());
+            assertEquals(1, foundRecord.getPartition(), "Should be partition 1");
 
             // Validate it
             final ProducedKafkaRecord<byte[], byte[]> expectedRecord = producedRecordsPartition1.get(x);
@@ -1826,7 +1826,7 @@ public class ConsumerTest {
 
         // Next one should return null
         foundRecord = consumer.nextRecord();
-        assertNull("Should have nothing new to consume and be null", foundRecord);
+        assertNull(foundRecord, "Should have nothing new to consume and be null");
 
         // Close out consumer
         consumer.close();
@@ -1901,12 +1901,12 @@ public class ConsumerTest {
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();
         assertEquals(
-            "Partition 0's last committed offset should be its starting offset",
-            (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0)
+            (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0),
+            "Partition 0's last committed offset should be its starting offset"
         );
         assertEquals(
-            "Partition 1's last committed offset should be its starting offset",
-            (Long) partition1StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            (Long) partition1StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition1),
+            "Partition 1's last committed offset should be its starting offset"
         );
 
         // Define the values we expect to get
@@ -1923,27 +1923,27 @@ public class ConsumerTest {
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
-        assertEquals("Should have " + numberOfExpectedMessages + " messages from kafka", numberOfExpectedMessages, records.size());
-        assertTrue("Expected set should now be empty, we found everything " + expectedValues, expectedValues.isEmpty());
+        assertEquals(numberOfExpectedMessages, records.size(), "Should have " + numberOfExpectedMessages + " messages from kafka");
+        assertTrue(expectedValues.isEmpty(), "Expected set should now be empty, we found everything " + expectedValues);
 
         // Call nextRecord 2 more times, both should be null
         for (int x = 0; x < 2; x++) {
-            assertNull("Should be null", consumer.nextRecord());
+            assertNull(consumer.nextRecord(), "Should be null");
         }
 
         // Validate PartitionOffsetManager is correctly setup
         // We have not acked anything,
         consumerState = consumer.getCurrentState();
         assertEquals(
-            "Partition 0's last committed offset should still be its starting offset",
-            (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0)
+            (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0),
+            "Partition 0's last committed offset should still be its starting offset"
         );
 
         // This is -1 because the original offset we asked for was invalid, so it got set to (earliest offset - 1), or for us (0 - 1) => -1
         assertEquals(
-            "Partition 1's last committed offset should be reset to latest, or 4 in our case",
             Long.valueOf(4L),
-            consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition1),
+            "Partition 1's last committed offset should be reset to latest, or 4 in our case"
         );
 
         // Close consumer
@@ -2017,12 +2017,14 @@ public class ConsumerTest {
         // Validate PartitionOffsetManager is correctly setup
         ConsumerState consumerState = consumer.getCurrentState();
         assertEquals(
-            "Partition 0's last committed offset should be its starting offset",
-            (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0)
+            (Long) partition0StartingOffset,
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition0),
+            "Partition 0's last committed offset should be its starting offset"
         );
         assertEquals(
-            "Partition 1's last committed offset should be its starting offset",
-            (Long) partition1StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            (Long) partition1StartingOffset,
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition1),
+            "Partition 1's last committed offset should be its starting offset"
         );
 
         // Define the values we expect to get
@@ -2052,8 +2054,8 @@ public class ConsumerTest {
 
         // Now do validation
         logger.info("Found {} msgs", records.size());
-        assertEquals("Should have 8 messages from kafka", numberOfExpectedMessages, records.size());
-        assertTrue("Expected set should now be empty, we found everything", expectedValues.isEmpty());
+        assertEquals(numberOfExpectedMessages, records.size(), "Should have 8 messages from kafka");
+        assertTrue(expectedValues.isEmpty(), "Expected set should now be empty, we found everything");
 
         // Now produce more msgs to partition 0 and 1
         produceRecords(numberOfMsgsPerPartition, 1);
@@ -2098,29 +2100,32 @@ public class ConsumerTest {
         // Now do validation
         logger.info("Found {} msgs", records.size());
         assertEquals(
-            "Should have 4 (4 from partition0, 0 from partition1) messages from kafka",
-            (1 * numberOfMsgsPerPartition), records.size()
+            (1 * numberOfMsgsPerPartition),
+            records.size(),
+            "Should have 4 (4 from partition0, 0 from partition1) messages from kafka"
         );
-        assertTrue("Expected set should now be empty, we found everything " + expectedValues, expectedValues.isEmpty());
+        assertTrue(expectedValues.isEmpty(), "Expected set should now be empty, we found everything " + expectedValues);
 
         // Call nextRecord 2 more times, both should be null
         for (int x = 0; x < 2; x++) {
-            assertNull("Should be null", consumer.nextRecord());
+            assertNull(consumer.nextRecord(), "Should be null");
         }
 
         // Validate PartitionOffsetManager is correctly setup
         // We have not acked anything,
         consumerState = consumer.getCurrentState();
         assertEquals(
-            "Partition 0's last committed offset should still be its starting offset",
-            (Long) partition0StartingOffset, consumerState.getOffsetForNamespaceAndPartition(topicPartition0)
+            (Long) partition0StartingOffset,
+                consumerState.getOffsetForNamespaceAndPartition(topicPartition0),
+                "Partition 0's last committed offset should still be its starting offset"
+
         );
 
         // This is 8 because the original offset we asked for was invalid, so it got set to the latest offset, or for us 8
         assertEquals(
-            "Partition 1's last committed offset should be reset to latest, or 8 in our case",
             Long.valueOf(8L),
-            consumerState.getOffsetForNamespaceAndPartition(topicPartition1)
+            consumerState.getOffsetForNamespaceAndPartition(topicPartition1),
+            "Partition 1's last committed offset should be reset to latest, or 8 in our case"
         );
 
         // Close consumer
@@ -2190,7 +2195,7 @@ public class ConsumerTest {
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
 
         // Validate we got 0 records, no need to do deeper inspection for this test
-        assertEquals("We should have 0 records", 0, records.size());
+        assertEquals(0, records.size(), "We should have 0 records");
 
         // Now validate the state
         ConsumerState consumerState = consumer.flushConsumerState();
@@ -2200,8 +2205,8 @@ public class ConsumerTest {
         assertFalse(consumerState.isEmpty());
 
         // Before acking anything
-        assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals(Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0), "Has partition 0 offset at -1");
+        assertEquals(Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1), "Has partition 1 offset at 4");
 
         // Ack all of our messages in consumer
         for (final Record record : records) {
@@ -2216,8 +2221,8 @@ public class ConsumerTest {
         assertFalse(consumerState.isEmpty());
 
         // After acking messages
-        assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
-        assertEquals("Has partition 1 offset at 4", Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1));
+        assertEquals(Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0), "Has partition 0 offset at -1");
+        assertEquals(Long.valueOf(4L), consumerState.getOffsetForNamespaceAndPartition(topicName, 1), "Has partition 1 offset at 4");
 
         // Clean up
         consumer.close();
@@ -2289,11 +2294,11 @@ public class ConsumerTest {
         final List<Record> records = asyncConsumeMessages(consumer, numberOfExpectedMessages);
 
         // Validate we got 2 records, both should be from partition 0
-        assertEquals("We should have 2 records", numberOfExpectedMessages, records.size());
+        assertEquals(numberOfExpectedMessages, records.size(), "We should have 2 records");
 
         // Validate only partition 0
         for (final Record record : records) {
-            assertEquals("Should have come from partition0 only", 0, record.getPartition());
+            assertEquals(0, record.getPartition(), "Should have come from partition0 only");
         }
 
         // Now validate the state
@@ -2304,11 +2309,11 @@ public class ConsumerTest {
         assertFalse(consumerState.isEmpty());
 
         // Before acking anything
-        assertEquals("Has partition 0 offset at -1", Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
+        assertEquals(Long.valueOf(-1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0), "Has partition 0 offset at -1");
         assertEquals(
-            "Has partition 1 offset at " + numberOfMsgsOnPartition1,
             Long.valueOf(numberOfMsgsOnPartition1),
-            consumerState.getOffsetForNamespaceAndPartition(topicName, 1)
+            consumerState.getOffsetForNamespaceAndPartition(topicName, 1),
+            "Has partition 1 offset at " + numberOfMsgsOnPartition1
         );
 
         // Ack all of our messages in consumer
@@ -2324,12 +2329,12 @@ public class ConsumerTest {
         assertFalse(consumerState.isEmpty());
 
         // After acking messages
-        assertEquals("Has partition 0 offset at 1", Long.valueOf(1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0));
+        assertEquals(Long.valueOf(1L), consumerState.getOffsetForNamespaceAndPartition(topicName, 0), "Has partition 0 offset at 1");
         // We haven't moved, we reset to the tail so nothing should have changed since we've not published new messages
         assertEquals(
-            "Has partition 1 offset at " + numberOfMsgsOnPartition1,
             Long.valueOf(numberOfMsgsOnPartition1),
-            consumerState.getOffsetForNamespaceAndPartition(topicName, 1)
+            consumerState.getOffsetForNamespaceAndPartition(topicName, 1),
+            "Has partition 1 offset at " + numberOfMsgsOnPartition1
         );
 
         // Clean up
@@ -2379,12 +2384,12 @@ public class ConsumerTest {
         // We are at the end of the log, so this should yield NULL every time, there's nothing after our offset
         final Record record1 = consumer.nextRecord();
 
-        assertNull("Consumer should not find a record", record1);
+        assertNull(record1, "Consumer should not find a record");
 
         assertEquals(
-            "Kafka's position should not match the total number of messages on the partition since we are at the end of it",
             numberOfMsgsOnPartition1,
-            consumer.getKafkaConsumer().position(topicPartition1)
+            consumer.getKafkaConsumer().position(topicPartition1),
+            "Kafka's position should not match the total number of messages on the partition since we are at the end of it"
         );
 
         // Seek the consumer past the end of the log, this should create an OutOfRangeException
@@ -2394,9 +2399,9 @@ public class ConsumerTest {
         );
 
         assertEquals(
-            "Seek call on Kafka should be past the end of our messages",
             numberOfMsgsOnPartition1 + 1,
-            consumer.getKafkaConsumer().position(topicPartition1)
+            consumer.getKafkaConsumer().position(topicPartition1),
+            "Seek call on Kafka should be past the end of our messages"
         );
 
         // Now attempt to consume a message, the pointer for kafka is past the end of the log so this is going to
@@ -2405,9 +2410,9 @@ public class ConsumerTest {
         consumer.nextRecord();
 
         assertEquals(
-            "Seek call on Kafka should have been reset to our last message",
             numberOfMsgsOnPartition1,
-            consumer.getKafkaConsumer().position(topicPartition1)
+            consumer.getKafkaConsumer().position(topicPartition1),
+            "Seek call on Kafka should have been reset to our last message"
         );
 
         // Clean up
@@ -2472,7 +2477,7 @@ public class ConsumerTest {
         final long expectedOffset
     ) {
         final long actualOffset = consumerState.getOffsetForNamespaceAndPartition(topicPartition);
-        assertEquals("Expected offset", expectedOffset, actualOffset);
+        assertEquals(expectedOffset, actualOffset, "Expected offset");
     }
 
     /**
@@ -2494,8 +2499,8 @@ public class ConsumerTest {
         final String key = (String) foundRecord.getValues().get(0);
         final String value = (String) foundRecord.getValues().get(1);
 
-        assertEquals("Found expected key",  new String(expectedRecord.getKey(), StandardCharsets.UTF_8), key);
-        assertEquals("Found expected value", new String(expectedRecord.getValue(), StandardCharsets.UTF_8), value);
+        assertEquals(new String(expectedRecord.getKey(), StandardCharsets.UTF_8), key, "Found expected key");
+        assertEquals(new String(expectedRecord.getValue(), StandardCharsets.UTF_8), value, "Found expected value");
     }
 
     /**
@@ -2588,7 +2593,7 @@ public class ConsumerTest {
 
         // Santity Test - Now call consume again, we shouldn't get any messages
         final Record nextRecord = consumer.nextRecord();
-        assertNull("Should have no more records", nextRecord);
+        assertNull(nextRecord, "Should have no more records");
 
         return consumedMessages;
     }

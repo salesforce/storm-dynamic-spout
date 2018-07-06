@@ -43,9 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -80,7 +80,7 @@ public class CuratorHelperTest {
             final byte[] resultBytes = curatorHelper.readBytes(path);
             final String resultStr = new String(resultBytes, StandardCharsets.UTF_8);
 
-            assertEquals("Has correct value", valueStr, resultStr);
+            assertEquals(valueStr, resultStr, "Has correct value");
         }
     }
 
@@ -107,12 +107,12 @@ public class CuratorHelperTest {
             final Map<String, Object> resultMap = curatorHelper.readJson(path);
 
             // Validate
-            assertNotNull("Not null result", resultMap);
-            assertEquals("Has 3 keys", 3, resultMap.size());
-            assertEquals("Has key 1", "value1", resultMap.get("key1"));
+            assertNotNull(resultMap, "Not null result");
+            assertEquals(3, resultMap.size(), "Has 3 keys");
+            assertEquals("value1", resultMap.get("key1"), "Has key 1");
             // Note, we put in a Long and got a Double so if we want Long we need to do some casting on maps
-            assertEquals("Has key 2", 2.0, resultMap.get("key2"));
-            assertEquals("Has key 3", true, resultMap.get("key3"));
+            assertEquals(2.0, resultMap.get("key2"), "Has key 2");
+            assertEquals(true, resultMap.get("key3"), "Has key 3");
         }
     }
 
@@ -146,14 +146,14 @@ public class CuratorHelperTest {
             Stat result = curator
                 .checkExists()
                 .forPath(childPath);
-            assertNotNull("Child path should exist", result);
+            assertNotNull(result, "Child path should exist");
 
             // Validate base exists
             result = curator
                 .checkExists()
                 .forPath(basePath);
-            assertNotNull("base path should exist", result);
-            assertEquals("Should have 1 child", 1, result.getNumChildren());
+            assertNotNull(result, "base path should exist");
+            assertEquals(1, result.getNumChildren(), "Should have 1 child");
 
             // Cleanup
             curator
@@ -165,7 +165,7 @@ public class CuratorHelperTest {
             result = curator
                 .checkExists()
                 .forPath(basePath);
-            assertNull("base path should be removed", result);
+            assertNull(result, "base path should be removed");
         }
     }
 
@@ -193,7 +193,7 @@ public class CuratorHelperTest {
             final Stat result = curator
                 .checkExists()
                 .forPath(basePath);
-            assertNull("base path should be removed", result);
+            assertNull(result, "base path should be removed");
         }
     }
 

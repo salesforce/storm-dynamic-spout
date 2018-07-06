@@ -54,11 +54,11 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test that {@link RoundRobinBufferTest} equally distributes messages from the buffer.
@@ -117,7 +117,7 @@ public class RoundRobinBufferTest {
         }
 
         // Validate size
-        assertEquals("Size should be known", (numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size());
+        assertEquals((numberOfMessagesPer * numberOfVSpoutIds), messageBuffer.size(), "Size should be known");
 
         // Now ask for the messages back, they should get round robin'd
         Iterator<DefaultVirtualSpoutIdentifier> keyIterator = Iterators.cycle(submittedOrder.keySet());
@@ -144,7 +144,7 @@ public class RoundRobinBufferTest {
 
                 // If the next msg is null, then we skip to next entry and try again
                 if (nextExpectedKafkaMsg == null) {
-                    assertNotEquals("Should not be next source spout id", nextSourceSpout, bufferedSrcSpoutId);
+                    assertNotEquals(nextSourceSpout, bufferedSrcSpoutId, "Should not be next source spout id");
 
                     // Get next entry, and loop
                     nextSourceSpout = keyIterator.next();
@@ -152,25 +152,25 @@ public class RoundRobinBufferTest {
             }
 
             // Validate it
-            assertNotNull("Should not be null", bufferedMsg);
-            assertEquals("Objects should be the same", nextExpectedKafkaMsg, bufferedMsg);
+            assertNotNull(bufferedMsg, "Should not be null");
+            assertEquals(nextExpectedKafkaMsg, bufferedMsg, "Objects should be the same");
 
             // Should be from the source
-            assertEquals("Source Spout Id should be equal", nextSourceSpout, bufferedMsg.getMessageId().getSrcVirtualSpoutId());
+            assertEquals(nextSourceSpout, bufferedMsg.getMessageId().getSrcVirtualSpoutId(), "Source Spout Id should be equal");
 
 
             // Validate the contents are the same
-            assertEquals("partitions should be equal", nextExpectedKafkaMsg.getPartition(), bufferedMsg.getPartition());
-            assertEquals("offsets should be equal", nextExpectedKafkaMsg.getOffset(), bufferedMsg.getOffset());
-            assertEquals("namespace should be equal", nextExpectedKafkaMsg.getNamespace(), bufferedMsg.getNamespace());
-            assertEquals("MessageIds should be equal", nextExpectedKafkaMsg.getMessageId(), bufferedMsg.getMessageId());
-            assertEquals("Values should be equal", nextExpectedKafkaMsg.getValues(), bufferedMsg.getValues());
+            assertEquals(nextExpectedKafkaMsg.getPartition(), bufferedMsg.getPartition(), "partitions should be equal");
+            assertEquals(nextExpectedKafkaMsg.getOffset(), bufferedMsg.getOffset(), "offsets should be equal");
+            assertEquals(nextExpectedKafkaMsg.getNamespace(), bufferedMsg.getNamespace(), "namespace should be equal");
+            assertEquals(nextExpectedKafkaMsg.getMessageId(), bufferedMsg.getMessageId(), "MessageIds should be equal");
+            assertEquals(nextExpectedKafkaMsg.getValues(), bufferedMsg.getValues(), "Values should be equal");
         }
 
 
         // Validate that the next polls are all null
         for (int x = 0; x < 128; x++) {
-            assertNull("Should be null", messageBuffer.poll());
+            assertNull(messageBuffer.poll(), "Should be null");
         }
     }
 
@@ -191,7 +191,7 @@ public class RoundRobinBufferTest {
         messageBuffer.open(config);
 
         // Validate
-        assertEquals("Set correct", inputValue.intValue(), messageBuffer.getMaxBufferSizePerVirtualSpout());
+        assertEquals(inputValue.intValue(), messageBuffer.getMaxBufferSizePerVirtualSpout(), "Set correct");
     }
 
     /**
@@ -350,7 +350,7 @@ public class RoundRobinBufferTest {
 
 
         // See that we found all of our keys
-        assertEquals("Found all keys", myMap.size(), foundKeys.size());
+        assertEquals(myMap.size(), foundKeys.size(), "Found all keys");
 
         // Now remove some keys
         for (int x = 5; x < 100; x++) {
@@ -358,7 +358,7 @@ public class RoundRobinBufferTest {
         }
 
         // Make sure nothing bad happened
-        assertFalse("No exceptions thrown", future.isCompletedExceptionally());
+        assertFalse(future.isCompletedExceptionally(), "No exceptions thrown");
         future.cancel(true);
         try {
             future.get();

@@ -55,12 +55,12 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -129,17 +129,17 @@ public class SpoutRunnerTest {
         );
 
         // Call getters and validate!
-        assertEquals("Clock instance is what we expect", clock, spoutRunner.getClock());
-        assertEquals("TopologyConfig looks legit", topologyConfig, spoutRunner.getTopologyConfig());
+        assertEquals(clock, spoutRunner.getClock(), "Clock instance is what we expect");
+        assertEquals(topologyConfig, spoutRunner.getTopologyConfig(), "TopologyConfig looks legit");
         assertEquals(
-            "getConsumerStateFlushIntervalMs() returns right value",
             consumerStateFlushInterval,
-            spoutRunner.getConsumerStateFlushIntervalMs()
+            spoutRunner.getConsumerStateFlushIntervalMs(),
+            "getConsumerStateFlushIntervalMs() returns right value"
         );
 
-        assertNotNull("StartTime is null", spoutRunner.getStartTime());
-        assertNotEquals("StartTime is not zero", 0, spoutRunner.getStartTime());
-        assertEquals("Spout delegate got set", spout, spoutRunner.getSpout());
+        assertNotNull(spoutRunner.getStartTime(), "StartTime is null");
+        assertNotEquals(0, spoutRunner.getStartTime(), "StartTime is not zero");
+        assertEquals(spout, spoutRunner.getSpout(), "Spout delegate got set");
     }
 
     /**
@@ -188,8 +188,8 @@ public class SpoutRunnerTest {
             .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // Verify open was called once, but not close
-        assertTrue("Open was called on our mock spout", mockSpout.wasOpenCalled);
-        assertFalse("Close has not been called yet on our mock spout", mockSpout.wasCloseCalled);
+        assertTrue(mockSpout.wasOpenCalled, "Open was called on our mock spout");
+        assertFalse(mockSpout.wasCloseCalled, "Close has not been called yet on our mock spout");
 
         // Verify queues got setup
         verify(messageBus, times(1)).registerVirtualSpout(eq(virtualSpoutId));
@@ -212,10 +212,10 @@ public class SpoutRunnerTest {
             .until(future::isDone);
 
         // Make sure it actually stopped
-        assertEquals("Should have no running threads", 0, executorService.getActiveCount());
+        assertEquals(0, executorService.getActiveCount(), "Should have no running threads");
 
         // verify close was called
-        assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
+        assertTrue(mockSpout.wasCloseCalled, "Close was called on our mock spout");
 
         // Verify entries removed from buffer, ackQueue, failQueue
         verify(messageBus, times(1)).unregisterVirtualSpout(eq(virtualSpoutId));
@@ -270,7 +270,7 @@ public class SpoutRunnerTest {
             .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // sanity test
-        assertEquals("MessageBuffer should be empty", 0, messageBus.messageSize());
+        assertEquals(0, messageBus.messageSize(), "MessageBuffer should be empty");
 
         // Now Add some messages to our mock spout
         final Message message1 = new Message(new MessageId("namespace", 0, 0L, virtualSpoutId), new Values(1));
@@ -286,7 +286,7 @@ public class SpoutRunnerTest {
             .until(() -> messageBus.messageSize() == 3, equalTo(true));
 
         // Sanity test
-        assertEquals("MessageBuffer should have 3 entries", 3, messageBus.messageSize());
+        assertEquals(3, messageBus.messageSize(), "MessageBuffer should have 3 entries");
 
         logger.info("Requesting stop via SpoutRunner.requestStop()");
         spoutRunner.requestStop();
@@ -297,10 +297,10 @@ public class SpoutRunnerTest {
             .until(future::isDone);
 
         // Make sure it actually stopped
-        assertEquals("Should have no running threads", 0, executorService.getActiveCount());
+        assertEquals(0, executorService.getActiveCount(), "Should have no running threads");
 
         // verify close was called
-        assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
+        assertTrue(mockSpout.wasCloseCalled, "Close was called on our mock spout");
     }
 
     /**
@@ -345,9 +345,9 @@ public class SpoutRunnerTest {
             .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // sanity test
-        assertEquals("MessageBuffer should be empty", 0, messageBus.messageSize());
-        assertEquals("Ack Queue should be empty", 0, messageBus.ackSize());
-        assertEquals("fail Queue should be empty", 0, messageBus.failSize());
+        assertEquals(0, messageBus.messageSize(), "MessageBuffer should be empty");
+        assertEquals(0, messageBus.ackSize(), "Ack Queue should be empty");
+        assertEquals(0, messageBus.failSize(), "fail Queue should be empty");
 
         // Create some MessageIds for our virtualSpoutId
         final MessageId messageId1 = new MessageId("namespace", 0, 0L, virtualSpoutId);
@@ -373,25 +373,25 @@ public class SpoutRunnerTest {
             .until(() -> mockSpout.failedTupleIds.size() == 3, equalTo(true));
 
         // Sanity test
-        assertEquals("failQueue should now contain 3 entries (for the other vspout id)", 3, messageBus.failSize());
-        assertEquals("mock spout should have gotten 3 fail() calls", 3, mockSpout.failedTupleIds.size());
-        assertTrue("Should have messageId", mockSpout.failedTupleIds.contains(messageId1));
-        assertTrue("Should have messageId", mockSpout.failedTupleIds.contains(messageId2));
-        assertTrue("Should have messageId", mockSpout.failedTupleIds.contains(messageId3));
-        assertFalse("Should NOT have messageId", mockSpout.failedTupleIds.contains(messageId4));
-        assertFalse("Should NOT have messageId", mockSpout.failedTupleIds.contains(messageId5));
-        assertFalse("Should NOT have messageId", mockSpout.failedTupleIds.contains(messageId6));
+        assertEquals(3, messageBus.failSize(), "failQueue should now contain 3 entries (for the other vspout id)");
+        assertEquals(3, mockSpout.failedTupleIds.size(), "mock spout should have gotten 3 fail() calls");
+        assertTrue(mockSpout.failedTupleIds.contains(messageId1), "Should have messageId");
+        assertTrue(mockSpout.failedTupleIds.contains(messageId2), "Should have messageId");
+        assertTrue(mockSpout.failedTupleIds.contains(messageId3), "Should have messageId");
+        assertFalse(mockSpout.failedTupleIds.contains(messageId4), "Should NOT have messageId");
+        assertFalse(mockSpout.failedTupleIds.contains(messageId5), "Should NOT have messageId");
+        assertFalse(mockSpout.failedTupleIds.contains(messageId6), "Should NOT have messageId");
 
         // Calling getFailedMessage with our VirtualSpoutId should return empty optionals
         for (int loopCount = 0; loopCount < 10; loopCount++) {
-            assertNull("Should be empty/null", messageBus.getFailedMessage(virtualSpoutId));
+            assertNull(messageBus.getFailedMessage(virtualSpoutId), "Should be empty/null");
         }
 
         // Other virtualspout id queue should still be populated
-        assertEquals("fail queue for other virtual spout should remain full", 3, messageBus.failSize());
+        assertEquals(3, messageBus.failSize(), "fail queue for other virtual spout should remain full");
 
         // No failed ids
-        assertTrue("acked() never called", mockSpout.ackedTupleIds.isEmpty());
+        assertTrue(mockSpout.ackedTupleIds.isEmpty(), "acked() never called");
 
         logger.info("Requesting stop via SpoutRunner.requestStop()");
         spoutRunner.requestStop();
@@ -402,10 +402,10 @@ public class SpoutRunnerTest {
             .until(future::isDone);
 
         // Make sure it actually stopped
-        assertEquals("Should have no running threads", 0, executorService.getActiveCount());
+        assertEquals(0, executorService.getActiveCount(), "Should have no running threads");
 
         // verify close was called
-        assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
+        assertTrue(mockSpout.wasCloseCalled, "Close was called on our mock spout");
     }
 
     /**
@@ -450,9 +450,9 @@ public class SpoutRunnerTest {
             .until(() -> mockSpout.wasOpenCalled, equalTo(true));
 
         // sanity test
-        assertEquals("MessageBuffer should be empty", 0, messageBus.messageSize());
-        assertEquals("Ack Queue should be empty", 0, messageBus.ackSize());
-        assertEquals("fail Queue should be empty", 0, messageBus.failSize());
+        assertEquals(0, messageBus.messageSize(), "MessageBuffer should be empty");
+        assertEquals(0, messageBus.ackSize(), "Ack Queue should be empty");
+        assertEquals(0, messageBus.failSize(), "fail Queue should be empty");
 
         // Create some MessageIds for our virtualSpoutId
         final MessageId messageId1 = new MessageId("namespace", 0, 0L, virtualSpoutId);
@@ -478,25 +478,25 @@ public class SpoutRunnerTest {
             .until(() -> mockSpout.ackedTupleIds.size() == 3, equalTo(true));
 
         // Sanity test
-        assertEquals("ackQueue should now have 3 entries (for other vspoutId)", 3, messageBus.ackSize());
-        assertEquals("mock spout should have gotten 3 ack() calls", 3, mockSpout.ackedTupleIds.size());
-        assertTrue("Should have messageId", mockSpout.ackedTupleIds.contains(messageId1));
-        assertTrue("Should have messageId", mockSpout.ackedTupleIds.contains(messageId2));
-        assertTrue("Should have messageId", mockSpout.ackedTupleIds.contains(messageId3));
-        assertFalse("Should NOT have messageId", mockSpout.ackedTupleIds.contains(messageId4));
-        assertFalse("Should NOT have messageId", mockSpout.ackedTupleIds.contains(messageId5));
-        assertFalse("Should NOT have messageId", mockSpout.ackedTupleIds.contains(messageId6));
+        assertEquals(3, messageBus.ackSize(), "ackQueue should now have 3 entries (for other vspoutId)");
+        assertEquals(3, mockSpout.ackedTupleIds.size(), "mock spout should have gotten 3 ack() calls");
+        assertTrue(mockSpout.ackedTupleIds.contains(messageId1), "Should have messageId");
+        assertTrue(mockSpout.ackedTupleIds.contains(messageId2), "Should have messageId");
+        assertTrue(mockSpout.ackedTupleIds.contains(messageId3), "Should have messageId");
+        assertFalse(mockSpout.ackedTupleIds.contains(messageId4), "Should NOT have messageId");
+        assertFalse(mockSpout.ackedTupleIds.contains(messageId5), "Should NOT have messageId");
+        assertFalse(mockSpout.ackedTupleIds.contains(messageId6), "Should NOT have messageId");
 
         // Calling getAckedMessage with our VirtualSpoutId should return empty optionals
         for (int loopCount = 0; loopCount < 10; loopCount++) {
-            assertNull("Should be empty/null", messageBus.getAckedMessage(virtualSpoutId));
+            assertNull(messageBus.getAckedMessage(virtualSpoutId), "Should be empty/null");
         }
 
         // Other virtualspout id queue should still be populated
-        assertEquals("ack queue for other virtual spout should remain full", 3, messageBus.ackSize());
+        assertEquals(3, messageBus.ackSize(), "ack queue for other virtual spout should remain full");
 
         // No failed ids
-        assertTrue("Failed() never called", mockSpout.failedTupleIds.isEmpty());
+        assertTrue(mockSpout.failedTupleIds.isEmpty(), "Failed() never called");
 
         logger.info("Requesting stop via SpoutRunner.requestStop()");
         spoutRunner.requestStop();
@@ -507,10 +507,10 @@ public class SpoutRunnerTest {
             .until(future::isDone);
 
         // Make sure it actually stopped
-        assertEquals("Should have no running threads", 0, executorService.getActiveCount());
+        assertEquals(0, executorService.getActiveCount(), "Should have no running threads");
 
         // verify close was called
-        assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
+        assertTrue(mockSpout.wasCloseCalled, "Close was called on our mock spout");
     }
 
     /**
@@ -569,10 +569,10 @@ public class SpoutRunnerTest {
             .until(future::isDone);
 
         // Make sure it actually stopped
-        assertEquals("Should have no running threads", 0, executorService.getActiveCount());
+        assertEquals(0, executorService.getActiveCount(), "Should have no running threads");
 
         // verify close was called
-        assertTrue("Close was called on our mock spout", mockSpout.wasCloseCalled);
+        assertTrue(mockSpout.wasCloseCalled, "Close was called on our mock spout");
     }
 
     private Map<String, Object> getDefaultConfig(long consumerStateFlushIntervalMs) {
@@ -587,7 +587,7 @@ public class SpoutRunnerTest {
         }
 
         // Sanity check
-        assertEquals("Executor service should be empty", 0, executorService.getActiveCount());
+        assertEquals(0, executorService.getActiveCount(), "Executor service should be empty");
 
         // Submit task to start
         CompletableFuture future = CompletableFuture.runAsync(spoutRunner, executorService);

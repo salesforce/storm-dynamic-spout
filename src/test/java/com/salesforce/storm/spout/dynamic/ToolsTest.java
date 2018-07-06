@@ -33,9 +33,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Provides test coverage over Tools methods.
@@ -57,26 +57,26 @@ public class ToolsTest {
         final Map<String, String> immutableMap = Tools.immutableCopy(myMap);
 
         // Validate
-        assertNotNull("Should not be null", immutableMap);
-        assertEquals("Should have 3 keys", 3, immutableMap.size());
-        assertEquals("Check Key1", "Value1", immutableMap.get("Key1"));
-        assertEquals("Check Key2", "Value2", immutableMap.get("Key2"));
-        assertEquals("Check Key3", "Value3", immutableMap.get("Key3"));
+        assertNotNull(immutableMap, "Should not be null");
+        assertEquals(3, immutableMap.size(), "Should have 3 keys");
+        assertEquals("Value1", immutableMap.get("Key1"), "Check Key1");
+        assertEquals("Value2", immutableMap.get("Key2"), "Check Key2");
+        assertEquals("Value3", immutableMap.get("Key3"), "Check Key3");
 
         // Lets modify the original Map
         myMap.put("Key1", "Value4");
 
         // Validate copied made did not change
-        assertEquals("Check Key1", "Value1", immutableMap.get("Key1"));
+        assertEquals("Value1", immutableMap.get("Key1"), "Check Key1");
 
         // Clear original map again
         myMap.clear();
 
         // Revalidate copied map
-        assertEquals("Should have 3 keys", 3, immutableMap.size());
-        assertEquals("Check Key1", "Value1", immutableMap.get("Key1"));
-        assertEquals("Check Key2", "Value2", immutableMap.get("Key2"));
-        assertEquals("Check Key3", "Value3", immutableMap.get("Key3"));
+        assertEquals(3, immutableMap.size(), "Should have 3 keys");
+        assertEquals("Value1", immutableMap.get("Key1"), "Check Key1");
+        assertEquals("Value2", immutableMap.get("Key2"), "Check Key2");
+        assertEquals("Value3", immutableMap.get("Key3"), "Check Key3");
 
         Assertions.assertThrows(UnsupportedOperationException.class, () ->
             // Attempt ot modify the map, expect an exception
@@ -101,24 +101,24 @@ public class ToolsTest {
         final Map<String, String> strippedMap = Tools.stripKeyPrefix(prefix, sourceMap);
 
         // Validate we now have 3 keys
-        assertNotNull("Not null", strippedMap);
-        assertEquals("Has 3 keys", 3, strippedMap.size());
+        assertNotNull(strippedMap, "Not null");
+        assertEquals(3, strippedMap.size(), "Has 3 keys");
 
         // Should have our 3 keys w/o the prefix
-        assertTrue("Has Key key1", strippedMap.containsKey("key1"));
-        assertEquals("Has value for key1", "value1", strippedMap.get("key1"));
-        assertTrue("Has Key key2", strippedMap.containsKey("key2"));
-        assertEquals("Has value for key2", "value2", strippedMap.get("key2"));
-        assertTrue("Has Key key3", strippedMap.containsKey("key3"));
-        assertEquals("Has value for key3", "value3", strippedMap.get("key3"));
+        assertTrue(strippedMap.containsKey("key1"), "Has Key key1");
+        assertEquals("value1", strippedMap.get("key1"), "Has value for key1");
+        assertTrue(strippedMap.containsKey("key2"), "Has Key key2");
+        assertEquals("value2", strippedMap.get("key2"), "Has value for key2");
+        assertTrue(strippedMap.containsKey("key3"), "Has Key key3");
+        assertEquals("value3", strippedMap.get("key3"), "Has value for key3");
 
         // Original map unchanged
-        assertEquals("Has 3 keys", 5, sourceMap.size());
-        assertEquals("Has value for key1", "value1", sourceMap.get(prefix + "key1"));
-        assertEquals("Has value for key2", "value2", sourceMap.get(prefix + "key2"));
-        assertEquals("Has value for key3", "value3", sourceMap.get(prefix + "key3"));
-        assertEquals("Has value for key4", "value4", sourceMap.get("key4"));
-        assertEquals("Has value for key5", "value5", sourceMap.get("key5"));
+        assertEquals(5, sourceMap.size(), "Has 3 keys");
+        assertEquals("value1", sourceMap.get(prefix + "key1"), "Has value for key1");
+        assertEquals("value2", sourceMap.get(prefix + "key2"), "Has value for key2");
+        assertEquals("value3", sourceMap.get(prefix + "key3"), "Has value for key3");
+        assertEquals("value4", sourceMap.get("key4"), "Has value for key4");
+        assertEquals("value5", sourceMap.get("key5"), "Has value for key5");
     }
 
     /**
@@ -142,9 +142,9 @@ public class ToolsTest {
         // validate
         assertNotNull(output);
 
-        assertEquals("Should have expected number of results", expectedOutputValues.length, output.length);
+        assertEquals(expectedOutputValues.length, output.length, "Should have expected number of results");
         for (int x = 0; x < expectedOutputValues.length; x++) {
-            assertEquals("Has expected value", expectedOutputValues[x], output[x]);
+            assertEquals(expectedOutputValues[x], output[x], "Has expected value");
         }
     }
 

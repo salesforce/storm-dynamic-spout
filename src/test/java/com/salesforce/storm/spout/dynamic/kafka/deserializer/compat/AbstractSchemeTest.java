@@ -35,9 +35,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test for compatibility layer to Storm-Kafka scheme.
@@ -62,8 +62,8 @@ public class AbstractSchemeTest {
 
         // Validate
         assertNotNull(myValues);
-        assertEquals("Should have 1 entry", 1, myValues.size());
-        assertEquals("Should be our value", value, myValues.get(0));
+        assertEquals(1, myValues.size(), "Should have 1 entry");
+        assertEquals(value, myValues.get(0), "Should be our value");
     }
 
     /**
@@ -82,8 +82,8 @@ public class AbstractSchemeTest {
 
         // Validate
         assertNotNull(myValues);
-        assertEquals("Should have 1 entry", 1, myValues.size());
-        assertEquals("Should be our value", "", myValues.get(0));
+        assertEquals(1, myValues.size(), "Should have 1 entry");
+        assertEquals("", myValues.get(0), "Should be our value");
     }
 
     /**
@@ -105,7 +105,7 @@ public class AbstractSchemeTest {
         );
 
         // Validate
-        assertNull("Should pass the null through", myValues);
+        assertNull(myValues, "Should pass the null through");
     }
 
     /**

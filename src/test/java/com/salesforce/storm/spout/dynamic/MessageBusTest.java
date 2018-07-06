@@ -39,7 +39,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -92,7 +92,7 @@ public class MessageBusTest {
         }
 
         // Validate
-        assertEquals("Should have entries", totalExceptions, foundThrowables.size());
+        assertEquals(totalExceptions, foundThrowables.size(), "Should have entries");
     }
 
     /**
@@ -148,9 +148,9 @@ public class MessageBusTest {
             vSpoutToOffset.get(identifier).add(message.getMessageId().getOffset());
         }
 
-        assertEquals("Should have 5 vspoutIds", numThreads, vSpoutToOffset.size());
+        assertEquals(numThreads, vSpoutToOffset.size(), "Should have 5 vspoutIds");
         for (Set<Long> entries : vSpoutToOffset.values()) {
-            assertEquals("SHould have 100 messages", numMessagesPerThread, entries.size());
+            assertEquals(numMessagesPerThread, entries.size(), "SHould have 100 messages");
         }
     }
 
@@ -216,10 +216,10 @@ public class MessageBusTest {
         }
 
         // Validate
-        assertEquals("Should have 5 vspoutIds", numThreads, resultMap.size());
+        assertEquals(numThreads, resultMap.size(), "Should have 5 vspoutIds");
         for (int spoutCounter = 0; spoutCounter < numThreads; spoutCounter++) {
             final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("VSpout" + spoutCounter);
-            assertEquals("Should have 100 entries", numAcksPerThread, resultMap.get(virtualSpoutIdentifier).size());
+            assertEquals(numAcksPerThread, resultMap.get(virtualSpoutIdentifier).size(), "Should have 100 entries");
         }
     }
 
@@ -285,10 +285,10 @@ public class MessageBusTest {
         }
 
         // Validate
-        assertEquals("Should have 5 vspoutIds", numThreads, resultMap.size());
+        assertEquals(numThreads, resultMap.size(), "Should have 5 vspoutIds");
         for (int spoutCounter = 0; spoutCounter < numThreads; spoutCounter++) {
             final VirtualSpoutIdentifier virtualSpoutIdentifier = new DefaultVirtualSpoutIdentifier("VSpout" + spoutCounter);
-            assertEquals("Should have 100 entries", numFailsPerThread, resultMap.get(virtualSpoutIdentifier).size());
+            assertEquals(numFailsPerThread, resultMap.get(virtualSpoutIdentifier).size(), "Should have 100 entries");
         }
     }
 

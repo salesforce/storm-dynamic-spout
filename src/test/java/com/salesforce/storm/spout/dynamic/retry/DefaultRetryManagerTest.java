@@ -39,11 +39,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that the {@link DefaultRetryManager} retries tuples.
@@ -83,10 +83,10 @@ public class DefaultRetryManagerTest {
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
-        assertEquals("Wrong max retries", expectedMaxRetries, retryManager.getRetryLimit());
-        assertEquals("Wrong retry time", expectedMinRetryTimeMs, retryManager.getInitialRetryDelayMs());
-        assertEquals("Wrong retry time", expectedDelayMultiplier, retryManager.getRetryDelayMultiplier(), 0.001);
-        assertEquals("Wrong retry time", expectedMaxDelayMs, retryManager.getRetryDelayMaxMs());
+        assertEquals(expectedMaxRetries, retryManager.getRetryLimit(), "Wrong max retries");
+        assertEquals(expectedMinRetryTimeMs, retryManager.getInitialRetryDelayMs(), "Wrong retry time");
+        assertEquals(expectedDelayMultiplier, retryManager.getRetryDelayMultiplier(), 0.001, "Wrong retry time");
+        assertEquals(expectedMaxDelayMs, retryManager.getRetryDelayMaxMs(), "Wrong retry time");
     }
 
     /**
@@ -101,10 +101,10 @@ public class DefaultRetryManagerTest {
         DefaultRetryManager retryManager = new DefaultRetryManager();
         retryManager.open(stormConfig);
 
-        assertEquals("Wrong max retries", -1, retryManager.getRetryLimit());
-        assertEquals("Wrong retry time", 2000, retryManager.getInitialRetryDelayMs());
-        assertEquals("Wrong max delay", 15 * 60 * 1000, retryManager.getRetryDelayMaxMs());
-        assertEquals("Wrong delay multiplier", 2.0, retryManager.getRetryDelayMultiplier(), 0.01);
+        assertEquals(-1, retryManager.getRetryLimit(), "Wrong max retries");
+        assertEquals(2000, retryManager.getInitialRetryDelayMs(), "Wrong retry time");
+        assertEquals(15 * 60 * 1000, retryManager.getRetryDelayMaxMs(), "Wrong max delay");
+        assertEquals(2.0, retryManager.getRetryDelayMultiplier(), 0.01, "Wrong delay multiplier");
     }
 
     /**
@@ -308,9 +308,9 @@ public class DefaultRetryManagerTest {
         // Define our tuple message id
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
-        assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
-        assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
-        assertTrue("Should always be true because its untracked", retryManager.retryFurther(messageId));
+        assertTrue(retryManager.retryFurther(messageId), "Should always be true because its untracked");
+        assertTrue(retryManager.retryFurther(messageId), "Should always be true because its untracked");
+        assertTrue(retryManager.retryFurther(messageId), "Should always be true because its untracked");
     }
 
     /**
@@ -336,7 +336,7 @@ public class DefaultRetryManagerTest {
         final MessageId messageId = new MessageId("MyTopic", 0, 100L, consumerId);
 
         for (int x = 0; x < 100; x++) {
-            assertFalse("Should always be false because we are configured to never retry", retryManager.retryFurther(messageId));
+            assertFalse(retryManager.retryFurther(messageId), "Should always be false because we are configured to never retry");
         }
     }
 
@@ -367,7 +367,7 @@ public class DefaultRetryManagerTest {
             retryManager.failed(messageId);
 
             // See if we should retry
-            assertTrue("Should always be true because we are configured to always retry", retryManager.retryFurther(messageId));
+            assertTrue(retryManager.retryFurther(messageId), "Should always be true because we are configured to always retry");
         }
     }
 
@@ -416,8 +416,8 @@ public class DefaultRetryManagerTest {
         validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Validate that we can retry both of these
-        assertTrue("Should be able to retry", retryManager.retryFurther(messageId1));
-        assertTrue("Should be able to retry", retryManager.retryFurther(messageId2));
+        assertTrue(retryManager.retryFurther(messageId1), "Should be able to retry");
+        assertTrue(retryManager.retryFurther(messageId2), "Should be able to retry");
 
         // Fail messageId1 a 2nd time
         retryManager.failed(messageId1);
@@ -427,8 +427,8 @@ public class DefaultRetryManagerTest {
         validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Validate that we can retry both of these
-        assertTrue("Should be able to retry", retryManager.retryFurther(messageId1));
-        assertTrue("Should be able to retry", retryManager.retryFurther(messageId2));
+        assertTrue(retryManager.retryFurther(messageId1), "Should be able to retry");
+        assertTrue(retryManager.retryFurther(messageId2), "Should be able to retry");
 
         // Fail messageId1 a 3rd time
         retryManager.failed(messageId1);
@@ -438,8 +438,8 @@ public class DefaultRetryManagerTest {
         validateExpectedFailedMessageId(retryManager, messageId2, 1, firstRetryTime, false);
 
         // Validate that messageId1 cannot be retried, messageId2 can.
-        assertFalse("Should NOT be able to retry", retryManager.retryFurther(messageId1));
-        assertTrue("Should be able to retry", retryManager.retryFurther(messageId2));
+        assertFalse(retryManager.retryFurther(messageId1), "Should NOT be able to retry");
+        assertTrue(retryManager.retryFurther(messageId2), "Should be able to retry");
     }
 
     /**
@@ -489,10 +489,10 @@ public class DefaultRetryManagerTest {
         );
 
         // Ask for the next tuple to retry, should be empty
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
     }
 
     /**
@@ -537,10 +537,10 @@ public class DefaultRetryManagerTest {
         validateExpectedFailedMessageId(retryManager, messageId2, 2, secondRetryTime, false);
 
         // Ask for the next tuple to retry, should be empty
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
 
         // Now advance time by exactly expectedMinRetryTimeMs milliseconds
         retryManager.setClock(
@@ -551,18 +551,18 @@ public class DefaultRetryManagerTest {
 
         // Now messageId1 should expire next,
         MessageId nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
-        assertNotNull("result should not be null", nextMessageIdToBeRetried);
-        assertEquals("Should be our messageId1", messageId1, nextMessageIdToBeRetried);
+        assertNotNull(nextMessageIdToBeRetried, "result should not be null");
+        assertEquals(messageId1, nextMessageIdToBeRetried, "Should be our messageId1");
 
         // Validate the internal state.
         validateTupleNotInFailedSetButIsInFlight(retryManager, messageId1);
         validateExpectedFailedMessageId(retryManager, messageId2, 2, secondRetryTime, false);
 
         // Calling nextFailedMessageToRetry should result in null.
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
-        assertNull("Should be null", retryManager.nextFailedMessageToRetry());
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
+        assertNull(retryManager.nextFailedMessageToRetry(), "Should be null");
 
         // Advance time again, by expected retry time, plus a few MS
         final long newFixedTime = FIXED_TIME + (long) (expectedMinRetryTimeMs * Math.pow(expectedDelayMultiplier, 1)) + 10;
@@ -570,7 +570,7 @@ public class DefaultRetryManagerTest {
 
         // Now messageId1 should expire next,
         nextMessageIdToBeRetried = retryManager.nextFailedMessageToRetry();
-        assertNotNull("result should not be null", nextMessageIdToBeRetried);
+        assertNotNull(nextMessageIdToBeRetried, "result should not be null");
 
         // Validate state.
         validateTupleNotInFailedSetButIsInFlight(retryManager, messageId1);
@@ -633,9 +633,9 @@ public class DefaultRetryManagerTest {
         final MessageId result2 = retryManager.nextFailedMessageToRetry();
         final MessageId result3 = retryManager.nextFailedMessageToRetry();
 
-        assertEquals("Result1 should be messageId1", messageId1, result1);
-        assertEquals("Result2 should be messageId1", messageId2, result2);
-        assertEquals("Result3 should be messageId1", messageId3, result3);
+        assertEquals(messageId1, result1, "Result1 should be messageId1");
+        assertEquals(messageId2, result2, "Result2 should be messageId1");
+        assertEquals(messageId3, result3, "Result3 should be messageId1");
     }
 
     private void validateExpectedFailedMessageId(
@@ -648,38 +648,39 @@ public class DefaultRetryManagerTest {
         // Find its queue
         Queue<MessageId> failQueue = retryManager.getFailedMessageIds().get(expectedRetryTime);
         assertNotNull(
-            "Queue should exist for our retry time of " + expectedRetryTime + " has [" + retryManager.getFailedMessageIds().keySet() + "]",
-            failQueue
+            failQueue,
+            "Queue should exist for our retry time of " + expectedRetryTime + " has [" + retryManager.getFailedMessageIds().keySet() + "]"
         );
-        assertTrue("Queue should contain our tuple messageId", failQueue.contains(messageId));
+        assertTrue(failQueue.contains(messageId), "Queue should contain our tuple messageId");
 
         // This messageId should have the right number of fails associated with it.
         assertEquals(
-            "Should have expected number of fails",
-            (Integer) expectedFailCount, retryManager.getNumberOfTimesFailed().get(messageId)
+            (Integer) expectedFailCount,
+            retryManager.getNumberOfTimesFailed().get(messageId),
+            "Should have expected number of fails"
         );
 
         // Should this be marked as in flight?
-        assertEquals("Should or should not be in flight", expectedToBeInFlight, retryManager.getRetriesInFlight().contains(messageId));
+        assertEquals(expectedToBeInFlight, retryManager.getRetriesInFlight().contains(messageId), "Should or should not be in flight");
     }
 
     private void validateTupleNotInFailedSetButIsInFlight(DefaultRetryManager retryManager, MessageId messageId) {
         // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
-            assertFalse("Should not contain our messageId", queue.contains(messageId));
+            assertFalse(queue.contains(messageId), "Should not contain our messageId");
         }
-        assertTrue("Should be tracked as in flight", retryManager.getRetriesInFlight().contains(messageId));
+        assertTrue(retryManager.getRetriesInFlight().contains(messageId), "Should be tracked as in flight");
     }
 
     private void validateTupleIsNotBeingTracked(DefaultRetryManager retryManager, MessageId messageId) {
         // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
-            assertFalse("Should not contain our messageId", queue.contains(messageId));
+            assertFalse(queue.contains(messageId), "Should not contain our messageId");
         }
-        assertFalse("Should not be tracked as in flight", retryManager.getRetriesInFlight().contains(messageId));
-        assertFalse("Should not have a fail count", retryManager.getNumberOfTimesFailed().containsKey(messageId));
+        assertFalse(retryManager.getRetriesInFlight().contains(messageId), "Should not be tracked as in flight");
+        assertFalse(retryManager.getNumberOfTimesFailed().containsKey(messageId), "Should not have a fail count");
     }
 
     // Helper method
