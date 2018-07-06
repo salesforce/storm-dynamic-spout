@@ -61,8 +61,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -195,7 +195,7 @@ public class SpoutRunnerTest {
         verify(messageBus, times(1)).registerVirtualSpout(eq(virtualSpoutId));
 
         // But not torn down yet
-        verify(messageBus, never()).unregisterVirtualSpout(anyObject());
+        verify(messageBus, never()).unregisterVirtualSpout(any(VirtualSpoutIdentifier.class));
 
         // Shut down
         if (shutdownViaSpout) {
