@@ -78,9 +78,8 @@ public class DisallowUsingShadedImports {
             }
         }
 
-        for (String errorStr : failedFiles) {
-            logger.error(errorStr);
-        }
+        failedFiles.forEach(logger::error);
+
         assertTrue("Should have not found any files", failedFiles.isEmpty());
     }
 

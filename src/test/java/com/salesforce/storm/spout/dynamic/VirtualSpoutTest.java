@@ -265,12 +265,14 @@ public class VirtualSpoutTest {
             eq(null)
         );
 
-        Assertions.assertThrows(IllegalStateException.class, () ->
-            virtualSpout.open()
-        );
-
-        // Ensure that we call close.
-        virtualSpout.close();
+        try {
+            Assertions.assertThrows(IllegalStateException.class, () ->
+                virtualSpout.open()
+            );
+        } finally {
+            // Ensure that we call close.
+            virtualSpout.close();
+        }
     }
 
     /**
@@ -926,12 +928,14 @@ public class VirtualSpoutTest {
         );
         virtualSpout.open();
 
-        // Call ack with a string object, it should throw an exception.
-        Assertions.assertThrows(IllegalArgumentException.class, () ->
-            virtualSpout.fail("This is a String!")
-        );
-
-        virtualSpout.close();
+        try {
+            // Call ack with a string object, it should throw an exception.
+            Assertions.assertThrows(IllegalArgumentException.class, () ->
+                    virtualSpout.fail("This is a String!")
+            );
+        } finally {
+            virtualSpout.close();
+        }
     }
 
     /**
@@ -1002,13 +1006,15 @@ public class VirtualSpoutTest {
         );
         virtualSpout.open();
 
-        // Call ack with a string object, it should throw an exception.
-        Assertions.assertThrows(IllegalArgumentException.class, () ->
-            virtualSpout.ack("This is my String!")
-        );
-
-        // Call close
-        virtualSpout.close();
+        try {
+            // Call ack with a string object, it should throw an exception.
+            Assertions.assertThrows(IllegalArgumentException.class, () ->
+                virtualSpout.ack("This is my String!")
+            );
+        } finally {
+            // Call close
+            virtualSpout.close();
+        }
     }
 
     /**
@@ -1290,13 +1296,15 @@ public class VirtualSpoutTest {
         );
         virtualSpout.open();
 
-        // Call our method & validate exception is thrown
-        Assertions.assertThrows(IllegalStateException.class, () ->
-            virtualSpout.doesMessageExceedEndingOffset(messageId)
-        );
-
-        // Call close
-        virtualSpout.close();
+        try {
+            // Call our method & validate exception is thrown
+            Assertions.assertThrows(IllegalStateException.class, () ->
+                virtualSpout.doesMessageExceedEndingOffset(messageId)
+            );
+        } finally {
+            // Call close
+            virtualSpout.close();
+        }
     }
 
     /**

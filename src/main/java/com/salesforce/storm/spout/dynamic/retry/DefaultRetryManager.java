@@ -133,7 +133,7 @@ public class DefaultRetryManager implements RetryManager {
         if (failCount > 1) {
             // Make sure they're removed.  This kind of sucks.
             // This may not be needed in reality...just because of how we've setup our tests :/
-            for (Queue queue : failedMessageIds.values()) {
+            for (final Queue queue : failedMessageIds.values()) {
                 if (queue.remove(messageId)) {
                     break;
                 }

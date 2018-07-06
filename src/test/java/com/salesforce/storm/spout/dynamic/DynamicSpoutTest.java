@@ -125,9 +125,9 @@ public class DynamicSpoutTest {
             spout.open(config, topologyContext, spoutOutputCollector)
         );
 
-        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX));
-
         spout.close();
+
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX));
     }
 
     /**
@@ -153,10 +153,9 @@ public class DynamicSpoutTest {
             spout.open(config, topologyContext, spoutOutputCollector)
         );
 
-        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("opened"));
-
-        // Cleanup.
         spout.close();
+
+        MatcherAssert.assertThat(thrown.getMessage(), Matchers.containsString("opened"));
     }
 
     /**

@@ -64,7 +64,7 @@ public class DefaultVirtualSpoutIdentifierTest {
     /**
      * Test that supplying null will throw an exception.
      */
-    @Test()
+    @Test
     public void test_nullIdentifier() {
         Assertions.assertThrows(IllegalArgumentException.class, () ->
             new DefaultVirtualSpoutIdentifier(null)
@@ -74,7 +74,7 @@ public class DefaultVirtualSpoutIdentifierTest {
     /**
      * Test that supplying an empty string will throw an exception.
      */
-    @Test()
+    @Test
     public void test_emptyIdentifier() {
         Assertions.assertThrows(IllegalArgumentException.class, () ->
             new DefaultVirtualSpoutIdentifier("")

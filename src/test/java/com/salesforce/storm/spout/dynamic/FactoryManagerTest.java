@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
@@ -41,6 +39,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,14 +59,15 @@ public class FactoryManagerTest {
      */
     @Test
     public void testCreateNewFailedMsgRetryManagerInstanceMissingConfig() {
-        Assertions.assertThrows(IllegalStateException.class, () -> {
-            // Try with UTF8 String deserializer
-            final Map config = Maps.newHashMap();
-            final FactoryManager factoryManager = new FactoryManager(config);
+        // Try with UTF8 String deserializer
+        final Map<String, Object> config = new HashMap<>();
+        final FactoryManager factoryManager = new FactoryManager(config);
 
+
+        Assertions.assertThrows(IllegalStateException.class, () ->
             // We expect this to throw an exception.
-            factoryManager.createNewFailedMsgRetryManagerInstance();
-        });
+            factoryManager.createNewFailedMsgRetryManagerInstance()
+        );
     }
 
     /**
@@ -86,12 +87,12 @@ public class FactoryManagerTest {
     @MethodSource("provideFailedMsgRetryManagerClasses")
     public void testCreateNewFailedMsgRetryManager(final Class clazz) {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        final List<RetryManager> instances = Lists.newArrayList();
+        final List<RetryManager> instances = new ArrayList<>();
         for (int x = 0; x < 5; x++) {
             final RetryManager retryManager = factoryManager.createNewFailedMsgRetryManagerInstance();
 
@@ -112,14 +113,14 @@ public class FactoryManagerTest {
      */
     @Test
     public void testCreateNewPersistenceAdapterInstanceMissingConfig() {
-        Assertions.assertThrows(IllegalStateException.class, () -> {
-            // Try with UTF8 String deserializer
-            final Map config = Maps.newHashMap();
-            final FactoryManager factoryManager = new FactoryManager(config);
+        // Try with UTF8 String deserializer
+        final Map<String, Object> config = new HashMap<>();
+        final FactoryManager factoryManager = new FactoryManager(config);
 
+        Assertions.assertThrows(IllegalStateException.class, () ->
             // We expect this to throw an exception.
-            factoryManager.createNewPersistenceAdapterInstance();
-        });
+            factoryManager.createNewPersistenceAdapterInstance()
+        );
     }
 
     /**
@@ -128,12 +129,12 @@ public class FactoryManagerTest {
     @Test
     public void testCreateNewPersistenceAdapterUsingDefaultImpl() {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.PERSISTENCE_ADAPTER_CLASS, ZookeeperPersistenceAdapter.class.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        final List<PersistenceAdapter> instances = Lists.newArrayList();
+        final List<PersistenceAdapter> instances = new ArrayList<>();
         for (int x = 0; x < 5; x++) {
             final PersistenceAdapter instance = factoryManager.createNewPersistenceAdapterInstance();
 
@@ -154,14 +155,14 @@ public class FactoryManagerTest {
      */
     @Test
     public void testCreateNewMessageBufferInstanceMissingConfig() {
-        Assertions.assertThrows(IllegalStateException.class, () -> {
-            // Try with UTF8 String deserializer
-            final Map config = Maps.newHashMap();
-            final FactoryManager factoryManager = new FactoryManager(config);
+        // Try with UTF8 String deserializer
+        final Map<String, Object> config = new HashMap<>();
+        final FactoryManager factoryManager = new FactoryManager(config);
 
+        Assertions.assertThrows(IllegalStateException.class, () ->
             // We expect this to throw an exception.
-            factoryManager.createNewMessageBufferInstance();
-        });
+            factoryManager.createNewMessageBufferInstance()
+        );
     }
 
     /**
@@ -169,8 +170,8 @@ public class FactoryManagerTest {
      */
     public static Object[][] provideMessageBufferClasses() {
         return new Object[][]{
-                { FifoBuffer.class },
-                { RoundRobinBuffer.class }
+            { FifoBuffer.class },
+            { RoundRobinBuffer.class }
         };
     }
 
@@ -181,12 +182,12 @@ public class FactoryManagerTest {
     @MethodSource("provideMessageBufferClasses")
     public void testCreateNewMessageBuffer(final Class clazz) {
         // Try with UTF8 String deserializer
-        final Map config = Maps.newHashMap();
+        final Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.TUPLE_BUFFER_CLASS, clazz.getName());
         final FactoryManager factoryManager = new FactoryManager(config);
 
         // Create a few instances
-        final List<MessageBuffer> instances = Lists.newArrayList();
+        final List<MessageBuffer> instances = new ArrayList<>();
         for (int x = 0; x < 5; x++) {
             final MessageBuffer messageBuffer = factoryManager.createNewMessageBufferInstance();
 

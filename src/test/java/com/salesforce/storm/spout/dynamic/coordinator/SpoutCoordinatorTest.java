@@ -758,11 +758,13 @@ public class SpoutCoordinatorTest {
 
         spoutCoordinator.addVirtualSpout(spout1);
 
-        Assertions.assertThrows(SpoutAlreadyExistsException.class, () ->
-            spoutCoordinator.addVirtualSpout(spout2)
-        );
-
-        spoutCoordinator.close();
+        try {
+            Assertions.assertThrows(SpoutAlreadyExistsException.class, () ->
+                spoutCoordinator.addVirtualSpout(spout2)
+            );
+        } finally {
+            spoutCoordinator.close();
+        }
     }
 
 
@@ -861,14 +863,16 @@ public class SpoutCoordinatorTest {
 
         assertFalse("Spout is still in the SpoutCoordinator", spoutCoordinator.hasVirtualSpout(virtualSpoutIdentifier));
 
-        Assertions.assertThrows(SpoutDoesNotExistException.class, () ->
-            // We are going to try to remove it again, at this point it does not exist, so we expect to get an
-            // exception thrown at us indicating so
-            spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier)
-        );
-
-        // Make sure to close out SpoutCoordinator
-        spoutCoordinator.close();
+        try {
+            Assertions.assertThrows(SpoutDoesNotExistException.class, () ->
+                // We are going to try to remove it again, at this point it does not exist, so we expect to get an
+                // exception thrown at us indicating so
+                spoutCoordinator.removeVirtualSpout(virtualSpoutIdentifier)
+            );
+        } finally {
+            // Make sure to close out SpoutCoordinator
+            spoutCoordinator.close();
+        }
     }
 
     private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
