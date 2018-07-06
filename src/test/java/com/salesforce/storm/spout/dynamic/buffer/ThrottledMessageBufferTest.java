@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -32,7 +32,7 @@ import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import org.apache.storm.tuple.Values;
 import org.awaitility.core.ConditionTimeoutException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -148,7 +148,7 @@ public class ThrottledMessageBufferTest {
             await()
                 // The timeout here is arbitrary, we just need to prove that putting onto the buffer does not work
                 .atMost(2, TimeUnit.SECONDS)
-                .until(() -> {
+                .untilAsserted(() -> {
                     try {
                         buffer.put(message5);
                     } catch (InterruptedException e) {

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -27,9 +27,8 @@ package com.salesforce.storm.spout.dynamic.consumer;
 
 import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -44,12 +43,6 @@ import static org.junit.Assert.assertTrue;
  * Test that {@link ConsumerState} can be constructed, is immutable and reflects the data provided it.
  */
 public class ConsumerStateTest {
-
-    /**
-     * By default, no exceptions should be thrown.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Verifies the built ConsumerState instance cannot be modified after the fact via the builder.
@@ -204,13 +197,14 @@ public class ConsumerStateTest {
         // EntrySet
         assertNotNull("Should not be null", consumerState.entrySet());
         assertEquals("Should have 1 entry", 1, consumerState.entrySet().size());
-        for (Map.Entry<ConsumerPartition, Long> entry: consumerState.entrySet()) {
+        for (Map.Entry<ConsumerPartition, Long> entry : consumerState.entrySet()) {
             assertEquals("Key is correct", topicPartition, entry.getKey());
             assertEquals("Value is correct", (Long) offset, entry.getValue());
 
-            // Verify cannot write, this should throw an exception
-            expectedException.expect(UnsupportedOperationException.class);
-            entry.setValue(offset + 1);
+            Assertions.assertThrows(UnsupportedOperationException.class, () ->
+                // Verify cannot write, this should throw an exception
+                entry.setValue(offset + 1)
+            );
         }
     }
 
@@ -227,8 +221,9 @@ public class ConsumerStateTest {
             .withPartition(topicPartition, offset)
             .build();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        consumerState.clear();
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            consumerState.clear()
+        );
     }
 
     /**
@@ -244,8 +239,9 @@ public class ConsumerStateTest {
             .withPartition(topicPartition, offset)
             .build();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        consumerState.put(new ConsumerPartition("MyTopic", 3), 2L);
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            consumerState.put(new ConsumerPartition("MyTopic", 3), 2L)
+        );
     }
 
     /**
@@ -264,8 +260,9 @@ public class ConsumerStateTest {
         Map<ConsumerPartition, Long> newMap = Maps.newHashMap();
         newMap.put(new ConsumerPartition("MyTopic", 3), 2L);
 
-        expectedException.expect(UnsupportedOperationException.class);
-        consumerState.putAll(newMap);
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            consumerState.putAll(newMap)
+        );
     }
 
     /**
@@ -281,8 +278,9 @@ public class ConsumerStateTest {
             .withPartition(topicPartition, offset)
             .build();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        consumerState.remove(topicPartition);
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            consumerState.remove(topicPartition)
+        );
     }
 
     /**
@@ -304,8 +302,9 @@ public class ConsumerStateTest {
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Test using values
-        expectedException.expect(UnsupportedOperationException.class);
-        consumerState.values().remove(3444L);
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            consumerState.values().remove(3444L)
+        );
     }
 
     /**
@@ -327,7 +326,8 @@ public class ConsumerStateTest {
         assertEquals("Size should be 1", 1, consumerState.size());
 
         // Test using values
-        expectedException.expect(UnsupportedOperationException.class);
-        consumerState.keySet().remove(expectedTopicPartition);
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            consumerState.keySet().remove(expectedTopicPartition)
+        );
     }
 }

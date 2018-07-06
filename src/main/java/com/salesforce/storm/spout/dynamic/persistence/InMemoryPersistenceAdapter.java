@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -45,7 +45,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     private Map<String, Long> storedConsumerState;
 
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         // Allow non-destructive re-opening
         if (storedConsumerState == null) {
             storedConsumerState = Maps.newHashMap();

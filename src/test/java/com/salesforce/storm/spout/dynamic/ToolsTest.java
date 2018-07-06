@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,13 +25,10 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,14 +40,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Provides test coverage over Tools methods.
  */
-@RunWith(DataProviderRunner.class)
 public class ToolsTest {
-
-    /**
-     * Expect no exceptions by default.
-     */
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     /**
      * Test that ImmutableCopy makes an immutable copy.
@@ -88,9 +78,10 @@ public class ToolsTest {
         assertEquals("Check Key2", "Value2", immutableMap.get("Key2"));
         assertEquals("Check Key3", "Value3", immutableMap.get("Key3"));
 
-        // Attempt ot modify the map, expect an exception
-        expectedException.expect(UnsupportedOperationException.class);
-        immutableMap.put("Key4", "Value4");
+        Assertions.assertThrows(UnsupportedOperationException.class, () ->
+            // Attempt ot modify the map, expect an exception
+            immutableMap.put("Key4", "Value4")
+        );
     }
 
     /**
@@ -135,15 +126,16 @@ public class ToolsTest {
      */
     @Test
     public void testSplitAndTrimWithNullInput() {
-        expectedException.expect(NullPointerException.class);
-        Tools.splitAndTrim(null);
+        Assertions.assertThrows(NullPointerException.class, () ->
+            Tools.splitAndTrim(null)
+        );
     }
 
     /**
      * Call split and trim with various input strings, validate we get the expected array of values back.
      */
-    @Test
-    @UseDataProvider("provideSplittableStrings")
+    @ParameterizedTest
+    @MethodSource("provideSplittableStrings")
     public void testSplitAndTrim(final String input, final String[] expectedOutputValues) {
         final String[] output = Tools.splitAndTrim(input);
 
@@ -159,7 +151,6 @@ public class ToolsTest {
     /**
      * Provides various inputs to be split.
      */
-    @DataProvider
     public static Object[][] provideSplittableStrings() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
             { "a,b,c,d", new String[] { "a", "b", "c", "d" } },

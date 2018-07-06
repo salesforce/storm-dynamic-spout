@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -79,7 +79,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(final Map spoutConfig) {
+    public void open(final Map<String, Object> spoutConfig) {
         // Root node / prefix to write entries under.
         final String zkRoot = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ZK_ROOT);
         final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
@@ -256,28 +256,32 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     }
 
     /**
-     * @return full zookeeper path for our sideline request.
+     * Get the full zookeeper path for the sideline request.
+     * @return full zookeeper path for the sideline request
      */
     String getZkRequestStatePath(final String sidelineIdentifierStr) {
         return getZkRoot() + "/requests/" + sidelineIdentifierStr;
     }
 
     /**
-     * @return full zookeeper path for our sideline request for a specific partition.
+     * Get the full zookeeper path for our sideline request for a specific partition.
+     * @return full zookeeper path for our sideline request for a specific partition
      */
     String getZkRequestStatePathForConsumerPartition(final String sidelineIdentifierStr, final ConsumerPartition consumerPartition) {
         return getZkRequestStatePath(sidelineIdentifierStr) + "/" + consumerPartition.namespace() + "/" + consumerPartition.partition();
     }
 
     /**
-     * @return full zookeeper root to where our request state is stored.
+     * Get the full zookeeper root to where our request state is stored.
+     * @return full zookeeper root to where our request state is stored
      */
     String getZkRequestStateRoot() {
         return getZkRoot() + "/requests";
     }
 
     /**
-     * @return configured zookeeper root path.
+     * Get the zookeeper root path.
+     * @return zookeeper root path
      */
     String getZkRoot() {
         return zkRoot;

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -150,14 +150,15 @@ public class RoundRobinBuffer implements MessageBuffer {
     @Override
     public int size() {
         int total = 0;
-        for (final Queue queue: messageBuffer.values()) {
+        for (final Queue queue : messageBuffer.values()) {
             total += queue.size();
         }
         return total;
     }
 
     /**
-     * @return - returns the next Message to be processed out of the queue.
+     * Get the next message to be processed out of the queue.
+     * @return next message to be processed out of the queue
      */
     @Override
     public Message poll() {
@@ -188,14 +189,16 @@ public class RoundRobinBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - return a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * Get a new LinkedBlockingQueue instance with a max size of our configured buffer.
+     * @return new LinkedBlockingQueue instance with a max size of our configured buffer
      */
     private BlockingQueue<Message> createNewEmptyQueue() {
         return new LinkedBlockingQueue<>(getMaxBufferSizePerVirtualSpout());
     }
 
     /**
-     * @return - returns the configured max buffer size.
+     * Get the max buffer size per virtual spout.
+     * @return max buffer size
      */
     int getMaxBufferSizePerVirtualSpout() {
         return maxBufferSizePerVirtualSpout;

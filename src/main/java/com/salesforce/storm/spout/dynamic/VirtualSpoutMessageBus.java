@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -33,26 +33,27 @@ public interface VirtualSpoutMessageBus {
 
     /**
      * Registers a new VirtualSpout with the bus.
-     * @param virtualSpoutIdentifier Identifier to register.
+     * @param virtualSpoutIdentifier identifier to register
      */
     void registerVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier);
 
     /**
      * Publish a new message onto the bus.
      * Depending on the implementation, this *may* be blocking.
-     * @param message The message to publish.
-     * @throws InterruptedException If the operation is interrupted.
+     * @param message message to publish
+     * @throws InterruptedException if the operation is interrupted
      */
     void publishMessage(final Message message) throws InterruptedException;
 
     /**
-     * @return How many messages exist on the bus.
+     * Get the number of message on the bus.
+     * @return number of message on the bus
      */
     int messageSize();
 
     /**
      * Publish an error to the bus.
-     * @param throwable The error to publish.
+     * @param throwable error to publish
      */
     void publishError(final Throwable throwable);
 
@@ -61,7 +62,7 @@ public interface VirtualSpoutMessageBus {
      * This method should never block, but instead return NULL if none exists.
      *
      * @param virtualSpoutIdentifier Identifier to retrieve the next messageId for.
-     * @return The next available MessageId, or NULL.
+     * @return next available MessageId, or NULL
      */
     MessageId getAckedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier);
 
@@ -70,13 +71,13 @@ public interface VirtualSpoutMessageBus {
      * This method should never block, but instead return a NULL if none exists.
      *
      * @param virtualSpoutIdentifier Identifier to retrieve the next messageId for.
-     * @return The next available MessageId, or NULL.
+     * @return next available MessageId, or NULL
      */
     MessageId getFailedMessage(final VirtualSpoutIdentifier virtualSpoutIdentifier);
 
     /**
      * Called to unregister a VirtualSpout.
-     * @param virtualSpoutIdentifier Identifier to unregister.
+     * @param virtualSpoutIdentifier identifier to unregister.
      */
     void unregisterVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier);
 }

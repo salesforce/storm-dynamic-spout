@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -64,7 +64,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured RetryManager.
+     * Create a new instance of the configured RetryManager.
+     * @return new instance of the configured RetryManager.
      */
     public RetryManager createNewFailedMsgRetryManagerInstance() {
         return createNewInstanceFromConfig(
@@ -73,7 +74,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured persistence manager.
+     * Create a new instance of the configured persistence manager.
+     * @return new instance of the configured persistence manager
      */
     public PersistenceAdapter createNewPersistenceAdapterInstance() {
         return createNewInstanceFromConfig(
@@ -82,7 +84,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured Metrics Recorder manager.
+     * Create a new instance of the configured Metrics Recorder manager.
+     * @return new instance of the configured Metrics Recorder manager
      */
     public MetricsRecorder createNewMetricsRecorder() {
         return createNewInstanceFromConfig(
@@ -91,7 +94,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured MessageBuffer interface.
+     * Create a new instance of the configured MessageBuffer interface.
+     * @return new instance of the configured MessageBuffer interface
      */
     public MessageBuffer createNewMessageBufferInstance() {
         return createNewInstanceFromConfig(
@@ -100,7 +104,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * @return returns a new instance of the configured Consumer interface.
+     * Create a new instance of the configured Consumer interface.
+     * @return new instance of the configured Consumer interface
      */
     public Consumer createNewConsumerInstance() {
         return createNewInstanceFromConfig(
@@ -109,8 +114,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * Create an instance of the configured SpoutHandler.
-     * @return Instance of a SpoutHandler
+     * Create a new instance of the configured SpoutHandler.
+     * @return new instance of the configured SpoutHandler interface
      */
     public SpoutHandler createSpoutHandler() {
         return createNewInstanceFromConfig(
@@ -119,8 +124,8 @@ public class FactoryManager implements Serializable {
     }
 
     /**
-     * Create an instance of the configured VirtualSpoutHandler.
-     * @return Instance of a VirtualSpoutHandler
+     * Create a new instance of the configured VirtualSpoutHandler.
+     * @return new instance of the configured VirtualSpoutHandler
      */
     public synchronized VirtualSpoutHandler createVirtualSpoutHandler() {
         return createNewInstanceFromConfig(

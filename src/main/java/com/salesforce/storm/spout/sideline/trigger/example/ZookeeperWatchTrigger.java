@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.sideline.trigger.example;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -125,7 +124,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      * @param config spout configuration
      */
     @Override
-    public void open(final Map config) {
+    public void open(final Map<String, Object> config) {
         if (isOpen) {
             // If this happens something is configured wrong, so we're going to kill the topology violently at this point
             logger.error("Trigger already opened!");
@@ -150,6 +149,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             (String) config.get(Config.FILTER_CHAIN_STEP_BUILDER_CLASS)
         );
 
+        @SuppressWarnings("unchecked")
         final List<String> roots = (List<String>) config.get(Config.ZK_ROOTS);
 
         // Starting and stopping triggers fire off at almost the exact same time so we need to do this here rather

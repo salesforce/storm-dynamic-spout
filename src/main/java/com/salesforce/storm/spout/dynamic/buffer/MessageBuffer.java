@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -42,36 +42,38 @@ public interface MessageBuffer {
 
     /**
      * Called prior to utilizing the instance.
-     * @param spoutConfig - a copy of the storm topology config.
+     * @param spoutConfig copy of the storm topology config.
      */
     void open(Map spoutConfig);
 
     /**
      * Let the Implementation know that we're adding a new VirtualSpoutId.
-     * @param virtualSpoutId - Identifier of new Virtual Spout.
+     * @param virtualSpoutId identifier of new Virtual Spout
      */
     void addVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId);
 
     /**
      * Let the Implementation know that we're removing/cleaning up from closing a VirtualSpout.
-     * @param virtualSpoutId - Identifier of Virtual Spout to be cleaned up.
+     * @param virtualSpoutId identifier of Virtual Spout to be cleaned up
      */
     void removeVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId);
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.
-     * @param message - Message to be added to the queue.
-     * @throws InterruptedException - thrown if a thread is interrupted while blocked adding to the queue.
+     * @param message message to be added to the queue
+     * @throws InterruptedException thrown if a thread is interrupted while blocked adding to the queue
      */
     void put(final Message message) throws InterruptedException;
 
     /**
-     * @return - return the size of the buffer.
+     * Get the size of the buffer.
+     * @return size of the buffer
      */
     int size();
 
     /**
-     * @return - returns the next Message to be processed out of the queue.
+     * Get the next message to be processed out of the queue.
+     * @return next message to be processed out of the queue
      */
     Message poll();
 }

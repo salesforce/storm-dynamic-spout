@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -28,7 +28,6 @@ package com.salesforce.storm.spout.dynamic.metrics;
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Any implementation of this should be written to be thread safe.  This instance

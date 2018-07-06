@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -44,7 +44,7 @@ public class StaticTrigger implements SidelineTrigger {
      * @param config spout configuration.
      */
     @Override
-    public void open(final Map config) {
+    public void open(final Map<String, Object> config) {
     }
 
     /**

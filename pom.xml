@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2017, Salesforce.com, Inc.
+    Copyright (c) 2017, 2018, Salesforce.com, Inc.
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -67,11 +67,6 @@
         <url>https://github.com/salesforce/storm-dynamic-spout/tree/master</url>
     </scm>
 
-    <!-- Require Maven 3.3.9 -->
-    <prerequisites>
-        <maven>3.3.9</maven>
-    </prerequisites>
-
     <!-- defined properties -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -80,16 +75,16 @@
         <jarOutputDir></jarOutputDir>
 
         <!-- Define which version of storm you'll be running this topology on -->
-        <stormVersion>1.1.1</stormVersion>
+        <stormVersion>1.2.2</stormVersion>
 
         <!-- Define which kafka version -->
-        <kafkaVersion>0.11.0.1</kafkaVersion>
+        <kafkaVersion>1.1.0</kafkaVersion>
+
+        <!-- Define which version of JUnit 5 to -->
+        <junit5Version>5.2.0</junit5Version>
 
         <!-- Define which Curator version -->
         <curatorVersion>2.12.0</curatorVersion>
-
-        <!-- Define which Curator Test version -->
-        <curatorTestVersion>2.12.0</curatorTestVersion>
 
         <!-- test toggling -->
         <skipTests>false</skipTests>
@@ -125,18 +120,18 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Google Commons -->
+        <!-- Apache library for easily handling Collections -->
         <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.2</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.1</version>
         </dependency>
 
-        <!-- Curator is not compatible with Guava > 20.0 :( -->
+        <!-- Google's Guava library, makes life easier through common tooling -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>20.0</version>
+            <version>25.1-jre</version>
         </dependency>
 
         <!-- Apache Curator - Optional Dependency -->
@@ -161,7 +156,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.2</version>
+            <version>2.8.5</version>
         </dependency>
 
         <!-- Testing Dependencies -->
@@ -171,6 +166,19 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
             <version>1.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit5Version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit5Version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -187,17 +195,11 @@
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>com.tngtech.java</groupId>
-            <artifactId>junit-dataprovider</artifactId>
-            <version>1.13.1</version>
-            <scope>test</scope>
-        </dependency>
-
+        <!-- Mocking library -->
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <artifactId>mockito-core</artifactId>
+            <version>2.19.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -207,10 +209,11 @@
             </exclusions>
         </dependency>
 
+        <!-- Test tooling for waiting until something executes with timeouts -->
         <dependency>
             <groupId>org.awaitility</groupId>
-            <artifactId>awaitility-scala</artifactId>
-            <version>2.0.0</version>
+            <artifactId>awaitility</artifactId>
+            <version>3.1.1</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -223,8 +226,16 @@
         <!-- Use Kafka-JUnit in tests for Embedded Kafka and Zookeeper servers -->
         <dependency>
             <groupId>com.salesforce.kafka.test</groupId>
-            <artifactId>kafka-junit</artifactId>
-            <version>1.0.0</version>
+            <artifactId>kafka-junit5</artifactId>
+            <version>3.0.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Include Kafka for kafka-junit purposes -->
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.11</artifactId>
+            <version>${kafkaVersion}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -239,6 +250,26 @@
         </testResources>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0-M2</version>
+                <executions>
+                    <execution>
+                        <id>enforce-maven</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.5.0</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -259,6 +290,9 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <compilerArgs>
+                        <arg>-Xlint</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <!--
@@ -328,48 +362,22 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>2.21.0</version>
                 <dependencies>
                     <dependency>
-                        <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit47</artifactId>
-                        <version>2.19</version>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-surefire-provider</artifactId>
+                        <version>1.2.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>${junit5Version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <!-- ${argLine} gets defined by jacoco plugin -->
-                    <argLine>${argLine} -Xmx1g</argLine>
                     <skipTests>${skipTests}</skipTests>
-                    <reportFormat>plain</reportFormat>
                 </configuration>
-            </plugin>
-
-            <!-- License Auditing -->
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>3.0</version>
-                <configuration>
-                    <header>LICENSE.txt</header>
-                    <excludes>
-                        <exclude>**/.md</exclude>
-                        <exclude>**/.bak</exclude>
-                        <exclude>**.yml</exclude>
-                        <exclude>**.yaml</exclude>
-                        <exclude>**.xml</exclude>
-                        <exclude>script/**</exclude>
-                        <exclude>src/test/resources/**</exclude>
-                        <exclude>src/main/resources/**</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
             <!-- Enforce Checkstyles Validation -->
@@ -474,7 +482,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>8.0</version>
+                            <version>8.11</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -502,6 +510,12 @@
                 <configuration>
                     <configLocation>script/checkstyle-ruleset.xml</configLocation>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.5</version>
             </plugin>
         </plugins>
     </reporting>

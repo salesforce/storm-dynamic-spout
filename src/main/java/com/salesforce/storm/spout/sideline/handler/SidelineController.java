@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -35,7 +35,7 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 public interface SidelineController {
 
     /**
-     * Is a sideline in the start state?
+     * Determines if a sideline is in the start state.
      *
      * @param sidelineRequest sideline request.
      * @return true it is in this state, false if it is not.
@@ -54,7 +54,7 @@ public interface SidelineController {
     void start(final SidelineRequest sidelineRequest);
 
     /**
-     * Is a sideline in the resume state?
+     * Determines if a sideline is in the resume state.
      *
      * @param sidelineRequest sideline request.
      * @return true it is in this state, false if it is not.
@@ -73,7 +73,7 @@ public interface SidelineController {
     void resume(final SidelineRequest sidelineRequest);
 
     /**
-     * Is a sideline is the resolve state?
+     * Determines if a sideline is in the resolve state.
      *
      * @param sidelineRequest sideline request.
      * @return true it is in this state, false if it is not.

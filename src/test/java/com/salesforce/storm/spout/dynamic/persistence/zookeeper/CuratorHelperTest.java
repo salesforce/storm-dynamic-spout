@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
 import com.google.common.base.Charsets;
-import com.salesforce.kafka.test.junit.SharedZookeeperTestResource;
+import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.DeleteBuilder;
@@ -34,8 +34,8 @@ import org.apache.curator.framework.api.ExistsBuilder;
 import org.apache.curator.framework.api.GetChildrenBuilder;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +46,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -60,7 +59,7 @@ public class CuratorHelperTest {
     /**
      * Start embedded ZK server.
      */
-    @ClassRule
+    @RegisterExtension
     public static SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
     /**
@@ -104,6 +103,7 @@ public class CuratorHelperTest {
             curatorHelper.writeJson(path, jsonMap);
 
             // Read
+            @SuppressWarnings("unchecked")
             final Map<String, Object> resultMap = curatorHelper.readJson(path);
 
             // Validate

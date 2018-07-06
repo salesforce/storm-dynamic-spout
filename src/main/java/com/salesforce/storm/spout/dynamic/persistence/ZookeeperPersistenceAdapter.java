@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -35,7 +35,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -69,7 +68,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
      * @param spoutConfig spout configuration.
      */
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         // Root node / prefix to write entries under.
         final String zkRoot = (String) spoutConfig.get(SpoutConfig.PERSISTENCE_ZK_ROOT);
         final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
@@ -87,9 +86,12 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         // The root we'll use for this instance is our configured root + our consumer id
         this.zkRoot = zkRoot + "/" + consumerId;
 
+        // Take out spout persistence config and strip the key from it for our factory.
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> strippedConfig = Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig);
+
         this.curator = CuratorFactory.createNewCuratorInstance(
-            // Take out spout persistence config and strip the key from it for our factory.
-            Tools.stripKeyPrefix("spout.persistence.zookeeper.", spoutConfig),
+            strippedConfig,
             getClass().getSimpleName()
         );
 
@@ -171,14 +173,16 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     }
 
     /**
-     * @return full zookeeper path to where our consumer state is stored for the given partition.
+     * Get the full zookeeper path to where our consumer state is stored for the given partition.
+     * @return full zookeeper path to where our consumer state is stored for the given partition
      */
     String getZkConsumerStatePathForPartition(final String consumerId, final int partitionId) {
         return getZkRoot() + "/consumers/" + consumerId + "/" + String.valueOf(partitionId);
     }
 
     /**
-     * @return configured zookeeper root path.
+     * Get the zookeeper root path.
+     * @return zookeeper root path
      */
     String getZkRoot() {
         return zkRoot;

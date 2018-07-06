@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +78,8 @@ public class DisallowUsingShadedImports {
             }
         }
 
-        for (String errorStr: failedFiles) {
-            logger.error(errorStr);
-        }
+        failedFiles.forEach(logger::error);
+
         assertTrue("Should have not found any files", failedFiles.isEmpty());
     }
 

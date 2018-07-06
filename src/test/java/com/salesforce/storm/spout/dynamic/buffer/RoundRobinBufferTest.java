@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -34,12 +34,10 @@ import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.tuple.Values;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +62,6 @@ import static org.junit.Assert.assertNull;
 /**
  * Test that {@link RoundRobinBufferTest} equally distributes messages from the buffer.
  */
-@RunWith(DataProviderRunner.class)
 public class RoundRobinBufferTest {
     private static final Logger logger = LoggerFactory.getLogger(RoundRobinBufferTest.class);
 
@@ -179,8 +176,8 @@ public class RoundRobinBufferTest {
     /**
      * Makes sure that we can properly parse long config values on open().
      */
-    @Test
-    @UseDataProvider("provideConfigObjects")
+    @ParameterizedTest
+    @MethodSource("provideConfigObjects")
     public void testConstructorWithConfigValue(Number inputValue) throws InterruptedException {
         logger.info("Testing with object type {} and value {}", inputValue.getClass().getSimpleName(), inputValue);
 
@@ -199,7 +196,6 @@ public class RoundRobinBufferTest {
     /**
      * Provides various tuple buffer implementation.
      */
-    @DataProvider
     public static Object[][] provideConfigObjects() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
                 // Integer

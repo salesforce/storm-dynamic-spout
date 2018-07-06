@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,11 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic.consumer;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +38,6 @@ import static org.junit.Assert.assertEquals;
 /**
  * Test that {@link PartitionOffsetManager} accurately tracks messages by partition.
  */
-@RunWith(DataProviderRunner.class)
 public class PartitionOffsetManagerTest {
 
     private static final Logger logger = LoggerFactory.getLogger(PartitionOffsetManagerTest.class);
@@ -218,7 +214,7 @@ public class PartitionOffsetManagerTest {
      *
      * @param totalNumbers - total number of offsets to add to the manager.
      */
-    @UseDataProvider("provideSizes")
+    @MethodSource("provideSizes")
     public void doPerformanceBenchmark(final int totalNumbers) throws InterruptedException {
         final int spread = 100;
 
@@ -255,7 +251,6 @@ public class PartitionOffsetManagerTest {
     /**
      * Provides various tuple buffer implementation.
      */
-    @DataProvider
     public static Object[][] provideSizes() throws InstantiationException, IllegalAccessException {
         return new Object[][]{
                 { 10 },

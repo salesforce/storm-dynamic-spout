@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -78,6 +78,7 @@ public class CuratorFactory {
      */
     public static CuratorFramework createNewCuratorInstance(final Map<String, Object> config, final String context) {
         // List of zookeeper hosts in the format of ["host1:2182", "host2:2181",..].
+        @SuppressWarnings("unchecked")
         final List<String> zkServers = (List<String>) config.get(CONFIG_SERVERS);
 
         Preconditions.checkArgument(!zkServers.isEmpty(), "Zookeepers servers are required");

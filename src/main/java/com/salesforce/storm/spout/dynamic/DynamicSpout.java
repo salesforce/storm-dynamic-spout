@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -353,7 +353,7 @@ public class DynamicSpout extends BaseRichSpout {
 
     /**
      * Called for a Tuple MessageId when the tuple has been fully processed.
-     * @param id The tuple's message id.
+     * @param id  tuple's message id
      */
     @Override
     public void ack(Object id) {
@@ -369,7 +369,7 @@ public class DynamicSpout extends BaseRichSpout {
 
     /**
      * Called for a Tuple MessageId when the tuple has failed during processing.
-     * @param id The failed tuple's message id.
+     * @param id failed tuple's message id
      */
     @Override
     public void fail(Object id) {
@@ -383,23 +383,25 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The Storm topology config map.
+     * Get the spout configuration.
+     * @return spout configuration
      */
     public Map<String, Object> getSpoutConfig() {
         return spoutConfig;
     }
 
     /**
-     * Utility method to get a specific entry in the Storm topology config map.
-     * @param key The configuration item to retrieve
-     * @return The configuration item's value.
+     * Utility method to get a specific entry from the configuration.
+     * @param key configuration item to retrieve
+     * @return configuration item's value
      */
     private Object getSpoutConfigItem(final String key) {
         return getSpoutConfig().get(key);
     }
 
     /**
-     * @return The Storm topology context.
+     * Get the topology context.
+     * @return topology context
      */
     private TopologyContext getTopologyContext() {
         return topologyContext;
@@ -412,7 +414,7 @@ public class DynamicSpout extends BaseRichSpout {
      * This method is blocking.
      *
      * @param spout New delegate spout
-     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier.
+     * @throws SpoutAlreadyExistsException if a spout already exists with the same VirtualSpoutIdentifier
      */
     public void addVirtualSpout(final DelegateSpout spout) throws SpoutAlreadyExistsException {
         checkSpoutOpened();
@@ -423,8 +425,8 @@ public class DynamicSpout extends BaseRichSpout {
      * Remove a spout from the coordinator by it's identifier.
      * This method will block until the VirtualSpout has stopped.
      *
-     * @param virtualSpoutIdentifier identifier of the spout to remove.
-     * @throws SpoutDoesNotExistException If the VirtualSpoutIdentifier is not found.
+     * @param virtualSpoutIdentifier identifier of the spout to remove
+     * @throws SpoutDoesNotExistException If the VirtualSpoutIdentifier is not found
      */
     public void removeVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
         checkSpoutOpened();
@@ -437,8 +439,8 @@ public class DynamicSpout extends BaseRichSpout {
 
     /**
      * Check if a given spout already exists in the spout coordinator.
-     * @param spoutIdentifier spout identifier to check the coordinator for.
-     * @return true when the spout exists, false when it does not.
+     * @param spoutIdentifier spout identifier to check the coordinator for
+     * @return true when the spout exists, false when it does not
      */
     public boolean hasVirtualSpout(final VirtualSpoutIdentifier spoutIdentifier) {
         checkSpoutOpened();
@@ -451,7 +453,7 @@ public class DynamicSpout extends BaseRichSpout {
      * This is useful is you want to manipulate the filter chain or alter the ending state after a {@link DelegateSpout} has
      * been added to the {@link SpoutCoordinator}.
      *
-     * @param virtualSpoutIdentifier identifier for the {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}.
+     * @param virtualSpoutIdentifier identifier for the {@link DelegateSpout} instance to get from the {@link SpoutCoordinator}
      * @return {@link DelegateSpout} instance
      */
     public DelegateSpout getVirtualSpout(final VirtualSpoutIdentifier virtualSpoutIdentifier) throws SpoutDoesNotExistException {
@@ -464,21 +466,23 @@ public class DynamicSpout extends BaseRichSpout {
      *
      * This method crosses the thread barrier to determine its value.
      *
-     * @return total number of virtual spouts in the coordinator.
+     * @return total number of virtual spouts in the coordinator
      */
     public int getTotalVirtualSpouts() {
         return getSpoutCoordinator().getTotalSpouts();
     }
 
     /**
-     * @return The spout's output collector.
+     * Get the spout's output collector.
+     * @return output collector
      */
     private SpoutOutputCollector getOutputCollector() {
         return outputCollector;
     }
 
     /**
-     * @return The factory manager instance.
+     * Get the factory manager instance.
+     * @return factory manager instance
      */
     public FactoryManager getFactoryManager() {
         // No need to check if the spout is opened because this is setup inside of the constructor
@@ -486,7 +490,8 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The spout's metrics recorder implementation.
+     * Get the spout's metric recorder instance.
+     * @return metric recorder instance
      */
     public MetricsRecorder getMetricsRecorder() {
         checkSpoutOpened();
@@ -494,7 +499,8 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The virtual spout coordinator.
+     * Get the spout coordinator.
+     * @return spout coordinator
      */
     SpoutCoordinator getSpoutCoordinator() {
         checkSpoutOpened();
@@ -502,7 +508,11 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The MessageBus for communicating with VirtualSpouts.
+     * Get the message bus.
+     *
+     * This is used for communicating between spouts.
+     *
+     * @return message bus
      */
     SpoutMessageBus getMessageBus() {
         checkSpoutOpened();
@@ -510,7 +520,8 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The SpoutHandler implementation.
+     * Get the spout handler.
+     * @return spout handler
      */
     SpoutHandler getSpoutHandler() {
         checkSpoutOpened();
@@ -518,7 +529,8 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The stream that tuples will be emitted out.
+     * Get the stream that tuples will be emitted out.
+     * @return stream that tuples will be emitted out
      */
     String getOutputStreamId() {
         if (outputStreamId == null) {
@@ -534,7 +546,8 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * @return The stream that tuples that have permanently failed will be emitted out.
+     * Get the stream that tuples which have permanently failed will be emitted out.
+     * @return stream that tuples which have permanently failed will be emitted out
      */
     String getPermanentlyFailedOutputStreamId() {
         if (permanentlyFailedOutputStreamId == null) {
@@ -550,7 +563,9 @@ public class DynamicSpout extends BaseRichSpout {
     }
 
     /**
-     * Check whether or not the spout has been opened. If it's not violently throw an exception!!!
+     * Check whether or not the spout has been opened.
+     *
+     * If it is not an exception will be thrown.
      */
     private void checkSpoutOpened() {
         if (!isOpen) {

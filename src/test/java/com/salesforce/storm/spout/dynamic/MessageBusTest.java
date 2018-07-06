@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.dynamic;
 import com.salesforce.storm.spout.dynamic.buffer.FifoBuffer;
 import com.salesforce.storm.spout.dynamic.buffer.MessageBuffer;
 import org.apache.storm.tuple.Values;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,7 +78,7 @@ public class MessageBusTest {
         }
 
         // Wait for threads to wrap up.
-        for (final Thread thread: threads) {
+        for (final Thread thread : threads) {
             thread.join();
         }
 
@@ -130,7 +130,7 @@ public class MessageBusTest {
         }
 
         // Wait for threads to wrap up.
-        for (final Thread thread: threads) {
+        for (final Thread thread : threads) {
             thread.join();
         }
 
@@ -149,7 +149,7 @@ public class MessageBusTest {
         }
 
         assertEquals("Should have 5 vspoutIds", numThreads, vSpoutToOffset.size());
-        for (Set<Long> entries: vSpoutToOffset.values()) {
+        for (Set<Long> entries : vSpoutToOffset.values()) {
             assertEquals("SHould have 100 messages", numMessagesPerThread, entries.size());
         }
     }
@@ -204,15 +204,14 @@ public class MessageBusTest {
                         continue;
                     }
                     offsets.add(messageId.getOffset());
-                }
-                while (offsets.size() < numAcksPerThread);
+                } while (offsets.size() < numAcksPerThread);
                 resultMap.put(vspoutId, offsets);
             });
             threads[threadCount].start();
         }
 
         // Wait for threads to wrap up.
-        for (final Thread thread: threads) {
+        for (final Thread thread : threads) {
             thread.join();
         }
 
@@ -274,15 +273,14 @@ public class MessageBusTest {
                         continue;
                     }
                     offsets.add(messageId.getOffset());
-                }
-                while (offsets.size() < numFailsPerThread);
+                } while (offsets.size() < numFailsPerThread);
                 resultMap.put(vspoutId, offsets);
             });
             threads[threadCount].start();
         }
 
         // Wait for threads to wrap up.
-        for (final Thread thread: threads) {
+        for (final Thread thread : threads) {
             thread.join();
         }
 

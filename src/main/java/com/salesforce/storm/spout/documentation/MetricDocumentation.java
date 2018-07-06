@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -96,27 +96,32 @@ public @interface MetricDocumentation {
     }
 
     /**
-     * @return description of the metric.
+     * Get the description of the metric.
+     * @return description of the metric
      */
     String description() default "";
 
     /**
-     * @return values that should be replaced in the key.
+     * Get the values that should be replaced in the key.
+     * @return values that should be replaced in the key
      */
     String[] dynamicValues() default {};
 
     /**
-     * @return unit of measurement for the metric.
+     * Get the unit of measurement for the metric.
+     * @return unit of measurement for the metric
      */
     Unit unit() default Unit.UNKNOWN;
 
     /**
-     * @return category of the metric.
+     * Get the category of the metric.
+     * @return category of the metric
      */
     Category category();
 
     /**
-     * @return type of the metric.
+     * Get the type of the metric.
+     * @return type of the metric
      */
     Type type();
 }

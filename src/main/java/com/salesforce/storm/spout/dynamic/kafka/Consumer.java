@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -212,6 +212,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         isOpen = true;
 
         // Build KafkaConsumerConfig from spoutConfig
+        @SuppressWarnings("unchecked")
         final List<String> kafkaBrokers = (List<String>) spoutConfig.get(KafkaConsumerConfig.KAFKA_BROKERS);
         final String topic = (String) spoutConfig.get(KafkaConsumerConfig.KAFKA_TOPIC);
 
@@ -457,7 +458,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
 
         // Persist each partition offset
 
-        for (Map.Entry<ConsumerPartition, Long> entry: consumerState.entrySet()) {
+        for (Map.Entry<ConsumerPartition, Long> entry : consumerState.entrySet()) {
             final ConsumerPartition consumerPartition = entry.getKey();
             final long lastFinishedOffset = entry.getValue();
 
@@ -606,7 +607,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         getKafkaConsumer().seekToBeginning(topicPartitions);
 
         // Now for each partition
-        for (TopicPartition topicPartition: topicPartitions) {
+        for (TopicPartition topicPartition : topicPartitions) {
             // Determine the current offset now that we've seeked to earliest
             // We subtract one from this offset and set that as the last "committed" offset.
             final long newOffset = getKafkaConsumer().position(topicPartition) - 1;
@@ -640,28 +641,31 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     }
 
     /**
-     * @return The defined consumer config.
+     * Get the defined consumer config.
+     * @return defined consumer config.
      */
     KafkaConsumerConfig getConsumerConfig() {
         return consumerConfig;
     }
 
     /**
-     * @return PersistenceAdapter instance.
+     * Get the persistence adapter instance.
+     * @return persistence adapter instance.
      */
     PersistenceAdapter getPersistenceAdapter() {
         return persistenceAdapter;
     }
 
     /**
-     * @return A set of all the partitions currently subscribed to.
+     * Get the set of all partition currently subscribed to.
+     * @return set of all partitions currently subscribed to.
      */
     Set<ConsumerPartition> getAssignedPartitions() {
         // Create our return set using abstracted TopicPartition
         Set<ConsumerPartition> assignedPartitions = new HashSet<>();
 
         // Loop over resumes from underlying kafka consumer
-        for (TopicPartition topicPartition: getKafkaConsumer().assignment()) {
+        for (TopicPartition topicPartition : getKafkaConsumer().assignment()) {
             // Convert object type
             assignedPartitions.add(new ConsumerPartition(topicPartition.topic(), topicPartition.partition()));
         }
@@ -672,7 +676,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     /**
      * Unsubscribe the consumer from a specific topic/partition.
      * @param consumerPartitionToUnsubscribe the Topic/Partition to stop consuming from.
-     * @return boolean, true if unsubscribed, false if it did not.
+     * @return true if unsubscribed, false if it did not.
      */
     @Override
     public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
@@ -713,14 +717,16 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     }
 
     /**
-     * @return returns our unique consumer identifier.
+     * Get this instance's unique consumer identifier.
+     * @return unique consumer identifier.
      */
     String getConsumerId() {
         return getConsumerConfig().getConsumerId();
     }
 
     /**
-     * @return Deserializer instance.
+     * Get this instances deserializer instance.
+     * @return deserializer instance.
      */
     Deserializer getDeserializer() {
         return deserializer;

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -25,7 +25,8 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -63,16 +64,20 @@ public class DefaultVirtualSpoutIdentifierTest {
     /**
      * Test that supplying null will throw an exception.
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void test_nullIdentifier() {
-        new DefaultVirtualSpoutIdentifier(null);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            new DefaultVirtualSpoutIdentifier(null)
+        );
     }
 
     /**
      * Test that supplying an empty string will throw an exception.
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void test_emptyIdentifier() {
-        new DefaultVirtualSpoutIdentifier("");
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            new DefaultVirtualSpoutIdentifier("")
+        );
     }
 }

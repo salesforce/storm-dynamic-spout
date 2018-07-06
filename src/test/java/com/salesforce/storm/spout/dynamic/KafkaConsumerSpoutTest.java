@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -28,10 +28,9 @@ package com.salesforce.storm.spout.dynamic;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.salesforce.kafka.test.KafkaTestServer;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
-import com.salesforce.kafka.test.junit.SharedKafkaTestResource;
+import com.salesforce.kafka.test.junit5.SharedKafkaTestResource;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
@@ -46,15 +45,13 @@ import com.salesforce.storm.spout.dynamic.persistence.ZookeeperPersistenceAdapte
 import com.salesforce.storm.spout.dynamic.retry.FailedTuplesFirstRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.dynamic.test.TestHelper;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.utils.Utils;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +74,6 @@ import static org.junit.Assert.assertTrue;
  * Provides End-To-End integration testing of DynamicSpout + Kafka Consumer.
  * This test does not attempt to validate DynamicSpout's behavior that is covered by DynamicSpoutTest.
  */
-@RunWith(DataProviderRunner.class)
 public class KafkaConsumerSpoutTest {
     // For logging within the test.
     private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerSpoutTest.class);
@@ -85,7 +81,7 @@ public class KafkaConsumerSpoutTest {
     /**
      * Create shared kafka test server.
      */
-    @ClassRule
+    @RegisterExtension
     public static final SharedKafkaTestResource sharedKafkaTestResource = new SharedKafkaTestResource();
 
     /**
@@ -97,13 +93,13 @@ public class KafkaConsumerSpoutTest {
      * This happens once before every test method.
      * Create a new empty namespace with randomly generated name.
      */
-    @Before
+    @BeforeEach
     public void beforeTest() throws InterruptedException {
         // Generate namespace name
         topicName = KafkaConsumerSpoutTest.class.getSimpleName() + Clock.systemUTC().millis();
 
         // Create namespace
-        getKafkaTestServer().createTopic(topicName);
+        getKafkaTestUtils().createTopic(topicName, 1, (short) 1);
     }
 
     /**
@@ -117,8 +113,8 @@ public class KafkaConsumerSpoutTest {
      * We run this test multiple times using a DataProvider to test using but an implicit/unconfigured
      * output stream name (default), as well as an explicitly configured stream name.
      */
-    @Test
-    @UseDataProvider("provideStreamIds")
+    @ParameterizedTest
+    @MethodSource("provideStreamIds")
     public void doBasicConsumingTest(final String configuredStreamId, final String expectedStreamId) throws InterruptedException {
         // Define how many tuples we should push into the namespace, and then consume back out.
         final int emitTupleCount = 10;
@@ -413,14 +409,14 @@ public class KafkaConsumerSpoutTest {
      *   - Verify we only consume from partitions 2 and 3
      * @param taskIndex What taskIndex to run the test with.
      */
-    @Test
-    @UseDataProvider("providerOfTaskIds")
+    @ParameterizedTest
+    @MethodSource("providerOfTaskIds")
     public void testConsumeWithConsumerGroupEvenNumberOfPartitions(final int taskIndex) {
         final int numberOfMsgsPerPartition = 10;
 
         // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupEvenNumberOfPartitions" + Clock.systemUTC().millis();
-        getKafkaTestServer().createTopic(topicName, 4);
+        getKafkaTestUtils().createTopic(topicName, 4, (short) 1);
 
         // Define some topicPartitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -523,14 +519,14 @@ public class KafkaConsumerSpoutTest {
      *   - Verify we only consume from partitions 2 and 3
      * @param taskIndex What taskIndex to run the test with.
      */
-    @Test
-    @UseDataProvider("providerOfTaskIds")
+    @ParameterizedTest
+    @MethodSource("providerOfTaskIds")
     public void testConsumeWithConsumerGroupOddNumberOfPartitions(final int taskIndex) {
         final int numberOfMsgsPerPartition = 10;
 
         // Create a namespace with 4 partitions
         topicName = "testConsumeWithConsumerGroupOddNumberOfPartitions" + Clock.systemUTC().millis();
-        getKafkaTestServer().createTopic(topicName, 5);
+        getKafkaTestUtils().createTopic(topicName, 5, (short) 1);
 
         // Define some topicPartitions
         final ConsumerPartition partition0 = new ConsumerPartition(topicName, 0);
@@ -635,7 +631,6 @@ public class KafkaConsumerSpoutTest {
     /**
      * Provides task ids 0 and 1.
      */
-    @DataProvider
     public static Object[][] providerOfTaskIds() {
         return new Object[][]{
             {0},
@@ -702,7 +697,7 @@ public class KafkaConsumerSpoutTest {
         }
 
         // Ack each one.
-        for (SpoutEmission emission: spoutEmissions) {
+        for (SpoutEmission emission : spoutEmissions) {
             spout.ack(emission.getMessageId());
         }
 
@@ -732,7 +727,7 @@ public class KafkaConsumerSpoutTest {
         }
 
         // Fail each one.
-        for (SpoutEmission emission: spoutEmissions) {
+        for (SpoutEmission emission : spoutEmissions) {
             spout.fail(emission.getMessageId());
         }
 
@@ -849,7 +844,7 @@ public class KafkaConsumerSpoutTest {
         final Iterator<SpoutEmission> emissionIterator = spoutEmissions.iterator();
 
         // Loop over what we produced into kafka
-        for (ProducedKafkaRecord<byte[], byte[]> producedRecord: producedRecords) {
+        for (ProducedKafkaRecord<byte[], byte[]> producedRecord : producedRecords) {
             // Now find its corresponding tuple from our iterator
             final SpoutEmission spoutEmission = emissionIterator.next();
 
@@ -878,8 +873,7 @@ public class KafkaConsumerSpoutTest {
      * helper method to produce records into kafka.
      */
     private List<ProducedKafkaRecord<byte[], byte[]>> produceRecords(int numberOfRecords, int partitionId) {
-        KafkaTestUtils kafkaTestUtils = new KafkaTestUtils(getKafkaTestServer());
-        return kafkaTestUtils.produceRecords(numberOfRecords, topicName, partitionId);
+        return getKafkaTestUtils().produceRecords(numberOfRecords, topicName, partitionId);
     }
 
     /**
@@ -899,11 +893,11 @@ public class KafkaConsumerSpoutTest {
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(getKafkaTestServer().getKafkaConnectString()));
+        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(sharedKafkaTestResource.getKafkaConnectString()));
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(getKafkaTestServer().getZookeeperConnectString()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
@@ -930,7 +924,6 @@ public class KafkaConsumerSpoutTest {
     /**
      * Provides various StreamIds to test emitting out of.
      */
-    @DataProvider
     public static Object[][] provideStreamIds() {
         return new Object[][]{
             // No explicitly defined streamId should use the default streamId.
@@ -944,7 +937,7 @@ public class KafkaConsumerSpoutTest {
     /**
      * Simple accessor.
      */
-    private KafkaTestServer getKafkaTestServer() {
-        return sharedKafkaTestResource.getKafkaTestServer();
+    private KafkaTestUtils getKafkaTestUtils() {
+        return sharedKafkaTestResource.getKafkaTestUtils();
     }
 }

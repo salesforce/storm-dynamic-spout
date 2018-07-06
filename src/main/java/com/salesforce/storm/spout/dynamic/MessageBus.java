@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -154,22 +154,24 @@ public class MessageBus implements VirtualSpoutMessageBus, SpoutMessageBus {
     }
 
     /**
-     * @return Count of acked messageIds that exist within the bus.
+     * Get the size of the acked tuples that exist within the bus.
+     * @return size of the acked tuples that exist within the bus
      */
     public int ackSize() {
         int size = 0;
-        for (final Queue queue: ackedTuples.values()) {
+        for (final Queue queue : ackedTuples.values()) {
             size += queue.size();
         }
         return size;
     }
 
     /**
-     * @return Count of failed messageIds that exist within the bus.
+     * Get the size of the failed tuples that exist within the bus.
+     * @return size of the failed tuples that exist within the bus
      */
     public int failSize() {
         int size = 0;
-        for (final Queue queue: failedTuples.values()) {
+        for (final Queue queue : failedTuples.values()) {
             size += queue.size();
         }
         return size;

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -51,7 +51,7 @@ public class FifoBuffer implements MessageBuffer {
 
     /**
      * Helper method for creating a default instance.
-     * @return factory method for create an instance of the buffer.
+     * @return factory method for create an instance of the buffer
      */
     public static FifoBuffer createDefaultInstance() {
         Map<String, Object> map = Maps.newHashMap();
@@ -78,7 +78,7 @@ public class FifoBuffer implements MessageBuffer {
 
     /**
      * Let the Implementation know that we're adding a new VirtualSpoutId.
-     * @param virtualSpoutId - Identifier of new Virtual Spout.
+     * @param virtualSpoutId identifier of new Virtual Spout
      */
     @Override
     public void addVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
@@ -87,7 +87,7 @@ public class FifoBuffer implements MessageBuffer {
 
     /**
      * Let the Implementation know that we're removing/cleaning up from closing a VirtualSpout.
-     * @param virtualSpoutId - Identifier of Virtual Spout to be cleaned up.
+     * @param virtualSpoutId identifier of Virtual Spout to be cleaned up
      */
     @Override
     public void removeVirtualSpoutId(final VirtualSpoutIdentifier virtualSpoutId) {
@@ -96,8 +96,8 @@ public class FifoBuffer implements MessageBuffer {
 
     /**
      * Put a new message onto the queue.  This method is blocking if the queue buffer is full.
-     * @param message - Message to be added to the queue.
-     * @throws InterruptedException - thrown if a thread is interrupted while blocked adding to the queue.
+     * @param message message to be added to the queue
+     * @throws InterruptedException thrown if a thread is interrupted while blocked adding to the queue
      */
     @Override
     public void put(final Message message) throws InterruptedException {
@@ -110,7 +110,8 @@ public class FifoBuffer implements MessageBuffer {
     }
 
     /**
-     * @return - returns the next Message to be processed out of the queue.
+     * Get the next message to be processed out of the queue.
+     * @return next message to be processed out of the queue
      */
     @Override
     public Message poll() {

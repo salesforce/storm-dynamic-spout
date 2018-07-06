@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -48,7 +48,8 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
     }
 
     /**
-     * @return A new ConsumerStateBuilder instance.
+     * Get an instance of a consumer state builder.
+     * @return instance of a consumer state builder.
      */
     public static ConsumerStateBuilder builder() {
         return new ConsumerStateBuilder();
@@ -74,13 +75,12 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
     }
 
     /**
-     * @return returns all of the ConsumerPartitions represented by the state.
+     * Get a set of the ConsumerPartitions represented by the state.
+     * @return set of the ConsumerPartitions represented by the state.
      */
     public Set<ConsumerPartition> getConsumerPartitions() {
         return state.keySet();
     }
-
-// Map Interface methods.
 
     @Override
     public boolean isEmpty() {
@@ -190,7 +190,8 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
         }
 
         /**
-         * @return Built ConsumerState instance.
+         * Get a consumer state instance from the state that has been built.
+         * @return consumer state instance.
          */
         public ConsumerState build() {
             return new ConsumerState(state);

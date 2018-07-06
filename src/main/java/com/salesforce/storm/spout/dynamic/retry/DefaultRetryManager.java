@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -133,7 +133,7 @@ public class DefaultRetryManager implements RetryManager {
         if (failCount > 1) {
             // Make sure they're removed.  This kind of sucks.
             // This may not be needed in reality...just because of how we've setup our tests :/
-            for (Queue queue: failedMessageIds.values()) {
+            for (final Queue queue : failedMessageIds.values()) {
                 if (queue.remove(messageId)) {
                     break;
                 }
@@ -232,13 +232,15 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     /**
-     * @return max number of times we'll retry a failed tuple.
+     * Get the max number of times a failed tuple will be retried.
+     * @return max number of times a failed tuple will be retried.
      */
     public int getRetryLimit() {
         return retryLimit;
     }
 
     /**
+     * Get the minimum time between retries, in milliseconds.
      * @return minimum time between retries, in milliseconds.
      */
     public long getInitialRetryDelayMs() {
@@ -246,14 +248,16 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     /**
-     * @return The configured retry delay multiplier.
+     * Get the configured retry delay multiplier.
+     * @return configured retry delay multiplier.
      */
     public double getRetryDelayMultiplier() {
         return retryDelayMultiplier;
     }
 
     /**
-     * @return The configured max delay time, in milliseconds.
+     * Get the configured max delay time, in milliseconds.
+     * @return configured max delay time, in milliseconds.
      */
     public long getRetryDelayMaxMs() {
         return retryDelayMaxMs;
@@ -282,14 +286,21 @@ public class DefaultRetryManager implements RetryManager {
     }
 
     /**
-     * @return The configured clock implementation.  Useful for testing.
+     * Get the configured clock implementation.
+     *
+     * This is useful when writing tests.
+     *
+     * @return configured clock implementation.
      */
     Clock getClock() {
         return clock;
     }
 
     /**
-     * For injecting a clock implementation.  Useful for testing.
+     * For injecting a clock implementation.
+     *
+     * Useful for testing.
+     *
      * @param clock the clock implementation to use.
      */
     void setClock(Clock clock) {

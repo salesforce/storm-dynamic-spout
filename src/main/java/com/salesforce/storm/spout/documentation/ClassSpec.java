@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -37,20 +37,25 @@ public class ClassSpec {
 
     /**
      * Constructor.
-     * @param clazz Class to generate documentation for.
-     * @param defaults Default values for each option.
+     * @param clazz class to generate documentation for.
+     * @param defaults default values for each option.
      */
     public ClassSpec(final Class clazz, final Map<String, Object> defaults) {
         this.clazz = clazz;
         this.defaults = defaults;
     }
 
+    /**
+     * Constructor.
+     * @param clazz class to generate documentation for.
+     */
     public ClassSpec(final Class clazz) {
         this(clazz, new HashMap<>());
     }
 
     /**
-     * @return Configured class instance.
+     * Get the configured class instance.
+     * @return class instance.
      */
     public Class getClazz() {
         return clazz;

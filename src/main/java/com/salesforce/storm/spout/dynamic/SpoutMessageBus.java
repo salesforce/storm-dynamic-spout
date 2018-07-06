@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -32,24 +32,26 @@ package com.salesforce.storm.spout.dynamic;
 public interface SpoutMessageBus {
 
     /**
-     * @return Returns any errors that should be reported up to the topology, or NULL if none exists.
+     * Get the next error that should be reported up to the topology, or NULL if none exists.
+     * @return next error that should be reported up to the topology, or NULL if none exists
      */
     Throwable nextReportedError();
 
     /**
-     * @return Returns the next available Message to be emitted into the topology, or NULL if none exists.
+     * Get the next available Message to be emitted into the topology, or NULL if none exists.
+     * @return next available Message to be emitted into the topology, or NULL if none exists
      */
     Message nextMessage();
 
     /**
      * Acks a tuple on the spout that it belongs to.
-     * @param id Tuple message id to ack
+     * @param id tuple message id to ack
      */
     void ack(final MessageId id);
 
     /**
      * Fails a tuple on the spout that it belongs to.
-     * @param id Tuple message id to fail
+     * @param id tuple message id to fail
      */
     void fail(final MessageId id);
 }

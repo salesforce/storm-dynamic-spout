@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Manages running a VirtualSpout instance.
@@ -143,8 +142,7 @@ class SpoutRunner implements Runnable {
                     if (messageId != null) {
                         spout.ack(messageId);
                     }
-                }
-                while (messageId != null);
+                } while (messageId != null);
 
                 // Fail everything that needs to be failed
                 do {
@@ -152,8 +150,7 @@ class SpoutRunner implements Runnable {
                     if (messageId != null) {
                         spout.fail(messageId);
                     }
-                }
-                while (messageId != null);
+                } while (messageId != null);
 
                 // Periodically we flush the state of the spout to capture progress
                 final long now = getClock().millis();
@@ -183,8 +180,7 @@ class SpoutRunner implements Runnable {
     }
 
     /**
-     * Call this method to request this SpoutRunner instance
-     * to cleanly stop.
+     * Call this method to request this SpoutRunner instance to cleanly stop.
      */
     void requestStop() {
         logger.info("Requested stop on {}", spout.getVirtualSpoutId());
@@ -194,35 +190,39 @@ class SpoutRunner implements Runnable {
     /**
      * Determine if anyone has requested stop on this instance.
      *
-     * @return - true if so, false if not.
+     * @return true if so, false if not
      */
     private boolean isStopRequested() {
         return requestedStop;
     }
 
     /**
-     * @return - our System clock instance.
+     * Get system clock.
+     * @return system clock
      */
     Clock getClock() {
         return clock;
     }
 
     /**
-     * @return - Storm topology configuration.
+     * Get topology configuration.
+     * @return topology configuration
      */
     Map<String, Object> getTopologyConfig() {
         return topologyConfig;
     }
 
     /**
-     * @return ThreadSafe MessageBus for communicating between DynamicSpout and VirtualSpouts.
+     * Get thread safe message bus for communicating between DynamicSpout and VirtualSpouts.
+     * @return message bus.
      */
     private VirtualSpoutMessageBus getVirtualSpoutMessageBus() {
         return virtualSpoutMessageBus;
     }
 
     /**
-     * @return - How frequently, in milliseconds, we should flush consumer state.
+     * Get the interval that the consumer should flush it's state in milliseconds.
+     * @return interval that the consumer should flush it's state in milliseconds
      */
     long getConsumerStateFlushIntervalMs() {
         return ((Number) getTopologyConfig().get(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS)).longValue();
@@ -233,7 +233,8 @@ class SpoutRunner implements Runnable {
     }
 
     /**
-     * @return Unix timestamp (in milliseconds) of when the instance was created.
+     * Get the unix timestamp (in milliseconds) of when the instance was created.
+     * @return unix timestamp (in milliseconds) of when the instance was created
      */
     long getStartTime() {
         return startTime;

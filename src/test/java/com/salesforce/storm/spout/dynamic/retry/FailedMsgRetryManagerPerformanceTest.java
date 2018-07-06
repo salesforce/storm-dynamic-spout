@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -98,8 +98,7 @@ public class FailedMsgRetryManagerPerformanceTest {
                 continue;
             }
             returnedTuples.add(messageId);
-        }
-        while (returnedTuples.size() < numberOfTuples);
+        } while (returnedTuples.size() < numberOfTuples);
         logger.info("Finished in {} ms", (System.currentTimeMillis() - startNextFailedTime));
     }
 }

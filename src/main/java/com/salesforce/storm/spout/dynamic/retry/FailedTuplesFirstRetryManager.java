@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -83,14 +83,16 @@ public class FailedTuplesFirstRetryManager implements RetryManager {
     }
 
     /**
-     * @return - the messageIds currently in flight.
+     * Get the message ids currently in flight.
+     * @return message ids currently in flight
      */
     Set<MessageId> getMessageIdsInFlight() {
         return messageIdsInFlight;
     }
 
     /**
-     * @return - the messageIds currently marked as having failed, excluding those in flight.
+     * Get the message ids currently marked as having failed, excluding those in flight.
+     * @return message ids currently marked as having failed, excluding those in flight
      */
     Queue<MessageId> getFailedMessageIds() {
         return failedMessageIds;

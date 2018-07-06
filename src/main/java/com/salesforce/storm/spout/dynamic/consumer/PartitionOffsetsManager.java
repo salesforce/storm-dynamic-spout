@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -79,16 +79,17 @@ public class PartitionOffsetsManager {
 
     /**
      * Give the given ConsumerPartition, mark the offset as having completed processing.
-     * @param consumerPartition The ConsumerPartition to begin tracking a new offset for.
-     * @param offset The offset to mark as completed.
+     * @param consumerPartition The ConsumerPartition to begin tracking a new offset for
+     * @param offset The offset to mark as completed
      */
     public void finishOffset(final ConsumerPartition consumerPartition, final long offset) {
         partitionStateManagers.get(consumerPartition).finishOffset(offset);
     }
 
     /**
-     * @param consumerPartition The ConsumerPartition to retrieve the last finished offset for.
-     * @return Last finished offset for the given ConsumerPartition.
+     * Get the last finished offset for the given ConsumerPartition.
+     * @param consumerPartition The ConsumerPartition to retrieve the last finished offset for
+     * @return last finished offset for the given ConsumerPartition
      */
     public long getLastFinishedOffset(final ConsumerPartition consumerPartition) {
         if (!partitionStateManagers.containsKey(consumerPartition)) {
@@ -98,12 +99,13 @@ public class PartitionOffsetsManager {
     }
 
     /**
-     * @return Map of all ConsumerPartitions and their last finished offsets.
+     * Get a map of all ConsumerPartitions and their last finished offsets.
+     * @return map of all ConsumerPartitions and their last finished offsets
      */
     public Map<ConsumerPartition, Long> getLastFinishedOffsets() {
         Map<ConsumerPartition, Long> entries = new HashMap<>();
 
-        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
+        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
             final ConsumerPartition consumerPartition = entry.getKey();
             final long lastFinishedOffset = entry.getValue().lastFinishedOffset();
 
@@ -115,9 +117,12 @@ public class PartitionOffsetsManager {
     }
 
     /**
-     * @param consumerPartition The ConsumerPartition to retrieve the last started offset for.
-     * @return return the largest offset we have started tracking for the given ConsumerPartition.
-     *           This is NOT the same as the "Last Finished Offset"
+     * Get the largest offset we have started tracking for the given ConsumerPartition.
+     *
+     * This is NOT the same as the "Last Finished Offset".
+     *
+     * @param consumerPartition ConsumerPartition to retrieve the last started offset for
+     * @return largest offset we have started tracking for the given ConsumerPartition
      */
     public long getLastStartedOffset(final ConsumerPartition consumerPartition) {
         if (!partitionStateManagers.containsKey(consumerPartition)) {
@@ -127,13 +132,17 @@ public class PartitionOffsetsManager {
     }
 
     /**
-     * @return Map of all ConsumerPartitions to the largest offset we have started tracking on it.
-     *           This is NOT the same as the "Last Finished Offset"
+     * Get a map of all ConsumerPartitions to the largest offset we have started tracking on it.
+     *
+     * This is NOT the same as the "Last Finished Offset".
+     *
+     * @return map of all ConsumerPartitions to the largest offset we have started tracking on it
+     *
      */
     public Map<ConsumerPartition, Long> getLastStartedOffsets() {
         Map<ConsumerPartition, Long> entries = new HashMap<>();
 
-        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry: partitionStateManagers.entrySet()) {
+        for (Map.Entry<ConsumerPartition, PartitionOffsetManager> entry : partitionStateManagers.entrySet()) {
             final ConsumerPartition consumerPartition = entry.getKey();
             final long lastFinishedOffset = entry.getValue().lastStartedOffset();
 
@@ -148,7 +157,7 @@ public class PartitionOffsetsManager {
      * Returns what the consumer considers its current "finished" state to be.  This means the highest
      * offsets for all partitions its consuming that it has tracked as having been complete.
      *
-     * @return The Consumer's current state.
+     * @return consumer's current state
      */
     public ConsumerState getCurrentState() {
         final ConsumerState.ConsumerStateBuilder builder = ConsumerState.builder();
@@ -160,7 +169,8 @@ public class PartitionOffsetsManager {
     }
 
     /**
-     * @return All ConsumerPartitions managed by this instance.
+     * Get all ConsumerPartitions managed by this instance.
+     * @return all ConsumerPartitions managed by this instance
      */
     public Set<ConsumerPartition> getAllManagedConsumerPartitions() {
         return partitionStateManagers.keySet();

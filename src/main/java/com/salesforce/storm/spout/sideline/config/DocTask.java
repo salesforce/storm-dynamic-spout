@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -63,7 +63,7 @@ public class DocTask {
     private static void generateConfigDocs(final Path inputPath) throws IOException {
         final String tagArg = "SIDELINE_CONFIGURATION";
         final List<ClassSpec> classSpecs = new ArrayList<>();
-        classSpecs.add(new ClassSpec(SidelineConfig.class, SidelineConfig.setDefaults(new HashMap())));
+        classSpecs.add(new ClassSpec(SidelineConfig.class, SidelineConfig.setDefaults(new HashMap<>())));
 
         final DocGenerator docGenerator = new DocGenerator(inputPath, tagArg, classSpecs);
         docGenerator.generateConfigDocs();

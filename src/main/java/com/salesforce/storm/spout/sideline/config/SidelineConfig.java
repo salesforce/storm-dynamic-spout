@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -151,7 +151,7 @@ public class SidelineConfig {
      * @param config config to update.
      * @return cloned copy of the config that is updated.
      */
-    public static Map<String, Object> setDefaults(Map config) {
+    public static Map<String, Object> setDefaults(final Map<String, Object> config) {
         // Clone the map
         Map<String, Object> clonedConfig = Maps.newHashMap();
         clonedConfig.putAll(config);

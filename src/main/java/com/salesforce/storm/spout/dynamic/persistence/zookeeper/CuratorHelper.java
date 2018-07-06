@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Helper methods for common tasks when working with Curator.
@@ -97,11 +96,9 @@ public class CuratorHelper {
      * will deserialize the JSON to a concrete class.
      *
      * @param path node containing JSON to read from.
-     * @param <K> key to the json field.
-     * @param <V> value of the json field.
      * @return map representing the JSON stored within the zookeeper node.
      */
-    public <K, V> Map<K, V> readJson(final String path) {
+    public HashMap readJson(final String path) {
         return readJson(path, HashMap.class);
     }
 

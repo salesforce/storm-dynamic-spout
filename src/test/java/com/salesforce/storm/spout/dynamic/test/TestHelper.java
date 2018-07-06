@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -48,7 +48,7 @@ public class TestHelper {
      * @return a {@link VirtualSpout} instance.
      */
     public static VirtualSpout createVirtualSpout(
-        final Map config,
+        final Map<String, Object> config,
         final VirtualSpoutIdentifier identifier
     ) {
         return createVirtualSpout(config, identifier, null, null);
@@ -63,7 +63,7 @@ public class TestHelper {
      * @return a {@link VirtualSpout} instance.
      */
     public static VirtualSpout createVirtualSpout(
-        final Map config,
+        final Map<String, Object> config,
         final VirtualSpoutIdentifier identifier,
         final ConsumerState startingState,
         final ConsumerState endingState

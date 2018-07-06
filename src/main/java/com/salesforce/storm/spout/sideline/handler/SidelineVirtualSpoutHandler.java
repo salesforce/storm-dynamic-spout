@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2017, Salesforce.com, Inc.
+/*
+ * Copyright (c) 2017, 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -30,7 +30,6 @@ import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.handler.VirtualSpoutHandler;
-import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.sideline.persistence.PersistenceAdapter;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
@@ -104,7 +103,10 @@ public class SidelineVirtualSpoutHandler implements VirtualSpoutHandler {
     }
 
     /**
-     * Get the persistence adapter, only use this for tests!
+     * Get the persistence adapter.
+     *
+     * Only intended for use in tests.
+     *
      * @return persistence adapter.
      */
     PersistenceAdapter getPersistenceAdapter() {
