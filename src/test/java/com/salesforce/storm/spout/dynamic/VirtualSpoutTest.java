@@ -864,7 +864,7 @@ public class VirtualSpoutTest {
         final RetryManager mockRetryManager = mock(RetryManager.class);
 
         // Create test config
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
 
         // Create topology context
         final TopologyContext mockTopologyContext = new MockTopologyContext();
@@ -1124,7 +1124,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItEqualsEndingOffset() {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1170,7 +1170,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesExceedEndingOffset() {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1216,7 +1216,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetWhenItDoesNotExceedEndingOffset() {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 
@@ -1264,7 +1264,7 @@ public class VirtualSpoutTest {
     @Test
     public void testDoesMessageExceedEndingOffsetForAnInvalidPartition() {
         // Create inputs
-        final Map topologyConfig = getDefaultConfig();
+        final Map<String, Object> topologyConfig = getDefaultConfig();
         final TopologyContext mockTopologyContext = new MockTopologyContext();
         final Consumer mockConsumer = mock(Consumer.class);
 

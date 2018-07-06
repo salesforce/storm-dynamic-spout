@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
@@ -838,7 +837,7 @@ public class DynamicSpoutTest {
         final DynamicSpout spout = new DynamicSpout(spoutConfig);
 
         // Call open
-        final Map topologyConfig = new HashMap();
+        final Map<String, Object> topologyConfig = new HashMap<>();
         topologyConfig.put("Test", "Value");
         spout.open(topologyConfig, topologyContext, mockSpoutOutputCollector);
 
@@ -1184,7 +1183,7 @@ public class DynamicSpoutTest {
         final String consumerIdPrefix,
         final String configuredStreamId) {
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());

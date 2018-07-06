@@ -275,11 +275,13 @@ public class StormRecorderTest {
         recorder.stopTimer(metricDefinition);
 
         // Validate
+        @SuppressWarnings("unchecked")
         final Map<String, Long> timerValues = (Map<String, Long>) timerMetrics.getValueAndReset();
         assertEquals("Should have 1 value", 1, timerValues.size());
         assertTrue("Should contain our key", timerValues.containsKey(expectedMetricName));
 
         // Validate total timer got updated
+        @SuppressWarnings("unchecked")
         final Map<String, Long> counterValues = (Map<String, Long>) counterMetrics.getValueAndReset();
         assertEquals("Should have 1 value", 1, counterValues.size());
         assertTrue("Should contain our key", counterValues.containsKey(expectedTotalTimeMetricName));

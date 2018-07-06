@@ -40,7 +40,6 @@ import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
-import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.NullDeserializer;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Utf8StringDeserializer;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
@@ -204,7 +203,8 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), we should return a single partition number 0 for our namespace.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
@@ -273,7 +273,8 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), we should return a single partition number 0 for our namespace.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
@@ -286,9 +287,6 @@ public class ConsumerTest {
 
         // Create instance of a StateConsumer, we'll just use a dummy instance.
         final PersistenceAdapter mockPersistenceAdapter = mock(PersistenceAdapter.class);
-
-        // Create mock Deserializer
-        final Deserializer mockDeserializer = mock(Deserializer.class);
 
         // When getState is called, return the following state
         when(mockPersistenceAdapter.retrieveConsumerState(eq(consumerId), anyInt())).thenReturn(null);
@@ -353,7 +351,8 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), We return partitions 0,1, and 2.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
@@ -453,7 +452,8 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), we should return a single partition number 0 for our namespace.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
@@ -516,7 +516,8 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig();
 
         // Create mock KafkaConsumer instance
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), We return partitions 0,1, and 2.
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
@@ -612,7 +613,8 @@ public class ConsumerTest {
         final Map<String, Object> config = getDefaultConfig(topicName);
 
         // Create mock KafkaConsumer instance
-        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = mock(KafkaConsumer.class);
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
         // When we call partitionsFor(), We return partitions 0,1,2,3
         final List<PartitionInfo> mockPartitionInfos = Lists.newArrayList(
@@ -2421,13 +2423,15 @@ public class ConsumerTest {
      */
     @Test
     public void testNextRecordWithRecursiveOutOfRangeException() {
-        final KafkaConsumer<byte[], byte[]> kafkaConsumer = Mockito.mock(KafkaConsumer.class);
+        // Create mock KafkaConsumer instance
+        @SuppressWarnings("unchecked")
+        final KafkaConsumer<byte[], byte[]> mockKafkaConsumer = (KafkaConsumer<byte[], byte[]>) mock(KafkaConsumer.class);
 
-        Mockito.when(kafkaConsumer.assignment()).thenReturn(Sets.newHashSet(new TopicPartition("Foobar", 0)));
-        Mockito.when(kafkaConsumer.partitionsFor(topicName)).thenReturn(Arrays.asList(
+        Mockito.when(mockKafkaConsumer.assignment()).thenReturn(Sets.newHashSet(new TopicPartition("Foobar", 0)));
+        Mockito.when(mockKafkaConsumer.partitionsFor(topicName)).thenReturn(Arrays.asList(
             new PartitionInfo(topicName, 0, null, null, null)
         ));
-        Mockito.when(kafkaConsumer.poll(300)).thenThrow(
+        Mockito.when(mockKafkaConsumer.poll(300)).thenThrow(
             new OffsetOutOfRangeException(new HashMap<>())
         );
 
@@ -2435,7 +2439,7 @@ public class ConsumerTest {
         persistenceAdapter.open(Maps.newHashMap());
 
         // Create our consumer
-        final Consumer consumer = new Consumer(kafkaConsumer);
+        final Consumer consumer = new Consumer(mockKafkaConsumer);
         consumer.open(
             getDefaultConfig(topicName),
             getDefaultVSpoutId(),
@@ -2449,7 +2453,7 @@ public class ConsumerTest {
 
         assertNull(record);
 
-        Mockito.verify(kafkaConsumer, Mockito.times(5)).poll(300);
+        Mockito.verify(mockKafkaConsumer, Mockito.times(5)).poll(300);
 
         consumer.close();
     }

@@ -91,7 +91,7 @@ public class ZookeeperPersistenceAdapterTest {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(inputHosts, null, null);
+        final Map<String, Object> topologyConfig = createDefaultConfig(inputHosts, null, null);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -118,7 +118,9 @@ public class ZookeeperPersistenceAdapterTest {
             + String.valueOf(partitionId);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -151,13 +153,14 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
 
         final String topicName = "MyTopic1";
-        final String zkRootPath = configuredZkRoot + "/" + configuredConsumerPrefix;
         final SidelineRequestIdentifier sidelineRequestIdentifier = new SidelineRequestIdentifier("test");
         final FilterChainStep filterChainStep =  new StaticMessageFilter();
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -300,7 +303,9 @@ public class ZookeeperPersistenceAdapterTest {
         final SidelineRequest sidelineRequest = new SidelineRequest(sidelineRequestIdentifier, filterChainStep);
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(
+            getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event)
+        );
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -317,7 +322,9 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -393,8 +400,10 @@ public class ZookeeperPersistenceAdapterTest {
         logger.info("Stored data string {}", storedDataStr);
         assertNotNull("Stored data string should be non-null", storedDataStr);
 
-        Map expectedMap = gson.fromJson(expectedStoredState, HashMap.class);
-        Map actualMap = gson.fromJson(storedDataStr, HashMap.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> expectedMap = (Map<String, Object>) gson.fromJson(expectedStoredState, HashMap.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> actualMap = (Map<String, Object>) gson.fromJson(storedDataStr, HashMap.class);
 
         assertEquals(expectedMap, actualMap);
 
@@ -402,13 +411,19 @@ public class ZookeeperPersistenceAdapterTest {
         assertEquals(expectedMap.get("type"), actualMap.get("type"));
         assertEquals(expectedMap.get("startingOffset"), actualMap.get("startingOffset"));
         assertEquals(expectedMap.get("endingOffset"), actualMap.get("endingOffset"));
+
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> expectedRequest = (Map<String, Object>) expectedMap.get("request");
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> actualRequest = (Map<String, Object>) actualMap.get("request");
+
         assertEquals(
-            ((Map<String,Object>) expectedMap.get("request")).get("id"),
-            ((Map<String,Object>) actualMap.get("request")).get("id")
+            expectedRequest.get("id"),
+            actualRequest.get("id")
         );
         assertEquals(
-            ((Map<String,Object>) expectedMap.get("request")).get("step"),
-            ((Map<String,Object>) actualMap.get("request")).get("step")
+            expectedRequest.get("step"),
+            actualRequest.get("step")
         );
 
         // Now test clearing
@@ -491,7 +506,9 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredConsumerPrefix = "consumerIdPrefix";
         final String configuredZkRoot = getRandomZkRootNode();
 
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
 
         // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -560,7 +577,7 @@ public class ZookeeperPersistenceAdapterTest {
         final List<SidelineRequestIdentifier> ids = persistenceAdapter.listSidelineRequests();
 
         assertNotNull(ids);
-        assertTrue(ids.size() == 3);
+        assertEquals(3, ids.size());
         assertTrue(ids.contains(sidelineRequestIdentifier1));
         assertTrue(ids.contains(sidelineRequestIdentifier2));
         assertTrue(ids.contains(sidelineRequestIdentifier3));
@@ -578,7 +595,9 @@ public class ZookeeperPersistenceAdapterTest {
         final String configuredZkRoot = getRandomZkRootNode();
         final String topicName = "MyTopic";
 
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
 
         // Create adapter and open
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -638,8 +657,8 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private Map createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
-        Map config = Maps.newHashMap();
+    private Map<String, Object> createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
+        Map<String, Object> config = new HashMap<>();
         config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
@@ -650,7 +669,7 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private Map createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
+    private Map<String, Object> createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
         return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 

@@ -78,7 +78,7 @@ public class ZookeeperPersistenceAdapterTest {
         final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(inputHosts, null, null);
+        final Map<String, Object> topologyConfig = createDefaultConfig(inputHosts, null, null);
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -101,7 +101,9 @@ public class ZookeeperPersistenceAdapterTest {
         final String expectedZkConsumerStatePath = expectedZkRoot + "/consumers/" + expectedConsumerId + "/" + String.valueOf(partitionId);
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -138,7 +140,9 @@ public class ZookeeperPersistenceAdapterTest {
         final int partitionId2 = 2;
 
         // Create our config
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
 
         // Create instance and open it.
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
@@ -226,7 +230,9 @@ public class ZookeeperPersistenceAdapterTest {
         final int partitionId = 1;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(
+            getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event)
+        );
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -243,7 +249,9 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -345,7 +353,9 @@ public class ZookeeperPersistenceAdapterTest {
         final long partition2Offset = 300L;
 
         // 1 - Connect to ZK directly
-        ZooKeeper zookeeperClient = new ZooKeeper(getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event));
+        ZooKeeper zookeeperClient = new ZooKeeper(
+            getZookeeperConnectionString(), 6000, event -> logger.info("Got event {}", event)
+        );
 
         // Ensure that our node does not exist before we run test,
         // Validate that our assumption that this node does not exist!
@@ -362,7 +372,9 @@ public class ZookeeperPersistenceAdapterTest {
         }
 
         // 2. Create our instance and open it
-        final Map topologyConfig = createDefaultConfig(getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix);
+        final Map<String, Object> topologyConfig = createDefaultConfig(
+            getZookeeperConnectionString(), configuredZkRoot, configuredConsumerPrefix
+        );
         ZookeeperPersistenceAdapter persistenceAdapter = new ZookeeperPersistenceAdapter();
         persistenceAdapter.open(topologyConfig);
 
@@ -524,8 +536,8 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private Map createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
-        Map config = Maps.newHashMap();
+    private Map<String, Object> createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
+        Map<String, Object> config = Maps.newHashMap();
         config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
@@ -536,7 +548,7 @@ public class ZookeeperPersistenceAdapterTest {
     /**
      * Helper method.
      */
-    private Map createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
+    private Map<String, Object> createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
         return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 

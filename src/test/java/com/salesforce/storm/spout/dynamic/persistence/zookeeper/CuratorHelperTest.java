@@ -103,6 +103,7 @@ public class CuratorHelperTest {
             curatorHelper.writeJson(path, jsonMap);
 
             // Read
+            @SuppressWarnings("unchecked")
             final Map<String, Object> resultMap = curatorHelper.readJson(path);
 
             // Validate

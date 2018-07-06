@@ -48,7 +48,7 @@ public class TestHelper {
      * @return a {@link VirtualSpout} instance.
      */
     public static VirtualSpout createVirtualSpout(
-        final Map config,
+        final Map<String, Object> config,
         final VirtualSpoutIdentifier identifier
     ) {
         return createVirtualSpout(config, identifier, null, null);
@@ -63,7 +63,7 @@ public class TestHelper {
      * @return a {@link VirtualSpout} instance.
      */
     public static VirtualSpout createVirtualSpout(
-        final Map config,
+        final Map<String, Object> config,
         final VirtualSpoutIdentifier identifier,
         final ConsumerState startingState,
         final ConsumerState endingState
