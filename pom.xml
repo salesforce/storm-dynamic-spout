@@ -120,13 +120,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Apache library for easily handling Collections -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>4.1</version>
-        </dependency>
-
         <!-- Google's Guava library, makes life easier through common tooling -->
         <dependency>
             <groupId>com.google.guava</groupId>

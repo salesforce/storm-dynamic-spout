@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
-import com.google.common.base.Charsets;
 import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import org.apache.curator.framework.CuratorFramework;
@@ -37,6 +36,7 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,7 +69,7 @@ public class CuratorHelperTest {
     public void testReadAndWriteBytes() {
         final String path = "/test";
         final String valueStr = "My String";
-        final byte[] valueBytes = valueStr.getBytes(Charsets.UTF_8);
+        final byte[] valueBytes = valueStr.getBytes(StandardCharsets.UTF_8);
 
         try (final CuratorFramework curator = createCurator()) {
             // Write
@@ -78,7 +78,7 @@ public class CuratorHelperTest {
 
             // Read
             final byte[] resultBytes = curatorHelper.readBytes(path);
-            final String resultStr = new String(resultBytes, Charsets.UTF_8);
+            final String resultStr = new String(resultBytes, StandardCharsets.UTF_8);
 
             assertEquals("Has correct value", valueStr, resultStr);
         }

@@ -25,9 +25,10 @@
 
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
-import com.google.common.base.Charsets;
 import org.apache.storm.tuple.Values;
 import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -56,8 +57,8 @@ public class Utf8StringDeserializerTest {
             expectedTopic,
             expectedPartition,
             expectedOffset,
-            expectedKey.getBytes(Charsets.US_ASCII),
-            expectedValue.getBytes(Charsets.UTF_8)
+            expectedKey.getBytes(StandardCharsets.US_ASCII),
+            expectedValue.getBytes(StandardCharsets.UTF_8)
         );
 
         assertEquals("Values has 2 entries", 2, deserializedValues.size());
@@ -83,7 +84,7 @@ public class Utf8StringDeserializerTest {
             expectedPartition,
             expectedOffset,
             expectedKey,
-            expectedValue.getBytes(Charsets.UTF_8)
+            expectedValue.getBytes(StandardCharsets.UTF_8)
         );
 
         assertEquals("Values has 2 entries", 2, deserializedValues.size());

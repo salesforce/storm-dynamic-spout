@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
@@ -57,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -364,7 +364,7 @@ public class DynamicSpoutTest {
 
         // Now lets ack 2 different offsets, entries 0 and 3.
         // This means they should never get replayed.
-        List<SpoutEmission> ackedEmissions = Lists.newArrayList();
+        List<SpoutEmission> ackedEmissions = new ArrayList<>();
         ackedEmissions.add(spoutEmissions.get(0));
         ackedEmissions.add(spoutEmissions.get(3));
         ackTuples(spout, ackedEmissions);
@@ -375,7 +375,7 @@ public class DynamicSpoutTest {
         producedRecords.remove(0);
 
         // And lets fail the others
-        List<SpoutEmission> failEmissions = Lists.newArrayList(spoutEmissions);
+        List<SpoutEmission> failEmissions = new ArrayList<>(spoutEmissions);
         failEmissions.removeAll(ackedEmissions);
         failTuples(spout, failEmissions);
 
@@ -542,11 +542,11 @@ public class DynamicSpoutTest {
         validateEmission(producedRecords.get(5), spoutEmissions.get(5), virtualSpoutIdentifier, expectedStreamId, false);
 
         // We will ack offsets 0-4
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(4)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(0)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(1)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(2)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(3)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(4)));
 
         // Wait for them to make it to the MockConsumer.
         await()
@@ -738,7 +738,7 @@ public class DynamicSpoutTest {
         assertTrue(fieldsDeclaration.containsKey(Utils.DEFAULT_STREAM_ID));
         assertEquals(
             fieldsDeclaration.get(Utils.DEFAULT_STREAM_ID).get_output_fields(),
-            Lists.newArrayList(expectedFields)
+            Arrays.asList(expectedFields)
         );
 
         // Validate permanently failed output stream
@@ -746,7 +746,7 @@ public class DynamicSpoutTest {
         assertTrue(fieldsDeclaration.containsKey(defaultFailedStreamId));
         assertEquals(
             fieldsDeclaration.get(defaultFailedStreamId).get_output_fields(),
-            Lists.newArrayList(expectedFields)
+            Arrays.asList(expectedFields)
         );
 
         // Should only have 2 streams defined
@@ -783,14 +783,14 @@ public class DynamicSpoutTest {
         assertTrue(fieldsDeclaration.containsKey(streamId));
         assertEquals(
             fieldsDeclaration.get(streamId).get_output_fields(),
-            Lists.newArrayList(expectedFields)
+            Arrays.asList(expectedFields)
         );
 
         // Validate permanently failed output stream
         assertTrue(fieldsDeclaration.containsKey(failedStreamId));
         assertEquals(
             fieldsDeclaration.get(failedStreamId).get_output_fields(),
-            Lists.newArrayList(expectedFields)
+                Arrays.asList(expectedFields)
         );
 
         // Should only have 2 streams defined
@@ -810,9 +810,9 @@ public class DynamicSpoutTest {
             { " key    , value  ,", new String[] {"key", "value"} },
 
             // List of Strings, used as is.
-            { Lists.newArrayList("key", "value"), new String[] { "key", "value"} },
-            { Lists.newArrayList("  key  ", " value"), new String[] { "  key  ", " value"} },
-            { Lists.newArrayList("key,value", "another"), new String[] { "key,value", "another"} },
+            { Arrays.asList("key", "value"), new String[] { "key", "value"} },
+            { Arrays.asList("  key  ", " value"), new String[] { "  key  ", " value"} },
+            { Arrays.asList("key,value", "another"), new String[] { "key,value", "another"} },
 
             // Fields inputs, used as is.
             { new Fields("key", "value"), new String[] { "key", "value" } },
@@ -1068,7 +1068,7 @@ public class DynamicSpoutTest {
         logger.info("[TEST] Attempting to consume {} tuples from spout", numberOfTuples);
 
         // Create a new list for the emissions we expect to get back
-        List<SpoutEmission> newEmissions = Lists.newArrayList();
+        List<SpoutEmission> newEmissions = new ArrayList<>();
 
         // Determine how many emissions are already in the collector
         final int existingEmissionsCount = collector.getEmissions().size();

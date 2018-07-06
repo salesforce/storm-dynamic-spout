@@ -25,9 +25,6 @@
 
 package com.salesforce.storm.spout.sideline;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
 import com.salesforce.kafka.test.junit5.SharedKafkaTestResource;
@@ -62,8 +59,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -275,11 +276,11 @@ public class SidelineSpoutTest {
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(5)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(2)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(0)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(1)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(3)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(5)));
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -389,7 +390,7 @@ public class SidelineSpoutTest {
 
         // Verify we get offsets [7,8,9,10,11,12,13,14] by validating the tuples
         // Gather up the expected records
-        List<ProducedKafkaRecord<byte[], byte[]>> sidelineKafkaRecords = Lists.newArrayList();
+        List<ProducedKafkaRecord<byte[], byte[]>> sidelineKafkaRecords = new ArrayList<>();
         sidelineKafkaRecords.addAll(producedRecords.subList(7, 10));
         sidelineKafkaRecords.addAll(additionalProducedRecords);
 
@@ -420,7 +421,7 @@ public class SidelineSpoutTest {
         validateTuplesFromSourceMessages(lastProducedRecords, lastSpoutEmissions, firehoseIdentifier);
 
         // Ack offsets [15,16,18] => Committed offset should be 16
-        ackTuples(spout, Lists.newArrayList(
+        ackTuples(spout, Arrays.asList(
             lastSpoutEmissions.get(0), lastSpoutEmissions.get(1), lastSpoutEmissions.get(3)
         ));
 
@@ -506,8 +507,12 @@ public class SidelineSpoutTest {
 
         // For now the values in the tuple should be 'key' and 'value', this may change.
         assertEquals("Should have 2 values in the tuple", 2, tupleValues.size());
-        assertEquals("Found expected 'key' value", new String(sourceProducerRecord.getKey(), Charsets.UTF_8), tupleValues.get(0));
-        assertEquals("Found expected 'value' value", new String(sourceProducerRecord.getValue(), Charsets.UTF_8), tupleValues.get(1));
+        assertEquals("Found expected 'key' value", new String(sourceProducerRecord.getKey(), StandardCharsets.UTF_8), tupleValues.get(0));
+        assertEquals(
+            "Found expected 'value' value",
+            new String(sourceProducerRecord.getValue(), StandardCharsets.UTF_8),
+            tupleValues.get(1)
+        );
 
         // Validate Emit Parameters
         assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
@@ -596,7 +601,7 @@ public class SidelineSpoutTest {
         logger.info("[TEST] Attempting to consume {} tuples from spout", numberOfTuples);
 
         // Create a new list for the emissions we expect to get back
-        List<SpoutEmission> newEmissions = Lists.newArrayList();
+        List<SpoutEmission> newEmissions = new ArrayList<>();
 
         // Determine how many emissions are already in the collector
         final int existingEmissionsCount = collector.getEmissions().size();
@@ -701,18 +706,18 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun" + System.currentTimeMillis();
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(Maps.newHashMap()));
+        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(new HashMap<>()));
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(sharedKafkaTestResource.getKafkaConnectString()));
+        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Collections.singletonList(sharedKafkaTestResource.getKafkaConnectString()));
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Collections.singletonList(sharedKafkaTestResource.getZookeeperConnectString()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
@@ -729,7 +734,7 @@ public class SidelineSpoutTest {
 
         // Enable sideline options
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
-        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
+        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Collections.singletonList(sharedKafkaTestResource.getZookeeperConnectString()));
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(

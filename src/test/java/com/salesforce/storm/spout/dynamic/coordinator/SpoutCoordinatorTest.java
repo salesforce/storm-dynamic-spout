@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.coordinator;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
@@ -47,6 +45,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -301,7 +301,7 @@ public class SpoutCoordinatorTest {
         final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
-        List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
+        List<MockDelegateSpout> mockSpouts = new ArrayList<>();
         for (int x = 0; x < maxConcurrentInstances + 2; x++) {
             mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
@@ -374,7 +374,7 @@ public class SpoutCoordinatorTest {
         final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
-        List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
+        List<MockDelegateSpout> mockSpouts = new ArrayList<>();
         for (int x = 0; x < maxConcurrentInstances + 1; x++) {
             mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
@@ -460,7 +460,7 @@ public class SpoutCoordinatorTest {
         final int maxConcurrentInstances = (int) spoutCoordinator.getTopologyConfig().get(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS);
 
         // Lets create some virtual spouts
-        List<MockDelegateSpout> mockSpouts = Lists.newArrayList();
+        List<MockDelegateSpout> mockSpouts = new ArrayList<>();
         for (int x = 0; x < maxConcurrentInstances; x++) {
             mockSpouts.add(new MockDelegateSpout(new DefaultVirtualSpoutIdentifier("SpoutInstance" + x)));
         }
@@ -623,7 +623,7 @@ public class SpoutCoordinatorTest {
         // Define how long we'll wait for internal operations to complete
         final long waitTime = internalOperationsIntervalMs * 4;
 
-        final List<Message> expected = Lists.newArrayList();
+        final List<Message> expected = new ArrayList<>();
 
         final MockDelegateSpout fireHoseSpout = new MockDelegateSpout();
         final MockDelegateSpout virtualSpout1 = new MockDelegateSpout();
@@ -639,10 +639,10 @@ public class SpoutCoordinatorTest {
 
         // Create noop metrics recorder
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new HashMap<>(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         // Configure our internal operations to run frequently for our test case.
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, internalOperationsIntervalMs);
@@ -738,10 +738,10 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new HashMap<>(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -776,10 +776,10 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new HashMap<>(), new MockTopologyContext());
 
         // Define our configuration
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         // Create SpoutCoordinator
         final SpoutCoordinator spoutCoordinator = new SpoutCoordinator(
@@ -813,10 +813,10 @@ public class SpoutCoordinatorTest {
         final MessageBus messageBus = new MessageBus(FifoBuffer.createDefaultInstance());
 
         final MetricsRecorder metricsRecorder = new LogRecorder();
-        metricsRecorder.open(Maps.newHashMap(), new MockTopologyContext());
+        metricsRecorder.open(new HashMap<>(), new MockTopologyContext());
 
         // Define our configuration with reduced run time.
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, 1000);
 
         // Create SpoutCoordinator
@@ -876,7 +876,7 @@ public class SpoutCoordinatorTest {
     }
 
     private Map<String, Object> getDefaultConfig(int maxConcurrentSpoutInstances, long maxShutdownTime, long monitorThreadTime) {
-        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(new HashMap<>());
         topologyConfig.put(SpoutConfig.MAX_CONCURRENT_VIRTUAL_SPOUTS, maxConcurrentSpoutInstances);
         topologyConfig.put(SpoutConfig.MAX_SPOUT_SHUTDOWN_TIME_MS, maxShutdownTime);
         topologyConfig.put(SpoutConfig.MONITOR_THREAD_INTERVAL_MS, monitorThreadTime);

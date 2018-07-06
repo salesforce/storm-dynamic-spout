@@ -26,17 +26,17 @@
 package com.salesforce.storm.spout.dynamic.filter;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Process a filter through a chain of steps, giving the next step the result of the previous one.
  */
 public class FilterChain {
 
-    private final Map<FilterChainStepIdentifier, FilterChainStep> steps = Maps.newConcurrentMap();
+    private final Map<FilterChainStepIdentifier, FilterChainStep> steps = new ConcurrentHashMap<>();
 
     /**
      * Add a step to the filter chain.

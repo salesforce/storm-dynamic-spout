@@ -25,11 +25,11 @@
 
 package com.salesforce.storm.spout.dynamic.consumer;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -257,7 +257,7 @@ public class ConsumerStateTest {
             .withPartition(topicPartition, offset)
             .build();
 
-        Map<ConsumerPartition, Long> newMap = Maps.newHashMap();
+        Map<ConsumerPartition, Long> newMap = new HashMap<>();
         newMap.put(new ConsumerPartition("MyTopic", 3), 2L);
 
         Assertions.assertThrows(UnsupportedOperationException.class, () ->

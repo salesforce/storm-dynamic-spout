@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.dynamic.filter.DefaultFilterChainStepIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -53,6 +52,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -1646,7 +1646,7 @@ public class VirtualSpoutTest {
         final Map<String, Object> defaultConfig = new HashMap<>();
 
         // Kafka Consumer Config items
-        defaultConfig.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        defaultConfig.put(KafkaConsumerConfig.KAFKA_BROKERS, Arrays.asList("localhost:9092"));
         defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, "MyTopic");
         defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());

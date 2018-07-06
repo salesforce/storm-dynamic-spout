@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.mocks;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
@@ -41,14 +40,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Mock consumer implementation, used within tests.
  */
 public class MockConsumer implements Consumer {
-    private static final Map<VirtualSpoutIdentifier,BlockingQueue<Record>> recordHolder = Maps.newConcurrentMap();
-    private static final Map<VirtualSpoutIdentifier, List<CommittedState>> committedStateHolder = Maps.newConcurrentMap();
+    private static final Map<VirtualSpoutIdentifier,BlockingQueue<Record>> recordHolder = new ConcurrentHashMap<>();
+    private static final Map<VirtualSpoutIdentifier, List<CommittedState>> committedStateHolder = new ConcurrentHashMap<>();
 
     public static String topic = "MyTopic";
     public static List<Integer> partitions = Collections.singletonList(1);

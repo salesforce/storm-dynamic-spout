@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
-import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -35,6 +34,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
@@ -86,7 +86,7 @@ public class CuratorHelper {
      */
     public void writeJson(final String path, final Object data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, gson.toJson(data).getBytes(Charsets.UTF_8));
+        writeBytes(path, gson.toJson(data).getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -118,7 +118,7 @@ public class CuratorHelper {
             if (bytes == null) {
                 return null;
             }
-            return gson.fromJson(new String(bytes, Charsets.UTF_8), clazz);
+            return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), clazz);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

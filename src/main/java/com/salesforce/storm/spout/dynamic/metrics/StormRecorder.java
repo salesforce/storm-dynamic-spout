@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.storm.metric.api.MeanReducer;
 import org.apache.storm.metric.api.MultiCountMetric;
@@ -37,6 +36,7 @@ import org.slf4j.helpers.MessageFormatter;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A wrapper for recording metrics in Storm
@@ -75,7 +75,7 @@ public class StormRecorder implements MetricsRecorder {
     /**
      * For storing timer start values.
      */
-    private final Map<String, Long> timerStartValues = Maps.newConcurrentMap();
+    private final Map<String, Long> timerStartValues = new ConcurrentHashMap<>();
 
     /**
      * Allow configuring a prefix for metric keys.

@@ -25,13 +25,13 @@
 
 package com.salesforce.storm.spout.dynamic.retry;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -48,7 +48,7 @@ public class FailedMsgRetryManagerPerformanceTest {
     public void runTest() throws InterruptedException {
         // Create instance with default settings
         RetryManager retryManager = new DefaultRetryManager();
-        retryManager.open(Maps.newHashMap());
+        retryManager.open(new HashMap<>());
 
         // Do warm up
         logger.info("WARMING UP");
@@ -57,7 +57,7 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Now start test
         logger.info("STARTING TEST");
         retryManager = new DefaultRetryManager();
-        retryManager.open(Maps.newHashMap());
+        retryManager.open(new HashMap<>());
         doTest2(retryManager);
     }
 
@@ -91,7 +91,7 @@ public class FailedMsgRetryManagerPerformanceTest {
         // Now ask for next failed
         logger.info("Trying to get tuples back");
         final long startNextFailedTime = System.currentTimeMillis();
-        final List<MessageId> returnedTuples = Lists.newArrayList();
+        final List<MessageId> returnedTuples = new ArrayList<>();
         do {
             final MessageId messageId = retryManager.nextFailedMessageToRetry();
             if (messageId == null) {

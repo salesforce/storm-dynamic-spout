@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.buffer;
 
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
@@ -38,6 +37,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -83,13 +84,9 @@ public class ThrottledMessageBufferTest {
         final VirtualSpoutIdentifier id3 = new DefaultVirtualSpoutIdentifier("Throttled 3");
         final VirtualSpoutIdentifier id4 = new DefaultVirtualSpoutIdentifier("Not Throttled 4");
 
-        final Set<VirtualSpoutIdentifier> throttledIds = Sets.newHashSet(
-            id1, id3
-        );
+        final Set<VirtualSpoutIdentifier> throttledIds = Stream.of(id1, id3).collect(Collectors.toSet());
 
-        final Set<VirtualSpoutIdentifier> nonThrottledIds = Sets.newHashSet(
-            id2, id4
-        );
+        final Set<VirtualSpoutIdentifier> nonThrottledIds = Stream.of(id2, id4).collect(Collectors.toSet());
 
         // Add them
         buffer.addVirtualSpoutId(id1);

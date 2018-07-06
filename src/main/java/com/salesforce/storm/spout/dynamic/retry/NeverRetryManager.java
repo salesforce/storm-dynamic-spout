@@ -34,7 +34,7 @@ import java.util.Map;
  */
 public class NeverRetryManager implements RetryManager {
     @Override
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         // Nothing to do
     }
 

@@ -25,12 +25,11 @@
 
 package com.salesforce.storm.spout.dynamic.mocks.output;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.storm.spout.ISpoutOutputCollector;
 import org.apache.storm.spout.SpoutOutputCollector;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -63,7 +62,7 @@ public class MockSpoutOutputCollector extends SpoutOutputCollector {
     @Override
     public List<Integer> emit(String streamId, List<Object> tuple, Object messageId) {
         emissions.add(new SpoutEmission(messageId, streamId, tuple));
-        return Lists.newArrayList();
+        return new ArrayList<>();
     }
 
     @Override
@@ -87,7 +86,7 @@ public class MockSpoutOutputCollector extends SpoutOutputCollector {
      * @return clone of our Emissions in an unmodifiable list
      */
     public List<SpoutEmission> getEmissions() {
-        return ImmutableList.copyOf(emissions);
+        return Collections.unmodifiableList(emissions);
     }
 
     /**
@@ -95,7 +94,7 @@ public class MockSpoutOutputCollector extends SpoutOutputCollector {
      * @return clone of reported errors in an unmodifiable list
      */
     public List<Throwable> getReportedErrors() {
-        return ImmutableList.copyOf(reportedErrors);
+        return Collections.unmodifiableList(reportedErrors);
     }
 
     /**

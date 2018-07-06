@@ -27,7 +27,6 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
 import com.salesforce.storm.spout.dynamic.consumer.Record;
@@ -41,6 +40,7 @@ import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -122,7 +122,7 @@ public class VirtualSpout implements DelegateSpout {
      * This map tracks all messages considered "in flight" and allows us to correlate
      * messages from messageIds passed to fail() and ack()
      */
-    private final Map<MessageId, Message> trackedMessages = Maps.newHashMap();
+    private final Map<MessageId, Message> trackedMessages = new HashMap<>();
 
     /**
      * Contains messages that have permanently failed.

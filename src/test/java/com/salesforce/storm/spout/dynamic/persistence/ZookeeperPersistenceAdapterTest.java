@@ -25,9 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -41,7 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +75,7 @@ public class ZookeeperPersistenceAdapterTest {
      */
     @Test
     public void testOpenMissingConfigForZkRootNode() {
-        final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
+        final List<String> inputHosts = Arrays.asList("localhost:2181", "localhost2:2183");
 
         // Create our config
         final Map<String, Object> topologyConfig = createDefaultConfig(inputHosts, null, null);
@@ -294,7 +294,7 @@ public class ZookeeperPersistenceAdapterTest {
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        final Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        final Long storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
         assertNotNull("Stored data should be non-null", storedData);
         assertEquals("Got unexpected state", offset, (long) storedData);
@@ -421,7 +421,7 @@ public class ZookeeperPersistenceAdapterTest {
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        Long storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
         assertNotNull("Stored data should be non-null", storedData);
         assertEquals("Got unexpected state", partition0Offset, (long) storedData);
@@ -441,7 +441,7 @@ public class ZookeeperPersistenceAdapterTest {
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
         assertNotNull("Stored data should be non-null", storedData);
         assertEquals("Got unexpected state", partition1Offset, (long) storedData);
@@ -461,7 +461,7 @@ public class ZookeeperPersistenceAdapterTest {
         assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
 
         // Convert to a string
-        storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
         assertNotNull("Stored data should be non-null", storedData);
         assertEquals("Got unexpected state", partition2Offset, (long) storedData);
@@ -537,7 +537,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map<String, Object> createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
@@ -549,7 +549,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map<String, Object> createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
-        return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
+        return createDefaultConfig(Arrays.asList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 
     /**

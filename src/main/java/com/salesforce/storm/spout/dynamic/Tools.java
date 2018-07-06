@@ -27,8 +27,6 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Maps;
-import org.apache.commons.collections4.map.UnmodifiableMap;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -49,14 +47,8 @@ public class Tools {
      * @return sshallow cloned map that is immutable.
      */
     public static <K,V> Map<K,V> immutableCopy(Map<K,V> sourceMap) {
-        // If we're already dealing with an UnmodifiableMap
-        if (sourceMap instanceof UnmodifiableMap) {
-            // just return it.
-            return sourceMap;
-        }
-
         // Create a new map and add all entries from the source map
-        Map<K,V> copy = Maps.newHashMap();
+        Map<K,V> copy = new HashMap<>();
         copy.putAll(sourceMap);
 
         // Wrap it in an unmodifiable map.

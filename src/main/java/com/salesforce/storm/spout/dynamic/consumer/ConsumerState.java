@@ -25,11 +25,11 @@
 
 package com.salesforce.storm.spout.dynamic.consumer;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.Tools;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -159,7 +159,7 @@ public final class ConsumerState implements Map<ConsumerPartition, Long> {
      * Builder for ConsumerState.
      */
     public static final class ConsumerStateBuilder {
-        private final Map<ConsumerPartition, Long> state = Maps.newHashMap();
+        private final Map<ConsumerPartition, Long> state = new HashMap<>();
 
         /**
          * Default constructor.

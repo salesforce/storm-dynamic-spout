@@ -25,10 +25,10 @@
 
 package com.salesforce.storm.spout.dynamic.kafka;
 
-import com.google.common.collect.Lists;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -43,8 +43,8 @@ public class KafkaConsumerConfigTest {
      */
     @Test
     public void testForSaneDefaultKafkaConsumerSettings() {
-        final List<String> brokerHosts = Lists.newArrayList(
-            "broker1:9092", "broker2:9093"
+        final List<String> brokerHosts = Arrays.asList(
+                "broker1:9092", "broker2:9093"
         );
         final String consumerId = "myConsumerId";
         final String topic = "myTopic";

@@ -25,9 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
 import com.salesforce.kafka.test.junit5.SharedKafkaTestResource;
@@ -56,8 +53,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -238,7 +239,7 @@ public class KafkaConsumerSpoutTest {
 
         // Now lets ack 2 different offsets, entries 0 and 3.
         // This means they should never get replayed.
-        List<SpoutEmission> ackedEmissions = Lists.newArrayList();
+        List<SpoutEmission> ackedEmissions = new ArrayList<>();
         ackedEmissions.add(spoutEmissions.get(0));
         ackedEmissions.add(spoutEmissions.get(3));
         ackTuples(spout, ackedEmissions);
@@ -249,7 +250,7 @@ public class KafkaConsumerSpoutTest {
         producedRecords.remove(0);
 
         // And lets fail the others
-        List<SpoutEmission> failEmissions = Lists.newArrayList(spoutEmissions);
+        List<SpoutEmission> failEmissions = new ArrayList<>(spoutEmissions);
         failEmissions.removeAll(ackedEmissions);
         failTuples(spout, failEmissions);
 
@@ -332,11 +333,11 @@ public class KafkaConsumerSpoutTest {
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(5)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(2)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(0)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(1)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(3)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(5)));
 
         // Stop the spout.
         // A graceful shutdown of the spout should have the consumer state flushed to the persistence layer.
@@ -434,10 +435,10 @@ public class KafkaConsumerSpoutTest {
         final List<ConsumerPartition> expectedPartitions;
         if (taskIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0 or 1
-            expectedPartitions = Lists.newArrayList(partition0 , partition1);
+            expectedPartitions = Arrays.asList(partition0, partition1);
         } else if (taskIndex == 1) {
             // If we're consumerIndex 0, we expect partitionIds 2 or 3
-            expectedPartitions = Lists.newArrayList(partition2 , partition3);
+            expectedPartitions = Arrays.asList(partition2 , partition3);
         } else {
             throw new RuntimeException("Invalid input to test");
         }
@@ -459,7 +460,7 @@ public class KafkaConsumerSpoutTest {
         topologyContext.taskIndex = taskIndex;
 
         // Say that we have 2 tasks, ids 0 and 1
-        topologyContext.componentTasks = Collections.unmodifiableList(Lists.newArrayList(0, 1));
+        topologyContext.componentTasks = Collections.unmodifiableList(Arrays.asList(0, 1));
 
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
@@ -547,13 +548,13 @@ public class KafkaConsumerSpoutTest {
         final int expectedNumberOfTuplesToConsume;
         if (taskIndex == 0) {
             // If we're consumerIndex 0, we expect partitionIds 0,1, or 2
-            expectedPartitions = Lists.newArrayList(partition0 , partition1, partition2);
+            expectedPartitions = Arrays.asList(partition0 , partition1, partition2);
 
             // We expect to get out 31 tuples
             expectedNumberOfTuplesToConsume = 31;
         } else if (taskIndex == 1) {
             // If we're consumerIndex 0, we expect partitionIds 3 or 4
-            expectedPartitions = Lists.newArrayList(partition3 , partition4);
+            expectedPartitions = Arrays.asList(partition3 , partition4);
 
             // We expect to get out 21 tuples
             expectedNumberOfTuplesToConsume = 21;
@@ -578,7 +579,7 @@ public class KafkaConsumerSpoutTest {
         topologyContext.taskIndex = taskIndex;
 
         // Say that we have 2 tasks, ids 0 and 1
-        topologyContext.componentTasks = Collections.unmodifiableList(Lists.newArrayList(0,1));
+        topologyContext.componentTasks = Collections.unmodifiableList(Arrays.asList(0,1));
 
         MockSpoutOutputCollector spoutOutputCollector = new MockSpoutOutputCollector();
 
@@ -677,8 +678,12 @@ public class KafkaConsumerSpoutTest {
 
         // For now the values in the tuple should be 'key' and 'value', this may change.
         assertEquals("Should have 2 values in the tuple", 2, tupleValues.size());
-        assertEquals("Found expected 'key' value", new String(sourceProducerRecord.getKey(), Charsets.UTF_8), tupleValues.get(0));
-        assertEquals("Found expected 'value' value", new String(sourceProducerRecord.getValue(), Charsets.UTF_8), tupleValues.get(1));
+        assertEquals("Found expected 'key' value", new String(sourceProducerRecord.getKey(), StandardCharsets.UTF_8), tupleValues.get(0));
+        assertEquals(
+            "Found expected 'value' value",
+            new String(sourceProducerRecord.getValue(),
+            StandardCharsets.UTF_8), tupleValues.get(1)
+        );
 
         // Validate Emit Parameters
         assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
@@ -787,7 +792,7 @@ public class KafkaConsumerSpoutTest {
         logger.info("[TEST] Attempting to consume {} tuples from spout", numberOfTuples);
 
         // Create a new list for the emissions we expect to get back
-        List<SpoutEmission> newEmissions = Lists.newArrayList();
+        List<SpoutEmission> newEmissions = new ArrayList<>();
 
         // Determine how many emissions are already in the collector
         final int existingEmissionsCount = collector.getEmissions().size();
@@ -886,18 +891,18 @@ public class KafkaConsumerSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/kafkaconsumer-spout-test/testRun" + System.currentTimeMillis();
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(sharedKafkaTestResource.getKafkaConnectString()));
+        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Collections.singletonList(sharedKafkaTestResource.getKafkaConnectString()));
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Collections.singletonList(sharedKafkaTestResource.getZookeeperConnectString()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.

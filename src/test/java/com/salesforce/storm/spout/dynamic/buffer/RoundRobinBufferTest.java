@@ -26,14 +26,12 @@
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
+import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 import org.apache.storm.tuple.Values;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
@@ -48,7 +47,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
@@ -78,7 +79,7 @@ public class RoundRobinBufferTest {
         final int maxBufferSize = (numberOfMessagesPer * numberOfVSpoutIds) + 1;
 
         // Create config
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer
@@ -86,7 +87,7 @@ public class RoundRobinBufferTest {
         messageBuffer.open(config);
 
         // Keep track of our order per spoutId
-        final Map<DefaultVirtualSpoutIdentifier, Queue<Message>> submittedOrder = Maps.newHashMap();
+        final Map<DefaultVirtualSpoutIdentifier, Queue<Message>> submittedOrder = new HashMap<>();
 
         // Create random number generator
         Random random = new Random();
@@ -107,7 +108,7 @@ public class RoundRobinBufferTest {
 
             // Keep track of order
             if (!submittedOrder.containsKey(sourceSpoutId)) {
-                submittedOrder.put(sourceSpoutId, Queues.newLinkedBlockingQueue());
+                submittedOrder.put(sourceSpoutId, new LinkedBlockingQueue<>());
             }
             submittedOrder.get(sourceSpoutId).add(message);
 
@@ -182,7 +183,7 @@ public class RoundRobinBufferTest {
         logger.info("Testing with object type {} and value {}", inputValue.getClass().getSimpleName(), inputValue);
 
         // Create config
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer
@@ -221,7 +222,7 @@ public class RoundRobinBufferTest {
      */
     @Test
     public void testBehaviorOfIteratorsCycleWhenAddingNewKey() throws ExecutionException, InterruptedException {
-        final Map<String, String> myMap = Maps.newConcurrentMap();
+        final Map<String, String> myMap = new ConcurrentHashMap<>();
         myMap.put("Key1", "Value1");
         myMap.put("Key2", "Value2");
         myMap.put("Key3", "Value3");
@@ -263,7 +264,7 @@ public class RoundRobinBufferTest {
      */
     @Test
     public void testBehaviorOfIteratorsCycleWhenRemovingKey() throws ExecutionException, InterruptedException {
-        final Map<String, String> myMap = Maps.newConcurrentMap();
+        final Map<String, String> myMap = new ConcurrentHashMap<>();
         myMap.put("Key1", "Value1");
         myMap.put("Key2", "Value2");
         myMap.put("Key3", "Value3");
@@ -312,13 +313,13 @@ public class RoundRobinBufferTest {
      */
     @Test
     public void testBehaviorOfIteratorsCycleConcurrentlyModifyingUnderlyingMap() throws ExecutionException, InterruptedException {
-        final Map<String, String> myMap = Maps.newConcurrentMap();
+        final Map<String, String> myMap = new ConcurrentHashMap<>();
         myMap.put("Key1", "Value1");
         myMap.put("Key2", "Value2");
         myMap.put("Key3", "Value3");
         myMap.put("Key4", "Value4");
 
-        final Set<String> foundKeys = Sets.newConcurrentHashSet();
+        final Set<String> foundKeys = new ConcurrentHashSet<>();
 
         // Create new Thread
         final CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {

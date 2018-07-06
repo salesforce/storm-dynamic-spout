@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.mocks;
 
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
@@ -35,10 +33,12 @@ import com.salesforce.storm.spout.dynamic.consumer.Consumer;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerState;
 import com.salesforce.storm.spout.dynamic.DelegateSpout;
 import com.salesforce.storm.spout.dynamic.filter.FilterChain;
+import org.apache.storm.shade.org.eclipse.jetty.util.ConcurrentHashSet;
 
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * A test mock.
@@ -51,9 +51,9 @@ public class MockDelegateSpout implements DelegateSpout {
     public volatile boolean wasCloseCalled = false;
     public volatile boolean flushStateCalled = false;
     public volatile RuntimeException exceptionToThrow = null;
-    public volatile Set<MessageId> failedTupleIds = Sets.newConcurrentHashSet();
-    public volatile Set<MessageId> ackedTupleIds = Sets.newConcurrentHashSet();
-    public volatile Queue<Message> emitQueue = Queues.newConcurrentLinkedQueue();
+    public volatile Set<MessageId> failedTupleIds = new ConcurrentHashSet<>();
+    public volatile Set<MessageId> ackedTupleIds = new ConcurrentHashSet<>();
+    public volatile Queue<Message> emitQueue = new ConcurrentLinkedQueue<>();
 
     public MockDelegateSpout() {
         this.virtualSpoutId = new DefaultVirtualSpoutIdentifier(this.getClass().getSimpleName() + UUID.randomUUID().toString());

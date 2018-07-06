@@ -25,11 +25,11 @@
 
 package com.salesforce.storm.spout.dynamic.buffer;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -54,7 +54,7 @@ public class FifoBuffer implements MessageBuffer {
      * @return factory method for create an instance of the buffer
      */
     public static FifoBuffer createDefaultInstance() {
-        Map<String, Object> map = Maps.newHashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, DEFAULT_MAX_SIZE);
 
         FifoBuffer buffer = new FifoBuffer();

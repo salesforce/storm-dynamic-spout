@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.dynamic.buffer;
 
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -116,7 +115,7 @@ public class RatioMessageBuffer implements MessageBuffer {
      * @return factory method for create an instance of the buffer.
      */
     public static RatioMessageBuffer createDefaultInstance() {
-        Map<String, Object> map = Maps.newHashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
         map.put(CONFIG_THROTTLE_RATIO, 0.5);
 

@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.coordinator;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageBus;
 import com.salesforce.storm.spout.dynamic.MessageId;
@@ -45,9 +44,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -106,8 +107,8 @@ public class SpoutRunnerTest {
     public void testConstructor() {
         // Define inputs
         final MessageBus messageBus = new MessageBus(new FifoBuffer());
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = Maps.newConcurrentMap();
-        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = Maps.newConcurrentMap();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> ackQueue = new ConcurrentHashMap<>();
+        final Map<VirtualSpoutIdentifier, Queue<MessageId>> failQueue = new ConcurrentHashMap<>();
         final Clock clock = Clock.systemUTC();
 
         // Define some config params
@@ -575,7 +576,7 @@ public class SpoutRunnerTest {
     }
 
     private Map<String, Object> getDefaultConfig(long consumerStateFlushIntervalMs) {
-        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(Maps.newHashMap());
+        final Map<String, Object> topologyConfig = SpoutConfig.setDefaults(new HashMap<>());
         topologyConfig.put(SpoutConfig.CONSUMER_STATE_FLUSH_INTERVAL_MS, consumerStateFlushIntervalMs);
         return topologyConfig;
     }

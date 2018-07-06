@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.buffer;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
@@ -36,6 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -63,7 +63,7 @@ public class FifoBufferTest {
         final int maxBufferSize = (numberOfMessagesPer * numberOfVSpoutIds) + 1;
 
         // Create config
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, maxBufferSize);
 
         // Create buffer & open
@@ -71,7 +71,7 @@ public class FifoBufferTest {
         messageBuffer.open(config);
 
         // Keep track of our order
-        final List<Message> submittedOrder = Lists.newArrayList();
+        final List<Message> submittedOrder = new ArrayList<>();
 
         // Create random number generator
         Random random = new Random();
@@ -133,7 +133,7 @@ public class FifoBufferTest {
     @MethodSource("provideConfigObjects")
     public void testConstructorWithConfigValue(Number inputValue) throws InterruptedException {
         // Create config
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, inputValue);
 
         // Create buffer

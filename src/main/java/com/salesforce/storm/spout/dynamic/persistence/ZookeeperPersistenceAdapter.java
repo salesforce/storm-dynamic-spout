@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -35,6 +34,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -125,7 +125,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         // Persist!
         curatorHelper.writeBytes(
             getZkConsumerStatePathForPartition(consumerId, partitionId),
-            String.valueOf(offset).getBytes(Charsets.UTF_8)
+            String.valueOf(offset).getBytes(StandardCharsets.UTF_8)
         );
     }
 
@@ -148,7 +148,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
         if (bytes == null) {
             return null;
         }
-        return Long.valueOf(new String(bytes, Charsets.UTF_8));
+        return Long.valueOf(new String(bytes, StandardCharsets.UTF_8));
     }
 
     /**
