@@ -117,7 +117,7 @@ public class DocGenerator {
         Files.copy(inputPath, tempOutPath);
 
         try (BufferedReader readmeReader = Files.newBufferedReader(inputPath, StandardCharsets.UTF_8);
-             PrintWriter readmePrintWriter = new PrintWriter(Files.newBufferedWriter(tempOutPath, StandardCharsets.UTF_8))) {
+            PrintWriter readmePrintWriter = new PrintWriter(Files.newBufferedWriter(tempOutPath, StandardCharsets.UTF_8))) {
             String line;
             boolean insideConfigurationSection = false;
             boolean configurationSectionFound = false;
