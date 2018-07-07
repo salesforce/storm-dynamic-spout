@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.buffer;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
@@ -37,6 +35,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Generally test the {@link MessageBuffer} interface's surface area.
@@ -72,7 +72,7 @@ public class MessageBufferTest {
      * Helper method for creating instances and configuring them.
      */
     private static MessageBuffer createInstance(Class clazz, int bufferSize) throws IllegalAccessException, InstantiationException {
-        Map<String, Object> topologyConfig = Maps.newHashMap();
+        Map<String, Object> topologyConfig = new HashMap<>();
         topologyConfig.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, bufferSize);
 
         MessageBuffer messageBuffer = (MessageBuffer) clazz.newInstance();
@@ -98,7 +98,7 @@ public class MessageBufferTest {
         final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 
         // Create some threads
-        final List<CompletableFuture> futures = Lists.newArrayList();
+        final List<CompletableFuture> futures = new ArrayList<>();
         final CountDownLatch countDownLatch = new CountDownLatch(numberOfThreads);
         for (int threadCount = 0; threadCount < numberOfThreads; threadCount++) {
             futures.add(CompletableFuture.runAsync(() -> {
@@ -181,7 +181,7 @@ public class MessageBufferTest {
 
         // Poll a bunch, validating nothing else returned
         for (int x = 0; x < 1024; x++) {
-            assertNull("Should be null", messageBuffer.poll());
+            assertNull(messageBuffer.poll(), "Should be null");
         }
 
         // Shutdown executor service

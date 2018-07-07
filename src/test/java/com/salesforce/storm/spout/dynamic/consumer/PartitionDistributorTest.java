@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Test that {@link PartitionDistributor} properly distributes partitions across a set of instances.
@@ -59,9 +59,9 @@ public class PartitionDistributorTest {
         );
 
         assertArrayEquals(
-            "Partition ids match",
             expectedPartitionIds,
-            actualPartitionIds
+            actualPartitionIds,
+            "Partition ids match"
         );
     }
 

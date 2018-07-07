@@ -25,13 +25,13 @@
 
 package com.salesforce.storm.spout.dynamic.buffer;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.Message;
 import com.salesforce.storm.spout.dynamic.VirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
@@ -78,7 +78,7 @@ public class RoundRobinBuffer implements MessageBuffer {
      * @return factory method for create an instance of the buffer.
      */
     public static RoundRobinBuffer createDefaultInstance() {
-        Map<String, Object> map = Maps.newHashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put(SpoutConfig.TUPLE_BUFFER_MAX_SIZE, 10000);
 
         RoundRobinBuffer buffer = new RoundRobinBuffer();

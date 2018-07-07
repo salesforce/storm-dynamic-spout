@@ -25,11 +25,11 @@
 
 package com.salesforce.storm.spout.sideline.config;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.documentation.ConfigDocumentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -153,7 +153,7 @@ public class SidelineConfig {
      */
     public static Map<String, Object> setDefaults(final Map<String, Object> config) {
         // Clone the map
-        Map<String, Object> clonedConfig = Maps.newHashMap();
+        Map<String, Object> clonedConfig = new HashMap<>();
         clonedConfig.putAll(config);
 
         if (!clonedConfig.containsKey(PERSISTENCE_ZK_SESSION_TIMEOUT)) {

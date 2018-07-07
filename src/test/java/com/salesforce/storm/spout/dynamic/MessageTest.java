@@ -28,9 +28,9 @@ package com.salesforce.storm.spout.dynamic;
 import org.apache.storm.tuple.Values;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple test around Message.
@@ -59,18 +59,18 @@ public class MessageTest {
         final Message message = new Message(expectedMessageId, expectedValues);
 
         // Validate TupleMessageId
-        assertEquals("Got expected TupleMessageId", expectedMessageId, message.getMessageId());
-        assertEquals("Got expected namespace", expectedTopic, message.getNamespace());
-        assertEquals("Got expected partition", expectedPartition, message.getPartition());
-        assertEquals("Got expected offset", expectedOffset, message.getOffset());
-        assertFalse("Should not be permanently failed", message.isPermanentlyFailed());
+        assertEquals(expectedMessageId, message.getMessageId(), "Got expected TupleMessageId");
+        assertEquals(expectedTopic, message.getNamespace(), "Got expected namespace");
+        assertEquals(expectedPartition, message.getPartition(), "Got expected partition");
+        assertEquals(expectedOffset, message.getOffset(), "Got expected offset");
+        assertFalse(message.isPermanentlyFailed(), "Should not be permanently failed");
 
         // Validate Values
-        assertEquals("Got expected Values", expectedValues, message.getValues());
-        assertEquals("Got expected Values count", 3, message.getValues().size());
-        assertEquals("Got expected Value1", expectedValue1, message.getValues().get(0));
-        assertEquals("Got expected Value2", expectedValue2, message.getValues().get(1));
-        assertEquals("Got expected Value3", expectedValue3, message.getValues().get(2));
+        assertEquals(expectedValues, message.getValues(), "Got expected Values");
+        assertEquals(3, message.getValues().size(), "Got expected Values count");
+        assertEquals(expectedValue1, message.getValues().get(0), "Got expected Value1");
+        assertEquals(expectedValue2, message.getValues().get(1), "Got expected Value2");
+        assertEquals(expectedValue3, message.getValues().get(2), "Got expected Value3");
     }
 
     /**
@@ -98,18 +98,18 @@ public class MessageTest {
         final Message failedMessage = Message.createPermanentlyFailedMessage(message);
 
         // Validate TupleMessageId
-        assertEquals("Got expected TupleMessageId", expectedMessageId, failedMessage.getMessageId());
-        assertEquals("Got expected namespace", expectedTopic, failedMessage.getNamespace());
-        assertEquals("Got expected partition", expectedPartition, failedMessage.getPartition());
-        assertEquals("Got expected offset", expectedOffset, failedMessage.getOffset());
-        assertTrue("Should be permanently failed", failedMessage.isPermanentlyFailed());
+        assertEquals(expectedMessageId, failedMessage.getMessageId(), "Got expected TupleMessageId");
+        assertEquals(expectedTopic, failedMessage.getNamespace(), "Got expected namespace");
+        assertEquals(expectedPartition, failedMessage.getPartition(), "Got expected partition");
+        assertEquals(expectedOffset, failedMessage.getOffset(), "Got expected offset");
+        assertTrue(failedMessage.isPermanentlyFailed(), "Should be permanently failed");
 
         // Validate Values
-        assertEquals("Got expected Values", expectedValues, failedMessage.getValues());
-        assertEquals("Got expected Values count", 3, failedMessage.getValues().size());
-        assertEquals("Got expected Value1", expectedValue1, failedMessage.getValues().get(0));
-        assertEquals("Got expected Value2", expectedValue2, failedMessage.getValues().get(1));
-        assertEquals("Got expected Value3", expectedValue3, failedMessage.getValues().get(2));
+        assertEquals(expectedValues, failedMessage.getValues(), "Got expected Values");
+        assertEquals(3, failedMessage.getValues().size(), "Got expected Values count");
+        assertEquals(expectedValue1, failedMessage.getValues().get(0), "Got expected Value1");
+        assertEquals(expectedValue2, failedMessage.getValues().get(1), "Got expected Value2");
+        assertEquals(expectedValue3, failedMessage.getValues().get(2), "Got expected Value3");
     }
 
     /**
@@ -134,7 +134,7 @@ public class MessageTest {
         // Create Message
         final Message message = new Message(expectedMessageId, expectedValues);
 
-        assertTrue("Should be equal", message.equals(message));
+        assertTrue(message.equals(message), "Should be equal");
     }
 
     /**
@@ -161,8 +161,8 @@ public class MessageTest {
         final Message message2 = new Message(expectedMessageId, expectedValues);
 
         // Validate
-        assertTrue("Should be equal", message1.equals(message2));
-        assertTrue("Should be equal", message2.equals(message1));
+        assertTrue(message1.equals(message2), "Should be equal");
+        assertTrue(message2.equals(message1), "Should be equal");
     }
 
     /**
@@ -187,8 +187,8 @@ public class MessageTest {
         final Message message2 = new Message(expectedMessageId, new Values(expectedValue1, expectedValue2, expectedValue3));
 
         // Validate
-        assertTrue("Should be equal", message1.equals(message2));
-        assertTrue("Should be equal", message2.equals(message1));
+        assertTrue(message1.equals(message2), "Should be equal");
+        assertTrue(message2.equals(message1), "Should be equal");
     }
 
     /**
@@ -221,8 +221,8 @@ public class MessageTest {
         );
 
         // Validate
-        assertTrue("Should be equal", message1.equals(message2));
-        assertTrue("Should be equal", message2.equals(message1));
+        assertTrue(message1.equals(message2), "Should be equal");
+        assertTrue(message2.equals(message1), "Should be equal");
     }
 
     /**
@@ -254,8 +254,8 @@ public class MessageTest {
         );
 
         // Validate
-        assertTrue("Should be equal", message1.equals(message2));
-        assertTrue("Should be equal", message2.equals(message1));
+        assertTrue(message1.equals(message2), "Should be equal");
+        assertTrue(message2.equals(message1), "Should be equal");
     }
 
     /**
@@ -287,8 +287,8 @@ public class MessageTest {
         ));
 
         // Validate
-        assertFalse("Should not be equal", message1.equals(message2));
-        assertFalse("Should not be equal", message2.equals(message1));
+        assertFalse(message1.equals(message2), "Should not be equal");
+        assertFalse(message2.equals(message1), "Should not be equal");
     }
 
     /**
@@ -320,8 +320,8 @@ public class MessageTest {
         ));
 
         // Validate
-        assertTrue("Should not be equal", message1.equals(message2));
-        assertTrue("Should not be equal", message2.equals(message1));
+        assertTrue(message1.equals(message2), "Should not be equal");
+        assertTrue(message2.equals(message1), "Should not be equal");
     }
 
     /**
@@ -355,8 +355,8 @@ public class MessageTest {
         final Message message2 = new Message(messageId2, values2);
 
         // Validate
-        assertFalse("Should NOT be equal", message1.equals(message2));
-        assertFalse("Should NOT be equal", message2.equals(message1));
+        assertFalse(message1.equals(message2), "Should NOT be equal");
+        assertFalse(message2.equals(message1), "Should NOT be equal");
     }
 
     /**
@@ -390,8 +390,8 @@ public class MessageTest {
         final Message message2 = new Message(messageId2, values2);
 
         // Validate
-        assertFalse("Should NOT be equal", message1.equals(message2));
-        assertFalse("Should NOT be equal", message2.equals(message1));
+        assertFalse(message1.equals(message2), "Should NOT be equal");
+        assertFalse(message2.equals(message1), "Should NOT be equal");
     }
 
     /**
@@ -423,6 +423,6 @@ public class MessageTest {
         final Message message2 = null;
 
         // Validate
-        assertFalse("Should NOT be equal", message1.equals(message2));
+        assertFalse(message1.equals(message2), "Should NOT be equal");
     }
 }

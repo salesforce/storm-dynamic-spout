@@ -25,15 +25,15 @@
 
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +51,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     @Override
     public void open(Map<String, Object> spoutConfig) {
         if (storedSidelineRequests == null) {
-            storedSidelineRequests = Maps.newHashMap();
+            storedSidelineRequests = new HashMap<>();
         }
     }
 
@@ -88,7 +88,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
     @Override
     public List<SidelineRequestIdentifier> listSidelineRequests() {
-        List<SidelineRequestIdentifier> ids = Lists.newArrayList();
+        List<SidelineRequestIdentifier> ids = new ArrayList<>();
 
         for (SidelinePayload sidelinePayload : storedSidelineRequests.values()) {
             ids.add(sidelinePayload.id);
@@ -99,7 +99,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
 
     @Override
     public Set<ConsumerPartition> listSidelineRequestPartitions(final SidelineRequestIdentifier id) {
-        final Set<ConsumerPartition> partitions = Sets.newHashSet();
+        final Set<ConsumerPartition> partitions = new HashSet<>();
 
         for (SidelineRequestStateKey key : storedSidelineRequests.keySet()) {
             if (key.id.equals(id)) {

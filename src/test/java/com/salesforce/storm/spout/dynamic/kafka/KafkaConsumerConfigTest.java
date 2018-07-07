@@ -25,13 +25,13 @@
 
 package com.salesforce.storm.spout.dynamic.kafka;
 
-import com.google.common.collect.Lists;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Validates that we have some sane default settings.
@@ -43,8 +43,8 @@ public class KafkaConsumerConfigTest {
      */
     @Test
     public void testForSaneDefaultKafkaConsumerSettings() {
-        final List<String> brokerHosts = Lists.newArrayList(
-            "broker1:9092", "broker2:9093"
+        final List<String> brokerHosts = Arrays.asList(
+                "broker1:9092", "broker2:9093"
         );
         final String consumerId = "myConsumerId";
         final String topic = "myTopic";
@@ -53,21 +53,22 @@ public class KafkaConsumerConfigTest {
         final KafkaConsumerConfig config = new KafkaConsumerConfig(brokerHosts, consumerId, topic);
 
         // now do validation on constructor arguments
-        assertEquals("Topic set", topic, config.getTopic());
-        assertEquals("ConsumerId set", consumerId, config.getConsumerId());
-        assertEquals("BrokerHosts set", "broker1:9092,broker2:9093", config.getKafkaConsumerProperty("bootstrap.servers"));
+        assertEquals(topic, config.getTopic(), "Topic set");
+        assertEquals(consumerId, config.getConsumerId(), "ConsumerId set");
+        assertEquals("broker1:9092,broker2:9093", config.getKafkaConsumerProperty("bootstrap.servers"), "BrokerHosts set");
 
         // Check defaults are sane.
-        assertEquals("group.id set", consumerId, config.getKafkaConsumerProperty("group.id"));
-        assertEquals("auto.offset.reset set to none", "none", config.getKafkaConsumerProperty("auto.offset.reset"));
+        assertEquals(consumerId, config.getKafkaConsumerProperty("group.id"), "group.id set");
+        assertEquals("none", config.getKafkaConsumerProperty("auto.offset.reset"), "auto.offset.reset set to none");
         assertEquals(
-            "Key Deserializer set to bytes deserializer",
             ByteArrayDeserializer.class.getName(),
-            config.getKafkaConsumerProperty("key.deserializer"));
+            config.getKafkaConsumerProperty("key.deserializer"),
+            "Key Deserializer set to bytes deserializer"
+        );
         assertEquals(
-            "Value Deserializer set to bytes deserializer",
             ByteArrayDeserializer.class.getName(),
-            config.getKafkaConsumerProperty("value.deserializer")
+            config.getKafkaConsumerProperty("value.deserializer"),
+            "Value Deserializer set to bytes deserializer"
         );
     }
 }

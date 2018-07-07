@@ -35,10 +35,10 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -76,8 +76,8 @@ public class StormRecorderTest {
         verify(mockTopologyContext, times(1)).registerMetric(eq("TIMERS"), any(MultiReducedMetric.class), eq(defaultTimeWindow));
         verify(mockTopologyContext, times(1)).registerMetric(eq("COUNTERS"), any(MultiCountMetric.class), eq(defaultTimeWindow));
 
-        assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
-        assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
+        assertEquals("", recorder.getMetricPrefix(), "Should have empty prefix");
+        assertTrue(recorder.getMetricPrefix().isEmpty(), "Should have empty prefix");
     }
 
     /**
@@ -189,7 +189,7 @@ public class StormRecorderTest {
 
         // Validate
         verify(mockTopologyContext, times(1)).getThisTaskIndex();
-        assertEquals("Should have taskId prefix", "task-" + taskId, recorder.getMetricPrefix());
+        assertEquals("task-" + taskId, recorder.getMetricPrefix(), "Should have taskId prefix");
     }
 
     /**
@@ -214,8 +214,8 @@ public class StormRecorderTest {
 
         // Validate
         verify(mockTopologyContext, never()).getThisTaskIndex();
-        assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
-        assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
+        assertEquals("", recorder.getMetricPrefix(), "Should have empty prefix");
+        assertTrue(recorder.getMetricPrefix().isEmpty(), "Should have empty prefix");
     }
 
     /**
@@ -240,8 +240,8 @@ public class StormRecorderTest {
 
         // Validate
         verify(mockTopologyContext, never()).getThisTaskIndex();
-        assertEquals("Should have empty prefix", "", recorder.getMetricPrefix());
-        assertTrue("Should have empty prefix", recorder.getMetricPrefix().isEmpty());
+        assertEquals("", recorder.getMetricPrefix(), "Should have empty prefix");
+        assertTrue(recorder.getMetricPrefix().isEmpty(), "Should have empty prefix");
     }
 
     /**
@@ -277,13 +277,13 @@ public class StormRecorderTest {
         // Validate
         @SuppressWarnings("unchecked")
         final Map<String, Long> timerValues = (Map<String, Long>) timerMetrics.getValueAndReset();
-        assertEquals("Should have 1 value", 1, timerValues.size());
-        assertTrue("Should contain our key", timerValues.containsKey(expectedMetricName));
+        assertEquals(1, timerValues.size(), "Should have 1 value");
+        assertTrue(timerValues.containsKey(expectedMetricName), "Should contain our key");
 
         // Validate total timer got updated
         @SuppressWarnings("unchecked")
         final Map<String, Long> counterValues = (Map<String, Long>) counterMetrics.getValueAndReset();
-        assertEquals("Should have 1 value", 1, counterValues.size());
-        assertTrue("Should contain our key", counterValues.containsKey(expectedTotalTimeMetricName));
+        assertEquals(1, counterValues.size(), "Should have 1 value");
+        assertTrue(counterValues.containsKey(expectedTotalTimeMetricName), "Should contain our key");
     }
 }

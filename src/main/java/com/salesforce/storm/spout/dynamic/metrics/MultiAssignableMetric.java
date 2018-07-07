@@ -25,17 +25,18 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
-import com.google.common.collect.Maps;
 import org.apache.storm.metric.api.AssignableMetric;
 import org.apache.storm.metric.api.IMetric;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Simple implementation of a MultiAssignableMetric.
  */
 public class MultiAssignableMetric implements IMetric {
-    private final Map<String, AssignableMetric> values = Maps.newConcurrentMap();
+    private final Map<String, AssignableMetric> values = new ConcurrentHashMap<>();
 
     public MultiAssignableMetric() {
     }
@@ -49,7 +50,7 @@ public class MultiAssignableMetric implements IMetric {
      * @return values stored and resets internal values
      */
     public Object getValueAndReset() {
-        Map<String, Object> ret = Maps.newHashMap();
+        Map<String, Object> ret = new HashMap<>();
 
         for (Map.Entry<String, AssignableMetric> entry : this.values.entrySet()) {
             ret.put(entry.getKey(), entry.getValue().getValueAndReset());

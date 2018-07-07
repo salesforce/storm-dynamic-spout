@@ -25,9 +25,6 @@
 
 package com.salesforce.storm.spout.sideline;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.KafkaTestUtils;
 import com.salesforce.kafka.test.ProducedKafkaRecord;
 import com.salesforce.kafka.test.junit5.SharedKafkaTestResource;
@@ -62,8 +59,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -71,10 +72,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Provides End-To-End integration test coverage for SidelineSpout specific functionality.
@@ -160,7 +161,7 @@ public class SidelineSpoutTest {
         ackTuples(spout, spoutEmissions);
 
         // Sanity test, we should have a single VirtualSpout instance at this point, the fire hose instance
-        assertTrue("Should have a single VirtualSpout instance", spout.hasVirtualSpout(firehoseIdentifier));
+        assertTrue(spout.hasVirtualSpout(firehoseIdentifier), "Should have a single VirtualSpout instance");
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -187,7 +188,7 @@ public class SidelineSpoutTest {
 
         // Wait for the sideline vspout to start,
         waitForVirtualSpouts(spout, 2);
-        assertTrue("Has sideline spout instance", spout.hasVirtualSpout(sidelineIdentifier));
+        assertTrue(spout.hasVirtualSpout(sidelineIdentifier), "Has sideline spout instance");
 
         // Then ask the spout for tuples, we should get back the tuples that were produced while
         // sidelining was active.  These tuples should come from the VirtualSpout started by the Stop request.
@@ -275,11 +276,11 @@ public class SidelineSpoutTest {
 
         // We will ack offsets in the following order: 2,0,1,3,5
         // This should give us a completed offset of [0,1,2,3] <-- last committed offset should be 3
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(2)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(0)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(1)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(3)));
-        ackTuples(spout, Lists.newArrayList(spoutEmissions.get(5)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(2)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(0)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(1)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(3)));
+        ackTuples(spout, Collections.singletonList(spoutEmissions.get(5)));
 
         // Create a static message filter, this allows us to easily start filtering messages.
         // It should filter ALL messages
@@ -389,7 +390,7 @@ public class SidelineSpoutTest {
 
         // Verify we get offsets [7,8,9,10,11,12,13,14] by validating the tuples
         // Gather up the expected records
-        List<ProducedKafkaRecord<byte[], byte[]>> sidelineKafkaRecords = Lists.newArrayList();
+        List<ProducedKafkaRecord<byte[], byte[]>> sidelineKafkaRecords = new ArrayList<>();
         sidelineKafkaRecords.addAll(producedRecords.subList(7, 10));
         sidelineKafkaRecords.addAll(additionalProducedRecords);
 
@@ -420,7 +421,7 @@ public class SidelineSpoutTest {
         validateTuplesFromSourceMessages(lastProducedRecords, lastSpoutEmissions, firehoseIdentifier);
 
         // Ack offsets [15,16,18] => Committed offset should be 16
-        ackTuples(spout, Lists.newArrayList(
+        ackTuples(spout, Arrays.asList(
             lastSpoutEmissions.get(0), lastSpoutEmissions.get(1), lastSpoutEmissions.get(3)
         ));
 
@@ -485,32 +486,36 @@ public class SidelineSpoutTest {
         final String expectedOutputStreamId
     ) {
         // Now find its corresponding tuple
-        assertNotNull("Not null sanity check", spoutEmission);
-        assertNotNull("Not null sanity check", sourceProducerRecord);
+        assertNotNull(spoutEmission, "Not null sanity check");
+        assertNotNull(sourceProducerRecord, "Not null sanity check");
 
         // Validate Message Id
-        assertNotNull("Should have non-null messageId", spoutEmission.getMessageId());
-        assertTrue("Should be instance of MessageId", spoutEmission.getMessageId() instanceof MessageId);
+        assertNotNull(spoutEmission.getMessageId(), "Should have non-null messageId");
+        assertTrue(spoutEmission.getMessageId() instanceof MessageId, "Should be instance of MessageId");
 
         // Grab the messageId and validate it
         final MessageId messageId = (MessageId) spoutEmission.getMessageId();
-        assertEquals("Expected Topic Name in MessageId", sourceProducerRecord.getTopic(), messageId.getNamespace());
-        assertEquals("Expected PartitionId found", sourceProducerRecord.getPartition(), messageId.getPartition());
-        assertEquals("Expected MessageOffset found", sourceProducerRecord.getOffset(), messageId.getOffset());
-        assertEquals("Expected Source Consumer Id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
+        assertEquals(sourceProducerRecord.getTopic(), messageId.getNamespace(), "Expected Topic Name in MessageId");
+        assertEquals(sourceProducerRecord.getPartition(), messageId.getPartition(), "Expected PartitionId found");
+        assertEquals(sourceProducerRecord.getOffset(), messageId.getOffset(), "Expected MessageOffset found");
+        assertEquals(expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId(), "Expected Source Consumer Id");
 
         // Validate Tuple Contents
         List<Object> tupleValues = spoutEmission.getTuple();
-        assertNotNull("Tuple Values should not be null", tupleValues);
-        assertFalse("Tuple Values should not be empty", tupleValues.isEmpty());
+        assertNotNull(tupleValues, "Tuple Values should not be null");
+        assertFalse(tupleValues.isEmpty(), "Tuple Values should not be empty");
 
         // For now the values in the tuple should be 'key' and 'value', this may change.
-        assertEquals("Should have 2 values in the tuple", 2, tupleValues.size());
-        assertEquals("Found expected 'key' value", new String(sourceProducerRecord.getKey(), Charsets.UTF_8), tupleValues.get(0));
-        assertEquals("Found expected 'value' value", new String(sourceProducerRecord.getValue(), Charsets.UTF_8), tupleValues.get(1));
+        assertEquals(2, tupleValues.size(), "Should have 2 values in the tuple");
+        assertEquals(new String(sourceProducerRecord.getKey(), StandardCharsets.UTF_8), tupleValues.get(0), "Found expected 'key' value");
+        assertEquals(
+            new String(sourceProducerRecord.getValue(), StandardCharsets.UTF_8),
+            tupleValues.get(1),
+            "Found expected 'value' value"
+        );
 
         // Validate Emit Parameters
-        assertEquals("Got expected streamId", expectedOutputStreamId, spoutEmission.getStreamId());
+        assertEquals(expectedOutputStreamId, spoutEmission.getStreamId(), "Got expected streamId");
     }
 
     /**
@@ -582,7 +587,7 @@ public class SidelineSpoutTest {
                 // Lets log it
                 logger.error("Got an unexpected emission: {}", collector.getEmissions().get(collector.getEmissions().size() - 1));
             }
-            assertEquals("No new tuple emits on iteration " + (x + 1), originalSize, collector.getEmissions().size());
+            assertEquals(originalSize, collector.getEmissions().size(), "No new tuple emits on iteration " + (x + 1));
         }
     }
 
@@ -596,7 +601,7 @@ public class SidelineSpoutTest {
         logger.info("[TEST] Attempting to consume {} tuples from spout", numberOfTuples);
 
         // Create a new list for the emissions we expect to get back
-        List<SpoutEmission> newEmissions = Lists.newArrayList();
+        List<SpoutEmission> newEmissions = new ArrayList<>();
 
         // Determine how many emissions are already in the collector
         final int existingEmissionsCount = collector.getEmissions().size();
@@ -616,7 +621,7 @@ public class SidelineSpoutTest {
                 }, equalTo(existingEmissionsCount + x + 1));
 
             // Should have some emissions
-            assertEquals("SpoutOutputCollector should have emissions", (existingEmissionsCount + x + 1), collector.getEmissions().size());
+            assertEquals((existingEmissionsCount + x + 1), collector.getEmissions().size(), "SpoutOutputCollector should have emissions");
 
             // Add our new emission to our return list
             newEmissions.add(collector.getEmissions().get(existingEmissionsCount + x));
@@ -641,10 +646,10 @@ public class SidelineSpoutTest {
     ) {
         // Sanity check, make sure we have the same number of each.
         assertEquals(
-            "Should have same number of tuples as original messages, Produced Count: "
-            + producedRecords.size() + " Emissions Count: " + spoutEmissions.size(),
             producedRecords.size(),
-            spoutEmissions.size()
+            spoutEmissions.size(),
+            "Should have same number of tuples as original messages, Produced Count: "
+                + producedRecords.size() + " Emissions Count: " + spoutEmissions.size()
         );
 
         // Iterator over what got emitted
@@ -676,9 +681,9 @@ public class SidelineSpoutTest {
                 .atMost(5, TimeUnit.SECONDS)
                 .until(spoutCoordinator::getTotalSpouts, equalTo(howManyVirtualSpoutsWeWantLeft));
             assertEquals(
-                "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running",
                 howManyVirtualSpoutsWeWantLeft,
-                spoutCoordinator.getTotalSpouts()
+                spoutCoordinator.getTotalSpouts(),
+                "We should have " + howManyVirtualSpoutsWeWantLeft + " virtual spouts running"
             );
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -701,18 +706,18 @@ public class SidelineSpoutTest {
         // Generate a unique zkRootNode for each test
         final String uniqueZkRootNode = "/sideline-spout-test/testRun" + System.currentTimeMillis();
 
-        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(Maps.newHashMap()));
+        final Map<String, Object> config = SpoutConfig.setDefaults(SidelineConfig.setDefaults(new HashMap<>()));
 
         // Kafka Consumer config items
         config.put(SpoutConfig.CONSUMER_CLASS, Consumer.class.getName());
         config.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());
         config.put(KafkaConsumerConfig.KAFKA_TOPIC, topicName);
         config.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, consumerIdPrefix);
-        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList(sharedKafkaTestResource.getKafkaConnectString()));
+        config.put(KafkaConsumerConfig.KAFKA_BROKERS, Collections.singletonList(sharedKafkaTestResource.getKafkaConnectString()));
 
         // DynamicSpout config items
         config.put(SpoutConfig.RETRY_MANAGER_CLASS, NeverRetryManager.class.getName());
-        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
+        config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, Collections.singletonList(sharedKafkaTestResource.getZookeeperConnectString()));
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
 
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
@@ -729,7 +734,7 @@ public class SidelineSpoutTest {
 
         // Enable sideline options
         config.put(SidelineConfig.TRIGGER_CLASS, StaticTrigger.class.getName());
-        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Lists.newArrayList(sharedKafkaTestResource.getZookeeperConnectString()));
+        config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, Collections.singletonList(sharedKafkaTestResource.getZookeeperConnectString()));
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, uniqueZkRootNode);
         // Use In Memory Persistence manager, if you need state persistence, over ride this in your test.
         config.put(

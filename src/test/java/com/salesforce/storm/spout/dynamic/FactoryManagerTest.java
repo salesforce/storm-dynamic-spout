@@ -44,10 +44,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that {@link FactoryManager} creates instances correctly.
@@ -98,10 +98,10 @@ public class FactoryManagerTest {
 
             // Validate it
             assertNotNull(retryManager);
-            assertEquals("Is correct instance type", retryManager.getClass(), clazz);
+            assertEquals(retryManager.getClass(), clazz, "Is correct instance type");
 
             // Verify its a different instance than our previous ones
-            assertFalse("Not a previous instance", instances.contains(retryManager));
+            assertFalse(instances.contains(retryManager), "Not a previous instance");
 
             // Add to our list
             instances.add(retryManager);
@@ -140,10 +140,10 @@ public class FactoryManagerTest {
 
             // Validate it
             assertNotNull(instance);
-            assertTrue("Is correct instance", instance instanceof ZookeeperPersistenceAdapter);
+            assertTrue(instance instanceof ZookeeperPersistenceAdapter, "Is correct instance");
 
             // Verify its a different instance than our previous ones
-            assertFalse("Not a previous instance", instances.contains(instance));
+            assertFalse(instances.contains(instance), "Not a previous instance");
 
             // Add to our list
             instances.add(instance);
@@ -193,10 +193,10 @@ public class FactoryManagerTest {
 
             // Validate it
             assertNotNull(messageBuffer);
-            assertEquals("Is correct instance type", messageBuffer.getClass(), clazz);
+            assertEquals(messageBuffer.getClass(), clazz, "Is correct instance type");
 
             // Verify its a different instance than our previous ones
-            assertFalse("Not a previous instance", instances.contains(messageBuffer));
+            assertFalse(instances.contains(messageBuffer), "Not a previous instance");
 
             // Add to our list
             instances.add(messageBuffer);

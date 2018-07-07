@@ -25,7 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -48,7 +48,7 @@ public class InMemoryPersistenceAdapter implements PersistenceAdapter {
     public void open(Map<String, Object> spoutConfig) {
         // Allow non-destructive re-opening
         if (storedConsumerState == null) {
-            storedConsumerState = Maps.newHashMap();
+            storedConsumerState = new HashMap<>();
         }
     }
 

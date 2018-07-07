@@ -25,10 +25,6 @@
 
 package com.salesforce.storm.spout.sideline.persistence;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.google.gson.GsonBuilder;
@@ -54,19 +50,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests our Zookeeper Persistence layer.
@@ -88,7 +88,7 @@ public class ZookeeperPersistenceAdapterTest {
      */
     @Test
     public void testOpenMissingConfigForZkRootNode() {
-        final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
+        final List<String> inputHosts = Arrays.asList("localhost:2181", "localhost2:2183");
 
         // Create our config
         final Map<String, Object> topologyConfig = createDefaultConfig(inputHosts, null, null);
@@ -127,12 +127,12 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.open(topologyConfig);
 
         // Validate
-        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceAdapter.getZkRoot());
+        assertEquals(expectedZkRoot, persistenceAdapter.getZkRoot(), "Unexpected zk root string");
 
         assertEquals(
-            "Unexpected zkRequestStatePath returned",
             expectedZkRequestStatePath,
-            persistenceAdapter.getZkRequestStatePathForConsumerPartition(expectedConsumerId, new ConsumerPartition(namespace, partitionId))
+            persistenceAdapter.getZkRequestStatePathForConsumerPartition(expectedConsumerId, new ConsumerPartition(namespace, partitionId)),
+            "Unexpected zkRequestStatePath returned"
         );
 
         // Close everyone out
@@ -217,17 +217,17 @@ public class ZookeeperPersistenceAdapterTest {
 
         logger.info("Result {} {} {}", result1, result2, result3);
 
-        assertNotNull("Got an object back", result1);
-        assertEquals("Starting offset matches", Long.valueOf(10L), result1.startingOffset);
-        assertEquals("Ending offset matches", Long.valueOf(11L), result1.endingOffset);
+        assertNotNull(result1, "Got an object back");
+        assertEquals(Long.valueOf(10L), result1.startingOffset, "Starting offset matches");
+        assertEquals(Long.valueOf(11L), result1.endingOffset, "Ending offset matches");
 
-        assertNotNull("Got an object back", result2);
-        assertEquals("Starting offset matches", Long.valueOf(100L), result2.startingOffset);
-        assertEquals("Ending offset matches", Long.valueOf(101L), result2.endingOffset);
+        assertNotNull(result2, "Got an object back");
+        assertEquals(Long.valueOf(100L), result2.startingOffset, "Starting offset matches");
+        assertEquals(Long.valueOf(101L), result2.endingOffset, "Ending offset matches");
 
-        assertNotNull("Got an object back", result3);
-        assertEquals("Starting offset matches", Long.valueOf(1000L), result3.startingOffset);
-        assertEquals("Ending offset matches", Long.valueOf(1001L), result3.endingOffset);
+        assertNotNull(result3, "Got an object back");
+        assertEquals(Long.valueOf(1000L), result3.startingOffset, "Starting offset matches");
+        assertEquals(Long.valueOf(1001L), result3.endingOffset, "Ending offset matches");
 
         // Close outs
         persistenceAdapter.close();
@@ -245,17 +245,17 @@ public class ZookeeperPersistenceAdapterTest {
 
         logger.info("Result {} {} {}", result1, result2, result3);
 
-        assertNotNull("Got an object back", result1);
-        assertEquals("Starting offset matches", Long.valueOf(10L), result1.startingOffset);
-        assertEquals("Ending offset matches", Long.valueOf(11L), result1.endingOffset);
+        assertNotNull(result1, "Got an object back");
+        assertEquals(Long.valueOf(10L), result1.startingOffset, "Starting offset matches");
+        assertEquals(Long.valueOf(11L), result1.endingOffset, "Ending offset matches");
 
-        assertNotNull("Got an object back", result2);
-        assertEquals("Starting offset matches", Long.valueOf(100L), result2.startingOffset);
-        assertEquals("Ending offset matches", Long.valueOf(101L), result2.endingOffset);
+        assertNotNull(result2, "Got an object back");
+        assertEquals(Long.valueOf(100L), result2.startingOffset, "Starting offset matches");
+        assertEquals(Long.valueOf(101L), result2.endingOffset, "Ending offset matches");
 
-        assertNotNull("Got an object back", result3);
-        assertEquals("Starting offset matches", Long.valueOf(1000L), result3.startingOffset);
-        assertEquals("Ending offset matches", Long.valueOf(1001L), result3.endingOffset);
+        assertNotNull(result3, "Got an object back");
+        assertEquals(Long.valueOf(1000L), result3.startingOffset, "Starting offset matches");
+        assertEquals(Long.valueOf(1001L), result3.endingOffset, "Ending offset matches");
 
         // Clear out hose requests
         persistenceAdapter.clearSidelineRequest(sidelineRequestIdentifier, new ConsumerPartition(topicName, 0));
@@ -269,9 +269,9 @@ public class ZookeeperPersistenceAdapterTest {
 
         logger.info("Result {} {} {}", result1, result2, result3);
 
-        assertNull("Sideline request was cleared", result1);
-        assertNull("Sideline request was cleared", result2);
-        assertNull("Sideline request was cleared", result3);
+        assertNull(result1, "Sideline request was cleared");
+        assertNull(result2, "Sideline request was cleared");
+        assertNull(result3, "Sideline request was cleared");
 
         // Close outs
         persistenceAdapter.close();
@@ -343,7 +343,7 @@ public class ZookeeperPersistenceAdapterTest {
             + "zYWdlRmlsdGVy3eauq5nDVrUCAAFMAAJpZHQAEkxqYXZhL2xhbmcvU3RyaW5nO3hwdAAEdGVzdA=="
         );
 
-        final Map<String,Object> expectedJsonMap = Maps.newHashMap();
+        final Map<String,Object> expectedJsonMap = new HashMap<>();
         expectedJsonMap.put("request", requestMap);
         expectedJsonMap.put("type", SidelineType.START.toString());
         expectedJsonMap.put("id", idMap);
@@ -372,19 +372,19 @@ public class ZookeeperPersistenceAdapterTest {
         // 4. Go into zookeeper and see where data got written
         doesNodeExist = zookeeperClient.exists(zkRequestsRootNodePath, false);
         logger.debug("Result {}", doesNodeExist);
-        assertNotNull("Our root node should now exist", doesNodeExist);
+        assertNotNull(doesNodeExist, "Our root node should now exist");
 
         // Now attempt to read our state
         List<String> childrenNodes = zookeeperClient.getChildren(zkRequestsRootNodePath, false);
         logger.debug("Children Node Names {}", childrenNodes);
 
         // We should have a single child
-        assertEquals("Should have a single filter", 1, childrenNodes.size());
+        assertEquals(1, childrenNodes.size(), "Should have a single filter");
 
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
-        assertNotNull("Child Node Name should not be null", childNodeName);
-        assertEquals("Child Node name not correct", sidelineRequestIdentifier.toString(), childNodeName);
+        assertNotNull(childNodeName, "Child Node Name should not be null");
+        assertEquals(sidelineRequestIdentifier.toString(), childNodeName, "Child Node name not correct");
 
         // 5. Grab the value and validate it
         final byte[] storedDataBytes = zookeeperClient.getData(
@@ -393,12 +393,12 @@ public class ZookeeperPersistenceAdapterTest {
             null
         );
         logger.debug("Stored data bytes {}", storedDataBytes);
-        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+        assertNotEquals(0, storedDataBytes.length, "Stored bytes should be non-zero");
 
         // Convert to a string
-        final String storedDataStr = new String(storedDataBytes, Charsets.UTF_8);
+        final String storedDataStr = new String(storedDataBytes, StandardCharsets.UTF_8);
         logger.info("Stored data string {}", storedDataStr);
-        assertNotNull("Stored data string should be non-null", storedDataStr);
+        assertNotNull(storedDataStr, "Stored data string should be non-null");
 
         @SuppressWarnings("unchecked")
         Map<String, Object> expectedMap = (Map<String, Object>) gson.fromJson(expectedStoredState, HashMap.class);
@@ -436,13 +436,13 @@ public class ZookeeperPersistenceAdapterTest {
         );
 
         logger.debug("Result {}", doesNodeExist);
-        assertNull("Our partition node should No longer exist", doesNodeExist);
+        assertNull(doesNodeExist, "Our partition node should No longer exist");
 
         doesNodeExist = zookeeperClient.exists(
             zkRequestsRootNodePath + "/" + sidelineRequestIdentifier.toString(),
             false
         );
-        assertNull("Our partition node should No longer exist", doesNodeExist);
+        assertNull(doesNodeExist, "Our partition node should No longer exist");
 
         // Close everyone out
         persistenceAdapter.close();
@@ -639,14 +639,14 @@ public class ZookeeperPersistenceAdapterTest {
         Set<ConsumerPartition> partitionsForSidelineRequest1 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier1);
 
         assertEquals(
-            Sets.newHashSet(new ConsumerPartition(topicName, 0), new ConsumerPartition(topicName, 1)),
+            Stream.of(new ConsumerPartition(topicName, 0), new ConsumerPartition(topicName, 1)).collect(Collectors.toSet()),
             partitionsForSidelineRequest1
         );
 
         Set<ConsumerPartition> partitionsForSidelineRequest2 = persistenceAdapter.listSidelineRequestPartitions(sidelineRequestIdentifier2);
 
         assertEquals(
-            Sets.newHashSet(new ConsumerPartition(topicName, 0)),
+            Stream.of(new ConsumerPartition(topicName, 0)).collect(Collectors.toSet()),
             partitionsForSidelineRequest2
         );
 
@@ -670,7 +670,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map<String, Object> createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
-        return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
+        return createDefaultConfig(Arrays.asList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 
     /**

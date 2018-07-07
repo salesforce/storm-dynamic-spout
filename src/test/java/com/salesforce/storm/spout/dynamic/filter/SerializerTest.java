@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test that the serializer handles FilterChainStep instances correctly.
@@ -52,22 +52,22 @@ public class SerializerTest {
         );
 
         assertEquals(
-            "FilterChainStep looks right serialized",
             "rO0ABXNyADZjb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5keW5hbWljLmZpbHRlci5OdW1iZXJGaWx0ZXKP3jjXh+gwbgIAAUkABm51bWJlcnhwAAAAKg==",
-            serializedFilterChainStep
+            serializedFilterChainStep,
+            "FilterChainStep looks right serialized"
         );
 
         final FilterChainStep deserializedFilterChainStep = Serializer.deserialize(serializedFilterChainStep);
 
         assertTrue(
-            "Deserialized FilterChainStep should be a NumberFilter",
-            deserializedFilterChainStep instanceof NumberFilter
+            deserializedFilterChainStep instanceof NumberFilter,
+            "Deserialized FilterChainStep should be a NumberFilter"
         );
 
         assertEquals(
-            "Number we supplied should match the number in the FilterChainStep",
             number,
-            ((NumberFilter) deserializedFilterChainStep).getNumber()
+            ((NumberFilter) deserializedFilterChainStep).getNumber(),
+            "Number we supplied should match the number in the FilterChainStep"
         );
     }
 

@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.sideline.handler;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.sideline.SidelineVirtualSpoutIdentifier;
 import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
@@ -40,9 +39,10 @@ import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test that the {@link SidelineVirtualSpoutHandler} completes sidelines correctly.
@@ -64,7 +64,7 @@ public class SidelineVirtualSpoutHandlerTest {
             sidelineRequestIdentifier
         );
 
-        final Map<String,Object> config = Maps.newHashMap();
+        final Map<String,Object> config = new HashMap<>();
         config.put(SidelineConfig.PERSISTENCE_ADAPTER_CLASS, InMemoryPersistenceAdapter.class.getName());
 
         final MockDelegateSpout mockDelegateSpout = new MockDelegateSpout(sidelineVirtualSpoutIdentifier);

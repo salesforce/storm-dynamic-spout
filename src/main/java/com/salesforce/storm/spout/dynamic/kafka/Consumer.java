@@ -26,8 +26,6 @@
 package com.salesforce.storm.spout.dynamic.kafka;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.salesforce.storm.spout.dynamic.FactoryManager;
 import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
@@ -51,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -543,7 +542,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
      * @param outOfRangeException The exception that was raised by the consumer.
      */
     private void handleOffsetOutOfRange(final OffsetOutOfRangeException outOfRangeException) {
-        final Set<TopicPartition> resetPartitions = Sets.newHashSet();
+        final Set<TopicPartition> resetPartitions = new HashSet<>();
 
         // Loop over all the partitions in this exception
         for (final TopicPartition topicPartition : outOfRangeException.offsetOutOfRangePartitions().keySet()) {
@@ -682,7 +681,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
     public boolean unsubscribeConsumerPartition(final ConsumerPartition consumerPartitionToUnsubscribe) {
         // Determine what we're currently assigned to,
         // We clone the returned set so we can modify it.
-        final Set<ConsumerPartition> assignedTopicPartitions = Sets.newHashSet(getAssignedPartitions());
+        final Set<ConsumerPartition> assignedTopicPartitions = new HashSet<>(getAssignedPartitions());
 
         // If it doesn't contain our namespace partition
         if (!assignedTopicPartitions.contains(consumerPartitionToUnsubscribe)) {
@@ -766,7 +765,7 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         );
 
         // Convert our partition ids back to a list of TopicPartition records
-        final List<TopicPartition> topicPartitions = Lists.newArrayList();
+        final List<TopicPartition> topicPartitions = new ArrayList<>();
 
         for (final int partitonId : partitionsIds) {
             topicPartitions.add(

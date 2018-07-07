@@ -25,12 +25,12 @@
 
 package com.salesforce.storm.spout.dynamic.mocks.output;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.apache.storm.task.IOutputCollector;
 import org.apache.storm.tuple.Tuple;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,19 +38,19 @@ import java.util.List;
  * simple getters so those results can be retrieved and asserted in your tests.
  */
 public class MockOutputCollector implements IOutputCollector {
-    private List<Tuple> ackedTuples = Lists.newArrayList();
-    private List<Emission> emissions = Lists.newArrayList();
-    private List<Tuple> failedTuples = Lists.newArrayList();
-    private List<Throwable> reportedErrors = Lists.newArrayList();
+    private List<Tuple> ackedTuples = new ArrayList<>();
+    private List<Emission> emissions = new ArrayList<>();
+    private List<Tuple> failedTuples = new ArrayList<>();
+    private List<Throwable> reportedErrors = new ArrayList<>();
 
     public List<Tuple> getAckedTuples() {
         // Clone the list
-        return ImmutableList.copyOf(ackedTuples);
+        return Collections.unmodifiableList(ackedTuples);
     }
 
     public List<Emission> getEmissions() {
         // Clone the list
-        return ImmutableList.copyOf(emissions);
+        return Collections.unmodifiableList(emissions);
     }
 
     /**
@@ -58,7 +58,7 @@ public class MockOutputCollector implements IOutputCollector {
      * @param streamId - the stream Id to filter by.
      */
     public List<Emission> getEmissionsByStreamId(String streamId) {
-        List<Emission> matched = Lists.newArrayList();
+        List<Emission> matched = new ArrayList<>();
         for (Emission emission : getEmissions()) {
             if (emission.getStreamId() != null && emission.getStreamId().equals(streamId)) {
                 matched.add(emission);
@@ -76,11 +76,11 @@ public class MockOutputCollector implements IOutputCollector {
     }
 
     public List<Tuple> getFailedTuples() {
-        return ImmutableList.copyOf(failedTuples);
+        return Collections.unmodifiableList(failedTuples);
     }
 
     public List<Throwable> getReportedErrors() {
-        return ImmutableList.copyOf(reportedErrors);
+        return Collections.unmodifiableList(reportedErrors);
     }
 
     @Override

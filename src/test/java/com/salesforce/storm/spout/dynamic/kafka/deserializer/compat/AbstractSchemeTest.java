@@ -25,19 +25,19 @@
 
 package com.salesforce.storm.spout.dynamic.kafka.deserializer.compat;
 
-import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.dynamic.kafka.deserializer.Deserializer;
-import com.google.common.base.Charsets;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test for compatibility layer to Storm-Kafka scheme.
@@ -52,18 +52,18 @@ public class AbstractSchemeTest {
     public void testDeserialize() {
         @SuppressWarnings("checkstyle:AvoidEscapedUnicodeCharacters")
         final String value = "This Is My Text\uD83D\uDC7B";
-        final byte[] valueBytes = value.getBytes(Charsets.UTF_8);
+        final byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
 
         // Pull implementation into a Deserializer obj.
         final Deserializer myScheme = new MyScheme();
 
         // Attempt to deserialize
-        final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(Charsets.UTF_8), valueBytes);
+        final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(StandardCharsets.UTF_8), valueBytes);
 
         // Validate
         assertNotNull(myValues);
-        assertEquals("Should have 1 entry", 1, myValues.size());
-        assertEquals("Should be our value", value, myValues.get(0));
+        assertEquals(1, myValues.size(), "Should have 1 entry");
+        assertEquals(value, myValues.get(0), "Should be our value");
     }
 
     /**
@@ -78,12 +78,12 @@ public class AbstractSchemeTest {
         final Deserializer myScheme = new MyScheme();
 
         // Attempt to deserialize
-        final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(Charsets.UTF_8), inputNullBytes);
+        final Values myValues = myScheme.deserialize("TopicName", 2, 2222L, "Key".getBytes(StandardCharsets.UTF_8), inputNullBytes);
 
         // Validate
         assertNotNull(myValues);
-        assertEquals("Should have 1 entry", 1, myValues.size());
-        assertEquals("Should be our value", "", myValues.get(0));
+        assertEquals(1, myValues.size(), "Should have 1 entry");
+        assertEquals("", myValues.get(0), "Should be our value");
     }
 
     /**
@@ -100,12 +100,12 @@ public class AbstractSchemeTest {
             "TopicName",
             2,
             2222L,
-            "Key".getBytes(Charsets.UTF_8),
-            "value".getBytes(Charsets.UTF_8)
+            "Key".getBytes(StandardCharsets.UTF_8),
+            "value".getBytes(StandardCharsets.UTF_8)
         );
 
         // Validate
-        assertNull("Should pass the null through", myValues);
+        assertNull(myValues, "Should pass the null through");
     }
 
     /**
@@ -130,7 +130,7 @@ public class AbstractSchemeTest {
             byte[] bytes = new byte[ser.remaining()];
             ser.get(bytes, 0, bytes.length);
 
-            return Lists.newArrayList(new String(bytes, Charsets.UTF_8));
+            return Collections.singletonList(new String(bytes, StandardCharsets.UTF_8));
         }
 
         @Override

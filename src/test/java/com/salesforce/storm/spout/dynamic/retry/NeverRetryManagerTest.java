@@ -25,13 +25,14 @@
 
 package com.salesforce.storm.spout.dynamic.retry;
 
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import java.util.HashMap;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test over the No Retry Failed Msg manager.
@@ -51,7 +52,7 @@ public class NeverRetryManagerTest {
         final DefaultVirtualSpoutIdentifier consumerId3 = new DefaultVirtualSpoutIdentifier("ConsumerId3");
         final DefaultVirtualSpoutIdentifier consumerId4 = new DefaultVirtualSpoutIdentifier("ConsumerId4");
 
-        retryManager.open(Maps.newHashMap());
+        retryManager.open(new HashMap<>());
 
         // retryFurther always returns false
         assertFalse(retryManager.retryFurther(new MessageId("MyTopic1", 1, 1L, consumerId1)));

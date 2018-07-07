@@ -25,9 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.persistence;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -41,7 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -49,11 +49,11 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests our Zookeeper Persistence layer.
@@ -75,7 +75,7 @@ public class ZookeeperPersistenceAdapterTest {
      */
     @Test
     public void testOpenMissingConfigForZkRootNode() {
-        final List<String> inputHosts = Lists.newArrayList("localhost:2181", "localhost2:2183");
+        final List<String> inputHosts = Arrays.asList("localhost:2181", "localhost2:2183");
 
         // Create our config
         final Map<String, Object> topologyConfig = createDefaultConfig(inputHosts, null, null);
@@ -110,12 +110,13 @@ public class ZookeeperPersistenceAdapterTest {
         persistenceAdapter.open(topologyConfig);
 
         // Validate
-        assertEquals("Unexpected zk root string", expectedZkRoot, persistenceAdapter.getZkRoot());
+        assertEquals(expectedZkRoot, persistenceAdapter.getZkRoot(), "Unexpected zk root string");
 
         // Validate that getZkXXXXStatePath returns the expected value
         assertEquals(
-            "Unexpected zkConsumerStatePath returned",
-            expectedZkConsumerStatePath, persistenceAdapter.getZkConsumerStatePathForPartition(expectedConsumerId, partitionId)
+            expectedZkConsumerStatePath,
+            persistenceAdapter.getZkConsumerStatePathForPartition(expectedConsumerId, partitionId),
+            "Unexpected zkConsumerStatePath returned"
         );
 
         // Close everyone out
@@ -155,7 +156,7 @@ public class ZookeeperPersistenceAdapterTest {
         final Long actual1 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
         // Validate result
-        assertNotNull("Got an object back", actual1);
+        assertNotNull(actual1, "Got an object back");
         assertEquals(offset1, actual1);
 
         // Close outs
@@ -168,7 +169,7 @@ public class ZookeeperPersistenceAdapterTest {
         // Re-retrieve, should still be there.
         final Long actual2 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
-        assertNotNull("Got an object back", actual2);
+        assertNotNull(actual2, "Got an object back");
         assertEquals(offset1, actual2);
 
         final Long offset2 = 101L;
@@ -179,12 +180,12 @@ public class ZookeeperPersistenceAdapterTest {
         // Re-retrieve, should still be there.
         final Long actual3 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
-        assertNotNull("Got an object back", actual3);
+        assertNotNull(actual3, "Got an object back");
         assertEquals(offset2, actual3);
 
         final Long actual4 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId2);
 
-        assertNull("Partition hasn't been set yet", actual4);
+        assertNull(actual4, "Partition hasn't been set yet");
 
         final Long offset3 = 102L;
 
@@ -192,13 +193,13 @@ public class ZookeeperPersistenceAdapterTest {
 
         final Long actual5 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId2);
 
-        assertNotNull("Got an object back", actual5);
+        assertNotNull(actual5, "Got an object back");
         assertEquals(offset3, actual5);
 
         // Re-retrieve, should still be there.
         final Long actual6 = persistenceAdapter.retrieveConsumerState(consumerId, partitionId1);
 
-        assertNotNull("Got an object back", actual3);
+        assertNotNull(actual3, "Got an object back");
         assertEquals(offset2, actual6);
 
         // Close outs
@@ -270,19 +271,19 @@ public class ZookeeperPersistenceAdapterTest {
         // 4. Go into zookeeper and see where data got written
         doesNodeExist = zookeeperClient.exists(zkConsumersRootNodePath, false);
         logger.debug("Result {}", doesNodeExist);
-        assertNotNull("Our root node should now exist", doesNodeExist);
+        assertNotNull(doesNodeExist, "Our root node should now exist");
 
         // Now attempt to read our state
         List<String> childrenNodes = zookeeperClient.getChildren(zkConsumersRootNodePath, false);
         logger.debug("Children Node Names {}", childrenNodes);
 
         // We should have a single child
-        assertEquals("Should have a single filter", 1, childrenNodes.size());
+        assertEquals(1, childrenNodes.size(), "Should have a single filter");
 
         // Grab the child node node
         final String childNodeName = childrenNodes.get(0);
-        assertNotNull("Child Node Name should not be null", childNodeName);
-        assertEquals("Child Node name not correct", consumerId, childNodeName);
+        assertNotNull(childNodeName, "Child Node Name should not be null");
+        assertEquals(consumerId, childNodeName, "Child Node name not correct");
 
         // 5. Grab the value and validate it
         final byte[] storedDataBytes = zookeeperClient.getData(
@@ -291,13 +292,13 @@ public class ZookeeperPersistenceAdapterTest {
             null
         );
         logger.debug("Stored data bytes {}", storedDataBytes);
-        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+        assertNotEquals(0, storedDataBytes.length, "Stored bytes should be non-zero");
 
         // Convert to a string
-        final Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        final Long storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
-        assertNotNull("Stored data should be non-null", storedData);
-        assertEquals("Got unexpected state", offset, (long) storedData);
+        assertNotNull(storedData, "Stored data should be non-null");
+        assertEquals(offset, (long) storedData, "Got unexpected state");
 
         // Test clearing state actually clears state.
         persistenceAdapter.clearConsumerState(consumerId, partitionId);
@@ -391,40 +392,40 @@ public class ZookeeperPersistenceAdapterTest {
         // 4. Go into zookeeper and see where data got written
         doesNodeExist = zookeeperClient.exists(zkConsumersRootNodePath, false);
         logger.debug("Result {}", doesNodeExist);
-        assertNotNull("Our root node should now exist", doesNodeExist);
+        assertNotNull(doesNodeExist, "Our root node should now exist");
 
         // Now attempt to read our state
         List<String> virtualSpoutIdNodes = zookeeperClient.getChildren(zkConsumersRootNodePath, false);
         logger.debug("VirtualSpoutId Node Names {}", virtualSpoutIdNodes);
 
         // We should have a single child
-        assertEquals("Should have a single VirtualSpoutId", 1, virtualSpoutIdNodes.size());
+        assertEquals(1, virtualSpoutIdNodes.size(), "Should have a single VirtualSpoutId");
 
         // Grab the virtualSpoutId
         final String foundVirtualSpoutIdNode = virtualSpoutIdNodes.get(0);
-        assertNotNull("foundVirtualSpoutIdNode entry should not be null", foundVirtualSpoutIdNode);
-        assertEquals("foundVirtualSpoutIdNode name not correct", virtualSpoutId, foundVirtualSpoutIdNode);
+        assertNotNull(foundVirtualSpoutIdNode, "foundVirtualSpoutIdNode entry should not be null");
+        assertEquals(virtualSpoutId, foundVirtualSpoutIdNode, "foundVirtualSpoutIdNode name not correct");
 
         // Grab entries under that virtualSpoutId
         List<String> partitionIdNodes = zookeeperClient.getChildren(zkVirtualSpoutIdNodePath, false);
 
         // We should have a 3 children
         logger.info("PartitionId nodes: {}", partitionIdNodes);
-        assertEquals("Should have 3 partitions", 3, partitionIdNodes.size());
-        assertTrue("Should contain partition 0", partitionIdNodes.contains(String.valueOf(partition0)));
-        assertTrue("Should contain partition 1", partitionIdNodes.contains(String.valueOf(partition1)));
-        assertTrue("Should contain partition 2", partitionIdNodes.contains(String.valueOf(partition2)));
+        assertEquals(3, partitionIdNodes.size(), "Should have 3 partitions");
+        assertTrue(partitionIdNodes.contains(String.valueOf(partition0)), "Should contain partition 0");
+        assertTrue(partitionIdNodes.contains(String.valueOf(partition1)), "Should contain partition 1");
+        assertTrue(partitionIdNodes.contains(String.valueOf(partition2)), "Should contain partition 2");
 
         // Grab each partition and validate it
         byte[] storedDataBytes = zookeeperClient.getData(zkVirtualSpoutIdNodePath + "/" + partition0, false, null);
         logger.debug("Stored data bytes {}", storedDataBytes);
-        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+        assertNotEquals(0, storedDataBytes.length, "Stored bytes should be non-zero");
 
         // Convert to a string
-        Long storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        Long storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
-        assertNotNull("Stored data should be non-null", storedData);
-        assertEquals("Got unexpected state", partition0Offset, (long) storedData);
+        assertNotNull(storedData, "Stored data should be non-null");
+        assertEquals(partition0Offset, (long) storedData, "Got unexpected state");
 
         // Now remove partition0 from persistence
         persistenceAdapter.clearConsumerState(virtualSpoutId, partition0);
@@ -438,13 +439,13 @@ public class ZookeeperPersistenceAdapterTest {
         // Validation partition1
         storedDataBytes = zookeeperClient.getData(zkVirtualSpoutIdNodePath + "/" + partition1, false, null);
         logger.debug("Stored data bytes {}", storedDataBytes);
-        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+        assertNotEquals(0, storedDataBytes.length, "Stored bytes should be non-zero");
 
         // Convert to a string
-        storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
-        assertNotNull("Stored data should be non-null", storedData);
-        assertEquals("Got unexpected state", partition1Offset, (long) storedData);
+        assertNotNull(storedData, "Stored data should be non-null");
+        assertEquals(partition1Offset, (long) storedData, "Got unexpected state");
 
         // Now remove partition1 from persistence
         persistenceAdapter.clearConsumerState(virtualSpoutId, partition1);
@@ -458,13 +459,13 @@ public class ZookeeperPersistenceAdapterTest {
         // Validation partition2
         storedDataBytes = zookeeperClient.getData(zkVirtualSpoutIdNodePath + "/" + partition2, false, null);
         logger.debug("Stored data bytes {}", storedDataBytes);
-        assertNotEquals("Stored bytes should be non-zero", 0, storedDataBytes.length);
+        assertNotEquals(0, storedDataBytes.length, "Stored bytes should be non-zero");
 
         // Convert to a string
-        storedData = Long.valueOf(new String(storedDataBytes, Charsets.UTF_8));
+        storedData = Long.valueOf(new String(storedDataBytes, StandardCharsets.UTF_8));
         logger.info("Stored data {}", storedData);
-        assertNotNull("Stored data should be non-null", storedData);
-        assertEquals("Got unexpected state", partition2Offset, (long) storedData);
+        assertNotNull(storedData, "Stored data should be non-null");
+        assertEquals(partition2Offset, (long) storedData, "Got unexpected state");
 
         // Now remove partition1 from persistence
         persistenceAdapter.clearConsumerState(virtualSpoutId, partition2);
@@ -537,7 +538,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map<String, Object> createDefaultConfig(List<String> zkServers, String zkRootNode, String consumerIdPrefix) {
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         config.put(SpoutConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SpoutConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
@@ -549,7 +550,7 @@ public class ZookeeperPersistenceAdapterTest {
      * Helper method.
      */
     private Map<String, Object> createDefaultConfig(String zkServers, String zkRootNode, String consumerIdPrefix) {
-        return createDefaultConfig(Lists.newArrayList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
+        return createDefaultConfig(Arrays.asList(Tools.splitAndTrim(zkServers)), zkRootNode, consumerIdPrefix);
     }
 
     /**

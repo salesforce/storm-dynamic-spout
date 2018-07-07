@@ -25,7 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic;
 
-import com.google.common.collect.Lists;
 import com.salesforce.storm.spout.dynamic.filter.DefaultFilterChainStepIdentifier;
 import com.salesforce.storm.spout.dynamic.kafka.KafkaConsumerConfig;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
@@ -53,21 +52,21 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -106,15 +105,15 @@ public class VirtualSpoutTest {
         );
 
         // Verify things got set
-        assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
+        assertNotNull(virtualSpout.getSpoutConfig(), "TopologyConfig should be non-null");
 
         // Verify the config is correct (and not some empty map)
-        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size());
-        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getSpoutConfig());
+        assertEquals(expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size(), "Should have correct number of entries");
+        assertEquals(expectedTopologyConfig, virtualSpout.getSpoutConfig(), "Should have correct entries");
 
         // Verify factory manager set
-        assertNotNull("Should have non-null factory manager", virtualSpout.getFactoryManager());
-        assertEquals("Should be our instance passed in", factoryManager, virtualSpout.getFactoryManager());
+        assertNotNull(virtualSpout.getFactoryManager(), "Should have non-null factory manager");
+        assertEquals(factoryManager, virtualSpout.getFactoryManager(), "Should be our instance passed in");
 
         // Verify the config is immutable and throws exception when you try to modify it
         Assertions.assertThrows(UnsupportedOperationException.class, () ->
@@ -148,11 +147,11 @@ public class VirtualSpoutTest {
         );
 
         // Verify things got set
-        assertNotNull("TopologyConfig should be non-null", virtualSpout.getSpoutConfig());
+        assertNotNull(virtualSpout.getSpoutConfig(), "TopologyConfig should be non-null");
 
         // Verify the config is correct (and not some empty map)
-        assertEquals("Should have correct number of entries", expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size());
-        assertEquals("Should have correct entries", expectedTopologyConfig, virtualSpout.getSpoutConfig());
+        assertEquals(expectedTopologyConfig.size(), virtualSpout.getSpoutConfig().size(), "Should have correct number of entries");
+        assertEquals(expectedTopologyConfig, virtualSpout.getSpoutConfig(), "Should have correct entries");
     }
 
     /**
@@ -178,7 +177,7 @@ public class VirtualSpoutTest {
         );
 
         // Verify it
-        assertEquals("Got expected consumer id", expectedConsumerId, virtualSpout.getVirtualSpoutId());
+        assertEquals(expectedConsumerId, virtualSpout.getVirtualSpoutId(), "Got expected consumer id");
     }
 
     /**
@@ -211,14 +210,14 @@ public class VirtualSpoutTest {
         virtualSpout.open();
 
         // Should default to false, we haven't attempt completing yet
-        assertFalse("Should default to false", virtualSpout.isCompleted());
+        assertFalse(virtualSpout.isCompleted(), "Should default to false");
 
         // Flushing state will attempt to complete the VirtualSpout, because our starting and offstate are the same
         // and we only have one partition this should call setCompleted() right away
         virtualSpout.flushState();
 
         // Our spout is now complete
-        assertTrue("Should be true", virtualSpout.isCompleted());
+        assertTrue(virtualSpout.isCompleted(), "Should be true");
     }
 
     /**
@@ -373,7 +372,7 @@ public class VirtualSpoutTest {
         final Message result = virtualSpout.nextTuple();
 
         // Verify its null
-        assertNull("Should be null",  result);
+        assertNull(result, "Should be null");
 
         // Verify ack is never called on underlying mock consumer
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
@@ -418,7 +417,7 @@ public class VirtualSpoutTest {
         final Message result = virtualSpout.nextTuple();
 
         // Verify its null
-        assertNull("Should be null",  result);
+        assertNull(result, "Should be null");
 
         // Call close
         virtualSpout.close();
@@ -477,7 +476,7 @@ public class VirtualSpoutTest {
         final Message result = virtualSpout.nextTuple();
 
         // Check result
-        assertNull("Should be null", result);
+        assertNull(result, "Should be null");
 
         // Verify ack was called on the tuple
         verify(mockConsumer, times(1)).commitOffset(eq(expectedTopic), eq(expectedPartition), eq(expectedOffset));
@@ -540,14 +539,14 @@ public class VirtualSpoutTest {
         final Message result = virtualSpout.nextTuple();
 
         // Check result
-        assertNotNull("Should not be null", result);
+        assertNotNull(result, "Should not be null");
 
         // Validate it
-        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
-        assertEquals("Found expected partition", expectedPartition, result.getPartition());
-        assertEquals("Found expected offset", expectedOffset, result.getOffset());
-        assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected Message", expectedMessage, result);
+        assertEquals(expectedTopic, result.getNamespace(), "Found expected namespace");
+        assertEquals(expectedPartition, result.getPartition(), "Found expected partition");
+        assertEquals(expectedOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values(expectedKey, expectedValue), result.getValues(), "Found expected values");
+        assertEquals(expectedMessage, result, "Got expected Message");
 
         // Call close
         virtualSpout.close();
@@ -632,42 +631,42 @@ public class VirtualSpoutTest {
         Message result = virtualSpout.nextTuple();
 
         // Check result
-        assertNotNull("Should not be null because the offset is under the limit.", result);
+        assertNotNull(result, "Should not be null because the offset is under the limit.");
 
         // Validate it
-        assertEquals("Found expected namespace", topic, result.getNamespace());
-        assertEquals("Found expected partition", partition, result.getPartition());
-        assertEquals("Found expected offset", beforeOffset, result.getOffset());
-        assertEquals("Found expected values", new Values("before-key", "before-value"), result.getValues());
-        assertEquals("Got expected Message", expectedMessageBeforeEndingOffset, result);
+        assertEquals(topic, result.getNamespace(), "Found expected namespace");
+        assertEquals(partition, result.getPartition(), "Found expected partition");
+        assertEquals(beforeOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values("before-key", "before-value"), result.getValues(), "Found expected values");
+        assertEquals(expectedMessageBeforeEndingOffset, result, "Got expected Message");
 
         // Call nextTuple(), this offset should be equal to our ending offset
         // Equal to the end offset should still get emitted.
         result = virtualSpout.nextTuple();
 
         // Check result
-        assertNotNull("Should not be null because the offset is under the limit.", result);
+        assertNotNull(result, "Should not be null because the offset is under the limit.");
 
         // Validate it
-        assertEquals("Found expected namespace", topic, result.getNamespace());
-        assertEquals("Found expected partition", partition, result.getPartition());
-        assertEquals("Found expected offset", endingOffset, result.getOffset());
-        assertEquals("Found expected values", new Values("equal-key", "equal-value"), result.getValues());
-        assertEquals("Got expected Message", expectedMessageEqualEndingOffset, result);
+        assertEquals(topic, result.getNamespace(), "Found expected namespace");
+        assertEquals(partition, result.getPartition(), "Found expected partition");
+        assertEquals(endingOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values("equal-key", "equal-value"), result.getValues(), "Found expected values");
+        assertEquals(expectedMessageEqualEndingOffset, result, "Got expected Message");
 
         // Call nextTuple(), this offset should be greater than our ending offset
         // and thus should return null.
         result = virtualSpout.nextTuple();
 
         // Check result
-        assertNull("Should be null because the offset is greater than the limit.", result);
+        assertNull(result, "Should be null because the offset is greater than the limit.");
 
         // Call nextTuple(), again the offset should be greater than our ending offset
         // and thus should return null.
         result = virtualSpout.nextTuple();
 
         // Check result
-        assertNull("Should be null because the offset is greater than the limit.", result);
+        assertNull(result, "Should be null because the offset is greater than the limit.");
 
         // Validate unsubscribed was called on our mock Consumer
         // Right now this is called twice... unsure if that is an issue. I don't think it is.
@@ -772,15 +771,15 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(1)).nextFailedMessageToRetry();
 
         // Check result
-        assertNotNull("Should not be null", result);
+        assertNotNull(result, "Should not be null");
 
         // Validate it
-        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
-        assertEquals("Found expected partition", expectedPartition, result.getPartition());
-        assertEquals("Found expected offset", expectedOffset, result.getOffset());
-        assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected Message", expectedMessage, result);
-        assertFalse("Should not be permanently failed", result.isPermanentlyFailed());
+        assertEquals(expectedTopic, result.getNamespace(), "Found expected namespace");
+        assertEquals(expectedPartition, result.getPartition(), "Found expected partition");
+        assertEquals(expectedOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values(expectedKey, expectedValue), result.getValues(), "Found expected values");
+        assertEquals(expectedMessage, result, "Got expected Message");
+        assertFalse(result.isPermanentlyFailed(), "Should not be permanently failed");
 
         // Now call fail on this
         final MessageId failedMessageId = result.getMessageId();
@@ -789,7 +788,7 @@ public class VirtualSpoutTest {
         when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(true);
 
         // failed on retry manager shouldn't have been called yet
-        verify(mockRetryManager, never()).failed(anyObject());
+        verify(mockRetryManager, never()).failed(any(MessageId.class));
 
         // call fail on our message id
         virtualSpout.fail(failedMessageId);
@@ -804,15 +803,15 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(2)).nextFailedMessageToRetry();
 
         // Check result
-        assertNotNull("Should not be null", result);
+        assertNotNull(result, "Should not be null");
 
         // Validate it
-        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
-        assertEquals("Found expected partition", expectedPartition, result.getPartition());
-        assertEquals("Found expected offset", expectedOffset, result.getOffset());
-        assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected Message", expectedMessage, result);
-        assertFalse("Should not be permanently failed", result.isPermanentlyFailed());
+        assertEquals(expectedTopic, result.getNamespace(), "Found expected namespace");
+        assertEquals(expectedPartition, result.getPartition(), "Found expected partition");
+        assertEquals(expectedOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values(expectedKey, expectedValue), result.getValues(), "Found expected values");
+        assertEquals(expectedMessage, result, "Got expected Message");
+        assertFalse(result.isPermanentlyFailed(), "Should not be permanently failed");
 
         // And call nextTuple() one more time, this time failed manager should return null
         // and consumer returns our unexpected result
@@ -823,17 +822,17 @@ public class VirtualSpoutTest {
         verify(mockRetryManager, times(3)).nextFailedMessageToRetry();
 
         // Check result
-        assertNotNull("Should not be null", result);
+        assertNotNull(result, "Should not be null");
 
         // Validate it
-        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
-        assertEquals("Found expected partition", expectedPartition, result.getPartition());
-        assertEquals("Found expected offset", unexpectedOffset, result.getOffset());
-        assertEquals("Found expected values", new Values(unexpectedKey, unexpectedValue), result.getValues());
-        assertEquals("Got expected Message", unexpectedMessage, result);
+        assertEquals(expectedTopic, result.getNamespace(), "Found expected namespace");
+        assertEquals(expectedPartition, result.getPartition(), "Found expected partition");
+        assertEquals(unexpectedOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values(unexpectedKey, unexpectedValue), result.getValues(), "Found expected values");
+        assertEquals(unexpectedMessage, result, "Got expected Message");
 
         // Next Tuple should return null
-        assertNull("No more tuples queued", virtualSpout.nextTuple());
+        assertNull(virtualSpout.nextTuple(), "No more tuples queued");
 
         // Now test calling fail on our failed tuple, retry manager should say this is enough,
         when(mockRetryManager.retryFurther(failedMessageId)).thenReturn(false);
@@ -841,15 +840,15 @@ public class VirtualSpoutTest {
 
         // When we call next Tuple() we should get our failed message, marked as permanently failed
         result = virtualSpout.nextTuple();
-        assertNotNull("Should have non-null message", result);
+        assertNotNull(result, "Should have non-null message");
 
         // Validate it
-        assertEquals("Found expected namespace", expectedTopic, result.getNamespace());
-        assertEquals("Found expected partition", expectedPartition, result.getPartition());
-        assertEquals("Found expected offset", expectedOffset, result.getOffset());
-        assertEquals("Found expected values", new Values(expectedKey, expectedValue), result.getValues());
-        assertEquals("Got expected MessageId", expectedMessage.getMessageId(), result.getMessageId());
-        assertTrue("Should be permanently failed", result.isPermanentlyFailed());
+        assertEquals(expectedTopic, result.getNamespace(), "Found expected namespace");
+        assertEquals(expectedPartition, result.getPartition(), "Found expected partition");
+        assertEquals(expectedOffset, result.getOffset(), "Found expected offset");
+        assertEquals(new Values(expectedKey, expectedValue), result.getValues(), "Found expected values");
+        assertEquals(expectedMessage.getMessageId(), result.getMessageId(), "Got expected MessageId");
+        assertTrue(result.isPermanentlyFailed(), "Should be permanently failed");
 
         // Call close
         virtualSpout.close();
@@ -892,9 +891,9 @@ public class VirtualSpoutTest {
         virtualSpout.fail(null);
 
         // No interactions w/ our mocks
-        verify(mockRetryManager, never()).retryFurther(anyObject());
-        verify(mockRetryManager, never()).acked(anyObject());
-        verify(mockRetryManager, never()).failed(anyObject());
+        verify(mockRetryManager, never()).retryFurther(any(MessageId.class));
+        verify(mockRetryManager, never()).acked(any(MessageId.class));
+        verify(mockRetryManager, never()).failed(any(MessageId.class));
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
 
         // Call close
@@ -973,7 +972,7 @@ public class VirtualSpoutTest {
 
         // No interactions w/ our mock consumer for committing offsets
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
-        verify(mockRetryManager, never()).acked(anyObject());
+        verify(mockRetryManager, never()).acked(any(MessageId.class));
 
         // Call close
         virtualSpout.close();
@@ -1059,7 +1058,7 @@ public class VirtualSpoutTest {
 
         // Never called yet
         verify(mockConsumer, never()).commitOffset(anyString(), anyInt(), anyLong());
-        verify(mockRetryManager, never()).acked(anyObject());
+        verify(mockRetryManager, never()).acked(any(MessageId.class));
 
         // Call ack with a string object, it should throw an exception.
         virtualSpout.ack(messageId);
@@ -1111,7 +1110,7 @@ public class VirtualSpoutTest {
 
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
-        assertFalse("Should always be false", result);
+        assertFalse(result, "Should always be false");
 
         // Close things out
         virtualSpout.close();
@@ -1158,7 +1157,7 @@ public class VirtualSpoutTest {
 
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
-        assertFalse("Should be false", result);
+        assertFalse(result, "Should be false");
 
         // Call close
         virtualSpout.close();
@@ -1204,7 +1203,7 @@ public class VirtualSpoutTest {
 
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
-        assertTrue("Should be true", result);
+        assertTrue(result, "Should be true");
 
         // Call close
         virtualSpout.close();
@@ -1250,7 +1249,7 @@ public class VirtualSpoutTest {
 
         // Call our method & validate.
         final boolean result = virtualSpout.doesMessageExceedEndingOffset(messageId);
-        assertFalse("Should be false", result);
+        assertFalse(result, "Should be false");
 
         // Call close
         virtualSpout.close();
@@ -1344,7 +1343,7 @@ public class VirtualSpoutTest {
 
         // Call our method & validate.
         final boolean result = virtualSpout.unsubscribeTopicPartition(topicPartition.namespace(), topicPartition.partition());
-        assertEquals("Got expected result from our method", expectedResult, result);
+        assertEquals(expectedResult, result, "Got expected result from our method");
 
         // Validate mock call
         verify(mockConsumer, times(1)).unsubscribeConsumerPartition(eq(topicPartition));
@@ -1506,7 +1505,7 @@ public class VirtualSpoutTest {
         final Message message = virtualSpout.nextTuple();
 
         // Verify its not permanently failed
-        assertFalse("Should not be permanently failed", message.isPermanentlyFailed());
+        assertFalse(message.isPermanentlyFailed(), "Should not be permanently failed");
 
         // Grab messageId out
         final MessageId failedMessageId = message.getMessageId();
@@ -1527,13 +1526,13 @@ public class VirtualSpoutTest {
 
         // Calling nextMessage should give us the permanently failed message
         final Message permanentlyFailedMessage = virtualSpout.nextTuple();
-        assertNotNull("Should be non-null", permanentlyFailedMessage);
+        assertNotNull(permanentlyFailedMessage, "Should be non-null");
 
         // Should be the same messageId
-        assertEquals("Should have same messageId as previously", failedMessageId, permanentlyFailedMessage.getMessageId());
+        assertEquals(failedMessageId, permanentlyFailedMessage.getMessageId(), "Should have same messageId as previously");
 
         // Should be marked as permanently failed
-        assertTrue("Should be marked as permanently failed", permanentlyFailedMessage.isPermanentlyFailed());
+        assertTrue(permanentlyFailedMessage.isPermanentlyFailed(), "Should be marked as permanently failed");
 
         // Call close
         virtualSpout.close();
@@ -1583,8 +1582,8 @@ public class VirtualSpoutTest {
         verify(mockConsumer, times(1)).getCurrentState();
 
         // Verify result
-        assertNotNull("result should not be null", result);
-        assertEquals("Should be our expected instance", expectedConsumerState, result);
+        assertNotNull(result, "result should not be null");
+        assertEquals(expectedConsumerState, result, "Should be our expected instance");
 
         // Call close
         virtualSpout.close();
@@ -1619,7 +1618,7 @@ public class VirtualSpoutTest {
         );
         virtualSpout.open();
 
-        assertNull("Ending state is not null", virtualSpout.getEndingState());
+        assertNull(virtualSpout.getEndingState(), "Ending state is not null");
 
         final ConsumerState endingState = ConsumerState
             .builder()
@@ -1630,9 +1629,9 @@ public class VirtualSpoutTest {
         virtualSpout.setEndingState(endingState);
 
         assertEquals(
-            "Ending state does not match the one that was set",
             endingState,
-            virtualSpout.getEndingState()
+            virtualSpout.getEndingState(),
+            "Ending state does not match the one that was set"
         );
 
         // Call close
@@ -1646,7 +1645,7 @@ public class VirtualSpoutTest {
         final Map<String, Object> defaultConfig = new HashMap<>();
 
         // Kafka Consumer Config items
-        defaultConfig.put(KafkaConsumerConfig.KAFKA_BROKERS, Lists.newArrayList("localhost:9092"));
+        defaultConfig.put(KafkaConsumerConfig.KAFKA_BROKERS, Arrays.asList("localhost:9092"));
         defaultConfig.put(KafkaConsumerConfig.KAFKA_TOPIC, "MyTopic");
         defaultConfig.put(KafkaConsumerConfig.CONSUMER_ID_PREFIX, "TestPrefix");
         defaultConfig.put(KafkaConsumerConfig.DESERIALIZER_CLASS, Utf8StringDeserializer.class.getName());

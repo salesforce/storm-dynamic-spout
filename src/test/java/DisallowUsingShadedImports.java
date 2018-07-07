@@ -35,7 +35,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
@@ -80,7 +80,7 @@ public class DisallowUsingShadedImports {
 
         failedFiles.forEach(logger::error);
 
-        assertTrue("Should have not found any files", failedFiles.isEmpty());
+        assertTrue(failedFiles.isEmpty(), "Should have not found any files");
     }
 
     private void testFile(File myFile) throws FileNotFoundException {

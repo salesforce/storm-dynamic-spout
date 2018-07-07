@@ -27,9 +27,9 @@ package com.salesforce.storm.spout.dynamic;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple test over MessageId.
@@ -49,10 +49,10 @@ public class MessageIdTest {
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate MessageId
-        assertEquals("Got expected namespace", expectedTopic, messageId.getNamespace());
-        assertEquals("Got expected partition", expectedPartition, messageId.getPartition());
-        assertEquals("Got expected offset", expectedOffset, messageId.getOffset());
-        assertEquals("Got expected virtual spout id", expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId());
+        assertEquals(expectedTopic, messageId.getNamespace(), "Got expected namespace");
+        assertEquals(expectedPartition, messageId.getPartition(), "Got expected partition");
+        assertEquals(expectedOffset, messageId.getOffset(), "Got expected offset");
+        assertEquals(expectedVirtualSpoutId, messageId.getSrcVirtualSpoutId(), "Got expected virtual spout id");
     }
 
     /**
@@ -68,7 +68,7 @@ public class MessageIdTest {
         final MessageId messageId = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate its equal to itself
-        assertTrue("Should be equal", messageId.equals(messageId));
+        assertTrue(messageId.equals(messageId), "Should be equal");
     }
 
     /**
@@ -85,8 +85,8 @@ public class MessageIdTest {
         final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate its equal to itself
-        assertTrue("Should be equal", messageId1.equals(messageId2));
-        assertTrue("Should be equal", messageId2.equals(messageId1));
+        assertTrue(messageId1.equals(messageId2), "Should be equal");
+        assertTrue(messageId2.equals(messageId1), "Should be equal");
     }
 
     /**
@@ -103,8 +103,8 @@ public class MessageIdTest {
         final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition + 1, expectedOffset, expectedVirtualSpoutId);
 
         // Validate not equal
-        assertFalse("Should not be equal", messageId1.equals(messageId2));
-        assertFalse("Should not be equal", messageId2.equals(messageId1));
+        assertFalse(messageId1.equals(messageId2), "Should not be equal");
+        assertFalse(messageId2.equals(messageId1), "Should not be equal");
     }
 
     /**
@@ -121,8 +121,8 @@ public class MessageIdTest {
         final MessageId messageId2 = new MessageId(expectedTopic, expectedPartition, expectedOffset + 1, expectedVirtualSpoutId);
 
         // Validate not equal
-        assertFalse("Should not be equal", messageId1.equals(messageId2));
-        assertFalse("Should not be equal", messageId2.equals(messageId1));
+        assertFalse(messageId1.equals(messageId2), "Should not be equal");
+        assertFalse(messageId2.equals(messageId1), "Should not be equal");
     }
 
     /**
@@ -139,8 +139,8 @@ public class MessageIdTest {
         final MessageId messageId2 = new MessageId(expectedTopic + "A", expectedPartition, expectedOffset, expectedVirtualSpoutId);
 
         // Validate not equal
-        assertFalse("Should not be equal", messageId1.equals(messageId2));
-        assertFalse("Should not be equal", messageId2.equals(messageId1));
+        assertFalse(messageId1.equals(messageId2), "Should not be equal");
+        assertFalse(messageId2.equals(messageId1), "Should not be equal");
     }
 
     /**
@@ -166,8 +166,8 @@ public class MessageIdTest {
         );
 
         // Validate not equal
-        assertFalse("Should not be equal", messageId1.equals(messageId2));
-        assertFalse("Should not be equal", messageId2.equals(messageId1));
+        assertFalse(messageId1.equals(messageId2), "Should not be equal");
+        assertFalse(messageId2.equals(messageId1), "Should not be equal");
     }
 
     /**
@@ -184,6 +184,6 @@ public class MessageIdTest {
         final MessageId messageId2 = null;
 
         // Validate not equal
-        assertFalse("Should not be equal", messageId1.equals(messageId2));
+        assertFalse(messageId1.equals(messageId2), "Should not be equal");
     }
 }

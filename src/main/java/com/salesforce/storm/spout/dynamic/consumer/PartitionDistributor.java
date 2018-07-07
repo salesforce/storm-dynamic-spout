@@ -25,10 +25,9 @@
 
 package com.salesforce.storm.spout.dynamic.consumer;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,11 +67,11 @@ public class PartitionDistributor {
         final int maxPartitionsPerInstance = (int) Math.ceil((double) allPartitionIds.length / totalConsumers);
 
         // We are going to sort our partitions across all consumer indexes
-        final Map<Integer,List<Integer>> partitionByConsumer = Maps.newHashMap();
+        final Map<Integer,List<Integer>> partitionByConsumer = new HashMap<>();
 
         // Add a list for each consumer
         for (int i = 0; i < totalConsumers; i++) {
-            partitionByConsumer.put(i, Lists.newArrayList());
+            partitionByConsumer.put(i, new ArrayList<>());
         }
 
         // Tracks the current consumer instance we are handing partitions to

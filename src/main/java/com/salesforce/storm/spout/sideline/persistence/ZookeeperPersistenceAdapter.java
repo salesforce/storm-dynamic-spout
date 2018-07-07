@@ -26,8 +26,6 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.Tools;
@@ -43,7 +41,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -197,7 +197,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     public List<SidelineRequestIdentifier> listSidelineRequests() {
         verifyHasBeenOpened();
 
-        final List<SidelineRequestIdentifier> ids = Lists.newArrayList();
+        final List<SidelineRequestIdentifier> ids = new ArrayList<>();
 
         try {
             final String path = getZkRequestStateRoot();
@@ -226,7 +226,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
 
         Preconditions.checkNotNull(id, "SidelineRequestIdentifier is required.");
 
-        final Set<ConsumerPartition> consumerPartitions = Sets.newHashSet();
+        final Set<ConsumerPartition> consumerPartitions = new HashSet<>();
 
         try {
             final String path = getZkRequestStatePath(id.toString());

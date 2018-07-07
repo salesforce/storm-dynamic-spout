@@ -25,8 +25,9 @@
 
 package com.salesforce.storm.spout.dynamic.kafka.deserializer;
 
-import com.google.common.base.Charsets;
 import org.apache.storm.tuple.Values;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * Simple deserializer that can deserialize the key and message fields as UTF8 Strings.
@@ -42,8 +43,8 @@ public class Utf8StringDeserializer implements Deserializer {
 
         return new Values(
             // Kafka messages can have null keys.
-            key == null ? null : new String(key, Charsets.UTF_8),
-            new String(value, Charsets.UTF_8)
+            key == null ? null : new String(key, StandardCharsets.UTF_8),
+            new String(value, StandardCharsets.UTF_8)
         );
     }
 }

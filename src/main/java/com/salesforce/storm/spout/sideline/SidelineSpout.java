@@ -28,10 +28,10 @@ package com.salesforce.storm.spout.sideline;
 import com.salesforce.storm.spout.dynamic.DynamicSpout;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.google.common.collect.Maps;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.handler.SidelineVirtualSpoutHandler;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -45,7 +45,7 @@ public class SidelineSpout extends DynamicSpout {
      * @return Resulting configuration.
      */
     private static Map<String, Object> modifyConfig(Map<String, Object> spoutConfig) {
-        Map<String, Object> config = Maps.newHashMap();
+        Map<String, Object> config = new HashMap<>();
         // Start by making a copy of our existing configuration map
         config.putAll(spoutConfig);
         // Add our opinionated configuration items

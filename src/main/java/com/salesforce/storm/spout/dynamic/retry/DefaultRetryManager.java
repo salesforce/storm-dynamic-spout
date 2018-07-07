@@ -25,13 +25,13 @@
 
 package com.salesforce.storm.spout.dynamic.retry;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.salesforce.storm.spout.dynamic.MessageId;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 
 import java.time.Clock;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -89,7 +89,7 @@ public class DefaultRetryManager implements RetryManager {
      * Called to initialize this implementation.
      * @param spoutConfig used to pass in any configuration values.
      */
-    public void open(Map spoutConfig) {
+    public void open(Map<String, Object> spoutConfig) {
         // Load config options.
         if (spoutConfig.containsKey(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)) {
             retryLimit = ((Number) spoutConfig.get(SpoutConfig.RETRY_MANAGER_RETRY_LIMIT)).intValue();
@@ -105,9 +105,9 @@ public class DefaultRetryManager implements RetryManager {
         }
 
         // Init data structures.
-        retriesInFlight = Sets.newHashSet();
-        numberOfTimesFailed = Maps.newHashMap();
-        failedMessageIds = Maps.newTreeMap();
+        retriesInFlight = new HashSet<>();
+        numberOfTimesFailed = new HashMap<>();
+        failedMessageIds = new TreeMap<>();
     }
 
     /**
@@ -142,7 +142,7 @@ public class DefaultRetryManager implements RetryManager {
 
         // Grab the queue for this timestamp,
         // If it doesn't exist, create a new queue and return it.
-        Queue<MessageId> queue = failedMessageIds.computeIfAbsent(retryTime, k -> Lists.newLinkedList());
+        Queue<MessageId> queue = failedMessageIds.computeIfAbsent(retryTime, k -> new LinkedList<>());
 
         // Add our message to the queue.
         queue.add(messageId);

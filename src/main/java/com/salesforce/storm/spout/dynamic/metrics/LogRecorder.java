@@ -25,8 +25,6 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
-import com.google.common.collect.Maps;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +32,7 @@ import org.slf4j.helpers.MessageFormatter;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Metrics recorder that dumps metrics to logs.
@@ -43,12 +42,11 @@ import java.util.Map;
 public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
-    private final Map<String, Long> counters = Maps.newConcurrentMap();
-    private final Map<String, CircularFifoQueue> averages = Maps.newConcurrentMap();
-    private final Map<String, Object> assignedValues = Maps.newConcurrentMap();
+    private final Map<String, Long> counters = new ConcurrentHashMap<>();
+    private final Map<String, Object> assignedValues = new ConcurrentHashMap<>();
 
     // For storing timer start values
-    private final Map<String, Long> timerStartValues = Maps.newConcurrentMap();
+    private final Map<String, Long> timerStartValues = new ConcurrentHashMap<>();
 
     @Override
     public void open(Map spoutConfig, TopologyContext topologyContext) {
