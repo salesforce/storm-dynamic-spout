@@ -132,7 +132,15 @@
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
-            <version>3.4.6</version>
+            <!-- Storm uses 3.4.6 but we can't get past a snyk scan w/ that ver, this is the lowest Zookeeper version w/o open vulnerabilities -->
+            <version>3.4.10</version>
+            <optional>true</optional>
+        </dependency>
+        <!-- Jline 0.9.94 is included with Zookeeper, but it has vulnerabilities so we are explicitly specifying 2.12 here -->
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>2.12</version>
             <optional>true</optional>
         </dependency>
 
