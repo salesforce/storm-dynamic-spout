@@ -46,9 +46,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test that the {@link DefaultRetryManager} retries tuples.
+ * Test that the {@link ExponentialBackoffRetryManager} retries tuples.
  */
-public class DefaultRetryManagerTest {
+public class ExponentialBackoffRetryManagerTest {
     /**
      * Used to mock the system clock.
      */
@@ -80,7 +80,7 @@ public class DefaultRetryManagerTest {
         );
 
         // Create instance and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.open(stormConfig);
 
         assertEquals(expectedMaxRetries, retryManager.getRetryLimit(), "Wrong max retries");
@@ -98,7 +98,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(null, null, null, null);
 
         // Create instance and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.open(stormConfig);
 
         assertEquals(-1, retryManager.getRetryLimit(), "Wrong max retries");
@@ -123,7 +123,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -175,7 +175,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -246,7 +246,7 @@ public class DefaultRetryManagerTest {
         );
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -299,7 +299,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -326,7 +326,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -353,7 +353,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, null, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -387,7 +387,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -458,7 +458,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -511,7 +511,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -605,7 +605,7 @@ public class DefaultRetryManagerTest {
         Map<String, Object> stormConfig = getDefaultConfig(expectedMaxRetries, expectedMinRetryTimeMs, expectedDelayMultiplier, null);
 
         // Create instance, inject our mock clock,  and call open.
-        DefaultRetryManager retryManager = new DefaultRetryManager();
+        ExponentialBackoffRetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.setClock(mockClock);
         retryManager.open(stormConfig);
 
@@ -639,7 +639,7 @@ public class DefaultRetryManagerTest {
     }
 
     private void validateExpectedFailedMessageId(
-        DefaultRetryManager retryManager,
+        ExponentialBackoffRetryManager retryManager,
         MessageId messageId,
         int expectedFailCount,
         long expectedRetryTime,
@@ -664,7 +664,7 @@ public class DefaultRetryManagerTest {
         assertEquals(expectedToBeInFlight, retryManager.getRetriesInFlight().contains(messageId), "Should or should not be in flight");
     }
 
-    private void validateTupleNotInFailedSetButIsInFlight(DefaultRetryManager retryManager, MessageId messageId) {
+    private void validateTupleNotInFailedSetButIsInFlight(ExponentialBackoffRetryManager retryManager, MessageId messageId) {
         // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
@@ -673,7 +673,7 @@ public class DefaultRetryManagerTest {
         assertTrue(retryManager.getRetriesInFlight().contains(messageId), "Should be tracked as in flight");
     }
 
-    private void validateTupleIsNotBeingTracked(DefaultRetryManager retryManager, MessageId messageId) {
+    private void validateTupleIsNotBeingTracked(ExponentialBackoffRetryManager retryManager, MessageId messageId) {
         // Loop through all failed tuples
         for (Long key : retryManager.getFailedMessageIds().keySet()) {
             Queue queue = retryManager.getFailedMessageIds().get(key);
