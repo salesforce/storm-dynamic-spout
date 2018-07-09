@@ -23,9 +23,10 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger.example;
+package com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper;
 
 import com.salesforce.storm.spout.documentation.ConfigDocumentation;
+import com.salesforce.storm.spout.sideline.recipes.trigger.FilterChainStepBuilder;
 
 import java.util.List;
 

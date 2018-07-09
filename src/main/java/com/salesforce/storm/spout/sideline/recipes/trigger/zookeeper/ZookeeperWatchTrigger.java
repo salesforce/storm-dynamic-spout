@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger.example;
+package com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
@@ -34,6 +34,8 @@ import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.handler.SidelineController;
+import com.salesforce.storm.spout.sideline.recipes.trigger.FilterChainStepBuilder;
+import com.salesforce.storm.spout.sideline.recipes.trigger.TriggerEvent;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;

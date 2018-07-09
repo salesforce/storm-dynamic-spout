@@ -23,7 +23,7 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.sideline.trigger.example;
+package com.salesforce.storm.spout.sideline.recipes.trigger;
 
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 
