@@ -47,7 +47,7 @@ public class FailedMsgRetryManagerPerformanceTest {
      */
     public void runTest() throws InterruptedException {
         // Create instance with default settings
-        RetryManager retryManager = new DefaultRetryManager();
+        RetryManager retryManager = new ExponentialBackoffRetryManager();
         retryManager.open(new HashMap<>());
 
         // Do warm up
@@ -56,7 +56,7 @@ public class FailedMsgRetryManagerPerformanceTest {
 
         // Now start test
         logger.info("STARTING TEST");
-        retryManager = new DefaultRetryManager();
+        retryManager = new ExponentialBackoffRetryManager();
         retryManager.open(new HashMap<>());
         doTest2(retryManager);
     }

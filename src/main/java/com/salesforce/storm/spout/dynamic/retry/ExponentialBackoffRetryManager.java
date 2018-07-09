@@ -45,7 +45,7 @@ import java.util.TreeMap;
  * The first retry will be attempted within MIN_RETRY_TIME_MS milliseconds.  Each attempt
  * after that will be retried at (FAIL_COUNT * MIN_RETRY_TIME_MS) milliseconds.
  */
-public class DefaultRetryManager implements RetryManager {
+public class ExponentialBackoffRetryManager implements RetryManager {
     /**
      * Define our retry limit.
      * A value of less than 0 will mean we'll retry forever

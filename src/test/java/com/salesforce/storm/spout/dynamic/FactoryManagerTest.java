@@ -26,7 +26,7 @@
 package com.salesforce.storm.spout.dynamic;
 
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager;
+import com.salesforce.storm.spout.dynamic.retry.ExponentialBackoffRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.NeverRetryManager;
 import com.salesforce.storm.spout.dynamic.retry.RetryManager;
 import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
@@ -76,7 +76,7 @@ public class FactoryManagerTest {
     public static Object[][] provideFailedMsgRetryManagerClasses() {
         return new Object[][]{
             { NeverRetryManager.class },
-            { DefaultRetryManager.class }
+            { ExponentialBackoffRetryManager.class }
         };
     }
 
