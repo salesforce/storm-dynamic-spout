@@ -30,7 +30,7 @@ import com.salesforce.storm.spout.dynamic.VirtualSpoutFactory;
 import com.salesforce.storm.spout.dynamic.handler.NoopSpoutHandler;
 import com.salesforce.storm.spout.dynamic.handler.NoopVirtualSpoutHandler;
 import com.salesforce.storm.spout.dynamic.kafka.Consumer;
-import com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager;
+import com.salesforce.storm.spout.dynamic.retry.ExponentialBackoffRetryManager;
 import com.salesforce.storm.spout.dynamic.metrics.LogRecorder;
 import com.salesforce.storm.spout.dynamic.buffer.RoundRobinBuffer;
 import org.slf4j.Logger;
@@ -192,7 +192,7 @@ public class SpoutConfig {
     /**
      * (String) Defines which RetryManager implementation to use.
      * Should be a full classpath to a class that implements the RetryManager interface.
-     * Default Value: "com.salesforce.storm.spout.dynamic.retry.DefaultRetryManager"
+     * Default Value: "com.salesforce.storm.spout.dynamic.retry.ExponentialBackoffRetryManager"
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
@@ -210,7 +210,7 @@ public class SpoutConfig {
      * A positive value means tuples will be retried up to this limit, then dropped.
      *
      * Default Value: -1
-     * Optional - Only required if you use the DefaultRetryManager implementation.
+     * Optional - Only required if you use the ExponentialBackoffRetryManager implementation.
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
@@ -229,7 +229,7 @@ public class SpoutConfig {
      * before the next retry attempt.
      *
      * Default Value: 2000 (2 seconds)
-     * Optional - Only required if you use the DefaultRetryManager implementation.
+     * Optional - Only required if you use the ExponentialBackoffRetryManager implementation.
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
@@ -247,7 +247,7 @@ public class SpoutConfig {
      * Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc.
      *
      * Default Value: 2.0
-     * Optional - Only required if you use the DefaultRetryManager implementation.
+     * Optional - Only required if you use the ExponentialBackoffRetryManager implementation.
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
@@ -261,7 +261,7 @@ public class SpoutConfig {
      * (long) Defines an upper bound of the max delay time between retried a failed tuple.
      *
      * Default Value: 900000 (15 minutes)
-     * Optional - Only required if you use the DefaultRetryManager implementation.
+     * Optional - Only required if you use the ExponentialBackoffRetryManager implementation.
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.DYNAMIC_SPOUT,
@@ -481,7 +481,7 @@ public class SpoutConfig {
             );
         }
         if (!clonedConfig.containsKey(RETRY_MANAGER_CLASS)) {
-            clonedConfig.put(RETRY_MANAGER_CLASS, DefaultRetryManager.class.getName());
+            clonedConfig.put(RETRY_MANAGER_CLASS, ExponentialBackoffRetryManager.class.getName());
             logger.info(
                 "Unspecified configuration value for {} using default value {}",
                 RETRY_MANAGER_CLASS, clonedConfig.get(RETRY_MANAGER_CLASS));
