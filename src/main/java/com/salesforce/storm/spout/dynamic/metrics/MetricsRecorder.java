@@ -42,18 +42,22 @@ public interface MetricsRecorder {
      * @param spoutConfig spout configuration.
      * @param topologyContext topology context.
      */
-    void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext);
+    default void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext) {
+    }
 
     /**
      * Perform any cleanup.
      */
-    void close();
+    default void close() {
+    }
 
     /**
      * Count a metric, given a name, increments it by 1.
      * @param metric metric definition.
      */
-    void count(final MetricDefinition metric);
+    default void count(final MetricDefinition metric) {
+        countBy(metric, 1L, new Object[0]);
+    }
 
     /**
      * Count a metric, given a name, increments it by 1.
@@ -61,14 +65,18 @@ public interface MetricsRecorder {
      * @param metricParameters when a {@link MetricDefinition} supports interpolation on it's key, for example "foo.{}.bar" the {}
      *                         can be replace with the supplied parameters.
      */
-    void count(final MetricDefinition metric, final Object... metricParameters);
+    default void count(final MetricDefinition metric, final Object... metricParameters) {
+        countBy(metric, 1L, metricParameters);
+    }
 
     /**
      * Count a metric, given a name, increments it by value.
      * @param metric metric definition.
      * @param incrementBy amount to increment the metric by.
      */
-    void countBy(final MetricDefinition metric, final long incrementBy);
+    default void countBy(final MetricDefinition metric, final long incrementBy) {
+        countBy(metric, incrementBy, new Object[0]);
+    }
 
     /**
      * Count a metric, given a name and increments by a specific amount.
@@ -93,7 +101,9 @@ public interface MetricsRecorder {
      * @param metric metric definition.
      * @param value value to be assigned.
      */
-    void assignValue(final MetricDefinition metric, final Object value);
+    default void assignValue(final MetricDefinition metric, final Object value) {
+        assignValue(metric, value, new Object[0]);
+    }
 
     /**
      * Starts a timer for the given sourceClass and metricName.
@@ -107,7 +117,9 @@ public interface MetricsRecorder {
      * Starts a timer for the given sourceClass and metricName.
      * @param metric metric definition.
      */
-    void startTimer(final MetricDefinition metric);
+    default void startTimer(final MetricDefinition metric) {
+        startTimer(metric, new Object[0]);
+    }
 
     /**
      * Stops and records a timer for the given sourceClass and metricName.
@@ -123,7 +135,9 @@ public interface MetricsRecorder {
      * @param metric metric definition.
      * @return How long elapsed in the timer, in milliseconds.
      */
-    long stopTimer(final MetricDefinition metric);
+    default long stopTimer(final MetricDefinition metric) {
+        return stopTimer(metric, new Object[0]);
+    }
 
     /**
      * Record a timer passing in the elapsed time.

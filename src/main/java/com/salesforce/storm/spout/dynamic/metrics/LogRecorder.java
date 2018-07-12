@@ -25,12 +25,9 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
-import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
 
-import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,33 +45,7 @@ public class LogRecorder implements MetricsRecorder {
     private final Map<String, Long> counters = new ConcurrentHashMap<>();
     private final Map<String, Object> assignedValues = new ConcurrentHashMap<>();
 
-    // For storing timer start values
-    private final Map<String, Long> timerStartValues = new ConcurrentHashMap<>();
-
-    @Override
-    public void open(Map spoutConfig, TopologyContext topologyContext) {
-    }
-
-    @Override
-    public void close() {
-        // Noop
-    }
-
-    @Override
-    public void count(final MetricDefinition metric) {
-        countBy(metric, 1L, new Object[0]);
-    }
-
-    @Override
-    public void count(final MetricDefinition metric, final Object... metricParameters) {
-        countBy(metric, 1L, metricParameters);
-
-    }
-
-    @Override
-    public void countBy(final MetricDefinition metric, final long incrementBy) {
-        countBy(metric, incrementBy, new Object[0]);
-    }
+    private final TimerManager timerManager = new TimerManager();
 
     @Override
     public void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
@@ -94,40 +65,21 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void assignValue(final MetricDefinition metric, final Object value) {
-        assignValue(metric, value, new Object[0]);
-    }
-
-    @Override
     public void startTimer(final MetricDefinition metric, final Object... metricParameters) {
         final String key = generateKey(metric, metricParameters);
-        timerStartValues.put(key, Clock.systemUTC().millis());
-    }
-
-    @Override
-    public void startTimer(final MetricDefinition metric) {
-        startTimer(metric, new Object[0]);
+        timerManager.start(key);
     }
 
     @Override
     public long stopTimer(final MetricDefinition metric, final Object... metricParameters) {
-        final long stopTime = Clock.systemUTC().millis();
-
+        // Build key from the metric
         final String key = generateKey(metric, metricParameters);
-        final Long startTime = timerStartValues.get(key);
 
-        if (startTime == null) {
-            logger.warn("Could not find timer key {}", key);
-            return -1;
-        }
-        final long elapsedTimeMs = stopTime - startTime;
-        logger.debug("[TIMER] {} + {}ms", key, elapsedTimeMs);
-        return elapsedTimeMs;
-    }
+        final long elapsedMs = timerManager.stop(key);
 
-    @Override
-    public long stopTimer(final MetricDefinition metric) {
-        return stopTimer(metric, new Object[0]);
+        logger.debug("[TIMER] {} + {}ms", key, elapsedMs);
+
+        return elapsedMs;
     }
 
     @Override
