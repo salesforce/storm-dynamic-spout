@@ -32,7 +32,6 @@ import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
 
 import java.time.Clock;
 import java.util.Map;
@@ -55,6 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class StormRecorder implements MetricsRecorder {
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
+
+    private KeyBuilder keyBuilder;
 
     /**
      * Contains a map of Assigned Metrics, which are used to set a metric to a specific value.
@@ -102,6 +103,8 @@ public class StormRecorder implements MetricsRecorder {
                 this.metricPrefix = "task-" + topologyContext.getThisTaskIndex();
             }
         }
+
+        this.keyBuilder = new KeyBuilder(this.metricPrefix);
 
         // Log how we got configured.
         logger.info("Configured with time window of {} seconds and using taskId prefixes?: {}",
@@ -214,20 +217,7 @@ public class StormRecorder implements MetricsRecorder {
      * @return in format of: "className.metricPrefix.metricName"
      */
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {
-        final StringBuilder keyBuilder = new StringBuilder();
-
-        // Conditionally add key prefix.
-        if (getMetricPrefix() != null && !getMetricPrefix().isEmpty()) {
-            keyBuilder
-                .append(getMetricPrefix())
-                .append(".");
-        }
-
-        // Our default implementation should include the simple class name in the key
-        keyBuilder.append(
-            MessageFormatter.format(metric.getKey(), parameters).getMessage()
-        );
-        return keyBuilder.toString();
+        return keyBuilder.build(metric, parameters);
     }
 
     /**

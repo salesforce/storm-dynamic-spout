@@ -42,6 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LogRecorder implements MetricsRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(LogRecorder.class);
+
+    private final KeyBuilder keyBuilder = new KeyBuilder(null);
+
     private final Map<String, Long> counters = new ConcurrentHashMap<>();
     private final Map<String, Object> assignedValues = new ConcurrentHashMap<>();
 
@@ -134,6 +137,6 @@ public class LogRecorder implements MetricsRecorder {
     }
 
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {
-        return MessageFormatter.format(metric.getKey(), parameters).getMessage();
+        return keyBuilder.build(metric, parameters);
     }
 }
