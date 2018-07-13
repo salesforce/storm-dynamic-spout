@@ -72,6 +72,11 @@ class TimerManager {
      * @param startMs time in millis to set as the start
      */
     void start(final String key, final long startMs) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Timer key cannot be null or empty."
+            );
+        }
         if (startValuesMs.containsKey(key)) {
             throw new IllegalStateException(
                 MessageFormatter.format("The timer key {} already exists in this instances of {}", key, getClass()).getMessage()
@@ -88,6 +93,11 @@ class TimerManager {
      * @return time elapsed in millis
      */
     long stop(final String key) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException(
+                "Timer key cannot be null or empty."
+            );
+        }
         if (!startValuesMs.containsKey(key)) {
             throw new IllegalStateException(
                 MessageFormatter.format("The timer key {} does not exist in this instance of {}", key, getClass().toString()).getMessage()

@@ -106,4 +106,44 @@ class TimerManagerTest {
             timerManager.stop(timerKey)
         );
     }
+
+    /**
+     * Test that starting a timer with a null key throws an exception.
+     */
+    @Test
+    void testStartingNullKey() {
+        final String timerKey = null;
+
+        final TimerManager timerManager = new TimerManager();
+
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            timerManager.start(timerKey)
+        );
+    }
+
+    /**
+     * Test that stopping a timer with a null key throws an exception.
+     */
+    @Test
+    void testStoppingNullKey() {
+        final String timerKey = null;
+
+        final TimerManager timerManager = new TimerManager();
+
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            timerManager.start(timerKey)
+        );
+    }
+
+    /**
+     * Test that setting a null clock throws an exception.
+     */
+    @Test
+    void testSettingNullClock() {
+        final TimerManager timerManager = new TimerManager();
+
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+            timerManager.setClock(null)
+        );
+    }
 }
