@@ -106,6 +106,11 @@ class TimerManager {
      * @return clock instance
      */
     private Clock getClock() {
+        if (this.clock == null) {
+            throw new IllegalStateException(
+                "Clock instance is null, you can't track elapsed time without a clock."
+            );
+        }
         return this.clock;
     }
 
@@ -115,6 +120,11 @@ class TimerManager {
      * @param clock clock instance for testing
      */
     void setClock(final Clock clock) {
+        if (clock == null) {
+            throw new IllegalArgumentException(
+                "Clock instance cannot be null."
+            );
+        }
         this.clock = clock;
     }
 }
