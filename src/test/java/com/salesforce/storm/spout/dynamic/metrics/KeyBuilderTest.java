@@ -94,4 +94,24 @@ class KeyBuilderTest {
             )
         );
     }
+
+    /**
+     * Test that a {@link KeyBuilder} with the wrong number of parameters works, but leaves the trailing placeholder.
+     */
+    @Test
+    void testWithMissingParameter() {
+        final String metricName = "custom_metric.{}.{}";
+        final MetricDefinition metricDefinition = new CustomMetric(metricName);
+        final String param1 = "foo";
+
+        final KeyBuilder keyBuilder = new KeyBuilder(null);
+
+        assertThat(
+            "Metric with parameters are formatted properly",
+            metricName.substring(0, metricName.length() - 6) + "." + param1 + ".{}",
+            equalTo(
+                keyBuilder.build(metricDefinition, new String[]{ param1 })
+            )
+        );
+    }
 }
