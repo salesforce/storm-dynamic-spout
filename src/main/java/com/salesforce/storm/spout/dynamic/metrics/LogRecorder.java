@@ -25,6 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.metrics;
 
+import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,12 @@ public class LogRecorder implements MetricsRecorder {
     private final Map<String, Long> counters = new ConcurrentHashMap<>();
     private final Map<String, Object> assignedValues = new ConcurrentHashMap<>();
 
-    private final TimerManager timerManager = new TimerManager();
+    private TimerManager timerManager;
+
+    @Override
+    public void open(final Map<String, Object> config, final TopologyContext topologyContext) {
+        timerManager = new TimerManager();
+    }
 
     @Override
     public void countBy(final MetricDefinition metric, final long incrementBy, final Object... metricParameters) {
