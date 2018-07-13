@@ -38,6 +38,10 @@ import java.util.Map;
 /**
  * A wrapper for recording metrics in Storm
  *
+ * ONLY USE WITH STORM 1.1 or lower.
+ *
+ * If you are running Storm 1.2 or higher you should use {@link DropwizardRecorder}
+ *
  * Learn more about Storm metrics here: http://storm.apache.org/releases/1.0.1/Metrics.html
  *
  * Use this as an instance variable on your bolt, make sure to create it inside of prepareBolt()
@@ -45,11 +49,11 @@ import java.util.Map;
  *
  * This will report metrics in the following format:
  *
- * Averaged Values: AVERAGES.[className].[metricPrefix].[metricName]
  * Gauge Values: GAUGES.[className].[metricPrefix].[metricName]
  * Timed Values: TIMERS.[className].[metricPrefix].[metricName]
  * Counter Values: COUNTERS.[className].[metricPrefix].[metricName]
  */
+@Deprecated
 public class StormRecorder implements MetricsRecorder {
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
 
