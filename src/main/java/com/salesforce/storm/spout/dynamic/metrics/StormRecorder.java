@@ -32,11 +32,8 @@ import org.apache.storm.metric.api.MultiReducedMetric;
 import org.apache.storm.task.TopologyContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.MessageFormatter;
 
-import java.time.Clock;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A wrapper for recording metrics in Storm
@@ -57,6 +54,11 @@ public class StormRecorder implements MetricsRecorder {
     private static final Logger logger = LoggerFactory.getLogger(StormRecorder.class);
 
     /**
+     * Constructs metric keys from a {@link MetricDefinition}.
+     */
+    private KeyBuilder keyBuilder;
+
+    /**
      * Contains a map of Assigned Metrics, which are used to set a metric to a specific value.
      */
     private MultiAssignableMetric assignedValues;
@@ -73,9 +75,9 @@ public class StormRecorder implements MetricsRecorder {
     private MultiCountMetric counters;
 
     /**
-     * For storing timer start values.
+     * Tracks timers start points and provides elapsed time when stopping.
      */
-    private final Map<String, Long> timerStartValues = new ConcurrentHashMap<>();
+    private final TimerManager timerManager = new TimerManager();
 
     /**
      * Allow configuring a prefix for metric keys.
@@ -103,6 +105,8 @@ public class StormRecorder implements MetricsRecorder {
             }
         }
 
+        this.keyBuilder = new KeyBuilder(this.metricPrefix);
+
         // Log how we got configured.
         logger.info("Configured with time window of {} seconds and using taskId prefixes?: {}",
             timeBucketSeconds, Boolean.toString(metricPrefix.isEmpty()));
@@ -111,26 +115,6 @@ public class StormRecorder implements MetricsRecorder {
         assignedValues = topologyContext.registerMetric("GAUGES", new MultiAssignableMetric(), timeBucketSeconds);
         timers = topologyContext.registerMetric("TIMERS", new MultiReducedMetric(new MeanReducer()), timeBucketSeconds);
         counters = topologyContext.registerMetric("COUNTERS", new MultiCountMetric(), timeBucketSeconds);
-    }
-
-    @Override
-    public void close() {
-        // Noop
-    }
-
-    @Override
-    public void count(final MetricDefinition metric) {
-        countBy(metric, 1L, new Object[0]);
-    }
-
-    @Override
-    public void count(final MetricDefinition metric, final Object... metricParameters) {
-        countBy(metric, 1L, metricParameters);
-    }
-
-    @Override
-    public void countBy(final MetricDefinition metric, final long incrementBy) {
-        countBy(metric, incrementBy, new Object[0]);
     }
 
     @Override
@@ -146,47 +130,21 @@ public class StormRecorder implements MetricsRecorder {
     }
 
     @Override
-    public void assignValue(final MetricDefinition metric, final Object value) {
-        assignValue(metric, value, new Object[0]);
-    }
-
-
-    @Override
     public void startTimer(final MetricDefinition metric, final Object... metricParameters) {
         final String key = generateKey(metric, metricParameters);
-        timerStartValues.put(key, Clock.systemUTC().millis());
-    }
-
-    @Override
-    public void startTimer(final MetricDefinition metric) {
-        startTimer(metric, new Object[0]);
+        timerManager.start(key);
     }
 
     @Override
     public long stopTimer(final MetricDefinition metric, final Object... metricParameters) {
-        // Get current time.
-        final long stopTime = Clock.systemUTC().millis();
-
         // Build key from the metric
         final String key = generateKey(metric, metricParameters);
 
-        // Determine the starting time for the key
-        final Long startTime = timerStartValues.get(key);
+        final long elapsedMs = timerManager.stop(key);
 
-        if (startTime == null) {
-            logger.warn("Could not find timer key {}", key);
-            return -1;
-        }
+        recordTimer(key, elapsedMs);
 
-        // Record Difference.
-        final long totalTimeMs = stopTime - startTime;
-        recordTimer(key, totalTimeMs);
-        return totalTimeMs;
-    }
-
-    @Override
-    public long stopTimer(final MetricDefinition metric) {
-        return stopTimer(metric, new Object[0]);
+        return elapsedMs;
     }
 
     @Override
@@ -214,20 +172,7 @@ public class StormRecorder implements MetricsRecorder {
      * @return in format of: "className.metricPrefix.metricName"
      */
     private String generateKey(final MetricDefinition metric, final Object[] parameters) {
-        final StringBuilder keyBuilder = new StringBuilder();
-
-        // Conditionally add key prefix.
-        if (getMetricPrefix() != null && !getMetricPrefix().isEmpty()) {
-            keyBuilder
-                .append(getMetricPrefix())
-                .append(".");
-        }
-
-        // Our default implementation should include the simple class name in the key
-        keyBuilder.append(
-            MessageFormatter.format(metric.getKey(), parameters).getMessage()
-        );
-        return keyBuilder.toString();
+        return keyBuilder.build(metric, parameters);
     }
 
     /**
