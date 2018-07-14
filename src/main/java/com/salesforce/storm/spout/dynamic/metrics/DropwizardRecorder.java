@@ -31,7 +31,7 @@ import com.codahale.metrics.Timer;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import org.apache.storm.task.TopologyContext;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -48,9 +48,9 @@ public class DropwizardRecorder implements MetricsRecorder {
     private KeyBuilder keyBuilder;
     private TimerManager timerManager = new TimerManager();
 
-    private final Map<MetricDefinition, Timer> timers = new HashMap<>();
-    private final Map<MetricDefinition, Counter> counters = new HashMap<>();
-    private final Map<MetricDefinition, Histogram> histograms = new HashMap<>();
+    private final Map<MetricDefinition, Timer> timers = new ConcurrentHashMap<>();
+    private final Map<MetricDefinition, Counter> counters = new ConcurrentHashMap<>();
+    private final Map<MetricDefinition, Histogram> histograms = new ConcurrentHashMap<>();
 
     @Override
     public void open(final Map<String, Object> spoutConfig, final TopologyContext topologyContext) {
