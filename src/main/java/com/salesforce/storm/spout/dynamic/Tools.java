@@ -44,12 +44,11 @@ public class Tools {
      * @param sourceMap map we want to shallow clone and make immutable.
      * @param <K> key of the map.
      * @param <V> value of the map.
-     * @return sshallow cloned map that is immutable.
+     * @return shallow cloned map that is immutable.
      */
     public static <K,V> Map<K,V> immutableCopy(Map<K,V> sourceMap) {
         // Create a new map and add all entries from the source map
-        Map<K,V> copy = new HashMap<>();
-        copy.putAll(sourceMap);
+        Map<K, V> copy = new HashMap<>(sourceMap);
 
         // Wrap it in an unmodifiable map.
         return Collections.unmodifiableMap(copy);
