@@ -47,7 +47,7 @@ public class Config {
         description = "Class name for the class of the FilterChainStepBuilder instance.",
         type = String.class
     )
-    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = "sideline.zookeeper_watch_trigger.filter_chain_step_builder_class";
+    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = PREFIX + "filter_chain_step_builder_class";
 
     /**
      * (List[String]) Holds a list of Zookeeper server Hostnames + Ports in the following format:
@@ -58,17 +58,20 @@ public class Config {
         + "[\"zkhost1:2181\", \"zkhost2:2181\", ...]",
         type = List.class
     )
-    public static final String ZK_SERVERS = "sideline.zookeeper_watch_trigger.servers";
+    public static final String ZK_SERVERS = PREFIX + "servers";
 
     /**
-     * (List[String]) Defines the root paths to watch for events under.
-     * Example: "/sideline-trigger"
+     * (String) Defines the root path to watch for events under.
+     * It is recommended that you scope your root to your topology and kafka topic.
+     * Example: /sideline-trigger/my-topology/my-topic
      */
     @ConfigDocumentation(
-        description = "Defines the root paths to watch for events under. Example: \"/sideline-trigger\"",
-        type = List.class
+        description = "Defines the root path to watch for events under. "
+            + "It is recommended that you scope your root to your topology and kafka topic."
+            + "Example: \"/sideline-trigger/my-topology/my-topic\"",
+        type = String.class
     )
-    public static final String ZK_ROOTS = "sideline.zookeeper_watch_trigger.roots";
+    public static final String ZK_ROOT = PREFIX + "roots";
 
     /**
      * (Integer) Zookeeper session timeout.
@@ -77,7 +80,7 @@ public class Config {
         description = "Zookeeper session timeout.",
         type = Integer.class
     )
-    public static final String ZK_SESSION_TIMEOUT = "sideline.zookeeper_watch_trigger.session_timeout";
+    public static final String ZK_SESSION_TIMEOUT = PREFIX + "session_timeout";
 
     /**
      * (Integer) Zookeeper connection timeout.
@@ -86,7 +89,7 @@ public class Config {
         description = "Zookeeper connection timeout.",
         type = Integer.class
     )
-    public static final String ZK_CONNECTION_TIMEOUT = "sideline.zookeeper_watch_trigger.connection_timeout";
+    public static final String ZK_CONNECTION_TIMEOUT = PREFIX + "connection_timeout";
 
     /**
      * (Integer) Zookeeper retry attempts.
@@ -95,7 +98,7 @@ public class Config {
         description = "Zookeeper retry attempts.",
         type = Integer.class
     )
-    public static final String ZK_RETRY_ATTEMPTS = "sideline.zookeeper_watch_trigger.retry_attempts";
+    public static final String ZK_RETRY_ATTEMPTS = PREFIX + "retry_attempts";
 
     /**
      * (Integer) Zookeeper retry interval.
@@ -104,5 +107,5 @@ public class Config {
         description = "Zookeeper retry interval.",
         type = Integer.class
     )
-    public static final String ZK_RETRY_INTERVAL = "sideline.zookeeper_watch_trigger.retry_interval";
+    public static final String ZK_RETRY_INTERVAL = PREFIX + "retry_interval";
 }
