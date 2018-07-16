@@ -59,23 +59,8 @@ public class DropwizardRecorder implements MetricsRecorder {
         // Store the TopologyContext for later use when we need to register metrics.
         this.topologyContext = topologyContext;
 
-        this.keyBuilder = new KeyBuilder(getMetricRecorderTaskIdPrefix());
+        this.keyBuilder = new KeyBuilder(null);
 
-    }
-
-    private String getMetricRecorderTaskIdPrefix() {
-        // We allow this option so that if you're using Graphite you can keep your key total down
-        if (!spoutConfig.containsKey(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX)) {
-            return null;
-        }
-
-        // We have the key, assuming it's a Boolean we'll return it
-        final Object taskIdCfgValue = spoutConfig.get(SpoutConfig.METRICS_RECORDER_ENABLE_TASK_ID_PREFIX);
-        if (taskIdCfgValue instanceof Boolean && (Boolean) taskIdCfgValue) {
-            return "task" + topologyContext.getThisTaskIndex();
-        }
-
-        return null;
     }
 
     @Override
