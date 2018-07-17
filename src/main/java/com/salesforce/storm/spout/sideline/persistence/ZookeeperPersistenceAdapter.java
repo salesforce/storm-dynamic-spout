@@ -27,7 +27,6 @@ package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.ConsumerPartition;
-import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
@@ -103,13 +102,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
             SidelineSpout.class.getSimpleName() + ":" + getClass().getSimpleName()
         );
 
-        this.curatorHelper = new CuratorHelper(
-            curator,
-            new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd HH:mm:ss")
-                .registerTypeAdapterFactory(new FilterChainStepTypeAdapterFactory())
-                .create()
-        );
+        this.curatorHelper = new CuratorHelper(curator);
     }
 
     /**

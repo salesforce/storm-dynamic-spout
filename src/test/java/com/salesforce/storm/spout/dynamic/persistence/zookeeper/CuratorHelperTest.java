@@ -104,7 +104,7 @@ public class CuratorHelperTest {
 
             // Read
             @SuppressWarnings("unchecked")
-            final Map<String, Object> resultMap = curatorHelper.readJson(path);
+            final Map<String, Object> resultMap = curatorHelper.readJson(path, HashMap.class);
 
             // Validate
             assertNotNull(resultMap, "Not null result");
