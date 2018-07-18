@@ -103,6 +103,9 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      */
     private final List<PathChildrenCache> caches = new ArrayList<>();
 
+    /**
+     * Set of all the sideline requests that have been processed by the trigger.
+     */
     private final Set<SidelineRequest> sidelineRequests = new HashSet<>();
 
     /**
@@ -112,19 +115,11 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         .setDateFormat("yyyy-MM-dd HH:mm:ss")
         .create();
 
-    /**
-     * Set the {@link SidelineController} on this trigger instance.
-     * @param sidelineController sideline controller instance.
-     */
     @Override
     public void setSidelineController(final SidelineController sidelineController) {
         this.sidelineController = sidelineController;
     }
 
-    /**
-     * Open the trigger, connect to Zookeeper and setup our watches.
-     * @param config spout configuration
-     */
     @Override
     public void open(final Map<String, Object> config) {
         if (isOpen) {
@@ -136,8 +131,8 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         logger.info("Opening {}", this.getClass());
 
         Preconditions.checkArgument(
-            config.containsKey(Config.ZK_ROOTS),
-            "One or more roots must be configured in Zookeeper to watch for events."
+            config.containsKey(Config.ZK_ROOT),
+            "A root in Zookeeper must be configured to watch for events."
         );
 
         curator = CuratorFactory.createNewCuratorInstance(
@@ -152,65 +147,60 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         );
 
         @SuppressWarnings("unchecked")
-        final List<String> roots = (List<String>) config.get(Config.ZK_ROOTS);
+        final String root = (String) config.get(Config.ZK_ROOT);
 
         // Starting and stopping triggers fire off at almost the exact same time so we need to do this here rather
         // than after all of our other setup occurs.
         isOpen = true;
 
-        for (final String root : roots) {
-            try {
-                // Check if this path exists
-                if (curator.checkExists().forPath(root) == null) {
-                    logger.warn("Configured root {} does not exist", root);
+        try {
+            // Check if this path exists
+            if (curator.checkExists().forPath(root) == null) {
+                logger.warn("Configured root {} does not exist", root);
 
-                    // Attempt to create the root if it does not exist.
-                    curator
-                        .create()
-                        .creatingParentsIfNeeded()
-                        .forPath(root, new byte[0]);
-                } else {
-                    // Load the existing requests from it
-                    final List<String> sidelineRequests = curator.getChildren().forPath(root);
+                // Attempt to create the root if it does not exist.
+                curator
+                    .create()
+                    .creatingParentsIfNeeded()
+                    .forPath(root, new byte[0]);
+            } else {
+                // Load the existing requests from it
+                final List<String> sidelineRequests = curator.getChildren().forPath(root);
 
-                    for (final String sidelineRequest : sidelineRequests) {
-                        final byte[] data = curator.getData().forPath(root + "/" + sidelineRequest);
-                        final TriggerEvent triggerEvent = getTriggerEvent(data);
+                for (final String sidelineRequest : sidelineRequests) {
+                    final byte[] data = curator.getData().forPath(root + "/" + sidelineRequest);
+                    final TriggerEvent triggerEvent = getTriggerEvent(data);
 
-                        logger.info("Loading existing TriggerEvent {}", triggerEvent);
+                    logger.info("Loading existing TriggerEvent {}", triggerEvent);
 
-                        handleSidelining(root + "/" + sidelineRequest, triggerEvent);
-                    }
+                    handleSidelining(root + "/" + sidelineRequest, triggerEvent);
                 }
-
-                logger.info("Creating cache for {}", root);
-
-                final SidelineTriggerWatch watch = new SidelineTriggerWatch();
-
-                // Now setup our watch so that we see future changes as they come through
-                final PathChildrenCache cache = new PathChildrenCache(curator, root, true);
-                cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-                cache.getListenable().addListener(watch);
-
-                // Block the process until we have received our initialization event.
-                while (!watch.isInitialized()) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ex) {
-                        logger.error("Interrupted while waiting for the listener to initialize.");
-                    }
-                }
-
-                caches.add(cache);
-            } catch (Exception ex) {
-                logger.error("Error creating PathChildrenCache for {} {}", root, ex);
             }
+
+            logger.info("Creating cache for {}", root);
+
+            final SidelineTriggerWatch watch = new SidelineTriggerWatch();
+
+            // Now setup our watch so that we see future changes as they come through
+            final PathChildrenCache cache = new PathChildrenCache(curator, root, true);
+            cache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+            cache.getListenable().addListener(watch);
+
+            // Block the process until we have received our initialization event.
+            while (!watch.isInitialized()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    logger.error("Interrupted while waiting for the listener to initialize.");
+                }
+            }
+
+            caches.add(cache);
+        } catch (Exception ex) {
+            logger.error("Error creating PathChildrenCache for {} {}", root, ex);
         }
     }
 
-    /**
-     * Close the trigger.
-     */
     @Override
     public void close() {
         // Close each of the caches that we originally opened
@@ -254,9 +244,8 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         }
 
         // Track all of the sideline requests we've built from TriggerEvent's
-        if (!sidelineRequests.contains(sidelineRequest)) {
-            sidelineRequests.add(sidelineRequest);
-        }
+        // This is a HashSet so if it already exists the collection is still unique
+        getSidelineRequests().add(sidelineRequest);
 
         if (triggerEvent.getType().equals(SidelineType.START)) {
             logger.info("Starting sideline request {} from event {}", sidelineRequest, triggerEvent);
@@ -361,6 +350,10 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         }
     }
 
+    /**
+      * Get a set of all the sideline requests that have been processed by the trigger.
+     * @return set of all the sideline requests that have been processed by the trigger.
+     */
     Set<SidelineRequest> getSidelineRequests() {
         return this.sidelineRequests;
     }
@@ -419,7 +412,11 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             }
         }
 
-        public boolean isInitialized() {
+        /**
+         * Whether or not the initialization event has been processed by the watch.
+         * @return true if the watch has been processed, false if it has not.
+         */
+        boolean isInitialized() {
             return isInitialized;
         }
     }

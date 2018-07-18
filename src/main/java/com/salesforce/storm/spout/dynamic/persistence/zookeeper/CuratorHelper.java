@@ -25,8 +25,7 @@
 
 package com.salesforce.storm.spout.dynamic.persistence.zookeeper;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.salesforce.storm.spout.dynamic.JSON;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.zookeeper.CreateMode;
@@ -35,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -54,29 +52,11 @@ public class CuratorHelper {
     private CuratorFramework curator;
 
     /**
-     * JSON parser.
-     */
-    private final Gson gson;
-
-    /**
      * Helper methods for common tasks when working with Curator.
      * @param curator curator instance.
      */
     public CuratorHelper(final CuratorFramework curator) {
-        this(
-            curator,
-            new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").create()
-        );
-    }
-
-    /**
-     * Helper methods for common tasks when working with Curator.
-     * @param curator curator instance.
-     * @param gson JSON parser instance.
-     */
-    public CuratorHelper(final CuratorFramework curator, Gson gson) {
         this.curator = curator;
-        this.gson = gson;
     }
 
     /**
@@ -86,20 +66,7 @@ public class CuratorHelper {
      */
     public void writeJson(final String path, final Object data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, gson.toJson(data).getBytes(StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Read data from Zookeeper that has been stored as JSON.
-     *
-     * This method will return a HashMap from the JSON.  You should consider using {@link #readJson(String, Class)} instead as it
-     * will deserialize the JSON to a concrete class.
-     *
-     * @param path node containing JSON to read from.
-     * @return map representing the JSON stored within the zookeeper node.
-     */
-    public HashMap readJson(final String path) {
-        return readJson(path, HashMap.class);
+        writeBytes(path, JSON.to(data).getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -118,7 +85,7 @@ public class CuratorHelper {
             if (bytes == null) {
                 return null;
             }
-            return gson.fromJson(new String(bytes, StandardCharsets.UTF_8), clazz);
+            return JSON.from(new String(bytes, StandardCharsets.UTF_8), clazz);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

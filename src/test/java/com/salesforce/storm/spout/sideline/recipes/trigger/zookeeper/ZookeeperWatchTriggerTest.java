@@ -84,7 +84,7 @@ public class ZookeeperWatchTriggerTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZookeeperConnectionString()));
-        config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
+        config.put(Config.ZK_ROOT, zkRoot);
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(
             SpoutConfig.PERSISTENCE_ADAPTER_CLASS,
@@ -202,7 +202,7 @@ public class ZookeeperWatchTriggerTest {
         final Map<String, Object> config = SpoutConfig.setDefaults(new HashMap<>());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerId);
         config.put(Config.ZK_SERVERS, Collections.singletonList(getZookeeperConnectionString()));
-        config.put(Config.ZK_ROOTS, Collections.singletonList(zkRoot));
+        config.put(Config.ZK_ROOT, zkRoot);
         config.put(SpoutConfig.CONSUMER_CLASS, MockConsumer.class.getName());
         config.put(
             SpoutConfig.PERSISTENCE_ADAPTER_CLASS,

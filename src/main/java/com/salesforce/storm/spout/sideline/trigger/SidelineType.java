@@ -46,5 +46,27 @@ public enum SidelineType {
      * cease to run whenever it reached that {@link com.salesforce.storm.spout.dynamic.consumer.ConsumerState}. The filter is also
      * removed from the firehose, so that future record's are processed in real time.
      */
-    RESOLVE,
+    RESOLVE;
+
+    /**
+     * Get a {@link SidelineType} from a provided string.
+     * @param value string that maps to a specific sideline type.
+     * @return sideline type from the provided string.
+     */
+    public static SidelineType fromValue(final String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Provided value cannot be null.");
+        }
+
+        switch (value.toLowerCase()) {
+            case "start":
+                return SidelineType.START;
+            case "resume":
+                return SidelineType.RESUME;
+            case "resolve":
+                return SidelineType.RESOLVE;
+            default:
+                throw new IllegalArgumentException("Provided \"" + value + "\" is not a valid sideline type.");
+        }
+    }
 }
