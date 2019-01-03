@@ -140,7 +140,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             getClass().getSimpleName()
         );
 
-        curatorHelper = new CuratorHelper(curator);
+        curatorHelper = new CuratorHelper(curator, config);
 
         filterChainStepBuilder = FactoryManager.createNewInstance(
             (String) config.get(Config.FILTER_CHAIN_STEP_BUILDER_CLASS)

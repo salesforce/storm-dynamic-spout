@@ -74,11 +74,18 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
     private CuratorFramework curator;
 
     /**
+     * Config.
+     */
+    private Map<String, Object> spoutConfig;
+
+    /**
      * Loads in configuration and sets up zookeeper/curator connection.
      * @param spoutConfig spout configuration.
      */
     @Override
     public void open(final Map<String, Object> spoutConfig) {
+        this.spoutConfig = spoutConfig;
+
         // Root node / prefix to write entries under.
         final String zkRoot = (String) spoutConfig.get(SidelineConfig.PERSISTENCE_ZK_ROOT);
         final String consumerId = (String) spoutConfig.get(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX);
@@ -102,7 +109,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
             SidelineSpout.class.getSimpleName() + ":" + getClass().getSimpleName()
         );
 
-        this.curatorHelper = new CuratorHelper(curator);
+        this.curatorHelper = new CuratorHelper(curator, spoutConfig);
     }
 
     /**

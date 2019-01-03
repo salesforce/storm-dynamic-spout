@@ -50,6 +50,19 @@ public class SidelineConfig {
     )
     public static final String TRIGGER_CLASS = "sideline.trigger_class";
 
+
+    /**
+     * (String) Defines a filter chain step that is used during sidelining.
+     * Should be a fully qualified class path that implements thee FilterChainStep interface.
+     */
+    @ConfigDocumentation(
+        category = ConfigDocumentation.Category.SIDELINE,
+        description = "Defines a filter chain step that is used during sidelining. "
+            + "Should be a fully qualified class path that implements thee FilterChainStep interface.",
+        type = String.class
+    )
+    public static final String FILTER_CHAIN_STEP_CLASS = "sideline.filter_chain_step_class";
+
     /**
      * (Integer) Interval (in seconds) to check running sidelines and refresh them if necessary.
      */

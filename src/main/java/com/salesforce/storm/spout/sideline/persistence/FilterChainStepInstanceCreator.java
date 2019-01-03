@@ -23,58 +23,55 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
+package com.salesforce.storm.spout.sideline.persistence;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.common.base.Preconditions;
+import com.google.gson.InstanceCreator;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
-import com.salesforce.storm.spout.sideline.persistence.FilterChainStepInstanceCreator;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
- * Thin wrapper around JSON parsing.
- *
- * Intended to hide the particular JSON implementation of the day.
+ * Gson handler for creating FilterChainStep instances.
  */
-@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-public class JSON {
+public class FilterChainStepInstanceCreator implements InstanceCreator<FilterChainStep> {
 
     /**
-     * JSON parser.
-     *
-     * Includes a special handler for serialized FilterChainSteps, which we hope to now always have to handle this way.
+     * Configuration from the spout.
      */
-    private final Gson gson;
+    private final Map<String, Object> config;
 
     /**
-     * Create JSON serializer/deserializer instance with default configuration.
-     * @param config configuration.
+     * Gson handler for creating FilterChainStep instances.
+     * @param config configuration from the spout.
      */
-    public JSON(final Map<String, Object> config) {
-        this.gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd HH:mm:ss")
-            .registerTypeAdapter(FilterChainStep.class, new FilterChainStepInstanceCreator(config))
-            .create();
+    public FilterChainStepInstanceCreator(final Map<String, Object> config) {
+        this.config = config;
     }
 
-    /**
-     * Convert an object to a string of JSON.
-     * @param value object to be converted.
-     * @return string of JSON.
-     */
-    public String to(final Object value) {
-        return gson.toJson(value);
+    @Override
+    public FilterChainStep createInstance(Type type) {
+        try {
+            final Class<? extends FilterChainStep> clazz = getClassInstance((String) config.get(SidelineConfig.FILTER_CHAIN_STEP_CLASS));
+            return clazz.newInstance();
+        } catch (InstantiationException | IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
-    /**
-     * Convert a string of JSON to an object.
-     * @param value string of JSON to be converted.
-     * @param clazz class of object to convert the JSON to.
-     * @param <T> type to be used for returns.
-     * @return object converted from JSON.
-     */
-    public <T> T from(final String value, final Class<T> clazz) {
-        return gson.fromJson(value, clazz);
+    @SuppressWarnings("unchecked")
+    private Class<? extends FilterChainStep> getClassInstance(String className) {
+        Preconditions.checkArgument(
+            className != null && !className.isEmpty(),
+            "A valid class name must be specified for " + SidelineConfig.FILTER_CHAIN_STEP_CLASS
+        );
+
+        try {
+            return (Class<? extends FilterChainStep>) Class.forName(className);
+        } catch (ClassNotFoundException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

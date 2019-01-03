@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Helper methods for common tasks when working with Curator.
@@ -49,14 +50,20 @@ public class CuratorHelper {
     /**
      * Curator instance.
      */
-    private CuratorFramework curator;
+    private final CuratorFramework curator;
+
+    /**
+     * JSON serializer/deserializer instance.
+     */
+    private final JSON json;
 
     /**
      * Helper methods for common tasks when working with Curator.
      * @param curator curator instance.
      */
-    public CuratorHelper(final CuratorFramework curator) {
+    public CuratorHelper(final CuratorFramework curator, final Map<String, Object> config) {
         this.curator = curator;
+        this.json = new JSON(config);
     }
 
     /**
@@ -66,7 +73,7 @@ public class CuratorHelper {
      */
     public void writeJson(final String path, final Object data) {
         logger.debug("Zookeeper Writing {} the data {}", path, data.toString());
-        writeBytes(path, JSON.to(data).getBytes(StandardCharsets.UTF_8));
+        writeBytes(path, json.to(data).getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -85,7 +92,8 @@ public class CuratorHelper {
             if (bytes == null) {
                 return null;
             }
-            return JSON.from(new String(bytes, StandardCharsets.UTF_8), clazz);
+            final String data = new String(bytes, StandardCharsets.UTF_8);
+            return json.from(data, clazz);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

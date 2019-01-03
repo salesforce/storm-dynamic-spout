@@ -741,6 +741,7 @@ public class SidelineSpoutTest {
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter.class.getName()
         );
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, StaticMessageFilter.class.getName());
 
         return config;
     }

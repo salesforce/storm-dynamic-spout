@@ -25,6 +25,11 @@
 
 package com.salesforce.storm.spout.dynamic;
 
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequestIdentifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -57,7 +62,7 @@ class JSONTest {
     void testTo() {
         assertEquals(
             json,
-            JSON.to(jsonMap)
+            new JSON(new HashMap<>()).to(jsonMap)
         );
     }
 
@@ -68,7 +73,36 @@ class JSONTest {
     void testFrom() {
         assertEquals(
             jsonMap,
-            JSON.from(json, HashMap.class)
+            new JSON(new HashMap<>()).from(json, HashMap.class)
+        );
+    }
+
+    /**
+     * Test that a sideline request with a FilterChainStep instance can deserialize properly.
+     *
+     * TODO: This should be moved to a separate test class inside of the sideline project.
+     */
+    @Test
+    void testSidelineRequest() {
+        final Map<String, Object> config = new HashMap<>();
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, StaticMessageFilter.class.getName());
+
+        final JSON json = new JSON(config);
+
+        final FilterChainStep filterChainStep = new StaticMessageFilter();
+        final SidelineRequest sidelineRequest = new SidelineRequest(
+            new SidelineRequestIdentifier("foo"),
+            filterChainStep
+        );
+
+        final String data1 = json.to(filterChainStep);
+
+        final String data2 = json.to(sidelineRequest);
+
+        System.out.println(data2);
+
+        System.out.println(
+            json.from(data2, SidelineRequest.class)
         );
     }
 }
