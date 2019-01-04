@@ -100,7 +100,7 @@ public class ZookeeperWatchTriggerTest {
             Tools.stripKeyPrefix(Config.PREFIX, config),
             getClass().getSimpleName()
         );
-        final CuratorHelper curatorHelper = new CuratorHelper(currator);
+        final CuratorHelper curatorHelper = new CuratorHelper(currator, config);
 
         final SidelineSpoutHandler sidelineSpoutHandler = Mockito.mock(SidelineSpoutHandler.class);
 
@@ -218,7 +218,7 @@ public class ZookeeperWatchTriggerTest {
             Tools.stripKeyPrefix(Config.PREFIX, config),
             getClass().getSimpleName()
         );
-        final CuratorHelper curatorHelper = new CuratorHelper(currator);
+        final CuratorHelper curatorHelper = new CuratorHelper(currator, config);
 
         // We're going to turn some events into JSON
         final Gson gson = new GsonBuilder()

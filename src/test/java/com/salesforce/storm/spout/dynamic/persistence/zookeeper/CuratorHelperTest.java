@@ -73,7 +73,7 @@ public class CuratorHelperTest {
 
         try (final CuratorFramework curator = createCurator()) {
             // Write
-            final CuratorHelper curatorHelper = new CuratorHelper(curator);
+            final CuratorHelper curatorHelper = new CuratorHelper(curator, new HashMap<>());
             curatorHelper.writeBytes(path, valueBytes);
 
             // Read
@@ -99,7 +99,7 @@ public class CuratorHelperTest {
 
         try (final CuratorFramework curator = createCurator()) {
             // Write
-            final CuratorHelper curatorHelper = new CuratorHelper(curator);
+            final CuratorHelper curatorHelper = new CuratorHelper(curator, new HashMap<>());
             curatorHelper.writeJson(path, jsonMap);
 
             // Read
@@ -137,7 +137,7 @@ public class CuratorHelperTest {
                 .forPath(childPath);
 
             // Now create our helper
-            final CuratorHelper curatorHelper = new CuratorHelper(curator);
+            final CuratorHelper curatorHelper = new CuratorHelper(curator, new HashMap<>());
 
             // Call our method
             curatorHelper.deleteNodeIfNoChildren(basePath);
@@ -184,7 +184,7 @@ public class CuratorHelperTest {
                 .forPath(basePath);
 
             // Now create our helper
-            final CuratorHelper curatorHelper = new CuratorHelper(curator);
+            final CuratorHelper curatorHelper = new CuratorHelper(curator, new HashMap<>());
 
             // Call our method
             curatorHelper.deleteNodeIfNoChildren(basePath);
@@ -227,7 +227,7 @@ public class CuratorHelperTest {
         when(mockCurator.delete()).thenReturn(mockDeleteBuilder);
 
         // Now create our helper
-        final CuratorHelper curatorHelper = new CuratorHelper(mockCurator);
+        final CuratorHelper curatorHelper = new CuratorHelper(mockCurator, new HashMap<>());
 
         // Call our method
         curatorHelper.deleteNodeIfNoChildren(basePath);

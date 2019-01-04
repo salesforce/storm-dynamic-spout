@@ -331,22 +331,13 @@ public class ZookeeperPersistenceAdapterTest {
         // 3. Attempt to persist some state.
         final String topicName = "MyTopic";
 
-        // Define our expected result that will be stored in zookeeper
-        final Map<String,String> idMap = new HashMap<>();
-        idMap.put("id", "test");
-
-        final Map<String,Object> requestMap = new HashMap<>();
-        requestMap.put("id", idMap);
-        requestMap.put(
-            "step",
-            "rO0ABXNyAD1jb20uc2FsZXNmb3JjZS5zdG9ybS5zcG91dC5keW5hbWljLmZpbHRlci5TdGF0aWNNZXN"
-            + "zYWdlRmlsdGVy3eauq5nDVrUCAAFMAAJpZHQAEkxqYXZhL2xhbmcvU3RyaW5nO3hwdAAEdGVzdA=="
-        );
-
         final Map<String,Object> expectedJsonMap = new HashMap<>();
-        expectedJsonMap.put("request", requestMap);
+        expectedJsonMap.put("request", new SidelineRequest(
+            new SidelineRequestIdentifier("test"),
+            new StaticMessageFilter("test")
+        ));
         expectedJsonMap.put("type", SidelineType.START.toString());
-        expectedJsonMap.put("id", idMap);
+        expectedJsonMap.put("id", new SidelineRequestIdentifier("test"));
         expectedJsonMap.put("startingOffset", 1L);
         expectedJsonMap.put("endingOffset", 2L);
 
@@ -661,6 +652,7 @@ public class ZookeeperPersistenceAdapterTest {
         Map<String, Object> config = new HashMap<>();
         config.put(SidelineConfig.PERSISTENCE_ZK_SERVERS, zkServers);
         config.put(SidelineConfig.PERSISTENCE_ZK_ROOT, zkRootNode);
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, StaticMessageFilter.class.getName());
         config.put(SpoutConfig.VIRTUAL_SPOUT_ID_PREFIX, consumerIdPrefix);
 
         return Tools.immutableCopy(SpoutConfig.setDefaults(config));

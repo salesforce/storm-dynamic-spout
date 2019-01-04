@@ -95,7 +95,7 @@ public class ZookeeperPersistenceAdapter implements PersistenceAdapter {
             getClass().getSimpleName()
         );
 
-        this.curatorHelper = new CuratorHelper(curator);
+        this.curatorHelper = new CuratorHelper(curator, spoutConfig);
     }
 
     /**

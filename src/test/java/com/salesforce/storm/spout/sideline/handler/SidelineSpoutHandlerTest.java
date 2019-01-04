@@ -364,9 +364,9 @@ public class SidelineSpoutHandlerTest {
         assertEquals(SidelineType.RESUME, sidelinePayload.type, "Sideline type should match");
         assertEquals(request.id, sidelinePayload.id, "Sideline request id should match");
         assertEquals(
-            new NegatingFilterChainStep(request.step),
+            request.step,
             sidelinePayload.request.step,
-            "Sideline payload should have a negated copy of the request filter step"
+            "Sideline payload should be the same as on the fire hose, it's negated at runtime by the handler"
         );
         assertEquals(Long.valueOf(1L), sidelinePayload.startingOffset, "Sideline starting offset should be at 1");
         assertNull(sidelinePayload.endingOffset, "Sideline ending offset should not be set");

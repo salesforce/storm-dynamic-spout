@@ -27,7 +27,10 @@ package com.salesforce.storm.spout.dynamic;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.salesforce.storm.spout.sideline.persistence.FilterChainStepTypeAdapterFactory;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.sideline.persistence.FilterChainStepSerializer;
+
+import java.util.Map;
 
 /**
  * Thin wrapper around JSON parsing.
@@ -42,17 +45,25 @@ public class JSON {
      *
      * Includes a special handler for serialized FilterChainSteps, which we hope to now always have to handle this way.
      */
-    private static Gson gson = new GsonBuilder()
-        .setDateFormat("yyyy-MM-dd HH:mm:ss")
-        .registerTypeAdapterFactory(new FilterChainStepTypeAdapterFactory())
-        .create();
+    private final Gson gson;
+
+    /**
+     * Create JSON serializer/deserializer instance with default configuration.
+     * @param config configuration.
+     */
+    public JSON(final Map<String, Object> config) {
+        this.gson = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd HH:mm:ss")
+            .registerTypeAdapter(FilterChainStep.class, new FilterChainStepSerializer(config))
+            .create();
+    }
 
     /**
      * Convert an object to a string of JSON.
      * @param value object to be converted.
      * @return string of JSON.
      */
-    public static String to(final Object value) {
+    public String to(final Object value) {
         return gson.toJson(value);
     }
 
@@ -63,7 +74,7 @@ public class JSON {
      * @param <T> type to be used for returns.
      * @return object converted from JSON.
      */
-    public static <T> T from(final String value, final Class<T> clazz) {
+    public <T> T from(final String value, final Class<T> clazz) {
         return gson.fromJson(value, clazz);
     }
 }
