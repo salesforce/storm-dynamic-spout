@@ -47,10 +47,10 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -293,7 +293,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             logger.info("Creating a sideline request with id {} and step {}", sidelineRequest.id, sidelineRequest.step);
 
             return sidelineRequest;
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException ex) {
+        } catch (NoSuchAlgorithmException ex) {
             logger.error("Unable to generate an identifier for this request, cowardly refusing to proceed! {}", ex);
             return null;
         }
@@ -309,12 +309,10 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
     private SidelineRequestIdentifier generateSidelineRequestIdentifier(
         final TriggerEvent triggerEvent,
         final FilterChainStep step
-    ) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+    ) throws NoSuchAlgorithmException {
         final String json = gson.toJson(step);
 
-        final StringBuilder identifier = new StringBuilder(
-            DatatypeConverter.printHexBinary(MessageDigest.getInstance("MD5").digest(json.getBytes("UTF-8")))
-        );
+        final StringBuilder identifier = new StringBuilder(generateIdFromJson(json));
 
         // If we were provided a date time in the event, append the time stamp of that event to the identifier
         if (triggerEvent.getCreatedAt() != null) {
@@ -325,6 +323,14 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
         }
 
         return new SidelineRequestIdentifier(identifier.toString());
+    }
+
+    private String generateIdFromJson(final String dataJson) throws NoSuchAlgorithmException {
+        // Use the data map, which should be things unique to define this criteria to generate our id
+        final MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(StandardCharsets.UTF_8.encode(dataJson));
+        final String id = String.format("%032x", new BigInteger(1, md5.digest()));
+        return id;
     }
 
     /**
