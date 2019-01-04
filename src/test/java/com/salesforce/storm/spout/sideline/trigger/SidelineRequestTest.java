@@ -23,52 +23,47 @@
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.storm.spout.dynamic;
+package com.salesforce.storm.spout.sideline.trigger;
 
+import com.salesforce.storm.spout.dynamic.JSON;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Tests that the JSON abstraction converts to and from JSON correctly.
+ * Test the behavior of a SidelineRequest object.
  */
-@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-class JSONTest {
-
-    // Why the heck am I double wrapping the map? Because GSON can't handle inner classes...
-    private final Map<String, Object> jsonMap = new HashMap<>(new HashMap<String, Object>() {
-        {
-            put("key1", "value1");
-            put("key2", 2.0);
-            put("key3", true);
-        }
-    });
-
-    // Note GSON favors doubles, so if I gave it just "2" I'd still get 2.0 when it converts to JSON
-    private final String json = "{\"key1\":\"value1\",\"key2\":2.0,\"key3\":true}";
+class SidelineRequestTest {
 
     /**
-     * Test that given a Map we get a valid string of JSON back.
+     * Test that a sideline request with a FilterChainStep instance can serialize & deserialize properly.
      */
     @Test
-    void testTo() {
-        assertEquals(
-            json,
-            new JSON(new HashMap<>()).to(jsonMap)
-        );
-    }
+    void testSerializingAndDeserializing() {
+        final Map<String, Object> config = new HashMap<>();
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, StaticMessageFilter.class.getName());
 
-    /**
-     * Test that given a string of JSON we get a valid HashMap back.
-     */
-    @Test
-    void testFrom() {
-        assertEquals(
-            jsonMap,
-            new JSON(new HashMap<>()).from(json, HashMap.class)
+        final JSON json = new JSON(config);
+
+        final FilterChainStep filterChainStep = new StaticMessageFilter("fixedid");
+        final SidelineRequest sidelineRequest = new SidelineRequest(
+            new SidelineRequestIdentifier("foo"),
+            filterChainStep
         );
+
+        final String data = json.to(sidelineRequest);
+
+        assertNotNull(data, "JSON data should not be null after serializing");
+
+        final SidelineRequest sidelineRequestRefresh = json.from(data, SidelineRequest.class);
+
+        assertEquals(sidelineRequest, sidelineRequestRefresh, "Sideline request should match after deserializing");
     }
 }

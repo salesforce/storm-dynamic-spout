@@ -26,7 +26,13 @@
 package com.salesforce.storm.spout.sideline.persistence;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.InstanceCreator;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 
@@ -35,8 +41,9 @@ import java.util.Map;
 
 /**
  * Gson handler for creating FilterChainStep instances.
+ * @param <T> object type for serializing and deserializing, should be a FilterChainStep implementation.
  */
-public class FilterChainStepInstanceCreator implements InstanceCreator<FilterChainStep> {
+public class FilterChainStepSerializer<T extends FilterChainStep> implements JsonDeserializer<T>, JsonSerializer<T> {
 
     /**
      * Configuration from the spout.
@@ -47,31 +54,42 @@ public class FilterChainStepInstanceCreator implements InstanceCreator<FilterCha
      * Gson handler for creating FilterChainStep instances.
      * @param config configuration from the spout.
      */
-    public FilterChainStepInstanceCreator(final Map<String, Object> config) {
+    public FilterChainStepSerializer(final Map<String, Object> config) {
         this.config = config;
     }
 
     @Override
-    public FilterChainStep createInstance(Type type) {
-        try {
-            final Class<? extends FilterChainStep> clazz = getClassInstance((String) config.get(SidelineConfig.FILTER_CHAIN_STEP_CLASS));
-            return clazz.newInstance();
-        } catch (InstantiationException | IllegalAccessException ex) {
-            throw new RuntimeException(ex);
-        }
+    public JsonElement serialize(T obj, Type typeOfObj, JsonSerializationContext context) {
+        // Implement what is essentially the default serialization strategy here.
+        // This might seem odd, but before I did this, when FilterChainStep's were nested they did not serialize correctly
+        return context.serialize(obj);
+    }
+
+    @Override
+    public T deserialize(
+        final JsonElement jsonElement,
+        final Type type,
+        final JsonDeserializationContext deserializationContext
+    ) throws JsonParseException {
+        final JsonObject jsonObject = jsonElement.getAsJsonObject();
+        final Class<T> clazz = getClassInstance();
+        return deserializationContext.deserialize(jsonObject, clazz);
     }
 
     @SuppressWarnings("unchecked")
-    private Class<? extends FilterChainStep> getClassInstance(String className) {
+    private Class<T> getClassInstance() {
+        @SuppressWarnings("unchecked")
+        final String className = (String) config.get(SidelineConfig.FILTER_CHAIN_STEP_CLASS);
+
         Preconditions.checkArgument(
             className != null && !className.isEmpty(),
             "A valid class name must be specified for " + SidelineConfig.FILTER_CHAIN_STEP_CLASS
         );
 
         try {
-            return (Class<? extends FilterChainStep>) Class.forName(className);
-        } catch (ClassNotFoundException ex) {
-            throw new RuntimeException(ex);
+            return (Class<T>) Class.forName(className);
+        } catch (ClassNotFoundException cnfe) {
+            throw new JsonParseException(cnfe.getMessage());
         }
     }
 }

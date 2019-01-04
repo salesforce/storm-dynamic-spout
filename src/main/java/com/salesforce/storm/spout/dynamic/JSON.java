@@ -28,7 +28,7 @@ package com.salesforce.storm.spout.dynamic;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
-import com.salesforce.storm.spout.sideline.persistence.FilterChainStepInstanceCreator;
+import com.salesforce.storm.spout.sideline.persistence.FilterChainStepSerializer;
 
 import java.util.Map;
 
@@ -54,7 +54,7 @@ public class JSON {
     public JSON(final Map<String, Object> config) {
         this.gson = new GsonBuilder()
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
-            .registerTypeAdapter(FilterChainStep.class, new FilterChainStepInstanceCreator(config))
+            .registerTypeAdapter(FilterChainStep.class, new FilterChainStepSerializer(config))
             .create();
     }
 
