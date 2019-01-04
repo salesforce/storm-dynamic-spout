@@ -303,7 +303,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
                 // This method will check to see that the VirtualSpout isn't already in the SpoutCoordinator before adding it
                 addSidelineVirtualSpout(
                     payload.id,
-                    payload.request.step,
+                    // When loading a sideline on the we need to apply a negation to the step, as we want the inverse of
+                    // what was put on the firehose
+                    new NegatingFilterChainStep(payload.request.step),
                     startingState,
                     // Only pass ending state if it's not empty
                     endingState.isEmpty() ? null : endingStateStateBuilder.build()
@@ -440,7 +442,9 @@ public class SidelineSpoutHandler implements SpoutHandler, SidelineController {
             getPersistenceAdapter().persistSidelineRequestState(
                 SidelineType.RESUME,
                 id,
-                new SidelineRequest(id, negatedStep), // Persist the negated steps, so they load properly on resume
+                // Do not persist the negated step, we won't be able to deserialize it when we load
+                // Instead the negation wrapper will be applied during a resume in this handler
+                new SidelineRequest(id, step),
                 consumerPartition,
                 sidelinePayload.startingOffset,
                 null
