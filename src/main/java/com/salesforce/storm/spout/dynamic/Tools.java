@@ -28,6 +28,10 @@ package com.salesforce.storm.spout.dynamic;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,5 +129,22 @@ public class Tools {
             .map(String::trim)
             .filter((inputString) -> !inputString.isEmpty())
             .toArray(String[]::new);
+    }
+
+    /**
+     * Create an MD5 hash from a string.
+     * @param data string to make an md5 hash for.
+     * @return md5 hash.
+     */
+    public static String makeMd5Hash(final String data) {
+        try {
+            // Use the data map, which should be things unique to define this criteria to generate our id
+            final MessageDigest md5 = MessageDigest.getInstance("MD5");
+            md5.update(StandardCharsets.UTF_8.encode(data));
+            final String id = String.format("%032x", new BigInteger(1, md5.digest()));
+            return id;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
