@@ -49,6 +49,7 @@ import com.salesforce.storm.spout.dynamic.persistence.PersistenceAdapter;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.tuple.Values;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -78,6 +79,14 @@ import static org.mockito.Mockito.when;
  * Test that a {@link VirtualSpout} properly acks, fails and emits data from it's consumer.
  */
 public class VirtualSpoutTest {
+
+    /**
+     * Before each test reset the static on the MockConsumer.
+     */
+    @BeforeEach
+    void resetMockConsumerPartitions() {
+        MockConsumer.partitions = Arrays.asList(1);
+    }
 
     /**
      * Verify that constructor args get set appropriately.
