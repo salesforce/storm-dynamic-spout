@@ -71,7 +71,7 @@ public class Config {
             + "Example: \"/sideline-trigger/my-topology/my-topic\"",
         type = String.class
     )
-    public static final String ZK_ROOT = PREFIX + "roots";
+    public static final String ZK_ROOT = PREFIX + "root";
 
     /**
      * (Integer) Zookeeper session timeout.

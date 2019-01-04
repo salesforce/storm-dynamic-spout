@@ -39,13 +39,13 @@ import java.util.Map;
 public class SidelineConfig {
 
     /**
-     * (List|String) Defines one or more sideline trigger(s) (if any) to use.
+     * (String) Defines a sideline trigger (if any) to use.
      * Should be a fully qualified class path that implements thee SidelineTrigger interface.
      */
     @ConfigDocumentation(
         category = ConfigDocumentation.Category.SIDELINE,
-        description = "Defines one or more sideline trigger(s) (if any) to use. "
-        + "Should be a fully qualified class path that implements thee SidelineTrigger interface.",
+        description = "Defines a sideline trigger (if any) to use. "
+        + "Should be a fully qualified class path that implements the SidelineTrigger interface.",
         type = String.class
     )
     public static final String TRIGGER_CLASS = "sideline.trigger_class";

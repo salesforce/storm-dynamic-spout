@@ -567,19 +567,35 @@ public class VirtualSpout implements DelegateSpout {
         // Get current state and compare it against our ending state
         final ConsumerState currentState = consumer.getCurrentState();
 
+        if (currentState == null) {
+            logger.error("Attempting to flush state when the current state is null.");
+            return;
+        }
+
         // Compare it against our ending state
         for (final ConsumerPartition consumerPartition : currentState.getConsumerPartitions()) {
             // currentOffset contains the last "committed" offset our consumer has fully processed
-            final long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
+            final Long currentOffset = currentState.getOffsetForNamespaceAndPartition(consumerPartition);
 
             // endingOffset contains the last offset we want to process.
-            final long endingOffset = endingState.getOffsetForNamespaceAndPartition(consumerPartition);
+            final Long endingOffset = endingState.getOffsetForNamespaceAndPartition(consumerPartition);
+
+            if (currentOffset == null) {
+                logger.error("Current offset is null");
+                return;
+            }
+
+            if (endingOffset == null) {
+                logger.error("Ending offset is null");
+                return;
+            }
 
             // If the current offset is < ending offset
             if (currentOffset < endingOffset) {
                 // Then we cannot end
                 return;
             }
+
             // Log that this partition is finished, and make sure we unsubscribe from it.
             if (consumer.unsubscribeConsumerPartition(consumerPartition)) {
                 logger.debug(

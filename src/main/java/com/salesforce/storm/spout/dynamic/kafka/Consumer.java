@@ -455,8 +455,12 @@ public class Consumer implements com.salesforce.storm.spout.dynamic.consumer.Con
         // Get the current state
         final ConsumerState consumerState = partitionOffsetsManager.getCurrentState();
 
-        // Persist each partition offset
+        if (consumerState == null) {
+            logger.error("Attempting to flush state when the current state is null.");
+            return null;
+        }
 
+        // Persist each partition offset
         for (Map.Entry<ConsumerPartition, Long> entry : consumerState.entrySet()) {
             final ConsumerPartition consumerPartition = entry.getKey();
             final long lastFinishedOffset = entry.getValue();
