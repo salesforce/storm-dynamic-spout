@@ -72,7 +72,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- output jar location -->
-        <jarOutputDir></jarOutputDir>
+        <jarOutputDir/>
 
         <!-- Define which version of storm you'll be running this topology on -->
         <stormVersion>1.2.2</stormVersion>
@@ -133,7 +133,7 @@
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
             <!-- Storm uses 3.4.6 but we can't get past a snyk scan w/ that ver, this is the lowest Zookeeper version w/o open vulnerabilities -->
-            <version>3.4.10</version>
+            <version>3.4.14</version>
             <optional>true</optional>
         </dependency>
         <!-- Jline 0.9.94 is included with Zookeeper, but it has vulnerabilities so we are explicitly specifying 2.12 here -->
