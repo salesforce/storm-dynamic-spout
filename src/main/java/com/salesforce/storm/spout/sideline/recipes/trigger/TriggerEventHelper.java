@@ -69,15 +69,15 @@ public class TriggerEventHelper {
     }
 
     /**
-     * Create a {@link TriggerEvent} to start a sideline.
-     *
-     * Short hand if you don't want to supply a created by or reason.
-     *
-     * @param data data for the trigger event, this will be handed off to the {@link FilterChainStepBuilder}.
-     * @return the identifier of the sideline.
+     * Create a new helper, but provide the curator and helper instances - useful only for testing.
+     * @param config same configuration utilized by the topology.
+     * @param curator curator instance
+     * @param curatorHelper curator helper instance
      */
-    public String startTriggerEvent(final Map<String, Object> data) {
-        return startTriggerEvent(data, null, null);
+    TriggerEventHelper(final Map<String, Object> config, CuratorFramework curator, CuratorHelper curatorHelper) {
+        this.config = config;
+        this.curator = curator;
+        this.curatorHelper = curatorHelper;
     }
 
     /**

@@ -25,10 +25,146 @@
 
 package com.salesforce.storm.spout.sideline.recipes.trigger;
 
+import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
+import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
+import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
+import com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper.Config;
+import com.salesforce.storm.spout.sideline.trigger.SidelineType;
+import org.apache.curator.framework.CuratorFramework;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Test the {@link TriggerEventHelper} to make sure it starts, resumes and resolves sidelines for the
  * recipe implementation.
  */
 class TriggerEventHelperTest {
-    // TODO: Implement tests
+
+    /**
+     * Create shared zookeeper test server.
+     */
+    @RegisterExtension
+    static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
+
+    private static Map<String, Object> config = new HashMap<>();
+    private static TriggerEventHelper triggerEventHelper;
+    private static CuratorFramework curator;
+    private static CuratorHelper curatorHelper;
+
+    @BeforeAll
+    static void setUp() {
+        final String zkRoot = "/test-trigger" + System.currentTimeMillis();
+
+        config.put(Config.ZK_ROOT, zkRoot);
+        config.put(Config.ZK_SERVERS, Collections.singletonList(
+            sharedZookeeperTestResource.getZookeeperTestServer().getConnectString()
+        ));
+
+        curator = CuratorFactory.createNewCuratorInstance(
+            Tools.stripKeyPrefix(Config.PREFIX, config),
+            TriggerEventHelperTest.class.getSimpleName()
+        );
+
+        curatorHelper = new CuratorHelper(curator, config);
+
+        triggerEventHelper = new TriggerEventHelper(
+            config,
+            curator,
+            curatorHelper
+        );
+    }
+
+    @AfterAll
+    static void tearDown() {
+        curator.close();
+    }
+
+    @Test
+    void startTriggerEvent() {
+        final Map<String, Object> data = new HashMap<>();
+        data.put("firstName", "Stevie");
+        data.put("lastName", "Powis");
+
+        final String createdBy = "Stan Lemon";
+        final String description = "Testing trigger events.";
+
+        // Start a new sideline using a trigger event
+        final String triggerEventId = triggerEventHelper.startTriggerEvent(
+            data,
+            createdBy,
+            description
+        );
+
+        final TriggerEvent triggerEvent = curatorHelper.readJson(
+            config.get(Config.ZK_ROOT) + "/" + triggerEventId,
+            TriggerEvent.class
+        );
+
+        assertEquals(SidelineType.START, triggerEvent.getType());
+        assertEquals(createdBy, triggerEvent.getCreatedBy());
+        assertEquals(description, triggerEvent.getDescription());
+        assertEquals(data.get("firstName"), triggerEvent.getData().get("firstName"));
+        assertEquals(data.get("lastName"), triggerEvent.getData().get("lastName"));
+    }
+
+    @Test
+    void resumeTriggerEvent() {
+        final Map<String, Object> data = new HashMap<>();
+        data.put("firstName", "Stevie");
+        data.put("lastName", "Powis");
+
+        final String createdBy = "Stan Lemon";
+        final String description = "Testing trigger events.";
+
+        // Start a new sideline using a trigger event
+        final String triggerEventId = triggerEventHelper.startTriggerEvent(
+            data,
+            createdBy,
+            description
+        );
+
+        triggerEventHelper.resumeTriggerEvent(triggerEventId);
+
+        final TriggerEvent triggerEvent = curatorHelper.readJson(
+            config.get(Config.ZK_ROOT) + "/" + triggerEventId,
+            TriggerEvent.class
+        );
+
+        assertEquals(SidelineType.RESUME, triggerEvent.getType());
+    }
+
+    @Test
+    void resolveTriggerEvent() {
+        final Map<String, Object> data = new HashMap<>();
+        data.put("firstName", "Stevie");
+        data.put("lastName", "Powis");
+
+        final String createdBy = "Stan Lemon";
+        final String description = "Testing trigger events.";
+
+        // Start a new sideline using a trigger event
+        final String triggerEventId = triggerEventHelper.startTriggerEvent(
+            data,
+            createdBy,
+            description
+        );
+
+        triggerEventHelper.resolveTriggerEvent(triggerEventId);
+
+        final TriggerEvent triggerEvent = curatorHelper.readJson(
+            config.get(Config.ZK_ROOT) + "/" + triggerEventId,
+            TriggerEvent.class
+        );
+
+        assertEquals(SidelineType.RESOLVE, triggerEvent.getType());
+    }
 }
