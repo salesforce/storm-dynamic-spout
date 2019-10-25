@@ -2,6 +2,8 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.9.5 (2019-10-24)
+- [PR-129](https://github.com/salesforce/storm-dynamic-spout/pull/129/files) Upgrade Storm to 1.2 and Curator to 4.2. Also switch to using OpenJDK for tests.
 
 ## 0.9.4 (2018-07-05)
 
