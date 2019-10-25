@@ -2,6 +2,8 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.9.5 (2019-10-24)
+- []() Upgrade Storm to 1.2 and Curator to 4.2.
 
 ## 0.9.4 (2018-07-05)
 
