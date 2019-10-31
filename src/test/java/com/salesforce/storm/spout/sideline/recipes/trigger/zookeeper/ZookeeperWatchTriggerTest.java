@@ -25,29 +25,25 @@
 
 package com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.config.SpoutConfig;
-import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.mocks.MockConsumer;
 import com.salesforce.storm.spout.dynamic.filter.StaticMessageFilter;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.handler.SidelineSpoutHandler;
 import com.salesforce.storm.spout.sideline.persistence.InMemoryPersistenceAdapter;
-import com.salesforce.storm.spout.sideline.recipes.trigger.FilterChainStepBuilder;
 import com.salesforce.storm.spout.sideline.recipes.trigger.TriggerEvent;
+import com.salesforce.storm.spout.sideline.recipes.trigger.TriggerEventHelper;
 import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
-import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,23 +56,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test that the reference implementation for sideline triggers works correctly.
  */
-public class ZookeeperWatchTriggerTest {
+class ZookeeperWatchTriggerTest {
 
-    private static final String CREATED_BY = "Test";
-    private static final String DESCRIPTION = "Description";
+    private static final String CREATED_BY = "CreatedBy";
+    private static final String REASON = "Reason";
 
     /**
      * Create shared zookeeper test server.
      */
     @RegisterExtension
-    public static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
+    static final SharedZookeeperTestResource sharedZookeeperTestResource = new SharedZookeeperTestResource();
 
     /**
-     * Test that the sideline trigger opens and that it calls start and stop properly when nodes are changed.
-     * @throws Exception something bad
+     * Test that when a new {@link TriggerEvent} is created it picked up by the watch trigger.
      */
     @Test
-    public void testOpenWithNewEvents() throws Exception {
+    void testOpenWithNewEvents() {
         final String zkRoot = "/test-trigger" + System.currentTimeMillis();
 
         final String consumerId = "VirtualSpoutPrefix";
@@ -94,84 +89,36 @@ public class ZookeeperWatchTriggerTest {
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             InMemoryPersistenceAdapter.class.getName()
         );
-        config.put(Config.FILTER_CHAIN_STEP_BUILDER_CLASS, MockFilterChainStepBuilder.class.getName());
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, StaticMessageFilter.class.getName());
 
-        final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
+        final CuratorFramework curator = CuratorFactory.createNewCuratorInstance(
             Tools.stripKeyPrefix(Config.PREFIX, config),
             getClass().getSimpleName()
         );
-        final CuratorHelper curatorHelper = new CuratorHelper(currator, config);
+        final CuratorHelper curatorHelper = new CuratorHelper(curator, config);
 
         final SidelineSpoutHandler sidelineSpoutHandler = Mockito.mock(SidelineSpoutHandler.class);
+
+        final TriggerEventHelper triggerEventHelper = new TriggerEventHelper(config);
 
         final ZookeeperWatchTrigger trigger = new ZookeeperWatchTrigger();
         trigger.setSidelineController(sidelineSpoutHandler);
         trigger.open(config);
 
-        // We're going to turn some events into JSON
-        final Gson gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd HH:mm:ss")
-            .create();
+        final FilterChainStep startFilterChainStep = new StaticMessageFilter("start1");
 
-        final Map<String,Object> startData = new HashMap<>();
-        startData.put("id", "start");
-        final TriggerEvent startTriggerEvent = new TriggerEvent(
-            SidelineType.START,
-            startData,
-            LocalDateTime.now(),
-            CREATED_BY,
-            DESCRIPTION,
-            false,
-            LocalDateTime.now()
-        );
-        final String id1 = "foo" + System.currentTimeMillis();
+        final String id1 = triggerEventHelper.startTriggerEvent(startFilterChainStep, CREATED_BY, REASON);
         final String path1 = zkRoot + "/" + id1;
-
-        // Create a starting request
-        currator
-            .create()
-            .creatingParentsIfNeeded()
-            .forPath(zkRoot + "/" + id1, gson.toJson(startTriggerEvent).getBytes());
 
         // Since this is an async operation, use await() to watch for when the nodes are created
         await()
-            .until(() -> currator.checkExists().forPath(path1), notNullValue());
+            .until(() -> curator.checkExists().forPath(path1), notNullValue());
 
         await()
-            .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());
+            .until(() -> findSidelineRequest("start1", trigger.getSidelineRequests()), notNullValue());
 
         Mockito.verify(sidelineSpoutHandler).start(
-            findSidelineRequest("start", trigger.getSidelineRequests())
-        );
-
-        final Map<String,Object> stopData = new HashMap<>();
-        stopData.put("id", "stop");
-        final TriggerEvent stopTriggerEvent = new TriggerEvent(
-            SidelineType.RESOLVE,
-            stopData,
-            LocalDateTime.now(),
-            CREATED_BY,
-            DESCRIPTION,
-            false,
-            LocalDateTime.now()
-        );
-        final String id2 = "bar" + System.currentTimeMillis();
-        final String path2 = zkRoot + "/" + id2;
-
-        // Create a stopping request
-        currator
-            .create()
-            .creatingParentsIfNeeded()
-            .forPath(path2, gson.toJson(stopTriggerEvent).getBytes());
-
-        await()
-            .until(() -> currator.checkExists().forPath(path2), notNullValue());
-
-        await()
-            .until(() -> findSidelineRequest("stop", trigger.getSidelineRequests()), notNullValue());
-
-        Mockito.verify(sidelineSpoutHandler).resolve(
-            findSidelineRequest("stop", trigger.getSidelineRequests())
+            findSidelineRequest("start1", trigger.getSidelineRequests())
         );
 
         assertTrue(
@@ -179,22 +126,17 @@ public class ZookeeperWatchTriggerTest {
             "Starting trigger has been processed"
         );
 
-        assertTrue(
-            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed(),
-            "Stopping trigger has been processed"
-        );
-
         // Clean it all up
         trigger.close();
-        currator.close();
+        curator.close();
     }
 
     /**
-     * Test that the sideline trigger opens and that it calls start and stop properly when nodes are changed.
+     * Test that when a {@link TriggerEvent} is created before the watch trigger is open it will get picked up when it finally starts.
      * @throws Exception something bad
      */
     @Test
-    public void testOpenWithExistingState() throws Exception {
+    void testOpenWithExistingState() throws Exception {
         final String zkRoot = "/test-trigger" + System.currentTimeMillis();
 
         final String consumerId = "VirtualSpoutPrefix";
@@ -212,101 +154,48 @@ public class ZookeeperWatchTriggerTest {
             SidelineConfig.PERSISTENCE_ADAPTER_CLASS,
             InMemoryPersistenceAdapter.class.getName()
         );
-        config.put(Config.FILTER_CHAIN_STEP_BUILDER_CLASS, MockFilterChainStepBuilder.class.getName());
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, StaticMessageFilter.class.getName());
 
-        final CuratorFramework currator = CuratorFactory.createNewCuratorInstance(
+        final CuratorFramework curator = CuratorFactory.createNewCuratorInstance(
             Tools.stripKeyPrefix(Config.PREFIX, config),
             getClass().getSimpleName()
         );
-        final CuratorHelper curatorHelper = new CuratorHelper(currator, config);
-
-        // We're going to turn some events into JSON
-        final Gson gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd HH:mm:ss")
-            .create();
-
-        final Map<String,Object> startData = new HashMap<>();
-        startData.put("id", "start");
-        final TriggerEvent startTriggerEvent = new TriggerEvent(
-            SidelineType.START,
-            startData,
-            LocalDateTime.now(),
-            CREATED_BY,
-            DESCRIPTION,
-            false,
-            LocalDateTime.now()
-        );
-        final String id1 = "foo" + System.currentTimeMillis();
-        final String path1 = zkRoot + "/" + id1;
-        final String startTriggerEventJson = gson.toJson(startTriggerEvent);
-
-        // Create a starting request
-        currator
-            .create()
-            .creatingParentsIfNeeded()
-            .forPath(zkRoot + "/" + id1, startTriggerEventJson.getBytes());
-
-        // Since this is an async operation, use await() to watch for when the nodes are created
-        await()
-            .until(() -> currator.checkExists().forPath(path1), notNullValue());
-
-        final Map<String,Object> stopData = new HashMap<>();
-        stopData.put("id", "stop");
-        final TriggerEvent stopTriggerEvent = new TriggerEvent(
-            SidelineType.RESOLVE,
-            stopData,
-            LocalDateTime.now(),
-            CREATED_BY,
-            DESCRIPTION,
-            false,
-            LocalDateTime.now()
-        );
-        final String id2 = "bar" + System.currentTimeMillis();
-        final String path2 = zkRoot + "/" + id2;
-        final String stopTriggerEventJson = gson.toJson(stopTriggerEvent);
-
-        // Create a stopping request
-        currator
-            .create()
-            .creatingParentsIfNeeded()
-            .forPath(path2, stopTriggerEventJson.getBytes());
-
-        await()
-            .until(() -> currator.checkExists().forPath(path2), notNullValue());
+        final CuratorHelper curatorHelper = new CuratorHelper(curator, config);
 
         final SidelineSpoutHandler sidelineSpoutHandler = Mockito.mock(SidelineSpoutHandler.class);
 
-        final ZookeeperWatchTrigger trigger = new ZookeeperWatchTrigger();
-        trigger.setSidelineController(sidelineSpoutHandler);
-        trigger.open(config);
+        final TriggerEventHelper triggerEventHelper = new TriggerEventHelper(config);
 
+        // This is a garbage trigger, we do this so we can use it's Gson instance
+        final ZookeeperWatchTrigger trigger1 = new ZookeeperWatchTrigger();
+        trigger1.setSidelineController(sidelineSpoutHandler);
+        trigger1.open(config);
+        trigger1.close();
+
+        assertTrue(trigger1.getSidelineRequests().isEmpty(), "There should not be any sideline requests");
+
+        final FilterChainStep startFilterChainStep = new StaticMessageFilter("start2");
+
+        // Create this before we spin up our working trigger
+        final String id1 = triggerEventHelper.startTriggerEvent(startFilterChainStep, CREATED_BY, REASON);
+        final String path1 = zkRoot + "/" + id1;
+
+        // Since this is an async operation, use await() to watch for when the nodes are created
         await()
-            .until(() -> findSidelineRequest("start", trigger.getSidelineRequests()), notNullValue());
+            .until(() -> curator.checkExists().forPath(path1), notNullValue());
 
-        Mockito.verify(sidelineSpoutHandler).start(
-            findSidelineRequest("start", trigger.getSidelineRequests())
-        );
+        // This is the real trigger, and it should pick up the sideline request it missed while down
+        final ZookeeperWatchTrigger trigger2 = new ZookeeperWatchTrigger();
+        trigger2.setSidelineController(sidelineSpoutHandler);
+        trigger2.open(config);
 
+        // We should find the trigger created before startup
         await()
-            .until(() -> findSidelineRequest("stop", trigger.getSidelineRequests()), notNullValue());
-
-        Mockito.verify(sidelineSpoutHandler).resolve(
-            findSidelineRequest("stop", trigger.getSidelineRequests())
-        );
-
-        assertTrue(
-            curatorHelper.readJson(path1, TriggerEvent.class).isProcessed(),
-            "Starting trigger has been processed"
-        );
-
-        assertTrue(
-            curatorHelper.readJson(path2, TriggerEvent.class).isProcessed(),
-            "Stopping trigger has been processed"
-        );
+            .until(() -> findSidelineRequest("start2", trigger2.getSidelineRequests()), notNullValue());
 
         // Clean it all up
-        trigger.close();
-        currator.close();
+        trigger2.close();
+        curator.close();
     }
 
     private SidelineRequest findSidelineRequest(final String id, Set<SidelineRequest> sidelineRequests) {
@@ -323,16 +212,5 @@ public class ZookeeperWatchTriggerTest {
 
     private String getZookeeperConnectionString() {
         return sharedZookeeperTestResource.getZookeeperTestServer().getConnectString();
-    }
-
-    /**
-     * {@link FilterChainStepBuilder} implementation for testing.
-     */
-    public static class MockFilterChainStepBuilder implements FilterChainStepBuilder {
-
-        @Override
-        public FilterChainStep build(final Map<String,Object> data) {
-            return new StaticMessageFilter((String) data.get("id"));
-        }
     }
 }
