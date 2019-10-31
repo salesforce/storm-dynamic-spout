@@ -139,6 +139,7 @@ spout.metrics.enable_task_id_prefix | Boolean |  | Defines if MetricsRecorder in
 spout.metrics.time_bucket | Integer |  | Defines the time bucket to group metrics together under. | 
 spout.output_fields | List |  | Defines the output fields that the spout will emit as a list of field names. | 
 spout.output_stream_id | String |  | Defines the name of the output stream tuples will be emitted out of. | default
+spout.permanently_failed_output_stream_id | String |  | Defines the name of the output stream tuples that have permanently failed be emitted out of. | failed
 spout.retry_manager.class | String | Required | Defines which RetryManager implementation to use. Should be a full classpath to a class that implements the RetryManager interface. | com.salesforce.storm.spout.dynamic.retry.ExponentialBackoffRetryManager
 spout.retry_manager.delay_multiplier | Double |  | Defines how quickly the delay increases after each failed tuple. Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc. | 
 spout.retry_manager.initial_delay_ms | Long |  | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
