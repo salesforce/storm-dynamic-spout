@@ -216,15 +216,22 @@ There are several methods on the `SpoutHandler` you can implement. There are no-
 - `void close()` - This method is similar to an `ISpout`'s `close()` method, it gets called when the `SpoutHandler` is torn down, and you can use it shut down any classes that you have used in the `SpoutHandler` as well as clean up any object references you have.
 - `void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext)` - This method is called after the `DynamicSpout` is opened, and with it you get the `DynamicSpout` instance to interact with.  It's here that you can do things like call `DynamicSpout.addVirtualSpout(VirtualSpout virtualSpout)` to add a new `VirtualSpout` instance into the `DynamicSpout`.
 - `void onSpoutClose(DynamicSpout spout)` - This method is called after `DynamicSpout` is closed, you can use it to perform shut down tasks when the `DynamicSpout` itself is closing, and with it you get the `DynamicSpout` instance to interact with.
+- `void onSpoutActivate(DynamicSpout spout)` - This method is called `DynamicSpout` has been activated.
+- `void onSpoutDectivate(DynamicSpout spout)` - This method is called `DynamicSpout` has been deactivated.
 
-_It's important to note that `SpoutHandler` instance methods should be blocking since they are part of the startup and shutdown flow. Only perform asynchronous tasks if you are certain that other spout methods can be called without depending on your asynchronous tasks to complete._
+_It's important to note that `SpoutHandler` instance methods **should be blocking** since they are part of the startup and shutdown flow. Only perform asynchronous tasks if you are certain that other spout methods can be called without depending on your asynchronous tasks to complete._
 
 Here is a sample `SpoutHandler` that can be used in conjunction with the Kafka `Consumer` to read a Kafka topic:
-
+<!-- TODO: Can this be moved to an actual java class that is then embedded here? -->
 ```java
-import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.DynamicSpout;
-import com.salesforce.storm.spout.sideline.VirtualSpout;
+package com.salesforce.storm.spout.dynamic.example;
+
+import com.salesforce.storm.spout.dynamic.DynamicSpout;
+import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.VirtualSpout;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
+import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
+
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
@@ -239,7 +246,8 @@ public class SimpleKafkaSpoutHandler implements SpoutHandler {
                 // Unique identifier for this spout
                 new DefaultVirtualSpoutIdentifier("kafkaSpout"),
                 spout.getSpoutConfig(),
-                topologyContext,
+                // Tells the consumer of a VirtualSpout how many spout instances there are and which one this is
+                new ConsumerPeerContext(1, 0),
                 spout.getFactoryManager(),
                 null, // Optional Starting ConsumerState
                 null // Optional Ending ConsumerState
