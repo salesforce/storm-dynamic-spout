@@ -25,24 +25,26 @@
   - [Metrics](#metrics)
     - [Dynamic Spout Metrics](#dynamic-spout-metrics)
     - [Kafka Metrics](#kafka-metrics)
-- [Sidelining - WORK IN PROGRESS](#sidelining---work-in-progress)
-  - [Example Use case: Multi-tenant processing](#example-use-case-multi-tenant-processing)
+- [Sidelining](#sidelining)
+  - [Example Use case: Multi-tenant Processing](#example-use-case-multi-tenant-processing)
+    - [The Filter](#the-filter)
+    - [Starting a Sideline](#starting-a-sideline)
+    - [Resuming a Sideline](#resuming-a-sideline)
+    - [Resolving a Sideline](#resolving-a-sideline)
+    - [Stopping & Redeploying the Topology](#stopping--redeploying-the-topology)
   - [Configuration](#configuration-1)
     - [Sideline Configuration Options](#sideline-configuration-options)
-    - [Sideline Metrics](#sideline-metrics)
-  - [Getting Started](#getting-started-1)
-  - [Starting Sideline Request](#starting-sideline-request)
-  - [Stopping Sideline Request](#stopping-sideline-request)
-  - [Dependencies](#dependencies-1)
-  - [Components](#components-1)
-  - [Example Trigger Implementation](#example-trigger-implementation)
-  - [Stopping & Redeploying the topology?](#stopping--redeploying-the-topology)
+  - [Metrics](#metrics-1)
+  - [Example Sideline Trigger](#example-sideline-trigger)
+  - [Recipes](#recipes)
 - [Contributing](#contributing)
   - [Submitting a Contribution](#submitting-a-contribution)
   - [Acceptance Criteria](#acceptance-criteria)
 - [Other Notes](#other-notes)
-  - [Configuration & README](#configuration--readme)
+  - [History](#history)
+  - [Tests](#tests)
   - [Checkstyle](#checkstyle)
+  - [README Configuration & Metrics Tables](#readme-configuration--metrics-tables)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -79,6 +81,7 @@ The `DynamicSpout` framework has the following dependencies:
 - [Apache Storm](https://storm.apache.org/): For all of the Storm interfaces this project is implemented against. This dependency is marked as _provided_ so you will need to specify the version of Storm that you want to use in your project some where on your classpath.
 - [Apache Zookeeper](https://zookeeper.apache.org/): The framework is agnostic to where metadata is stored, and you can easily add different types of storage by implementing a [`PersistenceAdapter`](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java). The framework ships with a Zookeeper implementation because Storm itself requires Zookeeper to track metadata and we figured it's the easiest to provide out of the box. That said, Zookeeper is listed as an optional dependency and so you will need to include this in your classpath as well.
 - [Apache Curator](https://curator.apache.org/): As noted above, the framework ships with a Zookeeper `PersistenceAdapter` and we use Curator to make all of those interactions easy and painless. Curator is also an optional dependency, so if you're using Zookeeper you will need to specify the correct version of Curator to go with your Zookeeper dependency.
+- [Apache Kafka](https://kafka.apache.org/): The framework is not tied to Kafka, but we've found that many of our implementations of the framework are. This is an optional dependency that you will want to include if you're using the Kafka based `Consumer` for example.
 
 
 ## How the Framework Works
@@ -309,23 +312,55 @@ KafkaConsumer.topic.{topic}.partition.{partition}.lag | GAUGE | Number | Differe
 <!-- KAFKA_CONSUMER_METRICS_END_DELIMITER -->
 
 
-# Sidelining - WORK IN PROGRESS
+# Sidelining
 
-The purpose of this project is to provide a [Kafka (0.10.0.x)](https://kafka.apache.org/) based spout for [Apache Storm (1.0.x)](https://storm.apache.org/) that provides the ability to dynamically "*sideline*" or skip specific messages to be replayed at a later time based on a set of filter criteria.
+The purpose of the sidelining project is to provide a way to skip processing for a subset of messages on a [Kafka](https://kafka.apache.org/) topic while allowing for them to be processed at a later time. The canonical use case for this project is a multi-tenant Kafka topic, where you want to pause processing for a single tenant for some period of time without pausing other tenants. This project is built upon the `DynamicSpout` framework as a set of `SpoutHandler` and `VirtualSpoutHandler` implementations that apply custom `FilterChainStep` instances when something needs to be sidelined and then removes them when a sideline should resume or resolve. 
+ 
+The project is wrapped in a spout implementation called `SidelineSpout` which extends the `DynamicSpout` and configures the handlers up in an oppinionated way. It is intended to works much like a typical [KafkaSpout](https://github.com/apache/storm/tree/master/external/storm-kafka-client).
 
-Under normal circumstances this spout works much like your typical [Kafka-Spout](https://github.com/nathanmarz/storm-contrib/tree/master/storm-kafka) and aims to be a drop in replacement for it.  This implementation differs in that it exposes trigger and filter semantics when you build your topology which allow for specific messages to be skipped, and then replayed at a later point in time.  All this is done dynamically without requiring you to re-deploy your topology when filtering 
-criteria changes!
+## Example Use case: Multi-tenant Processing
+When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine  that a subset of your tenants database infrastructure requires downtime for maintenance.  Using the `KafkaSpout` implementation that comes with Storm you really only have two options to deal with this situation:
 
- Sidelining uses the `DynamicSpout` framework and begins by creating the *main* `VirtualSpout` instance (sometimes called the firehose).  This *main* `VirtualSpout` instance is always running within the spout, and its job is to consume from your Kafka topic.  As it consumes messages from Kafka, it deserializes them using your [`Deserializer`](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Deserializer.java) implementation.  It then runs it thru a [`FilterChain`](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChain.java), which is a collection of[`FilterChainStep`](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChainStep.java) objects.  These filters determine what messages should be *sidelined* and which should be emitted out. When no sideline requests are active, the `FilterChain` is empty, and all messages consumed from Kafka will be converted to Tuples and emitted to your topology.
+1. Stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
 
-## Example Use case: Multi-tenant processing
-When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine  that a subset of your tenants database infrastructure requires downtime for maintenance.  Using the Kafka-Spout implementation you really only have two options to deal with this situation:
+2. Filter the problematic tenants out at the beginning of your topology to avoid processing further downstream, then once maintenance is complete you can stop filtering the problematic tenants. If you're ambitious you can keep track of where you started and stopped filtering and then spin up a separate `KafkaSpout` instance to process only the problematic tenant between the offsets that marked applying and removing your filter.
+ 
+ If you can afford downtime, than option 1 is an easy way to deal with the problem. If not then option 2 might be something you have to look at.  The whole situation becomes even more complicated if you have more than one problematic tenant at a time, and even more so still if they need to start and/or stop filtering at different times. That's a lot of complexity!  Sidelining actually aims to handle option 2 for you, but through automation and easy control semantics.
+ 
+ Imagine wrapping up all of that complexity behind a spout so that the rest of your storm topology doesn't have to think about that problem space: that's sidelining!
+ 
+ ## Dependencies
+ 
+ All of the optional dependencies of the `DynamicSpout` framework are required, namely Apache Zookeeper, Apache Curator and Apache Kafka. Check out the `DynamicSpout` dependencies section for more information.  These all need to be specified in your
+ 
+ ## Lifecycle of a Sideline
+ 
+ A sideline is just a filter applied at a specific point in time, with a promise to come back to it at a later point. A given sideline has a lifecycle, it is started, resumed and finally resolved.  Sidelines are always derived from a special `VirtualSpout` called the _fire hose_. The fire hose is your main Kafka topic, and if everything is going well and you don't need to sideline anything you're consuming all of the messages from it in real time. A sideline starts as a filter on the fire hose and evolves from there.
+ 
+ 
+ ### The Trigger
+ An implementation of sidelining has what's called a [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) which gets called when the [`SidelineSpoutHandler`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineSpoutHandler.java) first opens. The `SidelineTrigger` is responsible for setting up whatever is necessary to notify the [`SidelineController`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineController.java) to start, resume or resolve a sideline. The sideline spout does not have an opinion on what you should use to notify that a sideline lifecycle event should take place, however a usable recipe using Zookeeper watches is provided if you would like to use it (_hint: the authors use it in production today_).
 
-1. You could stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
 
-2. You could filter these tenants out from being processed by your topology, then after the maintenance is complete start a separate topology/Kafka-Spout instance that somehow knows where to start and stop consuming, and by way filter bolts on the consuming topology re-process only the events for the tenants that were previously filtered.
+### The Filter
+When you sideline you are telling the spout to skip messages (for now) based upon some sort of criteria. This is done by defining a `FilterChainStep`, a construct from the `DynamicSpout`. A `FilterChainStep` has a single method called `filter()` which receives a `Message` and return true or false based upon whether or not the supplied message should be skipped. _If you go back to our example use case, you may create a real simple `FilterChainStep` that takes a tenant's identifier in it's constructor and then checks a property on a `Message` to see if that message belongs to the provided tenant._
 
-Unfortunately both of these solutions are complicated, error prone and down right painful. The alternative is to represent a use case like this with a collection of spouts behind a single spout, or what we call a `VirtualSpout` instance behind a `DynamicSpout` that handled the management of starting and stopping those `VirtualSpout` instances.
+
+### Starting a Sideline
+When a `SidelineTrigger` receives a signal to start a sideline it comes in the form of a `SidelineRequest` which is really just a wrapper for a `FilterChainStep`, which is a primitive of the `DynamicSpout` framework. The `FilterChainStep` is a really simple interface that defines a `filter()` method. You will need to define a `FilterChainStep` implementation for your use case. Your `SidelineTrigger` than will send your `FilterChainStep` to the `SidelineController` which will promptly apply the filter to the _fire hose_ and mark the starting offset on the Kafka topic for where the filter was applied.  Once a sideline has been started you should no longer be receiving messages that would match your filter.
+
+
+### Resuming a Sideline
+When a `SidelineTrigger` receives a signal to resume a sideline it must receive an identifier for a started sideline.  That means after you start a sideline you should hang onto the id it provides somewhere for later reference (again if you take a look at the provided recipes you'll see how we do this in Zookeeper). Resuming a sideline does not change the _fire hose_, so messages will continue to be filtered there. Resuming does, however, spin up a new `VirtualSpout` that will consume from the same topic as the _fire hose_, but it's going to do the inverse of your filter and it's going to start from the point the sideline was started (in the past). This means you will have the same Kafka topic being processed in parallel while a sideline is resuming, it's just that one `VirtualSpout` is filtering out specific messages (the _fire hose_) and the other `VirtualSpout` is only processing those filtered messages (the _sideline_). This is a good use case of the `ThrottledMessageBuffer` or `RatioMessageBuffer` because it can allow your for your _sideline_ to emit messages at a different rate back into the topology.  
+ 
+ 
+### Resolving a Sideline
+When you're ready to be done sidelining you can resolve it, which means that an endpoint is marked on the sideline. Remember that up until now all we had was a starting point for the sideline, we had no defined a point on the Kafka topic to stop sidelining. Resolving a sideline does that, which means that the `VirtualSpout` for the sideline will eventually finish the work it needs to do. Once it's finished the `VirtualSpout` will be closed and the instance is cleaned up. At the same time that the end offset is recorded the filter that was on the _fire hose_ `VirtualSpout` will be removed, meaning that the _fire hose_ will now be processing all of the messages on the Kafka topic.
+
+
+### Stopping & Redeploying the Topology
+The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The _fire hose_ `VirtualSpout` will resume consuming from its last acked offset, and any active sideline requests will also be resumed when the topology starts back up. However you choose to implement sidelining it is important to have some sort of durable storage for requests. The recipes include a Zookeeper based trigger that allows for sideline requests to come in while a topology is down without losing them.
+
 
 ## Configuration
 
@@ -346,7 +381,8 @@ sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if
 <!-- SIDELINE_CONFIGURATION_END_DELIMITER -->
 
 <!-- SIDELINE_METRICS_BEGIN_DELIMITER -->
-### Sideline Metrics
+
+## Metrics
 Key | Type | Unit | Description |
 --- | ---- | ---- | ----------- |
 SidelineSpoutHandler.start | COUNTER | Number | Total number of started sidelines. | 
@@ -354,38 +390,12 @@ SidelineSpoutHandler.stop | COUNTER | Number | Total number of stopped sidelines
 
 <!-- SIDELINE_METRICS_END_DELIMITER -->
 
-## Getting Started
-In order to begin using sidelining you will need to create a `FilterChainStep` and a `SidelineTrigger`, implementing classes are all required for this spout to function properly.
 
-## Starting Sideline Request
-Your implemented [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that a new sideline request has been started.  The `SidelineSpout`
-will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
-your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
+## Example Sideline Trigger
 
-## Stopping Sideline Request
-Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that it would like to stop a sideline request.  The `SidelineSpout` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/dynamic/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutCoordinator` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
+Each project leveraging the `SidelineSpout` will likely have a unique set of triggers representing your specific use case.  The following is a stripped down example intended to convey the concept of what a `SidelineTrigger` does. It's not a practical implementation and it's highly recommended that you refer to recipes package which includes a fully functional and production ready `SidelineTrigger`.
 
-
-## Dependencies
-- DynamicSpout framework (which is an Apache Storm specific implementation)
-- [Apache Kafka 0.11.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
-
-
-## Components
-[SidelineTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SidelineController` via `setSidelineController()`.  This implementation can call `startSidelining()` and `stopSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a new sideline should be spun up.
-
-[Deserializer](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Deserializer.java) - The `Deserializer` interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple.  An example `Utf8StringDeserializer` is provided implementing this interface.
-
-[FilterChainStep](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChainStep.java) - The `FilterChainStep` interface dictates how you want to filter messages being consumed from kafka.  These filters should be functional in nature, always producing the exact same results given the exact same message.  They should  ideally not depend on outside services or contextual information that can change over time.  These steps will ultimately  be serialized and stored with the `PersistenceAdapter` so it is very important to make sure they function idempotently when the same message is passed into them.  If your `FilterChainStep` does not adhere to this behavior you will run into problems when sidelines are stopped and their data is re-processed.  Having functional classes with initial state is OK so long as that state can be serialized.  In other words, if you're storing data in the filter step instances you should only do this if they can be serialized and deserialized without side effects.
-
-## Example Trigger Implementation
-
-The starting and stopping triggers are responsible for telling the `SidelineSpout` when to sideline.  While they are technically **not** required for the `SidelineSpout` to function, this project doesn't provide much value without them.
-
-Each project leveraging the `SidelineSpout` will likely have a unique set of triggers representing your specific use case.  The following is a theoretical example only.
-
-`NumberFilter` expects messages whose first value is an integer and if that value matches, it is filtered.  Notice that this
-filter guarantees the same same behavior will occur after being serialized and than deserialized later.
+First we need a filter, so we'll use the `NumberFilter` which expects messages whose first value is an integer and if that value matches, it is filtered. Keep in mind your filter will be serialized to JSON and stored in Zookeeper (unless your change your `PersistenceAdapter`), so take great care to ensure that what you do serializes correctly.
 
 ```java
 public static class NumberFilter implements FilterChainStep {
@@ -457,20 +467,58 @@ public class PollingSidelineTrigger implements SidelineTrigger {
             final SidelineRequest startRequest = new SidelineRequest(
                 new NumberFilter(number++)
             );
-            sidelineController.startSidelining(startRequest);
+            sidelineController.start(startRequest);
 
-            // Stop a sideline request for the last number
-            final SidelineRequest stopRequest = new SidelineRequest(
+            if (number < 2) {
+                return;
+            }
+
+            // Resume a sideline request for the last number
+            final SidelineRequest resumeRequest = new SidelineRequest(
                 new NumberFilter(number - 1)
             );
-            sidelineController.stopSidelining(stopRequest);
+            sidelineController.resume(resumeRequest);
+
+            if (number < 3) {
+                return;
+            }
+
+            // Resolve a sideline request for two numbers back
+            final SidelineRequest resolveRequest = new SidelineRequest(
+                new NumberFilter(number - 2)
+            );
+            sidelineController.resume(resolveRequest);
         }
     }
 }
 ```
 
-## Stopping & Redeploying the topology?
-The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata about sideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.
+## Recipes
+
+The `SidelineSpout` offers a lot of places to customize it's behavior, but we've also tried to provide sensible defaults that work out of the box. In the case of a `SidelineTrigger` and the `FilterChainStep` necessary to sideline, though, these are often very specific to your businesses use case. Included in this project is a `recipes` package that includes a [`ZookeeperWatchTrigger`](src/main/java/com/salesforce/storm/spout/sideline/recipes/trigger/zookeeper/ZookeeperWatchTrigger.java) that is designed to use a `TriggerEvent` to signal starting, stopping and resuming a sideline. The actual trigger watches for these _events_ on a node in Zookeeper using the fantastic Curator `PathChildrenCacheListener`. This implementation sees changes to the node and than calls our listener, allowing for the handling of sidelines. We chose this as a recipe to bundle because we were doing this in our production uses of sidelining already and had great success with them. As mentioned elsewhere, the beauty of Zookeeper is every Storm cluster has it, and so it makes it easy to provide a reasonable default implementation to use.
+
+If you want to give the recipe a try there is a minimal amount of configuration necessary:
+
+```yaml
+sideline.trigger_class: com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper.ZookeeperWatchTrigger
+## Most likely you will want to use your own custom filter here
+sideline.filter_chain_step_class: com.salesforce.storm.spout.sideline.recipes.trigger.KeyFilter
+
+## Zookeeper Watch Trigger configuration
+sideline.zookeeper_watch_trigger.servers:
+  - 127.0.0.1:2181
+sideline.zookeeper_watch_trigger.root: /sideline-trigger
+```
+
+The recipe also includes a class called the [`TriggerEventHelper`](src/main/java/com/salesforce/storm/spout/sideline/recipes/trigger/TriggerEventHelper.java) which has easy to use methods like `startTriggerEvent()` that create the underlying events that make this trigger work.
+
+You may be wondering why `TriggerEvent` instances when we already have `SidelineRequest` instances, and that's a good question!  The `TriggerEvent` provides additional operation data that, quite honestly, we don't care about in the actual sidelining process, like who performed this sideline action, what time it was done and what the reason for it was. For many use cases this is probably not necessary, but we found it helpful.
+
+The other reason we chose to use yet another node in Zookeeper, a sort of staging ground for the sideline request, was because we wanted to allow for sidelines to occur when a topology was down. Good operational procedures should prevent humans from doing this, but we also recognize that sidelining might be handled by an automated process that may not have the awareness to tell if a topology is running or not.
+
+All of this is to say, your use case might be far simpler then our own so buyer beware! But, this implementation is used today in production with great results.
+
+Lastly, the `TriggerEvent` is not tightly coupled to the `ZookeeperWatchTrigger` and so we envision providing future recipes using different data stores and notification systems. Keep an eye out, and please feel free to contribute!
 
 # Contributing
 
@@ -500,11 +548,25 @@ We love contributions, but it's important that your pull request adhere to some 
 
 # Other Notes
 
-## Configuration & README
+## History
 
-The configuration section in this document is generated using `com.salesforce.storm.spout.dynamic.config.ConfigPrinter`, it automatically generates the appropriate tables using the `@Documentation` annotation and the defaults from the supported config instances.  Do **not** update those tables manually as they will get overwritten.
+[Stephen Powis](https://github.com/crim) and [Stan Lemon](https://github.com/stanlemon) began this project in early February 2017 for [Salesforce](https://github.com/salesforce). By February 22nd we had split our project into its own git repository and rolled it out internally for several teams. In September 2017 we open sourced the project and then in November 2017 we split off some of our testing code for Kafka into it's own project [kafka-junit](https://github.com/salesforce/kafka-junit).
+
+The idea of a dynamic spout framework was never something we set out to build. Sidelining existed before too, but in a much more complicated and high-resource fashion. We originally set out to re-design our sidelining implementation using a completely different strategy. In the course of things we realized there were a ton of reusable components in the sidelining project that might benefit from being decoupled, and so we started the process of surgically splitting the two. Out of this effort the dynamic spout framework was born, and it was almost serendipitous because we quickly had our first use case for managing many `VirtualSpout` instances behind a single interface. That effort involved a bunch of different http connections (one `VirtualSpout` for each) and while it looked nothing like sidelining it was a perfect fit for the dynamic spout framework.
+
+## Tests
+
+Extensive test coverage is available for both the `DynamicSpout` and `SidelineSpout` projects. There are both unit and functional tests. Today the functional tests are not clearly divided between the two projects (which is why they haven't been split up yet). This is simply an artifact of the way that project evolved.
+
+You can run the tests by doing:
+```
+mvn clean test
+```
 
 ## Checkstyle
 
 We use checkstyle aggressively on source and tests, our config is located under the 'script' folder and can be imported into your IDE of choice.
  
+## README Configuration & Metrics Tables
+
+The configuration section in this document is generated using the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java), which automatically generates the appropriate tables in this file using the  [`ConfigDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/ConfigDocumentation.java) & [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java) annotations. Do **not** update those tables manually as they will get overwritten, instead use the `DocGenerator`.
