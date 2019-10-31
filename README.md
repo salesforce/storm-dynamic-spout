@@ -598,7 +598,21 @@ mvn clean test
 
 ## Checkstyle
 
-We use checkstyle aggressively on source and tests, our config is located under the 'script' folder and can be imported into your IDE of choice.
+We use checkstyle aggressively on source and tests. We use a custom config that is located under the 'script' folder and can be imported into your IDE of choice.
+
+You can run checkstyle using Maven:
+
+```
+mvn checkstyle:checkstyle
+```
+
+## JavaDocs
+
+We have tried to keep our javadocs current and useful, you can generate api docs using Maven:
+
+```
+mvn javadoc:javadoc
+```
  
 ## README Configuration & Metrics Tables
 
