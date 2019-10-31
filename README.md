@@ -18,15 +18,18 @@
     - [Persistence Configuration Options](#persistence-configuration-options)
     - [Zookeeper Persistence Configuration Options](#zookeeper-persistence-configuration-options)
     - [Kafka Consumer Configuration Options](#kafka-consumer-configuration-options)
-    - [Adding Metrics](#adding-metrics)
   - [Handlers](#handlers)
     - [SpoutHandler](#spouthandler)
     - [VirtualSpoutHandler](#virtualspouthandler)
   - [Metrics](#metrics)
     - [Dynamic Spout Metrics](#dynamic-spout-metrics)
     - [Kafka Metrics](#kafka-metrics)
+  - [Adding Metrics](#adding-metrics)
 - [Sidelining](#sidelining)
   - [Example Use case: Multi-tenant Processing](#example-use-case-multi-tenant-processing)
+  - [Dependencies](#dependencies-1)
+  - [Lifecycle of a Sideline](#lifecycle-of-a-sideline)
+    - [The Trigger](#the-trigger)
     - [The Filter](#the-filter)
     - [Starting a Sideline](#starting-a-sideline)
     - [Resuming a Sideline](#resuming-a-sideline)
@@ -35,6 +38,7 @@
   - [Configuration](#configuration-1)
     - [Sideline Configuration Options](#sideline-configuration-options)
   - [Metrics](#metrics-1)
+    - [Sideline Metrics](#sideline-metrics)
   - [Example Sideline Trigger](#example-sideline-trigger)
   - [Recipes](#recipes)
 - [Contributing](#contributing)
@@ -177,36 +181,6 @@ spout.kafka.topic | String |  | Defines which Kafka topic we will consume messag
 
 <!-- KAFKA_CONSUMER_CONFIGURATION_END_DELIMITER -->
 
-### Adding Metrics
-
-Metrics provide several ways of numerical tracking data. These are very similar to the sort of stats you would use with Statd. The metric (or stat) types that are supported are:
-
-Type | Format | Description
------|------- | -------------- 
-Averages | AVERAGES.\<className\>.\<metricName\> | Calculates average of all values submitted over a set time period.
-Counter | COUNTERS.\<className\>.\<metricName\> | Keeps a running count that gets reset back to zero on deployment.
-Gauge | GAUGES.\<className\>.\<metricName\> | Reports the last value given for the metric.
-Timer | TIMERS.\<className\>.\<metricName\> | Calculates how long on average, in milliseconds, an event takes.  These metrics also publish a related counter
-
-These can be handled through methods on an implementation of [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricsRecorder.java).
-
-To track a specific metric you'll need to create a definition of it, using an implementation of [`MetricDefinition`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricDefinition.java). A `MetricDefinition` is pretty open ended, it just provides a consistent way from generating a String (called a key) to identify the metric. The framework itself uses [`ClassMetric`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/ClassMetric.java) for it's metrics, however
- [`CustomMetric`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/CustomMetric.java) is also provided.  A `ClassMetric` is specifically tied to a Java class and that classes name will be used to generate the key for the metric. This is a handy way of cataloging metrics, but you're free to do whatever is best for your project. All of the framework's core metrics are properties on [`SpoutMetrics`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/SpoutMetrics.java) which is a handy, but not required, way of organizing your metrics.
-
-Here's an example metric from `SpoutMetrics` in the framework:
-```java
-public static final MetricDefinition SPOUT_COORDINATOR_BUFFER_SIZE = new ClassMetric(SpoutCoordinator.class, "bufferSize");
-```
-
-This metric is then easily used by the `MetricsRecorder` like so:
-```java
-getMetricsRecorder().assignValue(SpoutMetrics.SPOUT_COORDINATOR_BUFFER_SIZE, getVirtualSpoutMessageBus().messageSize());
-```
-
-You can add new metrics to any custom implementation in the framework as needed. Most interfaces have an `open()` method that will receive a `MetricsRecorder` as a parameter. _If they don't, then this is a great opportunity for a contribution!_
-
-Lastly you'll note that all of our metric keys are annotated with [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java), this is purely a convention of the framework which helps update the table of metrics below. If you're interested in how this is done, or want to do something similar check out the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java) which compiles them together. 
-
 
 ## Handlers
 Handlers essentially hooks that are attached to either the `DynamicSpout` and `VirtualSpout` and provide a way for interacting with their lifecycle stages without having to extend a base class. They serve as the key manner in which one might implement the framework in their project.
@@ -312,6 +286,36 @@ KafkaConsumer.topic.{topic}.partition.{partition}.lag | GAUGE | Number | Differe
 
 <!-- KAFKA_CONSUMER_METRICS_END_DELIMITER -->
 
+## Adding Metrics
+
+Metrics provide several ways of numerical tracking data. These are very similar to the sort of stats you would use with Statd. The metric (or stat) types that are supported are:
+
+Type | Format | Description
+-----|------- | -------------- 
+Averages | AVERAGES.\<className\>.\<metricName\> | Calculates average of all values submitted over a set time period.
+Counter | COUNTERS.\<className\>.\<metricName\> | Keeps a running count that gets reset back to zero on deployment.
+Gauge | GAUGES.\<className\>.\<metricName\> | Reports the last value given for the metric.
+Timer | TIMERS.\<className\>.\<metricName\> | Calculates how long on average, in milliseconds, an event takes.  These metrics also publish a related counter
+
+These can be handled through methods on an implementation of [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricsRecorder.java).
+
+To track a specific metric you'll need to create a definition of it, using an implementation of [`MetricDefinition`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricDefinition.java). A `MetricDefinition` is pretty open ended, it just provides a consistent way from generating a String (called a key) to identify the metric. The framework itself uses [`ClassMetric`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/ClassMetric.java) for it's metrics, however
+ [`CustomMetric`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/CustomMetric.java) is also provided.  A `ClassMetric` is specifically tied to a Java class and that classes name will be used to generate the key for the metric. This is a handy way of cataloging metrics, but you're free to do whatever is best for your project. All of the framework's core metrics are properties on [`SpoutMetrics`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/SpoutMetrics.java) which is a handy, but not required, way of organizing your metrics.
+
+Here's an example metric from `SpoutMetrics` in the framework:
+```java
+public static final MetricDefinition SPOUT_COORDINATOR_BUFFER_SIZE = new ClassMetric(SpoutCoordinator.class, "bufferSize");
+```
+
+This metric is then easily used by the `MetricsRecorder` like so:
+```java
+getMetricsRecorder().assignValue(SpoutMetrics.SPOUT_COORDINATOR_BUFFER_SIZE, getVirtualSpoutMessageBus().messageSize());
+```
+
+You can add new metrics to any custom implementation in the framework as needed. Most interfaces have an `open()` method that will receive a `MetricsRecorder` as a parameter. _If they don't, then this is a great opportunity for a contribution!_
+
+Lastly you'll note that all of our metric keys are annotated with [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java), this is purely a convention of the framework which helps update the table of metrics below. If you're interested in how this is done, or want to do something similar check out the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java) which compiles them together. 
+
 
 # Sidelining
 
@@ -325,22 +329,21 @@ When consuming a multi-tenant commit log you may want to postpone processing for
 1. Stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
 
 2. Filter the problematic tenants out at the beginning of your topology to avoid processing further downstream, then once maintenance is complete you can stop filtering the problematic tenants. If you're ambitious you can keep track of where you started and stopped filtering and then spin up a separate `KafkaSpout` instance to process only the problematic tenant between the offsets that marked applying and removing your filter.
+
+If you can afford downtime, than option 1 is an easy way to deal with the problem. If not then option 2 might be something you have to look at.  The whole situation becomes even more complicated if you have more than one problematic tenant at a time, and even more so still if they need to start and/or stop filtering at different times. That's a lot of complexity!  Sidelining actually aims to handle option 2 for you, but through automation and easy control semantics.
+
+Imagine wrapping up all of that complexity behind a spout so that the rest of your storm topology doesn't have to think about that problem space: that's sidelining!
  
- If you can afford downtime, than option 1 is an easy way to deal with the problem. If not then option 2 might be something you have to look at.  The whole situation becomes even more complicated if you have more than one problematic tenant at a time, and even more so still if they need to start and/or stop filtering at different times. That's a lot of complexity!  Sidelining actually aims to handle option 2 for you, but through automation and easy control semantics.
+## Dependencies
+
+All of the optional dependencies of the `DynamicSpout` framework are required, namely Apache Zookeeper, Apache Curator and Apache Kafka. Check out the `DynamicSpout` dependencies section for more information.  These all need to be specified in your
  
- Imagine wrapping up all of that complexity behind a spout so that the rest of your storm topology doesn't have to think about that problem space: that's sidelining!
- 
- ## Dependencies
- 
- All of the optional dependencies of the `DynamicSpout` framework are required, namely Apache Zookeeper, Apache Curator and Apache Kafka. Check out the `DynamicSpout` dependencies section for more information.  These all need to be specified in your
- 
- ## Lifecycle of a Sideline
- 
- A sideline is just a filter applied at a specific point in time, with a promise to come back to it at a later point. A given sideline has a lifecycle, it is started, resumed and finally resolved.  Sidelines are always derived from a special `VirtualSpout` called the _fire hose_. The fire hose is your main Kafka topic, and if everything is going well and you don't need to sideline anything you're consuming all of the messages from it in real time. A sideline starts as a filter on the fire hose and evolves from there.
+## Lifecycle of a Sideline 
+A sideline is just a filter applied at a specific point in time, with a promise to come back to it at a later point. A given sideline has a lifecycle, it is started, resumed and finally resolved.  Sidelines are always derived from a special `VirtualSpout` called the _fire hose_. The fire hose is your main Kafka topic, and if everything is going well and you don't need to sideline anything you're consuming all of the messages from it in real time. A sideline starts as a filter on the fire hose and evolves from there.
  
  
- ### The Trigger
- An implementation of sidelining has what's called a [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) which gets called when the [`SidelineSpoutHandler`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineSpoutHandler.java) first opens. The `SidelineTrigger` is responsible for setting up whatever is necessary to notify the [`SidelineController`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineController.java) to start, resume or resolve a sideline. The sideline spout does not have an opinion on what you should use to notify that a sideline lifecycle event should take place, however a usable recipe using Zookeeper watches is provided if you would like to use it (_hint: the authors use it in production today_).
+### The Trigger
+An implementation of sidelining has what's called a [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) which gets called when the [`SidelineSpoutHandler`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineSpoutHandler.java) first opens. The `SidelineTrigger` is responsible for setting up whatever is necessary to notify the [`SidelineController`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineController.java) to start, resume or resolve a sideline. The sideline spout does not have an opinion on what you should use to notify that a sideline lifecycle event should take place, however a usable recipe using Zookeeper watches is provided if you would like to use it (_hint: the authors use it in production today_).
 
 
 ### The Filter
@@ -383,6 +386,12 @@ sideline.trigger_class | String |  | Defines a sideline trigger (if any) to use.
 <!-- SIDELINE_CONFIGURATION_END_DELIMITER -->
 
 <!-- SIDELINE_METRICS_BEGIN_DELIMITER -->
+
+## Metrics
+
+Below is a list of metrics that are collected with the metric type and description.
+
+
 ### Sideline Metrics
 Key | Type | Unit | Description |
 --- | ---- | ---- | ----------- |
