@@ -117,7 +117,7 @@ Below are some of the interfaces and their default implementations that you can 
 
 
 ## Configuration
-All of these options can be found inside of [SpoutConfig](src/main/java/com/salesforce/storm/spout/dynamic/config/SpoutConfig.java).
+All of these options can be found inside of [`SpoutConfig`](src/main/java/com/salesforce/storm/spout/dynamic/config/SpoutConfig.java) and [`KafkaConsumerConfig`](src/main/java/com/salesforce/storm/spout/dynamic/kafka/KafkaConsumerConfig.java). They are defined using the [`ConfigDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/ConfigDocumentation.java) on keys which are defined in their respective configuration classes. The [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java) then compiles them together below. 
 
 <!-- DYNAMIC_SPOUT_CONFIGURATION_BEGIN_DELIMITER -->
 ### Dynamic Spout Configuration Options
@@ -200,6 +200,9 @@ getMetricsRecorder().assignValue(SpoutMetrics.SPOUT_COORDINATOR_BUFFER_SIZE, get
 ```
 
 You can add new metrics to any custom implementation in the framework as needed. Most interfaces have an `open()` method that will receive a `MetricsRecorder` as a parameter. _If they don't, then this is a great opportunity for a contribution!_
+
+Lastly you'll note that all of our metric keys are annotated with [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java), this is purely a convention of the framework which helps update the table of metrics below. If you're interested in how this is done, or want to do something similar check out the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java) which compiles them together. 
+
 
 ## Handlers
 Handlers essentially hooks that are attached to either the `DynamicSpout` and `VirtualSpout` and provide a way for interacting with their lifecycle stages without having to extend a base class. They serve as the key manner in which one might implement the framework in their project.
