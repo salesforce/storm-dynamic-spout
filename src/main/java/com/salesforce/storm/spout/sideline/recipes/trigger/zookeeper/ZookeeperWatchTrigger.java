@@ -26,14 +26,8 @@
 package com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
+import com.salesforce.storm.spout.dynamic.JSON;
 import com.salesforce.storm.spout.dynamic.Tools;
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.config.SidelineConfig;
@@ -51,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -107,33 +100,7 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
     /**
      * JSON parser.
      */
-    private Gson gson;
-
-    /**
-     * Deserializer for {@link FilterChainStep} instances.
-     *
-     * A {@link TriggerEvent} contains a filter, and this is serialized and stored in zookeeper. Because the filter is
-     * unique to a setup we only have the interface hinted on the event object and need to provide special handling
-     * when deserializing to use the correct implementation.
-     * @param <T> an implementation of a filter.
-     */
-    static class FilterChainStepDeserializer<T extends FilterChainStep> implements JsonDeserializer<T> {
-
-        private final Class<T> className;
-
-        FilterChainStepDeserializer(final Class<T> className) {
-            this.className = className;
-        }
-
-        @Override
-        public T deserialize(
-            final JsonElement jsonElement,
-            final Type type,
-            final JsonDeserializationContext deserializationContext
-        ) throws JsonParseException {
-            return deserializationContext.deserialize(jsonElement, this.className);
-        }
-    }
+    private JSON json;
 
     @Override
     public void setSidelineController(final SidelineController sidelineController) {
@@ -148,24 +115,12 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
             throw new RuntimeException("Trigger is already opened, it should not be opened a second time - something is wrong!");
         }
 
+        this.json = new JSON(config);
+
         Preconditions.checkArgument(
             config.containsKey(SidelineConfig.FILTER_CHAIN_STEP_CLASS),
             "A FilterChainStep class must be configured."
         );
-
-        try {
-            @SuppressWarnings("unchecked")
-            final Class<? extends FilterChainStep> className = (Class<? extends FilterChainStep>) Class.forName(
-                config.get(SidelineConfig.FILTER_CHAIN_STEP_CLASS).toString()
-            );
-
-            gson = new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd HH:mm:ss")
-                .registerTypeAdapter(FilterChainStep.class, new FilterChainStepDeserializer<>(className))
-                .create();
-        } catch (ClassNotFoundException ex) {
-            throw new RuntimeException("Trigger is unable to create a deserializer for the configured FilterChainStep", ex);
-        }
 
         logger.info("Opening {}", this.getClass());
 
@@ -338,9 +293,9 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
     private SidelineRequestIdentifier generateSidelineRequestIdentifier(
         final TriggerEvent triggerEvent
     ) {
-        final String json = gson.toJson(triggerEvent.getFilterChainStep());
+        final String data = json.to(triggerEvent.getFilterChainStep());
 
-        final StringBuilder identifier = new StringBuilder(Tools.makeMd5Hash(json));
+        final StringBuilder identifier = new StringBuilder(Tools.makeMd5Hash(data));
 
         // If we were provided a date time in the event, append the time stamp of that event to the identifier
         if (triggerEvent.getCreatedAt() != null) {
@@ -366,12 +321,12 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
     /**
      * Parse a trigger event from some JSON.
      *
-     * @param json JSON to parse
+     * @param data JSON to parse
      * @return Trigger event
      */
-    private TriggerEvent getTriggerEventFromJson(final String json) {
+    private TriggerEvent getTriggerEventFromJson(final String data) {
         try {
-            return gson.fromJson(json, TriggerEvent.class);
+            return json.from(data, TriggerEvent.class);
         } catch (Exception e) {
             logger.error("Unable to parse trigger event {} {}", json, e);
             return null;
@@ -385,14 +340,6 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      */
     Set<SidelineRequest> getSidelineRequests() {
         return this.sidelineRequests;
-    }
-
-    /**
-     * Access the instance of GSON, useful in tests.
-     * @return gson instance used in this class.
-     */
-    Gson getGson() {
-        return gson;
     }
 
     /**
