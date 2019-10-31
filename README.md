@@ -369,6 +369,7 @@ The `DynamicSpout` has several moving pieces, all of which will properly handle 
 ### Sideline Configuration Options
 Config Key | Type | Required | Description | Default Value |
 ---------- | ---- | -------- | ----------- | ------------- |
+sideline.filter_chain_step_class | String |  | Defines a filter chain step that is used during sidelining. Should be a fully qualified class path that implements thee FilterChainStep interface. | 
 sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 6000
 sideline.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 10
 sideline.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 10
@@ -377,17 +378,17 @@ sideline.persistence.zookeeper.servers | List |  | Holds a list of Zookeeper ser
 sideline.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 6000
 sideline.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
 sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check running sidelines and refresh them if necessary. | 600
-sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
+sideline.trigger_class | String |  | Defines a sideline trigger (if any) to use. Should be a fully qualified class path that implements the SidelineTrigger interface. | 
 
 <!-- SIDELINE_CONFIGURATION_END_DELIMITER -->
 
 <!-- SIDELINE_METRICS_BEGIN_DELIMITER -->
-
-## Metrics
+### Sideline Metrics
 Key | Type | Unit | Description |
 --- | ---- | ---- | ----------- |
+SidelineSpoutHandler.resolve | COUNTER | Number | Total number of resolving sidelines. | 
+SidelineSpoutHandler.resume | COUNTER | Number | Total number of resumed sidelines. | 
 SidelineSpoutHandler.start | COUNTER | Number | Total number of started sidelines. | 
-SidelineSpoutHandler.stop | COUNTER | Number | Total number of stopped sidelines. | 
 
 <!-- SIDELINE_METRICS_END_DELIMITER -->
 
@@ -398,7 +399,13 @@ Each project leveraging the `SidelineSpout` will likely have a unique set of tri
 
 First we need a filter, so we'll use the `NumberFilter` which expects messages whose first value is an integer and if that value matches, it is filtered. Keep in mind your filter will be serialized to JSON and stored in Zookeeper (unless your change your `PersistenceAdapter`), so take great care to ensure that what you do serializes correctly.
 
+<!-- TODO: Can this be moved to an actual java class that is then embedded here? -->
 ```java
+package com.salesforce.storm.spout.sideline.example;
+
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.Message;
+
 public static class NumberFilter implements FilterChainStep {
 
     final private int number;
@@ -417,7 +424,18 @@ public static class NumberFilter implements FilterChainStep {
 
 `PollingSidelineTrigger` runs every 30 seconds and simply swaps out number filters, slowly incrementing over time.  It uses the `NumberFilter` by including it in a `SidelineRequest`.  `PollingSidelineTrigger` implements `SidelineTrigger`.
 
+<!-- TODO: Can this be moved to an actual java class that is then embedded here? -->
 ```java
+package com.salesforce.storm.spout.sideline.example;
+
+import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.handler.SidelineController;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.Map;
+import java.lang.Runnable;
+
 public class PollingSidelineTrigger implements SidelineTrigger {
 
     private boolean isOpen = false;
@@ -425,6 +443,11 @@ public class PollingSidelineTrigger implements SidelineTrigger {
     private transient ScheduledExecutorService executor;
 
     private transient SidelineController sidelineController;
+
+    @Override
+    public void setSidelineController(final SidelineController sidelineController) {
+        this.sidelineController = sidelineController;
+    }
 
     @Override
     public void open(final Map config) {
@@ -436,7 +459,7 @@ public class PollingSidelineTrigger implements SidelineTrigger {
 
         executor = Executors.newScheduledThreadPool(1);
 
-        final Poll poll = new Poll(sidelineSpout);
+        final Poll poll = new Poll(sidelineController);
 
         executor.scheduleAtFixedRate(poll, 0, 30, TimeUnit.SECONDS);
     }
