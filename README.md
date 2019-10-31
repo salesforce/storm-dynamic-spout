@@ -602,4 +602,12 @@ We use checkstyle aggressively on source and tests, our config is located under 
  
 ## README Configuration & Metrics Tables
 
-The configuration section in this document is generated using the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java), which automatically generates the appropriate tables in this file using the  [`ConfigDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/ConfigDocumentation.java) & [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java) annotations. Do **not** update those tables manually as they will get overwritten, instead use the `DocGenerator`, which can be executed easily from [`DocTask`](src/main/java/com/salesforce/storm/spout/dynamic/config/DocTask.java).
+The configuration section in this document is generated using the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java), which automatically generates the appropriate tables in this file using the  [`ConfigDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/ConfigDocumentation.java) & [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java) annotations. Do **not** update those tables manually as they will get overwritten, instead use the `DocGenerator`, which can be executed easily each [`DocTask`] class.
+
+You can run these from the command line using Maven:
+
+```
+mvn exec:java -Dexec.mainClass="com.salesforce.storm.spout.dynamic.config.DocTask"
+mvn exec:java -Dexec.mainClass="com.salesforce.storm.spout.dynamic.kafka.DocTask"
+mvn exec:java -Dexec.mainClass="com.salesforce.storm.spout.sideline.config.DocTask"
+```
