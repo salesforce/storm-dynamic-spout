@@ -30,6 +30,7 @@ import com.google.gson.GsonBuilder;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.persistence.FilterChainStepSerializer;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -48,14 +49,25 @@ public class JSON {
     private final Gson gson;
 
     /**
+     * Create JSON serializer/deserializer instance.
+     */
+    public JSON() {
+        this(new HashMap<>());
+    }
+
+    /**
      * Create JSON serializer/deserializer instance with default configuration.
      * @param config configuration.
      */
     public JSON(final Map<String, Object> config) {
-        this.gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd HH:mm:ss")
-            .registerTypeAdapter(FilterChainStep.class, new FilterChainStepSerializer(config))
-            .create();
+        final GsonBuilder gsonBuilder = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        if (!config.isEmpty()) {
+            gsonBuilder.registerTypeAdapter(FilterChainStep.class, new FilterChainStepSerializer(config));
+        }
+
+        this.gson = gsonBuilder.create();
     }
 
     /**

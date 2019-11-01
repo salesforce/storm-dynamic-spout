@@ -26,10 +26,13 @@
 package com.salesforce.storm.spout.sideline.recipes.trigger;
 
 import com.google.common.base.Preconditions;
+import com.salesforce.storm.spout.dynamic.JSON;
+import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 /**
@@ -40,7 +43,7 @@ public class TriggerEvent {
 
     private SidelineType type;
 
-    private Map<String,Object> data;
+    private FilterChainStep filterChainStep;
 
     private LocalDateTime createdAt;
 
@@ -55,22 +58,22 @@ public class TriggerEvent {
     /**
      * An event to a {@link com.salesforce.storm.spout.sideline.trigger.SidelineTrigger} that communicates the desired type of
      * sideline state for the system.
-     *
+     * <p>
      * When you create a TriggerEvent in Zookeeper always set processed = false, the trigger implementation will flip this to true
      * after it has been picked up and handled by the trigger. This allows you to distinguish an event that's been handled by the
      * trigger and one that has not.
      *
-     * @param type sideline type.
-     * @param data data bag of key value pairs.
-     * @param createdAt when the event was created.
-     * @param createdBy who created the event.
+     * @param type        sideline type.
+     * @param filterChainStep filter chain step
+     * @param createdAt   when the event was created.
+     * @param createdBy   who created the event.
      * @param description a description of the reason for the sideline request.
-     * @param processed whether or not the event (in its current state has been processed)
-     * @param updatedAt Timestamp the event was last updated.
+     * @param processed   whether or not the event (in its current state has been processed)
+     * @param updatedAt   Timestamp the event was last updated.
      */
     public TriggerEvent(
         final SidelineType type,
-        final Map<String,Object> data,
+        final FilterChainStep filterChainStep,
         final LocalDateTime createdAt,
         final String createdBy,
         final String description,
@@ -78,13 +81,13 @@ public class TriggerEvent {
         final LocalDateTime updatedAt
     ) {
         Preconditions.checkNotNull(type, "Type is required.");
-        Preconditions.checkNotNull(data, "Data payload is required (But we do accept empty maps!).");
+        Preconditions.checkNotNull(filterChainStep, "FilterChainStep is required.");
         Preconditions.checkNotNull(createdAt, "Created at time is required.");
         Preconditions.checkNotNull(createdBy, "Created by is required.");
         Preconditions.checkNotNull(description, "Description is required.");
 
         this.type = type;
-        this.data = data;
+        this.filterChainStep = filterChainStep;
         this.createdAt = createdAt;
         this.createdBy = createdBy;
         this.description = description;
@@ -92,12 +95,43 @@ public class TriggerEvent {
         this.updatedAt = updatedAt;
     }
 
+    /**
+     * Generate an identifier for this {@link TriggerEvent}.
+     *
+     * The identifier generated here is a JSON serialized version of the {@link FilterChainStep} which we then make
+     * an md5 hash of. If we have a created date we tack on it's millis to the end for extra uniqueness. It's the
+     * {@link FilterChainStep} that is the important part of a {@link TriggerEvent} and the assumption here is that
+     * there are properties that make the given filter unique. For example, if you're filtering out a tenant on a
+     * multi tenant stream you probably have a generic filter which has a property to hold the given tenant.
+     *
+     * If you don't have uniqueness represented in the properties of your filter this whole recipe probably isn't a
+     * great fit for your use case.
+     *
+     * @return string representing the event.
+     */
+    public String getIdentifier() {
+        // Note: This only works for to() because we only need the implementation name for from()
+        final String data = (new JSON()).to(getFilterChainStep());
+
+        final StringBuilder identifier = new StringBuilder(Tools.makeMd5Hash(data));
+
+        // If we were provided a date time in the event, append the time stamp of that event to the identifier
+        if (this.getCreatedAt() != null) {
+            identifier.append("-");
+            identifier.append(
+                this.getCreatedAt().atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
+            );
+        }
+
+        return identifier.toString();
+    }
+
     public SidelineType getType() {
         return type;
     }
 
-    public Map<String,Object> getData() {
-        return data;
+    public FilterChainStep getFilterChainStep() {
+        return filterChainStep;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -131,7 +165,7 @@ public class TriggerEvent {
         TriggerEvent that = (TriggerEvent) obj;
         return processed == that.processed
             && type == that.type
-            && Objects.equals(data, that.data)
+            && Objects.equals(filterChainStep, that.filterChainStep)
             && Objects.equals(createdAt, that.createdAt)
             && Objects.equals(createdBy, that.createdBy)
             && Objects.equals(description, that.description)
@@ -140,14 +174,14 @@ public class TriggerEvent {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, data, createdAt, createdBy, description);
+        return Objects.hash(type, filterChainStep, createdAt, createdBy, description);
     }
 
     @Override
     public String toString() {
         return "TriggerEvent{"
             + "type=" + type
-            + ", data=" + data
+            + ", filterChainStep=" + filterChainStep
             + ", createdAt=" + createdAt
             + ", createdBy='" + createdBy + '\''
             + ", description='" + description + '\''

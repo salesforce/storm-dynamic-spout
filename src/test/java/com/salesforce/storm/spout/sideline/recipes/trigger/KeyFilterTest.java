@@ -25,19 +25,39 @@
 
 package com.salesforce.storm.spout.sideline.recipes.trigger;
 
-import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.Message;
+import com.salesforce.storm.spout.dynamic.MessageId;
+import org.apache.storm.tuple.Values;
+import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+
+import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Given a map of a data from a {@link TriggerEvent} implementations of this generate {@link FilterChainStep} instances.
+ * Test that messages are filtered by their keys.
  */
-public interface FilterChainStepBuilder {
+class KeyFilterTest {
 
     /**
-     * Given a map of a data from a {@link TriggerEvent} implementations of this generate {@link FilterChainStep} instances.
-     * @param data data from a trigger event.
-     * @return filter chain step.
+     * Test that messages are filtered by their keys.
      */
-    FilterChainStep build(final Map<String,Object> data);
+    @Test
+    void testFilter() {
+        final KeyFilter keyFilter = new KeyFilter(Collections.singletonList("key1"));
+
+        final MessageId messageId1 = new MessageId("namespace", 0, 0, new DefaultVirtualSpoutIdentifier("id"));
+        final Message message1 = new Message(messageId1, new Values("key1", "value1"));
+
+        assertTrue(keyFilter.filter(message1), "Message should be filtered");
+
+        final MessageId messageId2 = new MessageId("namespace", 0, 1, new DefaultVirtualSpoutIdentifier("id"));
+        final Message message2 = new Message(messageId1, new Values("key2", "value2"));
+
+        assertFalse(keyFilter.filter(message2), "Message should not be filterd");
+
+    }
 }

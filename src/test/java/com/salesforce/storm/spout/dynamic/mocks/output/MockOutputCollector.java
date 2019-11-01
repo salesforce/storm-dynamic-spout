@@ -104,7 +104,8 @@ public class MockOutputCollector implements IOutputCollector {
     }
 
     @Override
-    public void resetTimeout(Tuple input) { }
+    public void resetTimeout(Tuple input) {
+    }
 
     @Override
     public void reportError(Throwable error) {

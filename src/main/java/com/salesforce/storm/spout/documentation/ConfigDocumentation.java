@@ -89,5 +89,6 @@ public @interface ConfigDocumentation {
     /**
      * Default class type for use on the type field.
      */
-    final class Default {}
+    final class Default {
+    }
 }

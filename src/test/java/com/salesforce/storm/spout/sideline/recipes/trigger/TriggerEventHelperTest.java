@@ -27,8 +27,10 @@ package com.salesforce.storm.spout.sideline.recipes.trigger;
 
 import com.salesforce.kafka.test.junit5.SharedZookeeperTestResource;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
+import com.salesforce.storm.spout.sideline.config.SidelineConfig;
 import com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper.Config;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 import org.apache.curator.framework.CuratorFramework;
@@ -42,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test the {@link TriggerEventHelper} to make sure it starts, resumes and resolves sidelines for the
@@ -68,6 +71,7 @@ class TriggerEventHelperTest {
         config.put(Config.ZK_SERVERS, Collections.singletonList(
             sharedZookeeperTestResource.getZookeeperTestServer().getConnectString()
         ));
+        config.put(SidelineConfig.FILTER_CHAIN_STEP_CLASS, KeyFilter.class.getName());
 
         curator = CuratorFactory.createNewCuratorInstance(
             Tools.stripKeyPrefix(Config.PREFIX, config),
@@ -90,16 +94,14 @@ class TriggerEventHelperTest {
 
     @Test
     void startTriggerEvent() {
-        final Map<String, Object> data = new HashMap<>();
-        data.put("firstName", "Stevie");
-        data.put("lastName", "Powis");
+        final FilterChainStep filterChainStep = new KeyFilter(Collections.singletonList("key1"));
 
         final String createdBy = "Stan Lemon";
         final String description = "Testing trigger events.";
 
         // Start a new sideline using a trigger event
         final String triggerEventId = triggerEventHelper.startTriggerEvent(
-            data,
+            filterChainStep,
             createdBy,
             description
         );
@@ -112,22 +114,19 @@ class TriggerEventHelperTest {
         assertEquals(SidelineType.START, triggerEvent.getType());
         assertEquals(createdBy, triggerEvent.getCreatedBy());
         assertEquals(description, triggerEvent.getDescription());
-        assertEquals(data.get("firstName"), triggerEvent.getData().get("firstName"));
-        assertEquals(data.get("lastName"), triggerEvent.getData().get("lastName"));
+        assertNotNull(triggerEvent.getFilterChainStep());
     }
 
     @Test
     void resumeTriggerEvent() {
-        final Map<String, Object> data = new HashMap<>();
-        data.put("firstName", "Stevie");
-        data.put("lastName", "Powis");
+        final FilterChainStep filterChainStep = new KeyFilter(Collections.singletonList("key1"));
 
         final String createdBy = "Stan Lemon";
         final String description = "Testing trigger events.";
 
         // Start a new sideline using a trigger event
         final String triggerEventId = triggerEventHelper.startTriggerEvent(
-            data,
+            filterChainStep,
             createdBy,
             description
         );
@@ -144,16 +143,14 @@ class TriggerEventHelperTest {
 
     @Test
     void resolveTriggerEvent() {
-        final Map<String, Object> data = new HashMap<>();
-        data.put("firstName", "Stevie");
-        data.put("lastName", "Powis");
+        final FilterChainStep filterChainStep = new KeyFilter(Collections.singletonList("key1"));
 
         final String createdBy = "Stan Lemon";
         final String description = "Testing trigger events.";
 
         // Start a new sideline using a trigger event
         final String triggerEventId = triggerEventHelper.startTriggerEvent(
-            data,
+            filterChainStep,
             createdBy,
             description
         );

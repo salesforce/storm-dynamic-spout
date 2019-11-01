@@ -28,6 +28,7 @@ package com.salesforce.storm.spout.sideline.recipes.trigger;
 import com.google.common.base.Preconditions;
 import com.salesforce.storm.spout.dynamic.JSON;
 import com.salesforce.storm.spout.dynamic.Tools;
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorFactory;
 import com.salesforce.storm.spout.dynamic.persistence.zookeeper.CuratorHelper;
 import com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper.Config;
@@ -83,26 +84,26 @@ public class TriggerEventHelper {
     /**
      * Create a {@link TriggerEvent} to start a sideline.
      *
-     * @param data data for the trigger event, this will be handed off to the {@link FilterChainStepBuilder}.
+     * @param filterChainStep a {@link FilterChainStep} object to be applied for the trigger event.
      * @param createdBy the name or a way of identifying who or what started the sideline.
      * @param reason the reason for starting the sideline.
      * @return the identifier of the sideline.
      */
     public String startTriggerEvent(
-        final Map<String, Object> data,
+        final FilterChainStep filterChainStep,
         final String createdBy,
         final String reason
     ) {
-        Preconditions.checkArgument(
-            data != null && !data.isEmpty(),
-            "TriggerEvent's require data"
+        Preconditions.checkNotNull(
+            filterChainStep,
+            "TriggerEvent's require a FilterChainStep"
         );
 
         final LocalDateTime createdAt = LocalDateTime.now();
 
         final TriggerEvent triggerEvent = new TriggerEvent(
             SidelineType.START,
-            data,
+            filterChainStep,
             createdAt,
             createdBy,
             reason,
@@ -110,7 +111,7 @@ public class TriggerEventHelper {
             createdAt
         );
 
-        final String id = getMd5Hash(data);
+        final String id = getMd5Hash(filterChainStep);
         final String path = getZkRoot() + "/" + id;
 
         logger.info("Sending trigger event to start sideline {}", id);
@@ -160,7 +161,7 @@ public class TriggerEventHelper {
 
         final TriggerEvent triggerEvent = new TriggerEvent(
             type,
-            originalTriggerEvent.getData(),
+            originalTriggerEvent.getFilterChainStep(),
             originalTriggerEvent.getCreatedAt(),
             originalTriggerEvent.getCreatedBy(),
             originalTriggerEvent.getDescription(),
@@ -173,8 +174,8 @@ public class TriggerEventHelper {
         logger.info("Saved to {}", path);
     }
 
-    private String getMd5Hash(final Map<String, Object> data) {
-        return Tools.makeMd5Hash(new JSON(new HashMap<>()).to(data));
+    private String getMd5Hash(final FilterChainStep filterChainStep) {
+        return Tools.makeMd5Hash(new JSON(new HashMap<>()).to(filterChainStep));
     }
 
     private String getZkRoot() {

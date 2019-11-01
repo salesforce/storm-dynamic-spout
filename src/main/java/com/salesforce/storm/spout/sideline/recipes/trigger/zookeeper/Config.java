@@ -26,7 +26,6 @@
 package com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper;
 
 import com.salesforce.storm.spout.documentation.ConfigDocumentation;
-import com.salesforce.storm.spout.sideline.recipes.trigger.FilterChainStepBuilder;
 
 import java.util.List;
 
@@ -39,15 +38,6 @@ public class Config {
      * Prefix for this set of configuration directives.
      */
     public static final String PREFIX = "sideline.zookeeper_watch_trigger.";
-
-    /**
-     * (String) Class name for the class of the {@link FilterChainStepBuilder} instance.
-     */
-    @ConfigDocumentation(
-        description = "Class name for the class of the FilterChainStepBuilder instance.",
-        type = String.class
-    )
-    public static final String FILTER_CHAIN_STEP_BUILDER_CLASS = PREFIX + "filter_chain_step_builder_class";
 
     /**
      * (List[String]) Holds a list of Zookeeper server Hostnames + Ports in the following format:
