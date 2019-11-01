@@ -94,8 +94,8 @@ public class TriggerEventHelper {
         final String createdBy,
         final String reason
     ) {
-        Preconditions.checkArgument(
-            filterChainStep != null,
+        Preconditions.checkNotNull(
+            filterChainStep,
             "TriggerEvent's require a FilterChainStep"
         );
 
