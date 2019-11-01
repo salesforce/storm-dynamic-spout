@@ -9,40 +9,46 @@
 - [Getting Started](#getting-started)
 - [Dynamic Spout Framework](#dynamic-spout-framework)
   - [Purpose of this project](#purpose-of-this-project)
-    - [Example use case: Multi-tenant processing](#example-use-case-multi-tenant-processing)
   - [How does it work?](#how-does-it-work)
-  - [How does it  _really_ work?](#how-does-it--_really_-work)
   - [Dependencies](#dependencies)
-  - [When the Topology Starts](#when-the-topology-starts)
+  - [How the Framework Works](#how-the-framework-works)
+    - [Components](#components)
   - [Configuration](#configuration)
-    - [Sideline](#sideline)
-    - [Persistence](#persistence)
-    - [Zookeeper Persistence](#zookeeper-persistence)
-    - [Kafka](#kafka)
-  - [Components](#components)
-  - [Provided Implementations](#provided-implementations)
-    - [PersistenceAdapter Implementations](#persistenceadapter-implementations)
-    - [RetryManager Implementations](#retrymanager-implementations)
-    - [MessageBuffer Implementations](#messagebuffer-implementations)
-    - [MetricsRecorder Implementations](#metricsrecorder-implementations)
+    - [Dynamic Spout Configuration Options](#dynamic-spout-configuration-options)
+    - [Persistence Configuration Options](#persistence-configuration-options)
+    - [Zookeeper Persistence Configuration Options](#zookeeper-persistence-configuration-options)
+    - [Kafka Consumer Configuration Options](#kafka-consumer-configuration-options)
   - [Handlers](#handlers)
     - [SpoutHandler](#spouthandler)
     - [VirtualSpoutHandler](#virtualspouthandler)
   - [Metrics](#metrics)
+    - [Dynamic Spout Metrics](#dynamic-spout-metrics)
+    - [Kafka Metrics](#kafka-metrics)
+  - [Adding Metrics](#adding-metrics)
 - [Sidelining](#sidelining)
-  - [Getting Started](#getting-started-1)
-  - [Starting Sideline Request](#starting-sideline-request)
-  - [Stopping Sideline Request](#stopping-sideline-request)
+  - [Example Use case: Multi-tenant Processing](#example-use-case-multi-tenant-processing)
   - [Dependencies](#dependencies-1)
-  - [Components](#components-1)
-  - [Example Trigger Implementation](#example-trigger-implementation)
-  - [Stopping & Redeploying the topology?](#stopping--redeploying-the-topology)
+  - [Lifecycle of a Sideline](#lifecycle-of-a-sideline)
+    - [The Trigger](#the-trigger)
+    - [The Filter](#the-filter)
+    - [Starting a Sideline](#starting-a-sideline)
+    - [Resuming a Sideline](#resuming-a-sideline)
+    - [Resolving a Sideline](#resolving-a-sideline)
+    - [Stopping & Redeploying the Topology](#stopping--redeploying-the-topology)
+  - [Configuration](#configuration-1)
+    - [Sideline Configuration Options](#sideline-configuration-options)
+  - [Metrics](#metrics-1)
+    - [Sideline Metrics](#sideline-metrics)
+  - [Example Sideline Trigger](#example-sideline-trigger)
+  - [Recipes](#recipes)
 - [Contributing](#contributing)
   - [Submitting a Contribution](#submitting-a-contribution)
   - [Acceptance Criteria](#acceptance-criteria)
 - [Other Notes](#other-notes)
-  - [Configuration & README](#configuration--readme)
+  - [History](#history)
+  - [Tests](#tests)
   - [Checkstyle](#checkstyle)
+  - [README Configuration & Metrics Tables](#readme-configuration--metrics-tables)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -54,62 +60,71 @@ To use this library add the following to your pom.xml:
 <dependency>
     <groupId>com.salesforce.storm</groupId>
     <artifactId>dynamic-spout</artifactId>
-    <version>0.9.0</version>
-</dependency>
-```
-
-Or try out the bleeding edge version (API may be unstable:
-
-```
-<dependency>
-    <groupId>com.salesforce.storm</groupId>
-    <artifactId>dynamic-spout</artifactId>
     <version>0.10-SNAPSHOT</version>
 </dependency>
 ```
 
+_Note that snapshot releases may have API changes, it's best to check for the latest release version and use that._
+
 In addition to the library we publish source jars and javadocs to maven central. You can find those [here](https://search.maven.org/#artifactdetails%7Ccom.salesforce.storm%7Cdynamic-spout%7C0.8.0%7Cjar).
 
-This project uses the latest [Apache Storm](https://storm.apache.org/) and [Apache Kafka](https://kafka.apache.org/) releases, but this library should function fine using any Storm 1.0 release or higher and any Kafka release 0.10 or higher.  If you run into compatibility problems please let us know by [filing an issue on GitHub](https://github.com/salesforce/storm-dynamic-spout/issues).
+This project uses recent versions of [Apache Storm](https://storm.apache.org/) and [Apache Kafka](https://kafka.apache.org/) releases, but this library should function fine using any Storm 1.0 release or higher and any Kafka release 0.10 or higher.  If you run into compatibility problems please let us know by [filing an issue on GitHub](https://github.com/salesforce/storm-dynamic-spout/issues).
 
 # Dynamic Spout Framework
 
 ## Purpose of this project
-The purpose of this project is to create a reusable set of components that can be used to build a system of spouts masked behind a single spout for Apache Storm. The original use case for this framework was Apache Kafka Sidelining, but the framework was quickly found to have value in other stream processing contexts.
+This library contains a reusable set of components that can be used to build a system of spouts masked behind a single spout for Apache Storm. The library came out of the development of _Apache Kafka Sidelining_. During it's development it became clear that many of the components could serve as building blocks for a more general purpose framework. Not long after separating out those components did we put them to use on other stream processing applications.
 
-### Example use case: Multi-tenant processing
-When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine  that a subset of your tenants database infrastructure requires downtime for maintenance.  Using the Kafka-Spout implementation you really only have two options to deal with this situation:
 
-1. You could stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
-
-2. You could filter these tenants out from being processed by your topology, then after the maintenance is complete start a separate topology/Kafka-Spout instance that somehow knows where to start and stop consuming, and by way filter bolts on the consuming topology re-process only the events for the tenants that were previously filtered.
-
-Unfortunately both of these solutions are complicated, error prone and down right painful. The alternative is to represent a use case like this with a collection of spouts behind a single spout, or what we call a `VirtualSpout` instance behind a `DynamicSpout` that handled the management of starting and stopping those `VirtualSpout` instances.
- 
 ## How does it work?
-The `DynamicSpout` is really a container of many `VirtualSpout` instances, which each handle processing messages from their defined `Consumer` and pass them into Apache Storm as a single stream.
+The `DynamicSpout` is a container of many `DelegateSpout` instances, which each handle processing messages from their defined `Consumer` and pass them into Apache Storm as a single stream. You can think of a `DelegateSpout` as a typical Storm spout, with the `DynamicSpout` being an orchestration level. The `DynamicSpout` conforms to Apache Storm's `IRichSpout` interface, and so from Storm's standpoint there is only one Spout, and that's the magic of the framework.
 
-This spout implementation exposes two interfaces for controlling **WHEN** and **WHAT** messages from Kafka get skipped and marked for processing at a later point in time.
-
-The **Trigger Interface** allows you to hook into the spout so that you start and stop **WHEN** messages are delayed from processing, and **WHEN** the spout will resume processing messages that it previously delayed.
-
-The **Filter Interface** allows you to define **WHAT** messages the spout will mark for delayed processing.
-
-The spout implementation handles the rest for you!  It tracks your filter criteria as well as offsets within Kafka topics to know where it started and stopped filtering.  It then uses this metadata to replay only those messages which got filtered.
-
-## How does it  _really_ work?
-Lets define the major components of the `DynamicSpout` framework and give a brief explanation of what their role is.  Then we'll build up how they all work together.
 
 ## Dependencies
-Using the default straight-out-of-the-box configuration, this spout has the following dependencies:
-- [Apache Storm 1.0.x](https://storm.apache.org/) - This one should be self explanatory.
-- [Zookeeper](https://zookeeper.apache.org/) - Metadata the spout tracks has to be persisted somewhere, by default we use Zookeeper.  This is not a hard dependency as you can write your own [`PersistenceAdapter`](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) implementation to store this metadata any where you would like.  Mysql? Redis? Kafka? Sure!  Contribute an adapter to the project!
+The `DynamicSpout` framework has the following dependencies:
+- [Apache Storm](https://storm.apache.org/): For all of the Storm interfaces this project is implemented against. This dependency is marked as _provided_ so you will need to specify the version of Storm that you want to use in your project some where on your classpath.
+- [Apache Zookeeper](https://zookeeper.apache.org/): The framework is agnostic to where metadata is stored, and you can easily add different types of storage by implementing a [`PersistenceAdapter`](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java). The framework ships with a Zookeeper implementation because Storm itself requires Zookeeper to track metadata and we figured it's the easiest to provide out of the box. That said, Zookeeper is listed as an optional dependency and so you will need to include this in your classpath as well.
+- [Apache Curator](https://curator.apache.org/): As noted above, the framework ships with a Zookeeper `PersistenceAdapter` and we use Curator to make all of those interactions easy and painless. Curator is also an optional dependency, so if you're using Zookeeper you will need to specify the correct version of Curator to go with your Zookeeper dependency.
+- [Apache Kafka](https://kafka.apache.org/): The framework is not tied to Kafka, but we've found that many of our implementations of the framework are. This is an optional dependency that you will want to include if you're using the Kafka based `Consumer` for example.
 
-## When the Topology Starts
-When your topology is deployed with a `DynamicSpout` and it starts up, the `DynamicSpout` will first start the `SpoutMonitor`. The `SpoutMonitor` will watch for `VirtualSpout` instances that are added to it, this is typically handled by a `SpoutHandler` instance that is configured on the `DynamicSpout`.  Each `VirtualSpout` will create a `Consumer` that leverages a starting `ConsumerState` to begin it's work.  
- 
+
+## How the Framework Works
+When a Storm topology is deployed with a `DynamicSpout`, the `DynamicSpout` will first start the `SpoutCoordinator`. The `SpoutCoordinator` will watch for `DelegateSpout` instances that are added to it. A `DelegateSpout` is just an interface that resembles Storm's `IRichSpout`, but it's not meant to be run on it's own, only in the context of the framework. There is a default implementation of the `DelegateSpout` called the `VirtualSpout` that handles the mechanics of working with a `Consumer` like the one included for talking to Kafka.
+
+You may be wondering how a `DelegateSpout` instance gets added to the `SpoutCoordinator` and the answer is usually by a `SpoutHandler` instance that is configured on the `DynamicSpout`. A `SpoutHandler` is a set of hooks into the `DynamicSpout` life cycle. It allows you to do work when a `DynamicSpout` instance opens or closes (the topology's start/stop lifecycle).  For example, a `SpoutHandler` may check a node in Zookeeper for data and create `VirtualSpout` instances based upon that data, which is similar to how the sidelining implement works (more on that later).
+
+There is also a `VirtualSpoutHandler` that is tied to the `VirtualSpout` implementation of the `DelegateSpout`.  Similarly it provides hooks into the life cycle of an individual `VirtualSpout` instance inside of the `DynamicSpout`.
+
+Beyond the basic building blocks there are a number of places where you can change the behavior of the `DynamicSpout` to meet your needs. They include changing the spout's retry behavior, adding filters for messages and customizing where the spout stores metadata, among other things. Out of the box the framework tries to provide reasonable defaults to get a project going, but as your project matures you may want to customize various aspects of the framework. 
+
+
+### Components
+Below are some of the interfaces and their default implementations that you can use to customize the behavior of the `DynamicSpout`. Most implementation don't need to touch the vast majority of these, however there are a few such as the `Deserializer` and `SpoutHandler` that you will likely need to create project-specific implementations.
+
+[DefaultSpout](src/main/java/com/salesforce/storm/spout/dynamic/DefaultSpout.java): This is the core building block of the `DynamicSpout` framework, implementations of this interface are what handle passing data down into a Storm topology. The default implementation of this is the
+[`VirtualSpout`](src/main/java/com/salesforce/storm/spout/dynamic/VirtualSpout.java) which uses a `Consumer` model to consume messages. Most of the time the `VirtualSpout` is adequate enough for most implementations of the framework.
+
+[Consumer](src/main/java/com/salesforce/storm/spout/dynamic/consumer/Consumer.java): A `Consumer` is used by a `VirtualSpout` instance to consume from a data source. The [Kafka](https://kafka.apache.org/) based [`Consumer`](src/main/java/com/salesforce/storm/spout/dynamic/kafka/Consumer.java) is an example implementation that polls for messages from a Kafka topic.
+
+[Deserializer](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Deserializer.java): When using a `Consumer` it will need to know how to transform a message into a usable format. The framework ships with a  [`Utf8StringDeserializer`](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Utf8StringDeserializer.java) that merely ensures the bytes from a message are accessible as a `String`. If you're using structured messages like [Protocol Buffers](https://developers.google.com/protocol-buffers), [Apache Avro](https://avro.apache.org/) or even JSON you'll want to use a different deserializer.  This is very similar to Storm's [`Scheme`](https://github.com/apache/storm/blob/master/storm-client/src/jvm/org/apache/storm/spout/Scheme.java). If you're using anything other than plain text on the messages your `Consumer` is consuming from you'll probably be customizing this implementation.
+
+[FilterChainStep](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChainStep.java): A `VirtualSpout` supports applying filter to messages that come from the `Consumer`. This allows you to filter out messages at the spout level, before they ever get to your topology. Each filter is a step in a chain, so you can as many different filters as you want. This is a particularly powerful tool inside of the `SpoutHandler` and `VirtualSpoutHandler` where you can dynamically filter messages based upon how you're using the framework. These are completely optional and not required to use this framework.
+
+[PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java): Storm spout's need a place to store metadata, like the position a `Consumer` is on a data source. Storm cluster's have a [Zookeeper](https://zookeeper.apache.org/) instance with them so the framework comes with a [`ZookeeperPersistenceAdapter`](src/main/java/com/salesforce/storm/spout/dynamic/persistence/ZookeeperPersistenceAdapter.java) out of the box for storing this data.  A `Consumer` such as the Kafka one provided with the framework would use this layer to track it's position on a topic's partition as it consumes data.
+
+[RetryManager](src/main/java/com/salesforce/storm/spout/dynamic/retry/RetryManager.java): When a tuple fails in Storm the spout can attempt to retry it.  Different projects will have different retry needs, so the default implementation, [`ExponentialBackoffRetryManager`](src/main/java/com/salesforce/storm/spout/dynamic/retry/ExponentialBackoffRetryManager.java), mirrors the one in Storm itself by retrying a tuple with an exponential backoff. There are other implementations provided with the framework and if none of them support your needs you can implement your own. This is a more advanced customization of the framework that most projects will not need. 
+
+[MessageBuffer](src/main/java/com/salesforce/storm/spout/dynamic/buffer/MessageBuffer.java): Because implementations fo the framework have many `DelegateSpout` instances emitting tuples downstream the `DynamicSpout` has a buffer that brings them altogether before passing them down to the topology. Out of the box the buffer is the [`RoundRobinBuffer`](src/main/java/com/salesforce/storm/spout/dynamic/buffer/RoundRobinBuffer.java) implementation, which loops through each virtual spout when it emits messages from the spout. Other implementations included in the framework are a first in, first out (FIFO) buffer as well as throttled and ratio based buffers that can emit tuples from different `DelegateSpouts` at variable rates. This is a more advanced customization that most projects will not need.
+
+[MetricsRecorder](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricsRecorder.java): There are a ton of metrics exposed by the `DynamicSpout` and you can customize how they are handled. By default the spout simply publishes metrics to logs using the [`LogRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/LogRecorder.java). If you are using an older version of Storm (pre 1.2) you can use [`StormRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/StormRecorder.java), or if you're using a more recent version of Storm checkout [`DropwizardRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/DropwizardRecorder.java). All of the metrics captured by the `DynamicSpout` are listed in a section below. Additionally there is a section about how to create your own metrics in your customizations of the framework.
+
+[SpoutHandler](src/main/java/com/salesforce/storm/spout/dynamic/handler/SpoutHandler.java): This is essential a set of hooks that can tie into the lifecycle events of a `DynamicSpout`, such as opening and closing of the `DynamicSpout`. Implementations of this interface can orchestrate the creation of `DelegateSpout` instances, and thus this is the primary integration point for people using the framework. While most every component provided with the framework has a default implementation, this one does not. That's because we expect this to be the point in the framework where your business logic for managing many spouts is to be built.
+
+[VirtualSpoutHandler](src/main/java/com/salesforce/storm/spout/dynamic/handler/VirtualSpoutHandler.java): This is an optional set of hooks that can tie into the lifecycle events of a `VirtualSpout`. Note that an implementation of `DelegateSpout` does not necessarily support these, they are particular to the `VirtualSpout` or an implementation that explicitly supports them.  Similar to the `SpoutHandler`, implementations of the `VirtualSpoutHandler` allow for tieing into the lifecycle events of a `VirtualSpout`, such as as opening and closing of the `VirtualSpout`.
+
+
 ## Configuration
-All of these options can be found inside of [SpoutConfig](src/main/java/com/salesforce/storm/spout/dynamic/config/SpoutConfig.java).
+All of these options can be found inside of [`SpoutConfig`](src/main/java/com/salesforce/storm/spout/dynamic/config/SpoutConfig.java) and [`KafkaConsumerConfig`](src/main/java/com/salesforce/storm/spout/dynamic/kafka/KafkaConsumerConfig.java). They are defined using the [`ConfigDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/ConfigDocumentation.java) on keys which are defined in their respective configuration classes. The [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java) then compiles them together below. 
 
 <!-- DYNAMIC_SPOUT_CONFIGURATION_BEGIN_DELIMITER -->
 ### Dynamic Spout Configuration Options
@@ -128,6 +143,7 @@ spout.metrics.enable_task_id_prefix | Boolean |  | Defines if MetricsRecorder in
 spout.metrics.time_bucket | Integer |  | Defines the time bucket to group metrics together under. | 
 spout.output_fields | List |  | Defines the output fields that the spout will emit as a list of field names. | 
 spout.output_stream_id | String |  | Defines the name of the output stream tuples will be emitted out of. | default
+spout.permanently_failed_output_stream_id | String |  | Defines the name of the output stream tuples that have permanently failed be emitted out of. | failed
 spout.retry_manager.class | String | Required | Defines which RetryManager implementation to use. Should be a full classpath to a class that implements the RetryManager interface. | com.salesforce.storm.spout.dynamic.retry.ExponentialBackoffRetryManager
 spout.retry_manager.delay_multiplier | Double |  | Defines how quickly the delay increases after each failed tuple. Example: A value of 2.0 means the delay between retries doubles.  eg. 4, 8, 16 seconds, etc. | 
 spout.retry_manager.initial_delay_ms | Long |  | Defines how long to wait before retry attempts are made on failed tuples, in milliseconds. Each retry attempt will wait for (number_of_times_message_has_failed * min_retry_time_ms). Example: If a tuple fails 5 times, and the min retry time is set to 1000, it will wait at least (5 * 1000) milliseconds before the next retry attempt. | 1000
@@ -165,104 +181,12 @@ spout.kafka.topic | String |  | Defines which Kafka topic we will consume messag
 
 <!-- KAFKA_CONSUMER_CONFIGURATION_END_DELIMITER -->
 
-<!-- SIDELINE_CONFIGURATION_BEGIN_DELIMITER -->
-### Sideline Configuration Options
-Config Key | Type | Required | Description | Default Value |
----------- | ---- | -------- | ----------- | ------------- |
-sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 6000
-sideline.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 10
-sideline.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 10
-sideline.persistence.zookeeper.root | String |  | Defines the root path to persist state under. Example: "/consumer-state" | 
-sideline.persistence.zookeeper.servers | List |  | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | 
-sideline.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 6000
-sideline.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
-sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check running sidelines and refresh them if necessary. | 600
-sideline.trigger_class | String |  | Defines one or more sideline trigger(s) (if any) to use. Should be a fully qualified class path that implements thee SidelineTrigger interface. | 
-
-<!-- SIDELINE_CONFIGURATION_END_DELIMITER -->
-
-
-## Components
-[DynamicSpout](src/main/java/com/salesforce/storm/spout/dynamic/DynamicSpout.java) - Implements Storm's spout interface.  Everything starts and stops here.
-
-[VirtualSpout](src/main/java/com/salesforce/storm/spout/dynamic/VirtualSpout.java) - Within a `DynamicSpout`, you will have one or more `VirtualSpout` instances.  These encapsulate `Consumer` instances to consume messages from Kafka, adding on functionality to determine which messages should be emitted into the topology and tracking those that the topology have acknowledged or failed. 
-
-[Consumer](src/main/java/com/salesforce/storm/spout/dynamic/consumer/Consumer.java) - This is an interface which is used by the `VirtualSpout` to poll messages from a data source.
-
-[SpoutCoordinator](src/main/java/com/salesforce/storm/spout/dynamic/SpoutCoordinator.java) - The `SpoutCoordinator` is responsible for managing the threads that are running the various `VirtualSpout`'s needed for sidelining.
-
-As `nextTuple()` is called on `DynamicSpout`, it asks `SpoutCoordinator` for the next message that should be emitted.  The `SpoutCoordinator` gets the next message from one of its many `VirtualSpout` instances.
-
-As `fail()` is called on `DynamicSpout`, the `SpoutCoordinator` determines which `VirtualSpout` instance the failed tuple originated from and passes it to the correct instance's `fail()` method.
-
-As `ack()` is called on `DynamicSpout`, the `SpoutCoordinator` determines which `VirtualSpout` instance the acked tuple originated from and passes it to the correct instance's `ack()` method.
-
-[SpoutRunner](src/main/java/com/salesforce/storm/spout/dynamic/coordinator/SpoutRunner.java) - `VirtualSpout` instances are always run within their own processing thread. `SpoutRunner` encapsulates `VirtualSpout` and manages/monitors the thead it runs within.
-
-[PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) - This provides a persistence layer for storing various metadata.  It stores consumer state, typically the offsets of te data source, that a given `VirtualSpout`'s `Consumer` has consumed. Currently we have three implementations bundled with the spout which should cover most standard use cases.
-
-[SpoutHandler](src/main/java/com/salesforce/storm/spout/dynamic/handler/SpoutHandler.java) - This interface can be implemented to interact with various lifecycle stages of the `DynamicSpout`. This class has access to the `DynamicSpout` instance and the ability to easily add new `VirtualSpout` instances to the `SpoutCoordinator`.  A `DynamicSpout` without a `SpoutHandler` won't do much in and of itself.
-
-[VirtualSpoutHandler](src/main/java/com/salesforce/storm/spout/dynamic/handler/VirtualSpoutHandler.java) - This interface can be implemented to interact with the various lifecycle stages of the `VirtualSpout`. This class has access to the `VirtualSpout` instance.
-
-[PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) - This interface dictates how and where metadata gets stored such that it lives between topology deploys. In an attempt to decouple this data storage layer from the spout, we have this interface.  Currently we have one implementation backed by Zookeeper.
-
-[RetryManager](src/main/java/com/salesforce/storm/spout/dynamic/retry/RetryManager.java) - Interface for handling failed tuples.  By creating an implementation of this interface you can control how the spout deals with tuples that have failed within the topology. 
-
-[MessageBuffer](src/main/java/com/salesforce/storm/spout/dynamic/buffer/MessageBuffer.java) - This interface defines an abstraction around essentially a concurrent queue.  By creating an abstraction around the queue it allows for things like implementing a "fairness" algorithm on the poll() method for pulling off of the queue. Using a straight ConcurrentQueue would provide FIFO semantics but with an abstraction round robin across kafka consumers could be implemented, or any other preferred scheduling algorithm.
-
-## Provided Implementations
-The following implementations of previously mentioned interfaces are provided with the `DynamicSpout` framework.
-
-### PersistenceAdapter Implementations
-[ZookeeperPersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/ZookeeperPersistenceAdapter.java) - This is the default implementation, it uses a Zookeeper cluster to persist the required metadata.
-
-[InMemoryPersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/InMemoryPersistenceAdapter.java) - This implementation only stores metadata within memory.  This is useful for tests, but has no real world use case as all state will be lost between topology deploys.
-
-### RetryManager Implementations
-[DefaultRetryManager](src/main/java/com/salesforce/storm/spout/dynamic/retry/DefaultRetryManager.java) - This is the default implementation for the spout.  It attempts retries of failed tuples a maximum of `retry_limit` times. After a tuple fails more than that, it will be "acked" or marked as completed and never tried again. Each retry is attempted using a calculated back-off time period.  The first retry will be attempted after `initial_delay_ms` milliseconds.  Each attempt after that will be retried at (`FAIL_COUNT` * `initial_delay_ms` * `delay_multiplier`) milliseconds OR `retry_delay_max_ms` milliseconds, which ever is smaller.
-
-[FailedTuplesFirstRetryManager](src/main/java/com/salesforce/storm/spout/dynamic/retry/FailedTuplesFirstRetryManager.java) - This implementation will always retry failed tuples at the earliest chance it can.  No back-off strategy, no maximum times a tuple can fail.
-
-[NeverRetryManager](src/main/java/com/salesforce/storm/spout/dynamic/retry/NeverRetryManager.java) - This implementation will never retry failed messages.  One and done.
-
-A tuple is considered "permanently failed" when the topology has attempted to process the tuple at least once and the RetryManager
-implementation has determined that the tuple should not be retried. When this occurs, the tuple will be emitted un-anchored out
-a "failed" stream. Bolts within the topology can subscribe to this "failed" stream and do its own error handling. The name of this stream is
-configured via the `spout.permanently_failed_output_stream_id` setting, and if undefined defaults simply to `failed` 
-
-### MessageBuffer Implementations
-[RoundRobinBuffer](src/main/java/com/salesforce/storm/spout/dynamic/buffer/RoundRobinBuffer.java) - This is the default implementation, which is essentially round-robin.  Each `VirtualSpout` has its own queue that gets added to.  A very chatty virtual spout will not block/overrun less chatty ones.  The `poll()` method will round robin through all the available queues to get the next msg.
- 
-Internally this implementation makes use of a `BlockingQueue` so that an upper bound can be put on the queue size.
-Once a queue is full, any producer attempting to put more messages onto the queue will block and wait
-for available space in the queue.  This acts to throttle producers of messages.
-Consumers from the queue on the other hand will never block attempting to read from a queue, even if its empty.
-This means consuming from the queue will always be fast.
- 
-[FifoBuffer](src/main/java/com/salesforce/storm/spout/dynamic/buffer/FifoBuffer.java) - This is a first in, first out implementation.  It has absolutely no "fairness" between VirtualSpouts or any kind of "scheduling."
-
-### MetricsRecorder Implementations
-The interface [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricsRecorder.java) defines how to handle metrics that are gathered by the spout.  Implementations of this interface
-should be ThreadSafe, as a single instance is shared across multiple threads. Presently there are two implementations packaged with the project.
-
-[StormRecorder](src/main/java/com/salesforce/storm/spout/dynamic/metrics/StormRecorder.java) - This implementation registers metrics with [Apache Storm's metrics system](http://storm.apache.org/releases/1.0.1/Metrics.html).  It will report metrics using the following format: 
-
-Type | Format 
------|--------
-Averages | AVERAGES.\<className\>.\<metricName\>
-Counter | COUNTERS.\<className\>.\<metricName\>
-Gauge | GAUGES.\<className\>.\<metricName\>
-Timer | TIMERS.\<className\>.\<metricName\> 
-
-[LogRecorder](src/main/java/com/salesforce/storm/spout/dynamic/metrics/LogRecorder.java) - This implementation logs metrics to your logging system.
-
 
 ## Handlers
-Handlers are attached to the `DynamicSpout` and `VirtualSpout` and provide a way for interacting with the spout lifecycle without having to extend a base class.
+Handlers essentially hooks that are attached to either the `DynamicSpout` and `VirtualSpout` and provide a way for interacting with their lifecycle stages without having to extend a base class. They serve as the key manner in which one might implement the framework in their project.
 
 ### SpoutHandler
-The [`SpoutHandler`](src/main/java/com/salesforce/storm/spout/dynamic/handler/SpoutHandler.java) is an interface which allows you to tie into the `DynamicSpout` lifecycle.  Without a class implementing this interface the `DynamicSpout` in and of itself is pretty worthless, as the `DynamicSpout` does not by itself know how to create `VirtualSpout` instances.  Your `SpoutHandler` implementation will be responsible for creating `VirtualSpout`'s and passing them back to the `DynamicSpout`'s coordinator.
+The [`SpoutHandler`](src/main/java/com/salesforce/storm/spout/dynamic/handler/SpoutHandler.java) is an interface which allows you to tie into the `DynamicSpout` lifecycle.  Without a class implementing this interface the `DynamicSpout` in and of itself does not offer much value, as the `DynamicSpout` does not by itself know how to create `VirtualSpout` instances.  Your `SpoutHandler` implementation will be responsible for creating `VirtualSpout`'s and passing them back to the `DynamicSpout`'s coordinator.
 
 There are several methods on the `SpoutHandler` you can implement. There are no-op defaults provided so you do not have to implement any of them, but there are four in particular we're going to go into detail because they are critical for most `SpoutHandler` implementations.
 
@@ -270,15 +194,22 @@ There are several methods on the `SpoutHandler` you can implement. There are no-
 - `void close()` - This method is similar to an `ISpout`'s `close()` method, it gets called when the `SpoutHandler` is torn down, and you can use it shut down any classes that you have used in the `SpoutHandler` as well as clean up any object references you have.
 - `void onSpoutOpen(DynamicSpout spout, Map topologyConfig, TopologyContext topologyContext)` - This method is called after the `DynamicSpout` is opened, and with it you get the `DynamicSpout` instance to interact with.  It's here that you can do things like call `DynamicSpout.addVirtualSpout(VirtualSpout virtualSpout)` to add a new `VirtualSpout` instance into the `DynamicSpout`.
 - `void onSpoutClose(DynamicSpout spout)` - This method is called after `DynamicSpout` is closed, you can use it to perform shut down tasks when the `DynamicSpout` itself is closing, and with it you get the `DynamicSpout` instance to interact with.
+- `void onSpoutActivate(DynamicSpout spout)` - This method is called `DynamicSpout` has been activated.
+- `void onSpoutDectivate(DynamicSpout spout)` - This method is called `DynamicSpout` has been deactivated.
 
-_It's important to note that `SpoutHandler` instance methods should be blocking since they are part of the startup and shutdown flow. Only perform asyncrhonous tasks if you are certain that other spout methods can be called without depending on your asyncrhonous tasks to complete._
+_It's important to note that `SpoutHandler` instance methods **should be blocking** since they are part of the startup and shutdown flow. Only perform asynchronous tasks if you are certain that other spout methods can be called without depending on your asynchronous tasks to complete._
 
 Here is a sample `SpoutHandler` that can be used in conjunction with the Kafka `Consumer` to read a Kafka topic:
-
+<!-- TODO: Can this be moved to an actual java class that is then embedded here? -->
 ```java
-import com.salesforce.storm.spout.sideline.DefaultVirtualSpoutIdentifier;
-import com.salesforce.storm.spout.sideline.DynamicSpout;
-import com.salesforce.storm.spout.sideline.VirtualSpout;
+package com.salesforce.storm.spout.dynamic.example;
+
+import com.salesforce.storm.spout.dynamic.DynamicSpout;
+import com.salesforce.storm.spout.dynamic.DefaultVirtualSpoutIdentifier;
+import com.salesforce.storm.spout.dynamic.VirtualSpout;
+import com.salesforce.storm.spout.dynamic.consumer.ConsumerPeerContext;
+import com.salesforce.storm.spout.dynamic.handler.SpoutHandler;
+
 import org.apache.storm.task.TopologyContext;
 
 import java.util.Map;
@@ -293,7 +224,8 @@ public class SimpleKafkaSpoutHandler implements SpoutHandler {
                 // Unique identifier for this spout
                 new DefaultVirtualSpoutIdentifier("kafkaSpout"),
                 spout.getSpoutConfig(),
-                topologyContext,
+                // Tells the consumer of a VirtualSpout how many spout instances there are and which one this is
+                new ConsumerPeerContext(1, 0),
                 spout.getFactoryManager(),
                 null, // Optional Starting ConsumerState
                 null // Optional Ending ConsumerState
@@ -315,15 +247,6 @@ There are several methods on the `VirtualSpoutHandler` you can implement. There 
 - `void onVirtualSpoutCompletion(DelegateSpout virtualSpout)` - This method is called before `onVirtualSpoutClose()` *only* when the VirtualSpout instance is about to close and has *completed* it's work, meaning that the Consumer has reached the provided ending offset.
 
 ## Metrics
-SidelineSpout collects metrics giving you insight to what is happening under the hood.  It collects
-four types of metrics, Averages, Counters, Gauges, and Timers.
-  
-Type | Description
------|------------
-Average | Calculates average of all values submitted over a set time period.
-Counter | Keeps a running count that gets reset back to zero on deployment.
-Gauge | Reports the last value given for the metric.
-Timer | Calculates how long on average, in milliseconds, an event takes.  These metrics also publish a related counter metric containing the total time measured, in milliseconds, for each entry.
 
 Below is a list of metrics that are collected with the metric type and description.
 
@@ -363,59 +286,135 @@ KafkaConsumer.topic.{topic}.partition.{partition}.lag | GAUGE | Number | Differe
 
 <!-- KAFKA_CONSUMER_METRICS_END_DELIMITER -->
 
-<!-- SIDELINE_METRICS_BEGIN_DELIMITER -->
-### Sideline Metrics
-Key | Type | Unit | Description |
---- | ---- | ---- | ----------- |
-SidelineSpoutHandler.start | COUNTER | Number | Total number of started sidelines. | 
-SidelineSpoutHandler.stop | COUNTER | Number | Total number of stopped sidelines. | 
+## Adding Metrics
 
-<!-- SIDELINE_METRICS_END_DELIMITER -->
+Metrics provide several ways of numerical tracking data. These are very similar to the sort of stats you would use with Statd. The metric (or stat) types that are supported are:
+
+Type | Format | Description
+-----|------- | -------------- 
+Averages | AVERAGES.\<className\>.\<metricName\> | Calculates average of all values submitted over a set time period.
+Counter | COUNTERS.\<className\>.\<metricName\> | Keeps a running count that gets reset back to zero on deployment.
+Gauge | GAUGES.\<className\>.\<metricName\> | Reports the last value given for the metric.
+Timer | TIMERS.\<className\>.\<metricName\> | Calculates how long on average, in milliseconds, an event takes.  These metrics also publish a related counter
+
+These can be handled through methods on an implementation of [`MetricsRecorder`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricsRecorder.java).
+
+To track a specific metric you'll need to create a definition of it, using an implementation of [`MetricDefinition`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/MetricDefinition.java). A `MetricDefinition` is pretty open ended, it just provides a consistent way from generating a String (called a key) to identify the metric. The framework itself uses [`ClassMetric`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/ClassMetric.java) for it's metrics, however
+ [`CustomMetric`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/CustomMetric.java) is also provided.  A `ClassMetric` is specifically tied to a Java class and that classes name will be used to generate the key for the metric. This is a handy way of cataloging metrics, but you're free to do whatever is best for your project. All of the framework's core metrics are properties on [`SpoutMetrics`](src/main/java/com/salesforce/storm/spout/dynamic/metrics/SpoutMetrics.java) which is a handy, but not required, way of organizing your metrics.
+
+Here's an example metric from `SpoutMetrics` in the framework:
+```java
+public static final MetricDefinition SPOUT_COORDINATOR_BUFFER_SIZE = new ClassMetric(SpoutCoordinator.class, "bufferSize");
+```
+
+This metric is then easily used by the `MetricsRecorder` like so:
+```java
+getMetricsRecorder().assignValue(SpoutMetrics.SPOUT_COORDINATOR_BUFFER_SIZE, getVirtualSpoutMessageBus().messageSize());
+```
+
+You can add new metrics to any custom implementation in the framework as needed. Most interfaces have an `open()` method that will receive a `MetricsRecorder` as a parameter. _If they don't, then this is a great opportunity for a contribution!_
+
+Lastly you'll note that all of our metric keys are annotated with [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java), this is purely a convention of the framework which helps update the table of metrics below. If you're interested in how this is done, or want to do something similar check out the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java) which compiles them together. 
+
 
 # Sidelining
 
-The purpose of this project is to provide a [Kafka (0.10.0.x)](https://kafka.apache.org/) based spout for [Apache Storm (1.0.x)](https://storm.apache.org/) that provides the ability to dynamically "*sideline*" or skip specific messages to be replayed at a later time based on a set of filter criteria.
+The purpose of the sidelining project is to provide a way to skip processing for a subset of messages on a [Kafka](https://kafka.apache.org/) topic while allowing for them to be processed at a later time. The canonical use case for this project is a multi-tenant Kafka topic, where you want to pause processing for a single tenant for some period of time without pausing other tenants. This project is built upon the `DynamicSpout` framework as a set of `SpoutHandler` and `VirtualSpoutHandler` implementations that apply custom `FilterChainStep` instances when something needs to be sidelined and then removes them when a sideline should resume or resolve. 
+ 
+The project is wrapped in a spout implementation called `SidelineSpout` which extends the `DynamicSpout` and configures the handlers up in an oppinionated way. It is intended to works much like a typical [KafkaSpout](https://github.com/apache/storm/tree/master/external/storm-kafka-client).
 
-Under normal circumstances this spout works much like your typical [Kafka-Spout](https://github.com/nathanmarz/storm-contrib/tree/master/storm-kafka) and aims to be a drop in replacement for it.  This implementation differs in that it exposes trigger and filter semantics when you build your topology which allow for specific messages to be skipped, and then replayed at a later point in time.  All this is done dynamically without requiring you to re-deploy your topology when filtering 
-criteria changes!
+## Example Use case: Multi-tenant Processing
+When consuming a multi-tenant commit log you may want to postpone processing for one or more tenants. Imagine  that a subset of your tenants database infrastructure requires downtime for maintenance.  Using the `KafkaSpout` implementation that comes with Storm you really only have two options to deal with this situation:
 
- Sidelining uses the `DynamicSpout` framework and begins by creating the *main* `VirtualSpout` instance (sometimes called the firehose).  This *main* `VirtualSpout` instance is always running within the spout, and its job is to consume from your Kafka topic.  As it consumes messages from Kafka, it deserializes them using your [`Deserializer`](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Deserializer.java) implementation.  It then runs it thru a [`FilterChain`](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChain.java), which is a collection of[`FilterChainStep`](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChainStep.java) objects.  These filters determine what messages should be *sidelined* and which should be emitted out. When no sideline requests are active, the `FilterChain` is empty, and all messages consumed from Kafka will be converted to Tuples and emitted to your topology.
+1. Stop your entire topology for all tenants while the maintenance is performed for the small subset of tenants.  
 
+2. Filter the problematic tenants out at the beginning of your topology to avoid processing further downstream, then once maintenance is complete you can stop filtering the problematic tenants. If you're ambitious you can keep track of where you started and stopped filtering and then spin up a separate `KafkaSpout` instance to process only the problematic tenant between the offsets that marked applying and removing your filter.
 
-## Getting Started
-In order to begin using sidelining you will need to create a `FilterChainStep` and a `SidelineTrigger`, implementing classes are all required for this spout to function properly.
+If you can afford downtime, than option 1 is an easy way to deal with the problem. If not then option 2 might be something you have to look at.  The whole situation becomes even more complicated if you have more than one problematic tenant at a time, and even more so still if they need to start and/or stop filtering at different times. That's a lot of complexity!  Sidelining actually aims to handle option 2 for you, but through automation and easy control semantics.
 
-## Starting Sideline Request
-Your implemented [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that a new sideline request has been started.  The `SidelineSpout`
-will record the *main* `VirtualSpout`'s current offsets within the topic and record them with request via
-your configured [PersistenceAdapter](src/main/java/com/salesforce/storm/spout/dynamic/persistence/PersistenceAdapter.java) implementation. The `SidelineSpout` will then attach the `FilterChainStep` to the *main* `VirtualSpout` instance, causing a subset of its messages to be filtered out.  This means that messages matching that criteria will /not/ be emitted to Storm.
-
-## Stopping Sideline Request
-Your implemented[`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) will notify the `SidelineSpout` that it would like to stop a sideline request.  The `SidelineSpout` will first determine which `FilterChainStep` was associated with the request and remove it from the *main* `VirtualSpout` instance's `FilterChain`.  It will also record the *main* `VirtualSpout`'s current offsets within the topic and record them via your configured `PersistenceAdapter` implementation.  At this point messages consumed from the Kafka topic will no longer be filtered. The `SidelineSpout ` will create a new instance of `VirtualSpout` configured to start consuming from the offsets recorded when the sideline request was started.  The `SidelineSpout ` will then take the `FilterChainStep` associated with the request and wrap it in [`NegatingFilterChainStep`](src/main/java/com/salesforce/storm/spout/dynamic/filter/NegatingFilterChainStep.java) and attach it to the *main* VirtualSpout's `FilterChain`.  This means that the inverse of the `FilterChainStep` that was applied to main `VirtualSpout` will not be applied to the sideline's `VirtualSpout`. In other words, if you were filtering X, Y and Z off of the main `VirtualSpout`, the sideline `VirtualSpout` will filter *everything but X, Y and Z*. Lastly the new `VirtualSpout` will be handed off to the `SpoutCoordinator` to be wrapped in `SpoutRunner` and started. Once the `VirtualSpout` has completed consuming the skipped offsets, it will automatically shut down.
-
-
+Imagine wrapping up all of that complexity behind a spout so that the rest of your storm topology doesn't have to think about that problem space: that's sidelining!
+ 
 ## Dependencies
-- DynamicSpout framework (which is an Apache Storm specific implementation)
-- [Apache Kafka 0.11.0.x](https://kafka.apache.org/) - The underlying kafka consumer is based on this version of the Kafka-Client library.
+
+All of the optional dependencies of the `DynamicSpout` framework are required, namely Apache Zookeeper, Apache Curator and Apache Kafka. Check out the `DynamicSpout` dependencies section for more information.  These all need to be specified in your
+ 
+## Lifecycle of a Sideline 
+A sideline is just a filter applied at a specific point in time, with a promise to come back to it at a later point. A given sideline has a lifecycle, it is started, resumed and finally resolved.  Sidelines are always derived from a special `VirtualSpout` called the _fire hose_. The fire hose is your main Kafka topic, and if everything is going well and you don't need to sideline anything you're consuming all of the messages from it in real time. A sideline starts as a filter on the fire hose and evolves from there.
+ 
+ 
+### The Trigger
+An implementation of sidelining has what's called a [`SidelineTrigger`](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) which gets called when the [`SidelineSpoutHandler`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineSpoutHandler.java) first opens. The `SidelineTrigger` is responsible for setting up whatever is necessary to notify the [`SidelineController`](src/main/java/com/salesforce/storm/spout/sideline/handler/SidelineController.java) to start, resume or resolve a sideline. The sideline spout does not have an opinion on what you should use to notify that a sideline lifecycle event should take place, however a usable recipe using Zookeeper watches is provided if you would like to use it (_hint: the authors use it in production today_).
 
 
-## Components
-[SidelineTrigger](src/main/java/com/salesforce/storm/spout/sideline/trigger/SidelineTrigger.java) - An interface that is configured and created by the `SidelineSpoutHandler` and will receive an instance of `SidelineController` via `setSidelineController()`.  This implementation can call `startSidelining()` and `stopSidelining()` with a `SidelineRequest`, which contains a `SidelineRequestIdentifier` and a `FilterChainStep` when a new sideline should be spun up.
+### The Filter
+When you sideline you are telling the spout to skip messages (for now) based upon some sort of criteria. This is done by defining a `FilterChainStep`, a construct from the `DynamicSpout`. A `FilterChainStep` has a single method called `filter()` which receives a `Message` and return true or false based upon whether or not the supplied message should be skipped. _If you go back to our example use case, you may create a real simple `FilterChainStep` that takes a tenant's identifier in it's constructor and then checks a property on a `Message` to see if that message belongs to the provided tenant._
 
-[Deserializer](src/main/java/com/salesforce/storm/spout/dynamic/kafka/deserializer/Deserializer.java) - The `Deserializer` interface dictates how the kafka key and messages consumed from Kafka as byte[] gets transformed into a storm tuple.  An example `Utf8StringDeserializer` is provided implementing this interface.
 
-[FilterChainStep](src/main/java/com/salesforce/storm/spout/dynamic/filter/FilterChainStep.java) - The `FilterChainStep` interface dictates how you want to filter messages being consumed from kafka.  These filters should be functional in nature, always producing the exact same results given the exact same message.  They should  ideally not depend on outside services or contextual information that can change over time.  These steps will ultimately  be serialized and stored with the `PersistenceAdapter` so it is very important to make sure they function idempotently when the same message is passed into them.  If your `FilterChainStep` does not adhere to this behavior you will run into problems when sidelines are stopped and their data is re-processed.  Having functional classes with initial state is OK so long as that state can be serialized.  In other words, if you're storing data in the filter step instances you should only do this if they can be serialized and deserialized without side effects.
+### Starting a Sideline
+When a `SidelineTrigger` receives a signal to start a sideline it comes in the form of a `SidelineRequest` which is really just a wrapper for a `FilterChainStep`, which is a primitive of the `DynamicSpout` framework. The `FilterChainStep` is a really simple interface that defines a `filter()` method. You will need to define a `FilterChainStep` implementation for your use case. Your `SidelineTrigger` than will send your `FilterChainStep` to the `SidelineController` which will promptly apply the filter to the _fire hose_ and mark the starting offset on the Kafka topic for where the filter was applied.  Once a sideline has been started you should no longer be receiving messages that would match your filter.
 
-## Example Trigger Implementation
 
-The starting and stopping triggers are responsible for telling the `SidelineSpout` when to sideline.  While they are technically **not** required for the `SidelineSpout` to function, this project doesn't provide much value without them.
+### Resuming a Sideline
+When a `SidelineTrigger` receives a signal to resume a sideline it must receive an identifier for a started sideline.  That means after you start a sideline you should hang onto the id it provides somewhere for later reference (again if you take a look at the provided recipes you'll see how we do this in Zookeeper). Resuming a sideline does not change the _fire hose_, so messages will continue to be filtered there. Resuming does, however, spin up a new `VirtualSpout` that will consume from the same topic as the _fire hose_, but it's going to do the inverse of your filter and it's going to start from the point the sideline was started (in the past). This means you will have the same Kafka topic being processed in parallel while a sideline is resuming, it's just that one `VirtualSpout` is filtering out specific messages (the _fire hose_) and the other `VirtualSpout` is only processing those filtered messages (the _sideline_). This is a good use case of the `ThrottledMessageBuffer` or `RatioMessageBuffer` because it can allow your for your _sideline_ to emit messages at a different rate back into the topology.  
+ 
+ 
+### Resolving a Sideline
+When you're ready to be done sidelining you can resolve it, which means that an endpoint is marked on the sideline. Remember that up until now all we had was a starting point for the sideline, we had no defined a point on the Kafka topic to stop sidelining. Resolving a sideline does that, which means that the `VirtualSpout` for the sideline will eventually finish the work it needs to do. Once it's finished the `VirtualSpout` will be closed and the instance is cleaned up. At the same time that the end offset is recorded the filter that was on the _fire hose_ `VirtualSpout` will be removed, meaning that the _fire hose_ will now be processing all of the messages on the Kafka topic.
 
-Each project leveraging the `SidelineSpout` will likely have a unique set of triggers representing your specific use case.  The following is a theoretical example only.
 
-`NumberFilter` expects messages whose first value is an integer and if that value matches, it is filtered.  Notice that this
-filter guarantees the same same behavior will occur after being serialized and than deserialized later.
+### Stopping & Redeploying the Topology
+The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The _fire hose_ `VirtualSpout` will resume consuming from its last acked offset, and any active sideline requests will also be resumed when the topology starts back up. However you choose to implement sidelining it is important to have some sort of durable storage for requests. The recipes include a Zookeeper based trigger that allows for sideline requests to come in while a topology is down without losing them.
 
+
+## Configuration
+
+<!-- SIDELINE_CONFIGURATION_BEGIN_DELIMITER -->
+### Sideline Configuration Options
+Config Key | Type | Required | Description | Default Value |
+---------- | ---- | -------- | ----------- | ------------- |
+sideline.filter_chain_step_class | String |  | Defines a filter chain step that is used during sidelining. Should be a fully qualified class path that implements thee FilterChainStep interface. | 
+sideline.persistence.zookeeper.connection_timeout | Integer |  | Zookeeper connection timeout. | 6000
+sideline.persistence.zookeeper.retry_attempts | Integer |  | Zookeeper retry attempts. | 10
+sideline.persistence.zookeeper.retry_interval | Integer |  | Zookeeper retry interval. | 10
+sideline.persistence.zookeeper.root | String |  | Defines the root path to persist state under. Example: "/consumer-state" | 
+sideline.persistence.zookeeper.servers | List |  | Holds a list of Zookeeper server Hostnames + Ports in the following format: ["zkhost1:2181", "zkhost2:2181", ...] | 
+sideline.persistence.zookeeper.session_timeout | Integer |  | Zookeeper session timeout. | 6000
+sideline.persistence_adapter.class | String | Required | Defines which PersistenceAdapter implementation to use. Should be a full classpath to a class that implements the PersistenceAdapter interface. | 
+sideline.refresh_interval_seconds | Integer |  | Interval (in seconds) to check running sidelines and refresh them if necessary. | 600
+sideline.trigger_class | String |  | Defines a sideline trigger (if any) to use. Should be a fully qualified class path that implements the SidelineTrigger interface. | 
+
+<!-- SIDELINE_CONFIGURATION_END_DELIMITER -->
+
+<!-- SIDELINE_METRICS_BEGIN_DELIMITER -->
+
+## Metrics
+
+Below is a list of metrics that are collected with the metric type and description.
+
+
+### Sideline Metrics
+Key | Type | Unit | Description |
+--- | ---- | ---- | ----------- |
+SidelineSpoutHandler.resolve | COUNTER | Number | Total number of resolving sidelines. | 
+SidelineSpoutHandler.resume | COUNTER | Number | Total number of resumed sidelines. | 
+SidelineSpoutHandler.start | COUNTER | Number | Total number of started sidelines. | 
+
+<!-- SIDELINE_METRICS_END_DELIMITER -->
+
+
+## Example Sideline Trigger
+
+Each project leveraging the `SidelineSpout` will likely have a unique set of triggers representing your specific use case.  The following is a stripped down example intended to convey the concept of what a `SidelineTrigger` does. It's not a practical implementation and it's highly recommended that you refer to recipes package which includes a fully functional and production ready `SidelineTrigger`.
+
+First we need a filter, so we'll use the `NumberFilter` which expects messages whose first value is an integer and if that value matches, it is filtered. Keep in mind your filter will be serialized to JSON and stored in Zookeeper (unless your change your `PersistenceAdapter`), so take great care to ensure that what you do serializes correctly.
+
+<!-- TODO: Can this be moved to an actual java class that is then embedded here? -->
 ```java
+package com.salesforce.storm.spout.sideline.example;
+
+import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
+import com.salesforce.storm.spout.dynamic.Message;
+
 public static class NumberFilter implements FilterChainStep {
 
     final private int number;
@@ -434,7 +433,18 @@ public static class NumberFilter implements FilterChainStep {
 
 `PollingSidelineTrigger` runs every 30 seconds and simply swaps out number filters, slowly incrementing over time.  It uses the `NumberFilter` by including it in a `SidelineRequest`.  `PollingSidelineTrigger` implements `SidelineTrigger`.
 
+<!-- TODO: Can this be moved to an actual java class that is then embedded here? -->
 ```java
+package com.salesforce.storm.spout.sideline.example;
+
+import com.salesforce.storm.spout.sideline.trigger.SidelineTrigger;
+import com.salesforce.storm.spout.sideline.trigger.SidelineRequest;
+import com.salesforce.storm.spout.sideline.handler.SidelineController;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.Map;
+import java.lang.Runnable;
+
 public class PollingSidelineTrigger implements SidelineTrigger {
 
     private boolean isOpen = false;
@@ -442,6 +452,11 @@ public class PollingSidelineTrigger implements SidelineTrigger {
     private transient ScheduledExecutorService executor;
 
     private transient SidelineController sidelineController;
+
+    @Override
+    public void setSidelineController(final SidelineController sidelineController) {
+        this.sidelineController = sidelineController;
+    }
 
     @Override
     public void open(final Map config) {
@@ -453,7 +468,7 @@ public class PollingSidelineTrigger implements SidelineTrigger {
 
         executor = Executors.newScheduledThreadPool(1);
 
-        final Poll poll = new Poll(sidelineSpout);
+        final Poll poll = new Poll(sidelineController);
 
         executor.scheduleAtFixedRate(poll, 0, 30, TimeUnit.SECONDS);
     }
@@ -485,20 +500,58 @@ public class PollingSidelineTrigger implements SidelineTrigger {
             final SidelineRequest startRequest = new SidelineRequest(
                 new NumberFilter(number++)
             );
-            sidelineController.startSidelining(startRequest);
+            sidelineController.start(startRequest);
 
-            // Stop a sideline request for the last number
-            final SidelineRequest stopRequest = new SidelineRequest(
+            if (number < 2) {
+                return;
+            }
+
+            // Resume a sideline request for the last number
+            final SidelineRequest resumeRequest = new SidelineRequest(
                 new NumberFilter(number - 1)
             );
-            sidelineController.stopSidelining(stopRequest);
+            sidelineController.resume(resumeRequest);
+
+            if (number < 3) {
+                return;
+            }
+
+            // Resolve a sideline request for two numbers back
+            final SidelineRequest resolveRequest = new SidelineRequest(
+                new NumberFilter(number - 2)
+            );
+            sidelineController.resume(resolveRequest);
         }
     }
 }
 ```
 
-## Stopping & Redeploying the topology?
-The `DynamicSpout` has several moving pieces, all of which will properly handle resuming in the state that they were when the topology was halted.  The *main* `VirtualSpout` will continue consuming from the last acked offsets within your topic. Metadata about active sideline requests are retrieved via `PersistenceAdapter` and resumed on start, properly filtering messages from being emitted into the topology.  Metadata about sideline requests that have been stopped, but not finished, are retrieved via `PersistenceAdapter`, and `VirtualSpout` instances are created and will resume consuming messages at the last previously acked offsets.
+## Recipes
+
+The `SidelineSpout` offers a lot of places to customize it's behavior, but we've also tried to provide sensible defaults that work out of the box. In the case of a `SidelineTrigger` and the `FilterChainStep` necessary to sideline, though, these are often very specific to your businesses use case. Included in this project is a `recipes` package that includes a [`ZookeeperWatchTrigger`](src/main/java/com/salesforce/storm/spout/sideline/recipes/trigger/zookeeper/ZookeeperWatchTrigger.java) that is designed to use a `TriggerEvent` to signal starting, stopping and resuming a sideline. The actual trigger watches for these _events_ on a node in Zookeeper using the fantastic Curator `PathChildrenCacheListener`. This implementation sees changes to the node and than calls our listener, allowing for the handling of sidelines. We chose this as a recipe to bundle because we were doing this in our production uses of sidelining already and had great success with them. As mentioned elsewhere, the beauty of Zookeeper is every Storm cluster has it, and so it makes it easy to provide a reasonable default implementation to use.
+
+If you want to give the recipe a try there is a minimal amount of configuration necessary:
+
+```yaml
+sideline.trigger_class: com.salesforce.storm.spout.sideline.recipes.trigger.zookeeper.ZookeeperWatchTrigger
+## Most likely you will want to use your own custom filter here
+sideline.filter_chain_step_class: com.salesforce.storm.spout.sideline.recipes.trigger.KeyFilter
+
+## Zookeeper Watch Trigger configuration
+sideline.zookeeper_watch_trigger.servers:
+  - 127.0.0.1:2181
+sideline.zookeeper_watch_trigger.root: /sideline-trigger
+```
+
+The recipe also includes a class called the [`TriggerEventHelper`](src/main/java/com/salesforce/storm/spout/sideline/recipes/trigger/TriggerEventHelper.java) which has easy to use methods like `startTriggerEvent()` that create the underlying events that make this trigger work.
+
+You may be wondering why `TriggerEvent` instances when we already have `SidelineRequest` instances, and that's a good question!  The `TriggerEvent` provides additional operation data that, quite honestly, we don't care about in the actual sidelining process, like who performed this sideline action, what time it was done and what the reason for it was. For many use cases this is probably not necessary, but we found it helpful.
+
+The other reason we chose to use yet another node in Zookeeper, a sort of staging ground for the sideline request, was because we wanted to allow for sidelines to occur when a topology was down. Good operational procedures should prevent humans from doing this, but we also recognize that sidelining might be handled by an automated process that may not have the awareness to tell if a topology is running or not.
+
+All of this is to say, your use case might be far simpler then our own so buyer beware! But, this implementation is used today in production with great results.
+
+Lastly, the `TriggerEvent` is not tightly coupled to the `ZookeeperWatchTrigger` and so we envision providing future recipes using different data stores and notification systems. Keep an eye out, and please feel free to contribute!
 
 # Contributing
 
@@ -528,11 +581,47 @@ We love contributions, but it's important that your pull request adhere to some 
 
 # Other Notes
 
-## Configuration & README
+## History
 
-The configuration section in this document is generated using `com.salesforce.storm.spout.dynamic.config.ConfigPrinter`, it automatically generates the appropriate tables using the `@Documentation` annotation and the defaults from the supported config instances.  Do **not** update those tables manually as they will get overwritten.
+[Stephen Powis](https://github.com/crim) and [Stan Lemon](https://github.com/stanlemon) began this project in early February 2017 for [Salesforce](https://github.com/salesforce). By February 22nd we had split our project into its own git repository and rolled it out internally for several teams. In September 2017 we open sourced the project and then in November 2017 we split off some of our testing code for Kafka into it's own project [kafka-junit](https://github.com/salesforce/kafka-junit).
+
+The idea of a dynamic spout framework was never something we set out to build. Sidelining existed before too, but in a much more complicated and high-resource fashion. We originally set out to re-design our sidelining implementation using a completely different strategy. In the course of things we realized there were a ton of reusable components in the sidelining project that might benefit from being decoupled, and so we started the process of surgically splitting the two. Out of this effort the dynamic spout framework was born, and it was almost serendipitous because we quickly had our first use case for managing many `VirtualSpout` instances behind a single interface. That effort involved a bunch of different http connections (one `VirtualSpout` for each) and while it looked nothing like sidelining it was a perfect fit for the dynamic spout framework.
+
+## Tests
+
+Extensive test coverage is available for both the `DynamicSpout` and `SidelineSpout` projects. There are both unit and functional tests. Today the functional tests are not clearly divided between the two projects (which is why they haven't been split up yet). This is simply an artifact of the way that project evolved.
+
+You can run the tests by doing:
+```
+mvn clean test
+```
 
 ## Checkstyle
 
-We use checkstyle aggressively on source and tests, our config is located under the 'script' folder and can be imported into your IDE of choice.
+We use checkstyle aggressively on source and tests. We use a custom config that is located under the 'script' folder and can be imported into your IDE of choice.
+
+You can run checkstyle using Maven:
+
+```
+mvn checkstyle:checkstyle
+```
+
+## JavaDocs
+
+We have tried to keep our javadocs current and useful, you can generate api docs using Maven:
+
+```
+mvn javadoc:javadoc
+```
  
+## README Configuration & Metrics Tables
+
+The configuration section in this document is generated using the [`DocGenerator`](src/main/java/com/salesforce/storm/spout/documentation/DocGenerator.java), which automatically generates the appropriate tables in this file using the  [`ConfigDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/ConfigDocumentation.java) & [`MetricDocumentation`](src/main/java/com/salesforce/storm/spout/documentation/MetricDocumentation.java) annotations. Do **not** update those tables manually as they will get overwritten, instead use the `DocGenerator`, which can be executed easily each [`DocTask`] class.
+
+You can run these from the command line using Maven:
+
+```
+mvn exec:java -Dexec.mainClass="com.salesforce.storm.spout.dynamic.config.DocTask"
+mvn exec:java -Dexec.mainClass="com.salesforce.storm.spout.dynamic.kafka.DocTask"
+mvn exec:java -Dexec.mainClass="com.salesforce.storm.spout.sideline.config.DocTask"
+```

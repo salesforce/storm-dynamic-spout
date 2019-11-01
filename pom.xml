@@ -375,22 +375,22 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>3.1.0</version>
+                <configuration>
+                    <configLocation>script/checkstyle-ruleset.xml</configLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    <encoding>utf-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <violationSeverity>warning</violationSeverity>
+                    <failsOnError>true</failsOnError>
+                    <enableRSS>false</enableRSS>
+                    <!-- By default we enable checkstyle validation -->
+                    <skip>${skipCheckStyle}</skip>
+                </configuration>
                 <executions>
                     <execution>
                         <id>checkstyle-validate</id>
                         <phase>validate</phase><!-- when we need to run checkstyle::check -->
-                        <configuration>
-                            <configLocation>script/checkstyle-ruleset.xml</configLocation>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <encoding>utf-8</encoding>
-                            <consoleOutput>true</consoleOutput>
-                            <violationSeverity>warning</violationSeverity>
-                            <failsOnError>true</failsOnError>
-                            <enableRSS>false</enableRSS>
 
-                            <!-- By default we enable checkstyle validation -->
-                            <skip>${skipCheckStyle}</skip>
-                        </configuration>
                         <goals>
                             <!-- Generate site/html report -->
                             <goal>checkstyle</goal>
