@@ -46,9 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -274,38 +272,13 @@ public class ZookeeperWatchTrigger implements SidelineTrigger {
      */
     private SidelineRequest buildSidelineRequest(final TriggerEvent triggerEvent) {
         final SidelineRequest sidelineRequest = new SidelineRequest(
-            generateSidelineRequestIdentifier(triggerEvent),
+            new SidelineRequestIdentifier(triggerEvent.getIdentifier()),
             triggerEvent.getFilterChainStep()
         );
 
         logger.info("Creating a sideline request with id {} and step {}", sidelineRequest.id, sidelineRequest.step);
 
         return sidelineRequest;
-    }
-
-    /**
-     * Using a filter chain step, make some JSON out of it and then hash it to create an idempotent identifier.
-     *
-     * @param triggerEvent Trigger event that contains metadata about the request
-     * @return A sideline request identifier for the filter chain step
-     * @throws NoSuchAlgorithmException Your java install is whack yo, it's missing MD5, for realz???
-     */
-    private SidelineRequestIdentifier generateSidelineRequestIdentifier(
-        final TriggerEvent triggerEvent
-    ) {
-        final String data = json.to(triggerEvent.getFilterChainStep());
-
-        final StringBuilder identifier = new StringBuilder(Tools.makeMd5Hash(data));
-
-        // If we were provided a date time in the event, append the time stamp of that event to the identifier
-        if (triggerEvent.getCreatedAt() != null) {
-            identifier.append("-");
-            identifier.append(
-                triggerEvent.getCreatedAt().atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
-            );
-        }
-
-        return new SidelineRequestIdentifier(identifier.toString());
     }
 
     /**

@@ -26,10 +26,13 @@
 package com.salesforce.storm.spout.sideline.recipes.trigger;
 
 import com.google.common.base.Preconditions;
+import com.salesforce.storm.spout.dynamic.JSON;
+import com.salesforce.storm.spout.dynamic.Tools;
 import com.salesforce.storm.spout.dynamic.filter.FilterChainStep;
 import com.salesforce.storm.spout.sideline.trigger.SidelineType;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 /**
@@ -90,6 +93,37 @@ public class TriggerEvent {
         this.description = description;
         this.processed = processed;
         this.updatedAt = updatedAt;
+    }
+
+    /**
+     * Generate an identifier for this {@link TriggerEvent}.
+     *
+     * The identifier generated here is a JSON serialized version of the {@link FilterChainStep} which we then make
+     * an md5 hash of. If we have a created date we tack on it's millis to the end for extra uniqueness. It's the
+     * {@link FilterChainStep} that is the important part of a {@link TriggerEvent} and the assumption here is that
+     * there are properties that make the given filter unique. For example, if you're filtering out a tenant on a
+     * multi tenant stream you probably have a generic filter which has a property to hold the given tenant.
+     *
+     * If you don't have uniqueness represented in the properties of your filter this whole recipe probably isn't a
+     * great fit for your use case.
+     *
+     * @return string representing the event.
+     */
+    public String getIdentifier() {
+        // Note: This only works for to() because we only need the implementation name for from()
+        final String data = (new JSON()).to(getFilterChainStep());
+
+        final StringBuilder identifier = new StringBuilder(Tools.makeMd5Hash(data));
+
+        // If we were provided a date time in the event, append the time stamp of that event to the identifier
+        if (this.getCreatedAt() != null) {
+            identifier.append("-");
+            identifier.append(
+                this.getCreatedAt().atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
+            );
+        }
+
+        return identifier.toString();
     }
 
     public SidelineType getType() {
